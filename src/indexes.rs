@@ -40,7 +40,7 @@ impl<'a> Index<'a> {
         )?)
     }
 
-    pub fn get_document<T: DeserializeOwned, U: Display>(&self, uid: U) -> Result<Document<T, U>, Error> {
+    pub fn get_document<T: Documentable>(&self, uid: T::UIDType) -> Result<Document<T>, Error> {
         let value: T = request::<(), T>(
             &format!("{}/indexes/{}/documents/{}", self.client.host, self.uid, uid),
             self.client.apikey,
@@ -50,16 +50,15 @@ impl<'a> Index<'a> {
         Ok(Document {
             index: &self,
             value,
-            uid
         })
     }
 
-    pub fn get_documents<T: DeserializeOwned>(
+    pub fn get_documents<T: Documentable>(
         &self,
         offset: Option<usize>,
         limit: Option<usize>,
         attributes_to_retrive: Option<Vec<&str>>,
-    ) -> Result<Vec<Document<T, String>>, Error> {
+    ) -> Result<Vec<Document<T>>, Error> {
         let values: Vec<T> = request::<(), Vec<T>>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             self.client.apikey,
@@ -71,13 +70,12 @@ impl<'a> Index<'a> {
             documents.push(Document {
                 index: &self,
                 value,
-                uid: String::new(),
             })
         }
         Ok(documents)
     }
 
-    pub fn add_or_replace<T: Serialize + std::fmt::Debug>(
+    pub fn add_or_replace<T: Documentable>(
         &mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
@@ -90,7 +88,7 @@ impl<'a> Index<'a> {
         )?)
     }
 
-    pub fn add_or_update<T: Serialize + std::fmt::Debug>(
+    pub fn add_or_update<T: Documentable>(
         &mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
