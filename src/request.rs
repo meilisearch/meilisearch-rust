@@ -1,5 +1,5 @@
 use crate::errors::Error;
-use log::{debug, error, trace};
+use log::{error, trace};
 use minreq::{delete, get, post, put};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
@@ -44,7 +44,7 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwn
                 response.status_code,
                 body
             );
-            return Ok(from_str::<Output>(body).unwrap());
+            return Ok(output);
         }
     }
 

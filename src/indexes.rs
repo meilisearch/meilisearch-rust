@@ -1,7 +1,10 @@
-use crate::{client::Client, documents::*, errors::Error, progress::Progress, request::*};
+use crate::{
+    client::Client, documents::*, errors::Error, progress::Progress, request::*, search::*,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::fmt::Display;
 use serde_json::json;
+use std::fmt::Display;
+use urlencoding::encode;
 
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
@@ -48,10 +51,9 @@ impl<'a> Index<'a> {
         request::<serde_json::Value, JsonIndex>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             self.client.apikey,
-            Method::Put(json!({
-                "primaryKey": primary_key
-            })),
-            200)?;
+            Method::Put(json!({ "primaryKey": primary_key })),
+            200,
+        )?;
         Ok(())
     }
 
@@ -74,6 +76,52 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Delete,
             204,
+        )?)
+    }
+
+    /// Search for documents matching a specific query in the index.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*, search::*};
+    /// 
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    /// // that trait is used by the sdk when the primary key is needed
+    /// impl Documentable for Movie {
+    ///     type UIDType = String;
+    ///     fn get_uid(&self) -> &Self::UIDType {
+    ///         &self.name
+    ///     }
+    /// }
+    /// 
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movies = client.get_or_create("movies").unwrap();
+    ///
+    /// // add some documents
+    /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(1));
+    /// 
+    /// let query = Query::new("Interstellar").with_limit(5);
+    /// let results = movies.search::<Movie>(&query).unwrap();
+    /// # assert!(results.hits.len()>0);
+    /// ```
+    pub fn search<T: DeserializeOwned>(&self, query: &Query) -> Result<SearchResults<T>, Error> {
+        Ok(request::<(), SearchResults<T>>(
+            &format!(
+                "{}/indexes/{}/search{}",
+                self.client.host,
+                self.uid,
+                query.to_url()
+            ),
+            self.client.apikey,
+            Method::Get,
+            200,
         )?)
     }
 
@@ -195,12 +243,7 @@ impl<'a> Index<'a> {
             url.push_str("attributesToRetrieve=");
             url.push_str(attributes_to_retrieve.to_string().as_str());
         }
-        let values: Vec<T> = request::<(), Vec<T>>(
-            &url,
-            self.client.apikey,
-            Method::Get,
-            200,
-        )?;
+        let values: Vec<T> = request::<(), Vec<T>>(&url, self.client.apikey, Method::Get, 200)?;
         let mut documents = Vec::new();
         for value in values {
             documents.push(Document {
@@ -445,9 +488,9 @@ impl<'a> Index<'a> {
     /// Delete a selection of documents based on array of document id's.  
     ///   
     /// To remove a document from a [document object](documents/struct.Document.html), see the [delete method](documents/struct.Document.html#method.delete).
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
@@ -469,15 +512,18 @@ impl<'a> Index<'a> {
     /// #
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movies = client.get_or_create("movies").unwrap();
-    /// 
+    ///
     /// // add some documents
     /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
-    /// 
-    /// // delete some documents 
+    ///
+    /// // delete some documents
     /// movies.delete_documents(vec!["Interstellar", "Unknown"]).unwrap();
     /// ```
-    pub fn delete_documents<T: Display + Serialize + std::fmt::Debug>(&mut self, uids: Vec<T>) -> Result<Progress, Error> {
+    pub fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
+        &mut self,
+        uids: Vec<T>,
+    ) -> Result<Progress, Error> {
         Ok(request::<Vec<T>, Progress>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
@@ -488,7 +534,7 @@ impl<'a> Index<'a> {
             202,
         )?)
     }
-    
+
     /// Alias for the [update method](#method.update).
     pub fn set_primary_key(&mut self, primary_key: &str) -> Result<(), Error> {
         self.update(primary_key)
