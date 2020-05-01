@@ -95,7 +95,8 @@ impl<'a> Query<'a> {
 
 impl<'a> Query<'a> {
     pub(crate) fn to_url(&self) -> String {
-        let mut url = format!("?q={}&", self.query);
+        use urlencoding::encode;
+        let mut url = format!("?q={}&", encode(self.query));
 
         if let Some(offset) = self.offset {
             url.push_str("offset=");
@@ -109,12 +110,12 @@ impl<'a> Query<'a> {
         }
         if let Some(attributes_to_retrieve) = self.attributes_to_retrieve {
             url.push_str("attributesToRetrieve=");
-            url.push_str(attributes_to_retrieve.to_string().as_str());
+            url.push_str(encode(attributes_to_retrieve).as_str());
             url.push('&');
         }
         if let Some(attributes_to_crop) = self.attributes_to_crop {
             url.push_str("attributesToCrop=");
-            url.push_str(attributes_to_crop.to_string().as_str());
+            url.push_str(encode(attributes_to_crop).as_str());
             url.push('&');
         }
         if let Some(crop_lenght) = self.crop_lenght {
@@ -124,12 +125,12 @@ impl<'a> Query<'a> {
         }
         if let Some(attributes_to_highlight) = self.attributes_to_highlight {
             url.push_str("attributesToHighlight=");
-            url.push_str(attributes_to_highlight.to_string().as_str());
+            url.push_str(encode(attributes_to_highlight).as_str());
             url.push('&');
         }
         if let Some(filters) = self.filters {
             url.push_str("filters=");
-            url.push_str(filters.to_string().as_str());
+            url.push_str(encode(filters).as_str());
         }
 
         url

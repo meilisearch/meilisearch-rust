@@ -4,7 +4,6 @@ use crate::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::fmt::Display;
-use urlencoding::encode;
 
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
