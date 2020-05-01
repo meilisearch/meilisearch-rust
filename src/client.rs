@@ -110,6 +110,17 @@ impl<'a> Client<'a> {
         .into_index(self))
     }
 
+    /// Delete an index from its UID.  
+    /// To delete an index from the [index object](../indexes/struct.Index.html), use [the delete method](../indexes/struct.Index.html#method.delete).
+    pub fn delete_index(&self, uid: &str) -> Result<(), Error> {
+        Ok(request::<(), ()>(
+            &format!("{}/indexes/{}", self.host, uid),
+            self.apikey,
+            Method::Delete,
+            204,
+        )?)
+    }
+
     /// This will try to get an index and create the index if it does not exist.
     pub fn get_or_create(&'a self, uid: &'a str) -> Result<Index<'a>, Error> {
         if let Ok(index) = self.get_index(uid) {
