@@ -31,12 +31,26 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwn
             .send()?,
     };
 
-    let body = response.as_str()?;
-    if response.status_code == expected_status_code {
-        trace!("Request Succeed\nurl: {},\nmethod: {:?},\nstatus code: {}\n", url, method, response.status_code);
-        Ok(from_str::<Output>(body).unwrap())
-    } else {
-        error!("Failed request\nurl: {},\nmethod: {:?},\nstatus code: {}\n", url, method, response.status_code);
-        Err(Error::from(response.as_str()?))
+    let mut body = response.as_str()?;
+    if body.is_empty() {
+        body = "null";
     }
+    if response.status_code == expected_status_code {
+        if let Ok(output) = from_str::<Output>(body) {
+            trace!(
+                "Request Succeed\nurl: {},\nmethod: {:?},\nstatus code: {}\nbody: {}\n",
+                url,
+                method,
+                response.status_code,
+                body
+            );
+            return Ok(from_str::<Output>(body).unwrap());
+        }
+    }
+
+    error!(
+        "Failed request\nurl: {},\nmethod: {:?},\nstatus code: {}\nbody: {}\n",
+        url, method, response.status_code, body
+    );
+    Err(Error::from(response.as_str()?))
 }
