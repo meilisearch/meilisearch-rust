@@ -29,7 +29,7 @@ impl<'a> Progress<'a> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movies_index = client.get_or_create("movies").unwrap();
     /// let progress = movies_index.delete_all_documents().unwrap();
@@ -99,7 +99,7 @@ pub enum UpdateType {
     Settings { settings: SettingsUpdate },
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessedStatus {
     pub update_id: u64,
@@ -121,6 +121,7 @@ pub struct EnqueuedStatus {
     pub enqueued_at: String, // TODO deserialize to datatime
 }
 
+#[derive(Debug)]
 pub enum Status {
     Processed(ProcessedStatus),
     Enqueued(EnqueuedStatus),

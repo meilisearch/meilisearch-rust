@@ -48,7 +48,7 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwn
                 return Ok(output);
             }
             Err(e) => {
-                error!("Failed to deserialize: {}", e);
+                error!("Can't paser");
                 return Err(Error::from(e.to_string().as_str()));
             }
         };
@@ -58,5 +58,5 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwn
         "Failed request\nurl: {},\nmethod: {:?},\nstatus code: {}\nbody: {}\n",
         url, method, response.status_code, body
     );
-    Err(Error::from(response.as_str()?))
+    Err(Error::from(body))
 }
