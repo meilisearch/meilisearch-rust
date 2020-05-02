@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-minreq = {path="../clones/minreq"}
+minreq = "2.1"
 serde_json = "1.0"
 log = "0.4"
 serde = {version="1.0", features=["derive"]}
@@ -15,6 +15,3 @@ urlencoding = "1.0"
 
 [dev-dependencies]
 env_logger = "0.7"
-
-[patch.crates-io]
-minreq = {git="https://github.com/neonmoe/minreq"}

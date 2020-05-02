@@ -1,10 +1,10 @@
 use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Display;
 
-/// Documents are not predefined structure.
+/// Documents are not a predefined structure.
 /// You can use your own structs as documents by implementing that trait.  
 ///   
-/// **WARNING**! The get_uid() method can only return a type that display himself only using alphanumeric caracters, '/' and '-'. 
+/// **WARNING**! The get_uid() method **MUST** only return an object that display himself only using alphanumeric caracters, '/' and '-'. 
 /// Otherwise, the MeiliSearch server will reject your documents.  
 ///   
 /// *To be able to use derive with serde, put this line on your Cargo.toml: `serde = {version="1.0", features=["derive"]}`.*
@@ -12,7 +12,7 @@ use std::fmt::Display;
 /// # Example
 /// 
 /// ```
-/// use meilisearch_sdk::document::Document;
+/// # use meilisearch_sdk::document::Document;
 /// use serde::{Serialize, Deserialize};
 /// 
 /// #[derive(Serialize, Deserialize, Debug)]
@@ -31,7 +31,12 @@ use std::fmt::Display;
 /// }
 /// ```
 pub trait Document: DeserializeOwned + std::fmt::Debug + Serialize {
+    /// The type of the primary key
     type UIDType: Display;
 
+    /// The method returning the primary key of the Document.  
+    ///   
+    /// **WARNING**! This method **MUST** only return an object that display himself only using alphanumeric caracters, '/' and '-'. 
+    /// Otherwise, the MeiliSearch server will reject your document.  
     fn get_uid(&self) -> &Self::UIDType;
 }

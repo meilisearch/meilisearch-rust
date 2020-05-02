@@ -4,7 +4,7 @@
 
 /// Module containing the Client struct.
 pub mod client;
-/// Module containing the Document struct and Documentable trait.
+/// Module containing the Document trait.
 pub mod document;
 /// Module containing the Error struct.
 pub mod errors;

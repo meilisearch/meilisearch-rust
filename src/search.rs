@@ -1,15 +1,26 @@
 use crate::{errors::Error, indexes::Index};
 use serde::{de::DeserializeOwned, Deserialize};
 
+// TODO support https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#matches
+// TODO highlighting
+
 #[derive(Deserialize, Debug)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
+/// A struct containing search results and other information about the search.
 pub struct SearchResults<T> {
+    /// results of the query
     pub hits: Vec<T>,
+    /// number of documents skipped
     pub offset: usize,
+    /// number of documents to take
     pub limit: usize,
-    pub nbHits: usize,
-    pub exhaustiveNbHits: bool,
-    pub processingTimeMs: usize,
+    /// total number of matches
+    pub nb_hits: usize,
+    /// whether nbHits is exhaustive
+    pub exhaustive_nb_hits: bool,
+    /// processing time of the query
+    pub processing_time_ms: usize,
+    /// query originating the response
     pub query: String,
 }
 
@@ -26,13 +37,33 @@ pub struct SearchResults<T> {
 ///     .with_limit(21);
 /// ```
 pub struct Query<'a> {
+    /// The query parameter is the only mandatory parameter.  
+    /// This is the string used by the search engine to find relevant documents.
     pub query: &'a str,
+    /// A number of documents to skip. If the value of the parameter offset is n, n first documents to skip. This is helpful for pagination.  
+    ///   
+    /// Example: If you want to skip the first document, set offset to 1.  
+    /// Default: 0
     pub offset: Option<usize>,
+    /// Set a limit to the number of documents returned by search queries. If the value of the parameter limit is n, there will be n documents in the search query response. This is helpful for pagination.  
+    ///   
+    /// Example: If you want to get only two documents, set limit to 2.
+    /// Default: 20
     pub limit: Option<usize>,
+    /// Attributes to display in the returned documents. Comma-separated list of attributes whose fields will be present in the returned documents.
+    /// 
+    /// Example: If you want to get only the overview and title field and not the other fields, set `attributes_to_retrieve` to `overview,title`.
+    /// Default: The [displayed attributes list](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) which contains by default all attributes found in the documents.
     pub attributes_to_retrieve: Option<&'a str>,
+    /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-crop)
     pub attributes_to_crop: Option<&'a str>,
+    /// Number of characters to keep on each side of the start of the matching word. See [attributes_to_crop](#structfield.attributes_to_crop).  
+    ///   
+    /// Default: 200
     pub crop_lenght: Option<usize>,
+    /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-highlight)
     pub attributes_to_highlight: Option<&'a str>,
+    /// Specify a filter to be used with the query. See the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html).
     pub filters: Option<&'a str>,
 }
 
