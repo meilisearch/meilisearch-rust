@@ -245,6 +245,8 @@ impl<'a> Index<'a> {
     /// Fields previously in the document not present in the new document are removed.  
     ///   
     /// For a partial update of the document see [add_or_update](#method.add_or_update).
+    /// 
+    /// You can use the alias [add_documents](#method.add_documents) if you prefer.
     ///
     /// # Example
     ///
@@ -313,6 +315,15 @@ impl<'a> Index<'a> {
             )?
             .into_progress(self),
         )
+    }
+
+    /// Alias for [add_or_replace](#method.add_or_replace).
+    pub fn add_documents<T: Document>(
+        &mut self,
+        documents: Vec<T>,
+        primary_key: Option<&str>,
+    ) -> Result<Progress, Error> {
+        self.add_or_replace(documents, primary_key)
     }
 
     /// Add a list of documents and update them if they already.  
