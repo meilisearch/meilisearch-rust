@@ -21,7 +21,7 @@ impl JsonIndex {
     }
 }
 
-/// An index containing [Document](../document/struct.Document.html).
+/// An index containing [Document](../document/trait.Document.html).
 ///
 /// # Example
 ///
@@ -122,7 +122,7 @@ impl<'a> Index<'a> {
         )?)
     }
 
-    /// Get one [document](../document/struct.Document.html) using its unique id.  
+    /// Get one [document](../document/trait.Document.html) using its unique id.  
     /// Serde is needed. Add `serde = {version="1.0", features=["derive"]}` in the dependencies section of your Cargo.toml.
     ///
     /// # Example
@@ -174,7 +174,7 @@ impl<'a> Index<'a> {
         )?)
     }
 
-    /// Get [documents](../document/struct.Document.html) by batch.  
+    /// Get [documents](../document/trait.Document.html) by batch.  
     ///   
     /// Using the optional parameters offset and limit, you can browse through all your documents.
     /// If None, offset will be set to 0, limit to 20 and all attributes will be retrieved.  
@@ -239,7 +239,7 @@ impl<'a> Index<'a> {
         Ok(request::<(), Vec<T>>(&url, self.client.apikey, Method::Get, 200)?)
     }
 
-    /// Add a list of [documents](../document/struct.Document.html) or replace them if they already exist.  
+    /// Add a list of [documents](../document/trait.Document.html) or replace them if they already exist.  
     ///   
     /// If you send an already existing document (same id) the **whole existing document** will be overwritten by the new document.
     /// Fields previously in the document not present in the new document are removed.  
@@ -428,7 +428,6 @@ impl<'a> Index<'a> {
     }
 
     /// Delete one document based on its unique id.  
-    /// To remove a document from a [document object](document/struct.Document.html), see the [delete method](document/struct.Document.html#method.delete).
     ///
     /// # Example
     ///
@@ -475,8 +474,6 @@ impl<'a> Index<'a> {
 
     /// Delete a selection of documents based on array of document id's.  
     ///   
-    /// To remove a document from a [document object](document/struct.Document.html), see the [delete method](document/struct.Document.html#method.delete).
-    ///
     /// # Example
     ///
     /// ```

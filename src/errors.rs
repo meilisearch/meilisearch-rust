@@ -4,9 +4,9 @@
 pub enum Error {
     /// There is no MeiliSearch server listening on the [specified host](../client/struct.Client.html#method.new).
     UnreachableServer,
-    /// You tried to create an Index that already exists. You may want to use the [get_or_create method](..client/struct.Client.html#method.get_or_create).
+    /// You tried to create an Index that already exists. You may want to use the [get_or_create method](../client/struct.Client.html#method.get_or_create).
     IndexAlreadyExist,
-    /// You tried to get an Index that does not exist. You may want to use the [get_or_create method](..client/struct.Client.html#method.get_or_create).
+    /// You tried to get an Index that does not exist. You may want to use the [get_or_create method](../client/struct.Client.html#method.get_or_create).
     IndexNotFound,
     /// You tried to use an invalid UID for an Index. Index uid can only be composed of alphanumeric characters, hyphens (-) and underscores (_).
     InvalidIndexUid,

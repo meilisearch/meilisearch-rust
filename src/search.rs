@@ -67,6 +67,7 @@ pub struct Query<'a> {
     pub filters: Option<&'a str>,
 }
 
+#[allow(missing_docs)]
 impl<'a> Query<'a> {
     pub fn new(query: &'a str) -> Query<'a> {
         Query {

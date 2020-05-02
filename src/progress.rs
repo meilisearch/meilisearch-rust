@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use crate::{errors::Error, indexes::Index, request::*};
 use serde::Deserialize;
 use serde_json::{from_value, Value};
@@ -36,7 +38,7 @@ impl<'a> Progress<'a> {
     /// let status = progress.get_status().unwrap();
     /// ```
     pub fn get_status(&self) -> Result<Status, Error> {
-        let value = request::<(), serde_json::Value>(
+        let value = request::<(), Value>(
             &format!(
                 "{}/indexes/{}/updates/{}",
                 self.index.client.host, self.index.uid, self.id
@@ -90,6 +92,7 @@ pub struct SettingsUpdate {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "name")]
+#[allow(clippy::large_enum_variant)] // would be great to correct but it's not my code it's from meilisearch/Meilisearch
 pub enum UpdateType {
     ClearAll,
     Customs,
