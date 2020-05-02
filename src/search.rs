@@ -1,5 +1,5 @@
-use serde::{Deserialize, de::DeserializeOwned};
-use crate::{indexes::Index, errors::Error};
+use crate::{errors::Error, indexes::Index};
+use serde::{de::DeserializeOwned, Deserialize};
 
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
@@ -16,9 +16,9 @@ pub struct SearchResults<T> {
 /// A struct representing a query.
 /// You can add search parameters using the builder syntax.
 /// See [here](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#query-q) for the list and description of all parameters.
-/// 
-/// # Example 
-/// 
+///
+/// # Example
+///
 /// ```
 /// # use meilisearch_sdk::search::Query;
 /// let query = Query::new("space")

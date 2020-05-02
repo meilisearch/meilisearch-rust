@@ -1,18 +1,19 @@
+use crate::{errors::Error, indexes::Index, request::*};
 use serde::Deserialize;
-use crate::{indexes::Index, errors::Error, request::*};
-use std::collections::{BTreeMap, HashSet, BTreeSet};
-use serde_json::{Value, from_value};
+use serde_json::{from_value, Value};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ProgressJson {
-    pub(crate) updateId: usize,
+    pub(crate) update_id: usize,
 }
 
 impl ProgressJson {
     pub(crate) fn into_progress<'a>(self, index: &'a Index) -> Progress<'a> {
         Progress {
-            id: self.updateId,
-            index
+            id: self.update_id,
+            index,
         }
     }
 }
@@ -26,7 +27,7 @@ pub struct Progress<'a> {
 impl<'a> Progress<'a> {
     ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
     /// let client = Client::new("http://localhost:7700", "");
@@ -36,7 +37,10 @@ impl<'a> Progress<'a> {
     /// ```
     pub fn get_status(&self) -> Result<Status, Error> {
         let value = request::<(), serde_json::Value>(
-            &format!("{}/indexes/{}/updates/{}", self.index.client.host, self.index.uid, self.id),
+            &format!(
+                "{}/indexes/{}/updates/{}",
+                self.index.client.host, self.index.uid, self.id
+            ),
             self.index.client.apikey,
             Method::Get,
             200,
@@ -46,7 +50,9 @@ impl<'a> Progress<'a> {
         } else if let Ok(status) = from_value::<EnqueuedStatus>(value) {
             return Ok(Status::Enqueued(status));
         }
-        Err(Error::Unknown("Invalid server response, src/progress.rs:49:9".to_string()))
+        Err(Error::Unknown(
+            "Invalid server response, src/progress.rs:49:9".to_string(),
+        ))
     }
 }
 
@@ -101,8 +107,8 @@ pub struct ProcessedStatus {
     pub update_type: UpdateType,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
-    pub duration: f64, // in seconds
-    pub enqueued_at: String, // TODO deserialize to datatime
+    pub duration: f64,        // in seconds
+    pub enqueued_at: String,  // TODO deserialize to datatime
     pub processed_at: String, // TODO deserialize to datatime
 }
 
@@ -114,7 +120,6 @@ pub struct EnqueuedStatus {
     pub update_type: UpdateType,
     pub enqueued_at: String, // TODO deserialize to datatime
 }
-
 
 pub enum Status {
     Processed(ProcessedStatus),

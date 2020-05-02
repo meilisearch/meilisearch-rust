@@ -1,6 +1,4 @@
-use crate::{
-    client::Client, documents::*, errors::Error, progress::*, request::*, search::*,
-};
+use crate::{client::Client, documents::*, errors::Error, progress::*, request::*, search::*};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::fmt::Display;
@@ -79,33 +77,33 @@ impl<'a> Index<'a> {
     }
 
     /// Search for documents matching a specific query in the index.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*, documents::*, search::*};
-    /// 
+    ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
     ///     description: String,
     /// }
     /// // that trait is used by the sdk when the primary key is needed
-    /// impl Documentable for Movie {
+    /// impl Document for Movie {
     ///     type UIDType = String;
     ///     fn get_uid(&self) -> &Self::UIDType {
     ///         &self.name
     ///     }
     /// }
-    /// 
+    ///
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movies = client.get_or_create("movies").unwrap();
     ///
     /// // add some documents
     /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
-    /// 
+    ///
     /// let query = Query::new("Interstellar").with_limit(5);
     /// let results = movies.search::<Movie>(&query).unwrap();
     /// # assert!(results.hits.len()>0);
@@ -146,7 +144,7 @@ impl<'a> Index<'a> {
     /// }
     ///
     /// // that trait is used by the sdk when the primary key is needed
-    /// impl Documentable for Movie {
+    /// impl Document for Movie {
     ///    type UIDType = String;
     ///    fn get_uid(&self) -> &Self::UIDType {
     ///        &self.name
@@ -159,13 +157,13 @@ impl<'a> Index<'a> {
     /// // retrieve a document (you have to put the document in the index before)
     /// let interstellar = movies.get_document::<Movie>(String::from("Interstellar")).unwrap();
     ///
-    /// assert_eq!(interstellar.value, Movie{
+    /// assert_eq!(interstellar, Movie{
     ///     name: String::from("Interstellar"),
     ///     description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
     /// });
     /// ```
-    pub fn get_document<T: Documentable>(&self, uid: T::UIDType) -> Result<Document<T>, Error> {
-        let value: T = request::<(), T>(
+    pub fn get_document<T: Document>(&self, uid: T::UIDType) -> Result<T, Error> {
+        Ok(request::<(), T>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
@@ -173,11 +171,7 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Get,
             200,
-        )?;
-        Ok(Document {
-            index: &self,
-            value,
-        })
+        )?)
     }
 
     /// Get [documents](../documents/struct.Document.html) by batch.  
@@ -206,7 +200,7 @@ impl<'a> Index<'a> {
     /// }
     ///
     /// // that trait is used by the sdk when the primary key is needed
-    /// impl Documentable for Movie {
+    /// impl Document for Movie {
     ///    type UIDType = String;
     ///    fn get_uid(&self) -> &Self::UIDType {
     ///        &self.name
@@ -221,12 +215,12 @@ impl<'a> Index<'a> {
     ///
     /// assert!(movies.len() > 0);
     /// ```
-    pub fn get_documents<T: Documentable>(
+    pub fn get_documents<T: Document>(
         &self,
         offset: Option<usize>,
         limit: Option<usize>,
         attributes_to_retrieve: Option<&str>,
-    ) -> Result<Vec<Document<T>>, Error> {
+    ) -> Result<Vec<T>, Error> {
         let mut url = format!("{}/indexes/{}/documents?", self.client.host, self.uid);
         if let Some(offset) = offset {
             url.push_str("offset=");
@@ -242,15 +236,7 @@ impl<'a> Index<'a> {
             url.push_str("attributesToRetrieve=");
             url.push_str(attributes_to_retrieve.to_string().as_str());
         }
-        let values: Vec<T> = request::<(), Vec<T>>(&url, self.client.apikey, Method::Get, 200)?;
-        let mut documents = Vec::new();
-        for value in values {
-            documents.push(Document {
-                index: &self,
-                value,
-            })
-        }
-        Ok(documents)
+        Ok(request::<(), Vec<T>>(&url, self.client.apikey, Method::Get, 200)?)
     }
 
     /// Add a list of [documents](../documents/struct.Document.html) or replace them if they already exist.  
@@ -277,7 +263,7 @@ impl<'a> Index<'a> {
     ///    description: String,
     /// }
     /// // that trait is used by the sdk when the primary key is needed
-    /// impl Documentable for Movie {
+    /// impl Document for Movie {
     ///    type UIDType = String;
     ///    fn get_uid(&self) -> &Self::UIDType {
     ///        &self.name
@@ -305,7 +291,7 @@ impl<'a> Index<'a> {
     /// let movies = movies_index.get_documents::<Movie>(None, None, None).unwrap();
     /// assert!(movies.len() >= 3);
     /// ```
-    pub fn add_or_replace<T: Documentable>(
+    pub fn add_or_replace<T: Document>(
         &mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
@@ -318,12 +304,15 @@ impl<'a> Index<'a> {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        Ok(request::<Vec<T>, ProgressJson>(
-            &url,
-            self.client.apikey,
-            Method::Post(documents),
-            202,
-        )?.into_progress(self))
+        Ok(
+            request::<Vec<T>, ProgressJson>(
+                &url,
+                self.client.apikey,
+                Method::Post(documents),
+                202,
+            )?
+            .into_progress(self),
+        )
     }
 
     /// Add a list of documents and update them if they already.  
@@ -350,7 +339,7 @@ impl<'a> Index<'a> {
     ///    description: String,
     /// }
     /// // that trait is used by the sdk when the primary key is needed
-    /// impl Documentable for Movie {
+    /// impl Document for Movie {
     ///    type UIDType = String;
     ///    fn get_uid(&self) -> &Self::UIDType {
     ///        &self.name
@@ -378,7 +367,7 @@ impl<'a> Index<'a> {
     /// let movies = movies_index.get_documents::<Movie>(None, None, None).unwrap();
     /// assert!(movies.len() >= 3);
     /// ```
-    pub fn add_or_update<T: Documentable>(
+    pub fn add_or_update<T: Document>(
         &mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
@@ -391,12 +380,10 @@ impl<'a> Index<'a> {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        Ok(request::<Vec<T>, ProgressJson>(
-            &url,
-            self.client.apikey,
-            Method::Put(documents),
-            202,
-        )?.into_progress(self))
+        Ok(
+            request::<Vec<T>, ProgressJson>(&url, self.client.apikey, Method::Put(documents), 202)?
+                .into_progress(self),
+        )
     }
 
     /// Delete all documents in the index.
@@ -414,7 +401,7 @@ impl<'a> Index<'a> {
     /// # }
     /// #
     /// # // that trait is used by the sdk when the primary key is needed
-    /// # impl Documentable for Movie {
+    /// # impl Document for Movie {
     /// #    type UIDType = String;
     /// #    fn get_uid(&self) -> &Self::UIDType {
     /// #        &self.name
@@ -436,7 +423,8 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Delete,
             202,
-        )?.into_progress(self))
+        )?
+        .into_progress(self))
     }
 
     /// Delete one document based on its unique id.  
@@ -455,7 +443,7 @@ impl<'a> Index<'a> {
     /// # }
     /// #
     /// # // that trait is used by the sdk when the primary key is needed
-    /// # impl Documentable for Movie {
+    /// # impl Document for Movie {
     /// #    type UIDType = String;
     /// #    fn get_uid(&self) -> &Self::UIDType {
     /// #        &self.name
@@ -481,7 +469,8 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Delete,
             202,
-        )?.into_progress(self))
+        )?
+        .into_progress(self))
     }
 
     /// Delete a selection of documents based on array of document id's.  
@@ -501,7 +490,7 @@ impl<'a> Index<'a> {
     /// # }
     /// #
     /// # // that trait is used by the sdk when the primary key is needed
-    /// # impl Documentable for Movie {
+    /// # impl Document for Movie {
     /// #    type UIDType = String;
     /// #    fn get_uid(&self) -> &Self::UIDType {
     /// #        &self.name
@@ -531,7 +520,8 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Post(uids),
             202,
-        )?.into_progress(self))
+        )?
+        .into_progress(self))
     }
 
     /// Alias for the [update method](#method.update).
