@@ -36,16 +36,22 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwn
         body = "null";
     }
     if response.status_code == expected_status_code {
-        if let Ok(output) = from_str::<Output>(body) {
-            trace!(
-                "Request Succeed\nurl: {},\nmethod: {:?},\nstatus code: {}\nbody: {}\n",
-                url,
-                method,
-                response.status_code,
-                body
-            );
-            return Ok(output);
-        }
+        match from_str::<Output>(body) {
+            Ok(output) => {
+                trace!(
+                    "Request Succeed\nurl: {},\nmethod: {:?},\nstatus code: {}\nbody: {}\n",
+                    url,
+                    method,
+                    response.status_code,
+                    body
+                );
+                return Ok(output);
+            }
+            Err(e) => {
+                error!("Failed to deserialize: {}", e);
+                return Err(Error::from(e.to_string().as_str()));
+            }
+        };
     }
 
     error!(

@@ -1,5 +1,5 @@
 use crate::{
-    client::Client, documents::*, errors::Error, progress::Progress, request::*, search::*,
+    client::Client, documents::*, errors::Error, progress::*, request::*, search::*,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
@@ -318,12 +318,12 @@ impl<'a> Index<'a> {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        Ok(request::<Vec<T>, Progress>(
+        Ok(request::<Vec<T>, ProgressJson>(
             &url,
             self.client.apikey,
             Method::Post(documents),
             202,
-        )?)
+        )?.into_progress(self))
     }
 
     /// Add a list of documents and update them if they already.  
@@ -391,12 +391,12 @@ impl<'a> Index<'a> {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        Ok(request::<Vec<T>, Progress>(
+        Ok(request::<Vec<T>, ProgressJson>(
             &url,
             self.client.apikey,
             Method::Put(documents),
             202,
-        )?)
+        )?.into_progress(self))
     }
 
     /// Delete all documents in the index.
@@ -431,12 +431,12 @@ impl<'a> Index<'a> {
     /// # assert_eq!(movies.len(), 0);
     /// ```
     pub fn delete_all_documents(&mut self) -> Result<Progress, Error> {
-        Ok(request::<(), Progress>(
+        Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             self.client.apikey,
             Method::Delete,
             202,
-        )?)
+        )?.into_progress(self))
     }
 
     /// Delete one document based on its unique id.  
@@ -473,7 +473,7 @@ impl<'a> Index<'a> {
     /// movies.delete_document("Interstellar").unwrap();
     /// ```
     pub fn delete_document<T: Display>(&mut self, uid: T) -> Result<Progress, Error> {
-        Ok(request::<(), Progress>(
+        Ok(request::<(), ProgressJson>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
@@ -481,7 +481,7 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Delete,
             202,
-        )?)
+        )?.into_progress(self))
     }
 
     /// Delete a selection of documents based on array of document id's.  
@@ -523,7 +523,7 @@ impl<'a> Index<'a> {
         &mut self,
         uids: Vec<T>,
     ) -> Result<Progress, Error> {
-        Ok(request::<Vec<T>, Progress>(
+        Ok(request::<Vec<T>, ProgressJson>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
                 self.client.host, self.uid
@@ -531,7 +531,7 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Post(uids),
             202,
-        )?)
+        )?.into_progress(self))
     }
 
     /// Alias for the [update method](#method.update).
