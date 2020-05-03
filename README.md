@@ -1,4 +1,6 @@
-# meilisearch-sdk
+# meilisearch-sdk [![Latest Version]][crates.io]
+[Latest Version]: https://img.shields.io/crates/v/meilisearch-sdk
+[crates.io]: https://crates.io/crates/meilisearch-sdk
 
 MeiliSearch Rust is a client for [MeiliSearch](https://www.meilisearch.com/) written in Rust.
 [MeiliSearch](https://www.meilisearch.com/) is a powerful, fast, open-source, easy to use and deploy search engine.
@@ -78,3 +80,7 @@ This crate is currently supporting MeiliSearch v10.0 and will be maintained.
 All the tests are documentation tests.
 Since they are all making operations on the MeiliSearch server, running all the tests simultaneously would cause panics.
 To run the tests one by one, run `cargo test -- --test-threads=1`.
+
+Current version: 0.1.1
+
+License: MIT
