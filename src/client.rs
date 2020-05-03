@@ -1,7 +1,7 @@
 use crate::{errors::*, indexes::*, request::*};
 use serde_json::{json, Value};
 
-/// The top level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
+/// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug)]
 pub struct Client<'a> {
     pub(crate) host: &'a str,
@@ -130,7 +130,7 @@ impl<'a> Client<'a> {
         }
     }
 
-    /// An alias for [list_all_indexes](#method.list_all_indexes).
+    /// Alias for [list_all_indexes](#method.list_all_indexes).
     pub fn get_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
         self.list_all_indexes()
     }

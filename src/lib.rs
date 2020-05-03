@@ -10,7 +10,7 @@
 //! 
 //! # 🔧 Installation
 //! 
-//! This crate require a MeiliSearch server to run. See [here](https://docs.meilisearch.com/guides/advanced_guides/installation.html#download-and-launch) too install and run MeiliSearch.  
+//! This crate requires a MeiliSearch server to run. See [here](https://docs.meilisearch.com/guides/advanced_guides/installation.html#download-and-launch) to install and run MeiliSearch.  
 //!   
 //! Then, put `meilisearch-sdk = "0.1"` in your Cargo.toml, as usual.  
 //!   
@@ -87,7 +87,7 @@ pub mod document;
 pub mod errors;
 /// Module containing the Index struct.
 pub mod indexes;
-/// Module containing the useful objects for tracking progress of async operations.
+/// Module containing objects useful for tracking the progress of async operations.
 pub mod progress;
 mod request;
 /// Module related to search queries and results.

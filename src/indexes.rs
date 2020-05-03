@@ -21,7 +21,7 @@ impl JsonIndex {
     }
 }
 
-/// An index containing [Document](../document/trait.Document.html).
+/// An index containing [Documents](../document/trait.Document.html).
 ///
 /// # Example
 ///
@@ -43,7 +43,7 @@ pub struct Index<'a> {
 impl<'a> Index<'a> {
     /// Set the primary key of the index.  
     ///   
-    /// If you prefer, you can use the method [set_primary_key](#method.set_primary_key) which is an alias.
+    /// If you prefer, you can use the method [set_primary_key](#method.set_primary_key), which is an alias.
     pub fn update(&mut self, primary_key: &str) -> Result<(), Error> {
         request::<serde_json::Value, JsonIndex>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
@@ -177,7 +177,7 @@ impl<'a> Index<'a> {
     /// Get [documents](../document/trait.Document.html) by batch.  
     ///   
     /// Using the optional parameters offset and limit, you can browse through all your documents.
-    /// If None, offset will be set to 0, limit to 20 and all attributes will be retrieved.  
+    /// If None, offset will be set to 0, limit to 20, and all attributes will be retrieved.  
     ///   
     /// *Note: Documents are ordered by MeiliSearch depending on the hash of their id.*
     ///
@@ -189,8 +189,8 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// let client = Client::new("http://localhost:7700", "");
     /// # client.create_index("movies", None);
-    /// let movies_index = client.get_index("movies").unwrap();
-    /// # let mut movies_index = client.get_index("movies").unwrap();
+    /// let movie_index = client.get_index("movies").unwrap();
+    /// # let mut movie_index = client.get_index("movies").unwrap();
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
@@ -207,11 +207,11 @@ impl<'a> Index<'a> {
     ///    }
     /// }
     ///
-    /// # movies_index.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).unwrap();
+    /// # movie_index.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// #
     /// // retrieve movies (you have to put some movies in the index before)
-    /// let movies = movies_index.get_documents::<Movie>(None, None, None).unwrap();
+    /// let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
     ///
     /// assert!(movies.len() > 0);
     /// ```
@@ -257,7 +257,7 @@ impl<'a> Index<'a> {
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
     /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movies_index = client.get_or_create("movies").unwrap();
+    /// let mut movie_index = client.get_or_create("movies").unwrap();
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
@@ -272,7 +272,7 @@ impl<'a> Index<'a> {
     ///    }
     /// }
     ///
-    /// movies_index.add_or_replace(vec![
+    /// movie_index.add_or_replace(vec![
     ///     Movie{
     ///         name: String::from("Interstellar"),
     ///         description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
@@ -290,7 +290,7 @@ impl<'a> Index<'a> {
     /// sleep(Duration::from_secs(1)); // MeiliSearch may take some time to execute the request
     ///
     /// // retrieve movies (you have to put some movies in the index before)
-    /// let movies = movies_index.get_documents::<Movie>(None, None, None).unwrap();
+    /// let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
     /// assert!(movies.len() >= 3);
     /// ```
     pub fn add_or_replace<T: Document>(
@@ -342,7 +342,7 @@ impl<'a> Index<'a> {
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
     /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movies_index = client.get_or_create("movies").unwrap();
+    /// let mut movie_index = client.get_or_create("movies").unwrap();
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
@@ -357,7 +357,7 @@ impl<'a> Index<'a> {
     ///    }
     /// }
     ///
-    /// movies_index.add_or_update(vec![
+    /// movie_index.add_or_update(vec![
     ///     Movie{
     ///         name: String::from("Interstellar"),
     ///         description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
@@ -375,7 +375,7 @@ impl<'a> Index<'a> {
     /// sleep(Duration::from_secs(1)); // MeiliSearch may take some time to execute the request
     ///
     /// // retrieve movies (you have to put some movies in the index before)
-    /// let movies = movies_index.get_documents::<Movie>(None, None, None).unwrap();
+    /// let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
     /// assert!(movies.len() >= 3);
     /// ```
     pub fn add_or_update<T: Document>(
@@ -420,12 +420,12 @@ impl<'a> Index<'a> {
     /// # }
     /// #
     /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movies_index = client.get_or_create("movies").unwrap();
+    /// let mut movie_index = client.get_or_create("movies").unwrap();
     ///
     /// // add some documents
     ///
-    /// movies_index.delete_all_documents().unwrap();
-    /// # let movies = movies_index.get_documents::<Movie>(None, None, None).unwrap();
+    /// movie_index.delete_all_documents().unwrap();
+    /// # let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
     /// # assert_eq!(movies.len(), 0);
     /// ```
     pub fn delete_all_documents(&mut self) -> Result<Progress, Error> {

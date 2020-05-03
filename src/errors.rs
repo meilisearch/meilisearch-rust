@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq)]
-/// Struct representing errors.
-/// Unknow Errors are anormal. You should consider panicking and open a GitHub issue (after ensuring you are using the supported version of the MeiliSearch server).
+/// Struct representing errors.  
+/// Unknow Errors are unexpected. You should consider panicking and open a GitHub issue (after ensuring you are using the supported version of the MeiliSearch server).
 pub enum Error {
     /// There is no MeiliSearch server listening on the [specified host](../client/struct.Client.html#method.new).
     UnreachableServer,
@@ -8,11 +8,11 @@ pub enum Error {
     IndexAlreadyExist,
     /// You tried to get an Index that does not exist. You may want to use the [get_or_create method](../client/struct.Client.html#method.get_or_create).
     IndexNotFound,
-    /// You tried to use an invalid UID for an Index. Index uid can only be composed of alphanumeric characters, hyphens (-) and underscores (_).
+    /// You tried to use an invalid UID for an Index. Index UID can only be composed of alphanumeric characters, hyphens (-), and underscores (_).
     InvalidIndexUid,
     /// You tried to add documents on an Index but MeiliSearch can't infer the primary key. Consider specifying the key.
     CantInferPrimaryKey,
-    /// That's anormal. Please open a GitHub issue after ensuring you are using the supported version of the MeiliSearch server.
+    /// That's unexpected. Please open a GitHub issue after ensuring you are using the supported version of the MeiliSearch server.
     Unknown(String),
 }
 
