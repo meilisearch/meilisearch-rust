@@ -12,7 +12,7 @@ Features such as typo-tolerance, filters, and synonyms are provided out-of-the-b
 
 ## 🔧 Installation
 
-This crate require a MeiliSearch server to run. See [here](https://docs.meilisearch.com/guides/advanced_guides/installation.html#download-and-launch) too install and run MeiliSearch.
+This crate requires a MeiliSearch server to run. See [here](https://docs.meilisearch.com/guides/advanced_guides/installation.html#download-and-launch) to install and run MeiliSearch.
 
 Then, put `meilisearch-sdk = "0.1"` in your Cargo.toml, as usual.
 
