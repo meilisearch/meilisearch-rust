@@ -1,10 +1,11 @@
 [package]
 name = "meilisearch-sdk"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Mubelotix <mubelotix@gmail.com>"]
 edition = "2018"
 description = "MeiliSearch Rust SDK. MeiliSearch is a powerful, fast, open-source, easy to use and deploy search engine."
 license = "MIT"
+readme  = "README.md"
 
 [dependencies]
 minreq = "2.1"

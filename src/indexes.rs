@@ -1,4 +1,4 @@
-use crate::{client::Client, document::*, errors::Error, progress::*, request::*, search::*};
+use crate::{client::Client, document::*, errors::Error, progress::*, request::*, search::*, settings::*};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::fmt::Display;
@@ -530,6 +530,79 @@ impl<'a> Index<'a> {
             202,
         )?
         .into_progress(self))
+    }
+
+    /// Get the [settings](../settings/struct.Settings.html) of the Index.
+    /// 
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let movie_index = client.get_or_create("movies").unwrap();
+    /// let settings = movie_index.get_settings().unwrap();
+    /// ```
+    pub fn get_settings(&self) -> Result<Settings, Error> {
+        Ok(request::<(), Settings>(
+            &format!(
+                "{}/indexes/{}/settings",
+                self.client.host, self.uid
+            ),
+            self.client.apikey,
+            Method::Get,
+            200,
+        )?)
+    }
+
+    /// Update the settings of the index.  
+    /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
+    /// 
+    /// # Example 
+    /// 
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").unwrap();
+    /// 
+    /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
+    /// let settings = Settings::new()
+    ///     .with_stop_words(stop_words.clone())
+    ///     .with_accept_new_fields(false);
+    /// 
+    /// let progress = movie_index.set_settings(&settings).unwrap();
+    /// ```
+    pub fn set_settings(&mut self, settings: &Settings) -> Result<Progress, Error> {
+        Ok(request::<&Settings, ProgressJson>(
+            &format!(
+                "{}/indexes/{}/settings",
+                self.client.host, self.uid
+            ),
+            self.client.apikey,
+            Method::Post(settings),
+            202,
+        )?.into_progress(self))
+    }
+
+    /// Reset the settings of the index.  
+    /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").unwrap();
+    /// 
+    /// let progress = movie_index.reset_settings().unwrap();
+    /// ```
+    pub fn reset_settings(&mut self) -> Result<Progress, Error> {
+        Ok(request::<(), ProgressJson>(
+            &format!(
+                "{}/indexes/{}/settings",
+                self.client.host, self.uid
+            ),
+            self.client.apikey,
+            Method::Delete,
+            202,
+        )?.into_progress(self))
     }
 
     /// Alias for the [update method](#method.update).
