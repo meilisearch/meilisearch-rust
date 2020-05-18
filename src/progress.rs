@@ -59,8 +59,8 @@ impl<'a> Progress<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn get_status(&self, callback: Box<dyn Fn(Result<Status, Error>)>) {
-        request::<(), Value>(
+    pub async fn get_status(&self) -> Result<Status, Error> {
+        let value = request::<(), Value>(
             &format!(
                 "{}/indexes/{}/updates/{}",
                 self.index.client.host, self.index.uid, self.id
@@ -68,21 +68,15 @@ impl<'a> Progress<'a> {
             self.index.client.apikey,
             Method::Get,
             200,
-            Box::new(move |value: Result<Value, Error>| match value {
-                Ok(value) => {
-                    if let Ok(status) = from_value::<ProcessedStatus>(value.clone()) {
-                        callback(Ok(Status::Processed(status)));
-                    } else if let Ok(status) = from_value::<EnqueuedStatus>(value) {
-                        callback(Ok(Status::Enqueued(status)));
-                    } else {
-                        callback(Err(Error::Unknown(
-                            "Invalid server response, src/progress.rs:56:9".to_string(),
-                        )))
-                    }
-                }
-                Err(e) => callback(Err(e)),
-            }),
-        );
+        ).await?;
+        if let Ok(status) = from_value::<ProcessedStatus>(value.clone()) {
+            return Ok(Status::Processed(status));
+        } else if let Ok(status) = from_value::<EnqueuedStatus>(value) {
+            return Ok(Status::Enqueued(status));
+        }
+        Err(Error::Unknown(
+            "Invalid server response, src/progress.rs:56:9".to_string(),
+        ))
     }
 }
 

@@ -42,16 +42,16 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwn
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static + DeserializeOwned>(
+pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static + DeserializeOwned>(
     url: &str,
     apikey: &str,
     method: Method<Input>,
-    expected_status_code: i32,
-    callback: Box<dyn Fn(Result<Output, Error>)>,
-) {
+    expected_status_code: i32
+) -> Result<Output, Error> {
     use std::rc::Rc;
     use wasm_bindgen::{prelude::*, JsCast, JsValue};
     use web_sys::{Headers, RequestInit, Response};
+    use wasm_bindgen_futures::JsFuture;
 
     // NOTE: Unwrap are not a big problem on web-sys objects
 
@@ -78,37 +78,21 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static + Dese
         }
     }
 
-    let callback = Rc::new(callback);
-    let callback = Rc::clone(&callback);
     let window = web_sys::window().unwrap();
-    let fetch_closure = Closure::wrap(Box::new(move |response: JsValue| {
-        let response = Response::from(response);
-        let status = response.status() as i32;
+    let response = Response::from(JsFuture::from(window.fetch_with_str_and_init(url, &request)).await.unwrap());
+    let status = response.status() as i32;
+    let text = JsFuture::from(response.text().unwrap()).await.unwrap();
 
-        let callback2 = Rc::clone(&callback);
-        let text_promise = Closure::wrap(Box::new(move |text: JsValue| {
-            if let Some(t) = text.as_string() {
-                if t.is_empty() {
-                    callback2(parse_response(status, expected_status_code, "null"))
-                } else {
-                    callback2(parse_response(status, expected_status_code, &t))
-                }
-            } else {
-                callback2(Err(Error::Unknown("Invalid utf8".to_string())));
-            }
-        }) as Box<dyn FnMut(_)>);
-
-        if let Ok(text) = response.text() {
-            text.then(&text_promise);
-            text_promise.forget();
+    if let Some(t) = text.as_string() {
+        if t.is_empty() {
+            parse_response(status, expected_status_code, "null")
         } else {
-            callback(Err(Error::Unknown("Invalid utf8".to_string())));
+            parse_response(status, expected_status_code, &t)
         }
-    }) as Box<dyn FnMut(_)>);
-    window
-        .fetch_with_str_and_init(url, &request)
-        .then(&fetch_closure);
-    fetch_closure.forget();
+    } else {
+        Err(Error::Unknown("Invalid utf8".to_string()))
+    }
+
 }
 
 fn parse_response<Output: DeserializeOwned>(

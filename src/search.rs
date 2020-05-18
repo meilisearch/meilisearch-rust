@@ -178,11 +178,10 @@ impl<'a> Query<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn execute<T: 'static + DeserializeOwned>(
-        &self,
-        index: &Index,
-        callback: Box<dyn Fn(Result<SearchResults<T>, Error>)>,
-    ) {
-        index.search::<T>(&self, callback);
+    pub async fn execute<T: 'static + DeserializeOwned>(
+        &'a self,
+        index: &Index<'a>,
+    ) -> Result<SearchResults<T>, Error> {
+        index.search::<T>(&self).await
     }
 }

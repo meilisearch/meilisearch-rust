@@ -58,20 +58,14 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn update(&mut self, primary_key: &str, callback: Box<dyn Fn(Result<(), Error>)>) {
+    pub async fn update(&mut self, primary_key: &str) -> Result<(), Error> {
         request::<serde_json::Value, JsonIndex>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             self.client.apikey,
             Method::Put(json!({ "primaryKey": primary_key })),
             200,
-            Box::new(move |value: Result<JsonIndex, Error>| {
-                if let Err(e) = value {
-                    callback(Err(e));
-                } else {
-                    callback(Ok(()));
-                }
-            }),
-        );
+        ).await?;
+        Ok(())
     }
 
     /// Delete the index.
@@ -95,6 +89,16 @@ impl<'a> Index<'a> {
             Method::Delete,
             204,
         )?)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub async fn delete(self) -> Result<(), Error> {
+        Ok(request::<(), ()>(
+            &format!("{}/indexes/{}", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Delete,
+            204,
+        ).await?)
     }
 
     /// Search for documents matching a specific query in the index.
@@ -148,12 +152,11 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn search<T: 'static + DeserializeOwned>(
+    pub async fn search<T: 'static + DeserializeOwned>(
         &self,
-        query: &Query,
-        callback: Box<dyn Fn(Result<SearchResults<T>, Error>)>,
-    ) {
-        request::<(), SearchResults<T>>(
+        query: &Query<'_>,
+    ) -> Result<SearchResults<T>, Error> {
+        Ok(request::<(), SearchResults<T>>(
             &format!(
                 "{}/indexes/{}/search{}",
                 self.client.host,
@@ -163,8 +166,7 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Get,
             200,
-            callback,
-        );
+        ).await?)
     }
 
     /// Get one [document](../document/trait.Document.html) using its unique id.  
@@ -221,12 +223,8 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn get_document<T: 'static + Document>(
-        &self,
-        uid: T::UIDType,
-        callback: Box<dyn Fn(Result<T, Error>)>,
-    ) {
-        request::<(), T>(
+    pub async fn get_document<T: 'static + Document>(&self, uid: T::UIDType) -> Result<T, Error> {
+        Ok(request::<(), T>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
@@ -234,8 +232,7 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Get,
             200,
-            callback,
-        )
+        ).await?)
     }
 
     /// Get [documents](../document/trait.Document.html) by batch.  
@@ -310,13 +307,12 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn get_documents<T: 'static + Document>(
+    pub async fn get_documents<T: 'static + Document>(
         &self,
         offset: Option<usize>,
         limit: Option<usize>,
         attributes_to_retrieve: Option<&str>,
-        callback: Box<dyn Fn(Result<Vec<T>, Error>)>,
-    ) {
+    ) -> Result<Vec<T>, Error> {
         let mut url = format!("{}/indexes/{}/documents?", self.client.host, self.uid);
         if let Some(offset) = offset {
             url.push_str("offset=");
@@ -332,7 +328,12 @@ impl<'a> Index<'a> {
             url.push_str("attributesToRetrieve=");
             url.push_str(attributes_to_retrieve.to_string().as_str());
         }
-        request::<(), Vec<T>>(&url, self.client.apikey, Method::Get, 200, callback);
+        Ok(request::<(), Vec<T>>(
+            &url,
+            self.client.apikey,
+            Method::Get,
+            200,
+        ).await?)
     }
 
     /// Add a list of [documents](../document/trait.Document.html) or replace them if they already exist.  
@@ -415,12 +416,11 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn add_or_replace<T: Document>(
-        &'static mut self,
+    pub async fn add_or_replace<T: Document>(
+        &'a mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
-        callback: Box<dyn Fn(Result<Progress, Error>)>,
-    ) {
+    ) -> Result<Progress<'a>, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -429,15 +429,14 @@ impl<'a> Index<'a> {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<Vec<T>, ProgressJson>(
-            &url,
-            self.client.apikey,
-            Method::Post(documents),
-            202,
-            Box::new(move |value: Result<ProgressJson, Error>| match value {
-                Ok(v) => callback(Ok(v.into_progress(&self))),
-                Err(e) => callback(Err(e)),
-            }),
+        Ok(
+            request::<Vec<T>, ProgressJson>(
+                &url,
+                self.client.apikey,
+                Method::Post(documents),
+                202,
+            ).await?
+            .into_progress(self),
         )
     }
 
@@ -452,13 +451,12 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn add_documents<T: Document>(
-        &'static mut self,
+    pub async fn add_documents<T: Document>(
+        &'a mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
-        callback: Box<dyn Fn(Result<Progress, Error>)>,
-    ) {
-        self.add_or_replace(documents, primary_key, callback)
+    ) -> Result<Progress<'a>, Error> {
+        self.add_or_replace(documents, primary_key).await
     }
 
     /// Add a list of documents and update them if they already.  
@@ -534,12 +532,11 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn add_or_update<T: Document>(
-        &'static mut self,
+    pub async fn add_or_update<T: Document>(
+        &'a mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
-        callback: Box<dyn Fn(Result<Progress, Error>)>,
-    ) {
+    ) -> Result<Progress<'a>, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -548,16 +545,10 @@ impl<'a> Index<'a> {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<Vec<T>, ProgressJson>(
-            &url,
-            self.client.apikey,
-            Method::Put(documents),
-            202,
-            Box::new(move |value: Result<ProgressJson, Error>| match value {
-                Ok(v) => callback(Ok(v.into_progress(&self))),
-                Err(e) => callback(Err(e)),
-            }),
-        );
+        Ok(
+            request::<Vec<T>, ProgressJson>(&url, self.client.apikey, Method::Put(documents), 202).await?
+                .into_progress(self),
+        )
     }
 
     /// Delete all documents in the index.
@@ -603,17 +594,14 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn delete_all_documents(&'static mut self, callback: Box<dyn Fn(Result<Progress, Error>)>) {
-        request::<(), ProgressJson>(
+    pub async fn delete_all_documents(&'a mut self) -> Result<Progress<'a>, Error> {
+        Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             self.client.apikey,
             Method::Delete,
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| match value {
-                Ok(v) => callback(Ok(v.into_progress(&self))),
-                Err(e) => callback(Err(e)),
-            }),
-        );
+        ).await?
+        .into_progress(self))
     }
 
     /// Delete one document based on its unique id.  
@@ -663,12 +651,8 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn delete_document<T: Display>(
-        &'static mut self,
-        uid: T,
-        callback: Box<dyn Fn(Result<Progress, Error>)>,
-    ) {
-        request::<(), ProgressJson>(
+    pub async fn delete_document<T: Display>(&'a mut self, uid: T) -> Result<Progress<'a>, Error> {
+        Ok(request::<(), ProgressJson>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
@@ -676,11 +660,8 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Delete,
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| match value {
-                Ok(v) => callback(Ok(v.into_progress(&self))),
-                Err(e) => callback(Err(e)),
-            }),
-        );
+        ).await?
+        .into_progress(self))
     }
 
     /// Delete a selection of documents based on array of document id's.  
@@ -734,12 +715,11 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
-        &'static mut self,
+    pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
+        &'a mut self,
         uids: Vec<T>,
-        callback: Box<dyn Fn(Result<Progress, Error>)>,
-    ) {
-        request::<Vec<T>, ProgressJson>(
+    ) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<T>, ProgressJson>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
                 self.client.host, self.uid
@@ -747,11 +727,8 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Post(uids),
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| match value {
-                Ok(v) => callback(Ok(v.into_progress(&self))),
-                Err(e) => callback(Err(e)),
-            }),
-        );
+        ).await?
+        .into_progress(self))
     }
 
     /// Get the [settings](../settings/struct.Settings.html) of the Index.
@@ -773,14 +750,13 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn get_settings(&self, callback: Box<dyn Fn(Result<Settings, Error>)>) {
-        request::<(), Settings>(
+    pub async fn get_settings(&self) -> Result<Settings, Error> {
+        Ok(request::<(), Settings>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Get,
             200,
-            callback,
-        )
+        ).await?)
     }
 
     /// Update the settings of the index.  
@@ -812,21 +788,14 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn set_settings(
-        &'static mut self,
-        settings: &Settings,
-        callback: Box<dyn Fn(Result<Progress, Error>)>,
-    ) {
-        request::<&Settings, ProgressJson>(
+    pub async fn set_settings(&'a mut self, settings: &Settings) -> Result<Progress<'a>, Error> {
+        Ok(request::<&Settings, ProgressJson>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(settings),
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| match value {
-                Ok(v) => callback(Ok(v.into_progress(&self))),
-                Err(e) => callback(Err(e)),
-            }),
-        );
+        ).await?
+        .into_progress(self))
     }
 
     /// Reset the settings of the index.  
@@ -853,17 +822,14 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn reset_settings(&'static mut self, callback: Box<dyn Fn(Result<Progress, Error>)>) {
-        request::<(), ProgressJson>(
+    pub async fn reset_settings(&'a mut self) -> Result<Progress<'a>, Error> {
+        Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Delete,
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| match value {
-                Ok(v) => callback(Ok(v.into_progress(&self))),
-                Err(e) => callback(Err(e)),
-            }),
-        );
+        ).await?
+        .into_progress(self))
     }
 
     /// Alias for the [update method](#method.update).
@@ -873,7 +839,7 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn set_primary_key(&mut self, primary_key: &str, callback: Box<dyn Fn(Result<(), Error>)>) {
-        self.update(primary_key, callback)
+    pub async fn set_primary_key(&mut self, primary_key: &str) -> Result<(), Error> {
+        self.update(primary_key).await
     }
 }
