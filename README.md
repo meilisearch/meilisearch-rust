@@ -91,6 +91,6 @@ All the tests are documentation tests.
 Since they are all making operations on the MeiliSearch server, running all the tests simultaneously would cause panics.
 To run the tests one by one, run `cargo test -- --test-threads=1`.
 
-Current version: 0.1.2
+Current version: 0.1.3
 
 License: MIT
