@@ -417,7 +417,7 @@ impl<'a> Index<'a> {
 
     #[cfg(target_arch = "wasm32")]
     pub async fn add_or_replace<T: Document>(
-        &'a mut self,
+        &'a self,
         documents: Vec<T>,
         primary_key: Option<&str>,
     ) -> Result<Progress<'a>, Error> {
@@ -452,7 +452,7 @@ impl<'a> Index<'a> {
 
     #[cfg(target_arch = "wasm32")]
     pub async fn add_documents<T: Document>(
-        &'a mut self,
+        &'a self,
         documents: Vec<T>,
         primary_key: Option<&str>,
     ) -> Result<Progress<'a>, Error> {
@@ -533,7 +533,7 @@ impl<'a> Index<'a> {
 
     #[cfg(target_arch = "wasm32")]
     pub async fn add_or_update<T: Document>(
-        &'a mut self,
+        &'a self,
         documents: Vec<T>,
         primary_key: Option<&str>,
     ) -> Result<Progress<'a>, Error> {
@@ -594,7 +594,7 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub async fn delete_all_documents(&'a mut self) -> Result<Progress<'a>, Error> {
+    pub async fn delete_all_documents(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             self.client.apikey,
@@ -651,7 +651,7 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub async fn delete_document<T: Display>(&'a mut self, uid: T) -> Result<Progress<'a>, Error> {
+    pub async fn delete_document<T: Display>(&'a self, uid: T) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!(
                 "{}/indexes/{}/documents/{}",
@@ -716,7 +716,7 @@ impl<'a> Index<'a> {
 
     #[cfg(target_arch = "wasm32")]
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
-        &'a mut self,
+        &'a self,
         uids: Vec<T>,
     ) -> Result<Progress<'a>, Error> {
         Ok(request::<Vec<T>, ProgressJson>(
@@ -788,7 +788,7 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub async fn set_settings(&'a mut self, settings: &Settings) -> Result<Progress<'a>, Error> {
+    pub async fn set_settings(&'a self, settings: &Settings) -> Result<Progress<'a>, Error> {
         Ok(request::<&Settings, ProgressJson>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
@@ -822,7 +822,7 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub async fn reset_settings(&'a mut self) -> Result<Progress<'a>, Error> {
+    pub async fn reset_settings(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
