@@ -1,5 +1,5 @@
 use crate::errors::Error;
-use log::{error, trace};
+use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
 
@@ -19,6 +19,8 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwn
     expected_status_code: i32,
 ) -> Result<Output, Error> {
     use minreq::{delete, get, post, put};
+
+    trace!("{:?} on {}", method, url);
 
     let response = match &method {
         Method::Get => get(url).with_header("X-Meili-API-Key", apikey).send()?,
@@ -48,10 +50,11 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
     method: Method<Input>,
     expected_status_code: i32
 ) -> Result<Output, Error> {
-    use std::rc::Rc;
-    use wasm_bindgen::{prelude::*, JsCast, JsValue};
+    use wasm_bindgen::JsValue;
     use web_sys::{Headers, RequestInit, Response};
     use wasm_bindgen_futures::JsFuture;
+
+    trace!("{:?} on {}", method, url);
 
     // NOTE: Unwrap are not a big problem on web-sys objects
 
@@ -103,12 +106,15 @@ fn parse_response<Output: DeserializeOwned>(
     if status_code == expected_status_code {
         match from_str::<Output>(body) {
             Ok(output) => {
+                trace!("Request succeed");
                 return Ok(output);
             }
             Err(e) => {
+                error!("Request succeed but failed to parse response");
                 return Err(Error::from(e.to_string().as_str()));
             }
         };
     }
+    warn!("Expected response code {}, got {}", expected_status_code, status_code);
     Err(Error::from(body))
 }

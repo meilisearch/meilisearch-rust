@@ -77,8 +77,6 @@
 //! Since they are all making operations on the MeiliSearch server, running all the tests simultaneously would cause panics.
 //! To run the tests one by one, run `cargo test -- --test-threads=1`.
 
-#![warn(missing_docs)]
-
 /// Module containing the Client struct.
 pub mod client;
 /// Module containing the Document trait.
