@@ -733,6 +733,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
+    #[cfg(target_arch = "wasm32")]
     pub fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
         &'static mut self,
         uids: Vec<T>,

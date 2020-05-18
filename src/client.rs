@@ -22,7 +22,7 @@ impl<'a> Client<'a> {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "");
     /// ```
-    pub fn new(host: &'a str, apikey: &'a str) -> Client<'a> {
+    pub const fn new(host: &'a str, apikey: &'a str) -> Client<'a> {
         Client { host, apikey }
     }
 
