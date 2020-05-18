@@ -68,9 +68,9 @@ impl<'a> Progress<'a> {
             self.index.client.apikey,
             Method::Get,
             200,
-            Box::new(move  |value: Result<Value, Error>| {
-                match value {
-                    Ok(value) => if let Ok(status) = from_value::<ProcessedStatus>(value.clone()) {
+            Box::new(move |value: Result<Value, Error>| match value {
+                Ok(value) => {
+                    if let Ok(status) = from_value::<ProcessedStatus>(value.clone()) {
                         callback(Ok(Status::Processed(status)));
                     } else if let Ok(status) = from_value::<EnqueuedStatus>(value) {
                         callback(Ok(Status::Enqueued(status)));
@@ -78,10 +78,10 @@ impl<'a> Progress<'a> {
                         callback(Err(Error::Unknown(
                             "Invalid server response, src/progress.rs:56:9".to_string(),
                         )))
-                    },
-                    Err(e) => callback(Err(e))
+                    }
                 }
-            })
+                Err(e) => callback(Err(e)),
+            }),
         );
     }
 }

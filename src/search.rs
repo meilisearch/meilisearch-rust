@@ -51,7 +51,7 @@ pub struct Query<'a> {
     /// Default: 20
     pub limit: Option<usize>,
     /// Attributes to display in the returned documents. Comma-separated list of attributes whose fields will be present in the returned documents.
-    /// 
+    ///
     /// Example: If you want to get only the overview and title field and not the other fields, set `attributes_to_retrieve` to `overview,title`.
     /// Default: The [displayed attributes list](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) which contains by default all attributes found in the documents.
     pub attributes_to_retrieve: Option<&'a str>,
@@ -170,12 +170,19 @@ impl<'a> Query<'a> {
 
     /// Alias for [the Index method](../indexes/struct.Index.html#method.search).
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn execute<T: 'static +  DeserializeOwned>(&self, index: &Index) -> Result<SearchResults<T>, Error> {
+    pub fn execute<T: 'static + DeserializeOwned>(
+        &self,
+        index: &Index,
+    ) -> Result<SearchResults<T>, Error> {
         index.search::<T>(&self)
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn execute<T: 'static +  DeserializeOwned>(&self, index: &Index, callback: Box<dyn Fn(Result<SearchResults<T>, Error>)>) {
+    pub fn execute<T: 'static + DeserializeOwned>(
+        &self,
+        index: &Index,
+        callback: Box<dyn Fn(Result<SearchResults<T>, Error>)>,
+    ) {
         index.search::<T>(&self, callback);
     }
 }

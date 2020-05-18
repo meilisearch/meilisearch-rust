@@ -1,27 +1,27 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 
 /// Struct reprensenting a set of settings.  
 /// You can build this struct using the builder syntax.  
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// # use meilisearch_sdk::settings::Settings;
 /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
-/// 
+///
 /// let settings = Settings::new()
 ///     .with_stop_words(stop_words.clone())
 ///     .with_accept_new_fields(false);
-/// 
+///
 /// // OR
-/// 
+///
 /// let mut settings = Settings::new();
 /// settings.stop_words = Some(stop_words.clone());
 /// settings.accept_new_fields = Some(false);
-/// 
+///
 /// // OR
-/// 
+///
 /// let settings = Settings {
 ///     stop_words: Some(stop_words.clone()),
 ///     accept_new_fields: Some(false),
@@ -65,7 +65,7 @@ impl Settings {
             distinct_attribute: None,
             searchable_attributes: None,
             displayed_attributes: None,
-            accept_new_fields: None
+            accept_new_fields: None,
         }
     }
     pub fn with_synonyms(self, synonyms: HashMap<String, Vec<String>>) -> Settings {

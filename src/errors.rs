@@ -37,9 +37,7 @@ impl From<minreq::Error> for Error {
             minreq::Error::IoError(e) if e.kind() == std::io::ErrorKind::ConnectionRefused => {
                 Error::UnreachableServer
             }
-            e => {
-                Error::Unknown(format!("{:?}", e))
-            },
+            e => Error::Unknown(format!("{:?}", e)),
         }
     }
 }

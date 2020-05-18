@@ -1,4 +1,6 @@
-use crate::{client::Client, document::*, errors::Error, progress::*, request::*, search::*, settings::*};
+use crate::{
+    client::Client, document::*, errors::Error, progress::*, request::*, search::*, settings::*,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::fmt::Display;
@@ -68,7 +70,7 @@ impl<'a> Index<'a> {
                 } else {
                     callback(Ok(()));
                 }
-            })
+            }),
         );
     }
 
@@ -128,7 +130,10 @@ impl<'a> Index<'a> {
     /// # assert!(results.hits.len()>0);
     /// ```
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn search<T: 'static +  DeserializeOwned>(&self, query: &Query) -> Result<SearchResults<T>, Error> {
+    pub fn search<T: 'static + DeserializeOwned>(
+        &self,
+        query: &Query,
+    ) -> Result<SearchResults<T>, Error> {
         Ok(request::<(), SearchResults<T>>(
             &format!(
                 "{}/indexes/{}/search{}",
@@ -143,7 +148,11 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn search<T: 'static +  DeserializeOwned>(&self, query: &Query, callback: Box<dyn Fn(Result<SearchResults<T>, Error>)>) {
+    pub fn search<T: 'static + DeserializeOwned>(
+        &self,
+        query: &Query,
+        callback: Box<dyn Fn(Result<SearchResults<T>, Error>)>,
+    ) {
         request::<(), SearchResults<T>>(
             &format!(
                 "{}/indexes/{}/search{}",
@@ -154,7 +163,7 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Get,
             200,
-            callback
+            callback,
         );
     }
 
@@ -199,7 +208,7 @@ impl<'a> Index<'a> {
     /// });
     /// ```
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_document<T: 'static +  Document>(&self, uid: T::UIDType) -> Result<T, Error> {
+    pub fn get_document<T: 'static + Document>(&self, uid: T::UIDType) -> Result<T, Error> {
         Ok(request::<(), T>(
             &format!(
                 "{}/indexes/{}/documents/{}",
@@ -212,7 +221,11 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn get_document<T: 'static +  Document>(&self, uid: T::UIDType, callback: Box<dyn Fn(Result<T, Error>)>) {
+    pub fn get_document<T: 'static + Document>(
+        &self,
+        uid: T::UIDType,
+        callback: Box<dyn Fn(Result<T, Error>)>,
+    ) {
         request::<(), T>(
             &format!(
                 "{}/indexes/{}/documents/{}",
@@ -221,7 +234,7 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Get,
             200,
-            callback
+            callback,
         )
     }
 
@@ -267,7 +280,7 @@ impl<'a> Index<'a> {
     /// assert!(movies.len() > 0);
     /// ```
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_documents<T: 'static +  Document>(
+    pub fn get_documents<T: 'static + Document>(
         &self,
         offset: Option<usize>,
         limit: Option<usize>,
@@ -288,16 +301,21 @@ impl<'a> Index<'a> {
             url.push_str("attributesToRetrieve=");
             url.push_str(attributes_to_retrieve.to_string().as_str());
         }
-        Ok(request::<(), Vec<T>>(&url, self.client.apikey, Method::Get, 200)?)
+        Ok(request::<(), Vec<T>>(
+            &url,
+            self.client.apikey,
+            Method::Get,
+            200,
+        )?)
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn get_documents<T: 'static +  Document>(
+    pub fn get_documents<T: 'static + Document>(
         &self,
         offset: Option<usize>,
         limit: Option<usize>,
         attributes_to_retrieve: Option<&str>,
-        callback: Box<dyn Fn(Result<Vec<T>, Error>)>
+        callback: Box<dyn Fn(Result<Vec<T>, Error>)>,
     ) {
         let mut url = format!("{}/indexes/{}/documents?", self.client.host, self.uid);
         if let Some(offset) = offset {
@@ -323,7 +341,7 @@ impl<'a> Index<'a> {
     /// Fields previously in the document not present in the new document are removed.  
     ///   
     /// For a partial update of the document see [add_or_update](#method.add_or_update).
-    /// 
+    ///
     /// You can use the alias [add_documents](#method.add_documents) if you prefer.
     ///
     /// # Example
@@ -401,7 +419,7 @@ impl<'a> Index<'a> {
         &'static mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
-        callback: Box<dyn Fn(Result<Progress, Error>)>
+        callback: Box<dyn Fn(Result<Progress, Error>)>,
     ) {
         let url = if let Some(primary_key) = primary_key {
             format!(
@@ -416,12 +434,10 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Post(documents),
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| {
-                match value {
-                    Ok(v) => callback(Ok(v.into_progress(&self))),
-                    Err(e) => callback(Err(e))
-                }
-            })
+            Box::new(move |value: Result<ProgressJson, Error>| match value {
+                Ok(v) => callback(Ok(v.into_progress(&self))),
+                Err(e) => callback(Err(e)),
+            }),
         )
     }
 
@@ -440,7 +456,7 @@ impl<'a> Index<'a> {
         &'static mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
-        callback: Box<dyn Fn(Result<Progress, Error>)>
+        callback: Box<dyn Fn(Result<Progress, Error>)>,
     ) {
         self.add_or_replace(documents, primary_key, callback)
     }
@@ -522,7 +538,7 @@ impl<'a> Index<'a> {
         &'static mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
-        callback: Box<dyn Fn(Result<Progress, Error>)>
+        callback: Box<dyn Fn(Result<Progress, Error>)>,
     ) {
         let url = if let Some(primary_key) = primary_key {
             format!(
@@ -532,12 +548,16 @@ impl<'a> Index<'a> {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<Vec<T>, ProgressJson>(&url, self.client.apikey, Method::Put(documents), 202, Box::new(move |value: Result<ProgressJson, Error>| {
-            match value {
+        request::<Vec<T>, ProgressJson>(
+            &url,
+            self.client.apikey,
+            Method::Put(documents),
+            202,
+            Box::new(move |value: Result<ProgressJson, Error>| match value {
                 Ok(v) => callback(Ok(v.into_progress(&self))),
-                Err(e) => callback(Err(e))
-            }
-        }));
+                Err(e) => callback(Err(e)),
+            }),
+        );
     }
 
     /// Delete all documents in the index.
@@ -589,12 +609,10 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Delete,
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| {
-                match value {
-                    Ok(v) => callback(Ok(v.into_progress(&self))),
-                    Err(e) => callback(Err(e))
-                }
-            })
+            Box::new(move |value: Result<ProgressJson, Error>| match value {
+                Ok(v) => callback(Ok(v.into_progress(&self))),
+                Err(e) => callback(Err(e)),
+            }),
         );
     }
 
@@ -645,7 +663,11 @@ impl<'a> Index<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn delete_document<T: Display>(&'static mut self, uid: T, callback: Box<dyn Fn(Result<Progress, Error>)>) {
+    pub fn delete_document<T: Display>(
+        &'static mut self,
+        uid: T,
+        callback: Box<dyn Fn(Result<Progress, Error>)>,
+    ) {
         request::<(), ProgressJson>(
             &format!(
                 "{}/indexes/{}/documents/{}",
@@ -654,12 +676,10 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Delete,
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| {
-                match value {
-                    Ok(v) => callback(Ok(v.into_progress(&self))),
-                    Err(e) => callback(Err(e))
-                }
-            })
+            Box::new(move |value: Result<ProgressJson, Error>| match value {
+                Ok(v) => callback(Ok(v.into_progress(&self))),
+                Err(e) => callback(Err(e)),
+            }),
         );
     }
 
@@ -716,7 +736,7 @@ impl<'a> Index<'a> {
     pub fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
         &'static mut self,
         uids: Vec<T>,
-        callback: Box<dyn Fn(Result<Progress, Error>)>
+        callback: Box<dyn Fn(Result<Progress, Error>)>,
     ) {
         request::<Vec<T>, ProgressJson>(
             &format!(
@@ -726,17 +746,15 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Post(uids),
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| {
-                match value {
-                    Ok(v) => callback(Ok(v.into_progress(&self))),
-                    Err(e) => callback(Err(e))
-                }
-            })
+            Box::new(move |value: Result<ProgressJson, Error>| match value {
+                Ok(v) => callback(Ok(v.into_progress(&self))),
+                Err(e) => callback(Err(e)),
+            }),
         );
     }
 
     /// Get the [settings](../settings/struct.Settings.html) of the Index.
-    /// 
+    ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// let client = Client::new("http://localhost:7700", "");
@@ -746,10 +764,7 @@ impl<'a> Index<'a> {
     #[cfg(not(target_arch = "wasm32"))]
     pub fn get_settings(&self) -> Result<Settings, Error> {
         Ok(request::<(), Settings>(
-            &format!(
-                "{}/indexes/{}/settings",
-                self.client.host, self.uid
-            ),
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Get,
             200,
@@ -759,107 +774,94 @@ impl<'a> Index<'a> {
     #[cfg(target_arch = "wasm32")]
     pub fn get_settings(&self, callback: Box<dyn Fn(Result<Settings, Error>)>) {
         request::<(), Settings>(
-            &format!(
-                "{}/indexes/{}/settings",
-                self.client.host, self.uid
-            ),
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Get,
             200,
-            callback
+            callback,
         )
     }
 
     /// Update the settings of the index.  
     /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
-    /// 
-    /// # Example 
-    /// 
+    ///
+    /// # Example
+    ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").unwrap();
-    /// 
+    ///
     /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
     /// let settings = Settings::new()
     ///     .with_stop_words(stop_words.clone())
     ///     .with_accept_new_fields(false);
-    /// 
+    ///
     /// let progress = movie_index.set_settings(&settings).unwrap();
     /// ```
     #[cfg(not(target_arch = "wasm32"))]
     pub fn set_settings(&mut self, settings: &Settings) -> Result<Progress, Error> {
         Ok(request::<&Settings, ProgressJson>(
-            &format!(
-                "{}/indexes/{}/settings",
-                self.client.host, self.uid
-            ),
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(settings),
             202,
-        )?.into_progress(self))
+        )?
+        .into_progress(self))
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn set_settings(&'static mut self, settings: &Settings, callback: Box<dyn Fn(Result<Progress, Error>)>) {
+    pub fn set_settings(
+        &'static mut self,
+        settings: &Settings,
+        callback: Box<dyn Fn(Result<Progress, Error>)>,
+    ) {
         request::<&Settings, ProgressJson>(
-            &format!(
-                "{}/indexes/{}/settings",
-                self.client.host, self.uid
-            ),
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(settings),
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| {
-                match value {
-                    Ok(v) => callback(Ok(v.into_progress(&self))),
-                    Err(e) => callback(Err(e))
-                }
-            })
+            Box::new(move |value: Result<ProgressJson, Error>| match value {
+                Ok(v) => callback(Ok(v.into_progress(&self))),
+                Err(e) => callback(Err(e)),
+            }),
         );
     }
 
     /// Reset the settings of the index.  
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").unwrap();
-    /// 
+    ///
     /// let progress = movie_index.reset_settings().unwrap();
     /// ```
     #[cfg(not(target_arch = "wasm32"))]
     pub fn reset_settings(&mut self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!(
-                "{}/indexes/{}/settings",
-                self.client.host, self.uid
-            ),
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Delete,
             202,
-        )?.into_progress(self))
+        )?
+        .into_progress(self))
     }
 
     #[cfg(target_arch = "wasm32")]
     pub fn reset_settings(&'static mut self, callback: Box<dyn Fn(Result<Progress, Error>)>) {
         request::<(), ProgressJson>(
-            &format!(
-                "{}/indexes/{}/settings",
-                self.client.host, self.uid
-            ),
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Delete,
             202,
-            Box::new(move |value: Result<ProgressJson, Error>| {
-                match value {
-                    Ok(v) => callback(Ok(v.into_progress(&self))),
-                    Err(e) => callback(Err(e))
-                }
-            })
+            Box::new(move |value: Result<ProgressJson, Error>| match value {
+                Ok(v) => callback(Ok(v.into_progress(&self))),
+                Err(e) => callback(Err(e)),
+            }),
         );
     }
 

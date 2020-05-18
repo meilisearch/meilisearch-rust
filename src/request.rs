@@ -37,21 +37,21 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwn
     if body.is_empty() {
         body = "null";
     }
-    
+
     parse_response(response.status_code, expected_status_code, body)
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static +  DeserializeOwned>(
+pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static + DeserializeOwned>(
     url: &str,
     apikey: &str,
     method: Method<Input>,
     expected_status_code: i32,
-    callback: Box<dyn Fn(Result<Output, Error>)>
+    callback: Box<dyn Fn(Result<Output, Error>)>,
 ) {
-    use web_sys::{RequestInit, Headers, Response};
-    use wasm_bindgen::{JsValue, JsCast, prelude::*};
     use std::rc::Rc;
+    use wasm_bindgen::{prelude::*, JsCast, JsValue};
+    use web_sys::{Headers, RequestInit, Response};
 
     // NOTE: Unwrap are not a big problem on web-sys objects
 
@@ -62,8 +62,12 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static +  Des
     request.headers(&headers);
 
     match &method {
-        Method::Get => {request.method("GET");},
-        Method::Delete => {request.method("DELETE");},
+        Method::Get => {
+            request.method("GET");
+        }
+        Method::Delete => {
+            request.method("DELETE");
+        }
         Method::Post(body) => {
             request.method("POST");
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
@@ -73,7 +77,7 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static +  Des
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
     }
-    
+
     let callback = Rc::new(callback);
     let callback = Rc::clone(&callback);
     let window = web_sys::window().unwrap();
@@ -93,7 +97,7 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static +  Des
                 callback2(Err(Error::Unknown("Invalid utf8".to_string())));
             }
         }) as Box<dyn FnMut(_)>);
-    
+
         if let Ok(text) = response.text() {
             text.then(&text_promise);
             text_promise.forget();
@@ -101,11 +105,17 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static +  Des
             callback(Err(Error::Unknown("Invalid utf8".to_string())));
         }
     }) as Box<dyn FnMut(_)>);
-    window.fetch_with_str_and_init(url, &request).then(&fetch_closure);
+    window
+        .fetch_with_str_and_init(url, &request)
+        .then(&fetch_closure);
     fetch_closure.forget();
 }
 
-fn parse_response<Output: DeserializeOwned>(status_code: i32, expected_status_code: i32, body: &str) -> Result<Output, Error> {
+fn parse_response<Output: DeserializeOwned>(
+    status_code: i32,
+    expected_status_code: i32,
+    body: &str,
+) -> Result<Output, Error> {
     if status_code == expected_status_code {
         match from_str::<Output>(body) {
             Ok(output) => {

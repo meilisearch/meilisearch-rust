@@ -62,18 +62,16 @@ impl<'a> Client<'a> {
             self.apikey,
             Method::Get,
             200,
-            Box::new(move |value: Result<Vec<JsonIndex>, Error>| {
-                match value {
-                    Ok(json_indexes) => {
-                        let mut indexes = Vec::new();
-                        for json_index in json_indexes {
-                            indexes.push(json_index.into_index(self))
-                        }
-                        callback(Ok(indexes));
-                    },
-                    Err(e) => callback(Err(e))
+            Box::new(move |value: Result<Vec<JsonIndex>, Error>| match value {
+                Ok(json_indexes) => {
+                    let mut indexes = Vec::new();
+                    for json_index in json_indexes {
+                        indexes.push(json_index.into_index(self))
+                    }
+                    callback(Ok(indexes));
                 }
-            })
+                Err(e) => callback(Err(e)),
+            }),
         );
     }
 
@@ -109,12 +107,10 @@ impl<'a> Client<'a> {
             self.apikey,
             Method::Get,
             200,
-            Box::new(move |value: Result<JsonIndex, Error>| {
-                match value {
-                    Ok(value) => callback(Ok(value.into_index(&self))),
-                    Err(e) => callback(Err(e))
-                }
-            })
+            Box::new(move |value: Result<JsonIndex, Error>| match value {
+                Ok(value) => callback(Ok(value.into_index(&self))),
+                Err(e) => callback(Err(e)),
+            }),
         );
     }
 
@@ -156,7 +152,7 @@ impl<'a> Client<'a> {
         &'static self,
         uid: &'a str,
         primary_key: Option<&str>,
-        callback: Box<dyn Fn(Result<Index, Error>)>
+        callback: Box<dyn Fn(Result<Index, Error>)>,
     ) {
         request::<Value, JsonIndex>(
             &format!("{}/indexes", self.host),
@@ -166,12 +162,10 @@ impl<'a> Client<'a> {
                 "primaryKey": primary_key,
             })),
             201,
-            Box::new(move |value: Result<JsonIndex, Error>| {
-                match value {
-                    Ok(value) => callback(Ok(value.into_index(&self))),
-                    Err(e) => callback(Err(e))
-                }
-            })
+            Box::new(move |value: Result<JsonIndex, Error>| match value {
+                Ok(value) => callback(Ok(value.into_index(&self))),
+                Err(e) => callback(Err(e)),
+            }),
         );
     }
 
@@ -194,7 +188,7 @@ impl<'a> Client<'a> {
             self.apikey,
             Method::Delete,
             204,
-            callback
+            callback,
         );
     }
 
