@@ -202,7 +202,23 @@ impl<'a> Client<'a> {
         }
     }
 
-    // TODO implement get_or_create on wasm
+    #[cfg(target_arch = "wasm32")]
+    pub fn get_or_create(&'static self, uid: &'static str, callback: Box<dyn Fn(Result<Index, Error>)>) {
+        use std::rc::Rc;
+        let callback = Rc::new(callback);
+
+        self.get_index(uid, Box::new(move |value| {
+            match value {
+                Ok(v) => callback(Ok(v)),
+                Err(_e) => {
+                    let callback = Rc::clone(&callback);
+                    self.create_index(uid, None, Box::new(move |value| {
+                        callback(value)
+                    }))
+                }
+            }
+        }))
+    }
 
     /// Alias for [list_all_indexes](#method.list_all_indexes).
     #[cfg(not(target_arch = "wasm32"))]
