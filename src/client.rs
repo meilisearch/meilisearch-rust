@@ -108,6 +108,14 @@ impl<'a> Client<'a> {
         .into_index(self))
     }
 
+    /// Assume that an [index](../indexes/struct.Index.html) exist and create a corresponding object without any check.
+    pub fn assume_index(&'a self, uid: &'a str) -> Index<'a> {
+        Index {
+            client: &self,
+            uid: uid.to_string()
+        }
+    }
+
     /// Create an [index](../indexes/struct.Index.html).
     /// The second parameter will be used as the primary key of the new index. If it is not specified, MeiliSearch will **try** to infer the primary key.
     /// # Example
