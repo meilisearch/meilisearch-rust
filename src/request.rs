@@ -56,7 +56,7 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
 
     trace!("{:?} on {}", method, url);
 
-    // NOTE: Unwrap are not a big problem on web-sys objects
+    // The 2 following unwraps should not be able to fail
 
     let headers = Headers::new().unwrap();
     headers.append("X-Meili-API-Key", apikey).unwrap();
@@ -81,10 +81,28 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
         }
     }
 
-    let window = web_sys::window().unwrap();
-    let response = Response::from(JsFuture::from(window.fetch_with_str_and_init(url, &request)).await.unwrap());
+    let window = web_sys::window().unwrap(); // TODO remove this unwrap
+    let response = match JsFuture::from(window.fetch_with_str_and_init(url, &request)).await {
+        Ok(response) => Response::from(response),
+        Err(e) => {
+            error!("Network error: {:?}", e);
+            return Err(Error::UnreachableServer)
+        },
+    };
     let status = response.status() as i32;
-    let text = JsFuture::from(response.text().unwrap()).await.unwrap();
+    let text = match response.text() {
+        Ok(text) => match JsFuture::from(text).await {
+            Ok(text) => text,
+            Err(e) => {
+                error!("Invalid response: {:?}", e);
+                return Err(Error::Unknown("Invalid response".to_string()));
+            }
+        }
+        Err(e) => {
+            error!("Invalid response: {:?}", e);
+            return Err(Error::Unknown("Invalid response".to_string()));
+        }
+    };
 
     if let Some(t) = text.as_string() {
         if t.is_empty() {
@@ -93,9 +111,9 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
             parse_response(status, expected_status_code, &t)
         }
     } else {
+        error!("Invalid response");
         Err(Error::Unknown("Invalid utf8".to_string()))
     }
-
 }
 
 fn parse_response<Output: DeserializeOwned>(

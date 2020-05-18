@@ -75,7 +75,7 @@
 //! Only some `.await` are to be added on a native program to make a working Wasm program. (Because all `meilisearch-sdk`'s methods are `async` on Wasm and `sync` on native target (but `async` is planned for native too))  
 //! However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using meilisearch, see [tutorial todo here]().  
 //!   
-//! WARNING: Wasm support is still experimental and meilisearch-sdk could panic at any time.
+//! WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
 //! 
 //! # 🤖 Compatibility with MeiliSearch
 //!
