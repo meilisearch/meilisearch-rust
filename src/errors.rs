@@ -30,6 +30,7 @@ impl From<&str> for Error {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl From<minreq::Error> for Error {
     fn from(error: minreq::Error) -> Error {
         match error {

@@ -169,7 +169,7 @@ impl<'a> Query<'a> {
     }
 
     /// Alias for [the Index method](../indexes/struct.Index.html#method.search).
-    pub fn execute<T: DeserializeOwned>(&self, index: &Index) -> Result<SearchResults<T>, Error> {
+    pub fn execute<T: 'static +  DeserializeOwned>(&self, index: &Index) -> Result<SearchResults<T>, Error> {
         index.search::<T>(&self)
     }
 }

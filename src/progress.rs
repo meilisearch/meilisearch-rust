@@ -37,7 +37,7 @@ impl<'a> Progress<'a> {
     /// let progress = movies_index.delete_all_documents().unwrap();
     /// let status = progress.get_status().unwrap();
     /// ```
-    pub fn get_status(&self) -> Result<Status, Error> {
+    pub fn get_status(&self, #[cfg(target_arch = "wasm32")] callback: Box<dyn Fn(Result<Output, Error>)>) -> Result<Status, Error> {
         let value = request::<(), Value>(
             &format!(
                 "{}/indexes/{}/updates/{}",
@@ -53,7 +53,7 @@ impl<'a> Progress<'a> {
             return Ok(Status::Enqueued(status));
         }
         Err(Error::Unknown(
-            "Invalid server response, src/progress.rs:49:9".to_string(),
+            "Invalid server response, src/progress.rs:56:9".to_string(),
         ))
     }
 }

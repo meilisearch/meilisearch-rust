@@ -108,7 +108,7 @@ impl<'a> Index<'a> {
     /// let results = movies.search::<Movie>(&query).unwrap();
     /// # assert!(results.hits.len()>0);
     /// ```
-    pub fn search<T: DeserializeOwned>(&self, query: &Query) -> Result<SearchResults<T>, Error> {
+    pub fn search<T: 'static +  DeserializeOwned>(&self, query: &Query) -> Result<SearchResults<T>, Error> {
         Ok(request::<(), SearchResults<T>>(
             &format!(
                 "{}/indexes/{}/search{}",
@@ -162,7 +162,7 @@ impl<'a> Index<'a> {
     ///     description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
     /// });
     /// ```
-    pub fn get_document<T: Document>(&self, uid: T::UIDType) -> Result<T, Error> {
+    pub fn get_document<T: 'static +  Document>(&self, uid: T::UIDType) -> Result<T, Error> {
         Ok(request::<(), T>(
             &format!(
                 "{}/indexes/{}/documents/{}",
@@ -215,7 +215,7 @@ impl<'a> Index<'a> {
     ///
     /// assert!(movies.len() > 0);
     /// ```
-    pub fn get_documents<T: Document>(
+    pub fn get_documents<T: 'static +  Document>(
         &self,
         offset: Option<usize>,
         limit: Option<usize>,
