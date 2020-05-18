@@ -18,6 +18,7 @@ impl Document for Movie {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn test1() {
     std::panic::catch_unwind(|| init());

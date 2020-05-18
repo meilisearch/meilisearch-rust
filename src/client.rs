@@ -38,6 +38,7 @@ impl<'a> Client<'a> {
     /// let indexes: Vec<Index> = client.list_all_indexes().unwrap();
     /// println!("{:?}", indexes);
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn list_all_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
         let json_indexes = request::<(), Vec<JsonIndex>>(
             &format!("{}/indexes", self.host),
@@ -54,6 +55,28 @@ impl<'a> Client<'a> {
         Ok(indexes)
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub fn list_all_indexes(&'static self, callback: Box<dyn Fn(Result<Vec<Index>, Error>)>) {
+        request::<(), Vec<JsonIndex>>(
+            &format!("{}/indexes", self.host),
+            self.apikey,
+            Method::Get,
+            200,
+            Box::new(move |value: Result<Vec<JsonIndex>, Error>| {
+                match value {
+                    Ok(json_indexes) => {
+                        let mut indexes = Vec::new();
+                        for json_index in json_indexes {
+                            indexes.push(json_index.into_index(self))
+                        }
+                        callback(Ok(indexes));
+                    },
+                    Err(e) => callback(Err(e))
+                }
+            })
+        );
+    }
+
     /// Get an [index](../indexes/struct.Index.html).
     ///
     /// # Example
@@ -68,6 +91,7 @@ impl<'a> Client<'a> {
     /// // get the index named "movies"
     /// let movies = client.get_index("movies").unwrap();
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn get_index(&'a self, uid: &'a str) -> Result<Index<'a>, Error> {
         Ok(request::<(), JsonIndex>(
             &format!("{}/indexes/{}", self.host, uid),
@@ -76,6 +100,22 @@ impl<'a> Client<'a> {
             200,
         )?
         .into_index(self))
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn get_index(&'static self, uid: &'a str, callback: Box<dyn Fn(Result<Index, Error>)>) {
+        request::<(), JsonIndex>(
+            &format!("{}/indexes/{}", self.host, uid),
+            self.apikey,
+            Method::Get,
+            200,
+            Box::new(move |value: Result<JsonIndex, Error>| {
+                match value {
+                    Ok(value) => callback(Ok(value.into_index(&self))),
+                    Err(e) => callback(Err(e))
+                }
+            })
+        );
     }
 
     /// Create an [index](../indexes/struct.Index.html).
@@ -93,6 +133,7 @@ impl<'a> Client<'a> {
     /// // create a new index called movies and access it
     /// let movies = client.create_index("movies", None);
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn create_index(
         &'a self,
         uid: &'a str,
@@ -110,8 +151,33 @@ impl<'a> Client<'a> {
         .into_index(self))
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub fn create_index(
+        &'static self,
+        uid: &'a str,
+        primary_key: Option<&str>,
+        callback: Box<dyn Fn(Result<Index, Error>)>
+    ) {
+        request::<Value, JsonIndex>(
+            &format!("{}/indexes", self.host),
+            self.apikey,
+            Method::Post(json!({
+                "uid": uid,
+                "primaryKey": primary_key,
+            })),
+            201,
+            Box::new(move |value: Result<JsonIndex, Error>| {
+                match value {
+                    Ok(value) => callback(Ok(value.into_index(&self))),
+                    Err(e) => callback(Err(e))
+                }
+            })
+        );
+    }
+
     /// Delete an index from its UID.  
     /// To delete an index from the [index object](../indexes/struct.Index.html), use [the delete method](../indexes/struct.Index.html#method.delete).
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn delete_index(&self, uid: &str) -> Result<(), Error> {
         Ok(request::<(), ()>(
             &format!("{}/indexes/{}", self.host, uid),
@@ -121,7 +187,19 @@ impl<'a> Client<'a> {
         )?)
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub fn delete_index(&self, uid: &str, callback: Box<dyn Fn(Result<(), Error>)>) {
+        request::<(), ()>(
+            &format!("{}/indexes/{}", self.host, uid),
+            self.apikey,
+            Method::Delete,
+            204,
+            callback
+        );
+    }
+
     /// This will try to get an index and create the index if it does not exist.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn get_or_create(&'a self, uid: &'a str) -> Result<Index<'a>, Error> {
         if let Ok(index) = self.get_index(uid) {
             Ok(index)
@@ -130,8 +208,16 @@ impl<'a> Client<'a> {
         }
     }
 
+    // TODO implement get_or_create on wasm
+
     /// Alias for [list_all_indexes](#method.list_all_indexes).
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn get_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
         self.list_all_indexes()
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn get_indexes(&'static self, callback: Box<dyn Fn(Result<Vec<Index>, Error>)>) {
+        self.list_all_indexes(callback)
     }
 }

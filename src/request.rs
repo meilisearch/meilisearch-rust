@@ -42,13 +42,13 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwn
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static +  DeserializeOwned, F>(
+pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static +  DeserializeOwned>(
     url: &str,
     apikey: &str,
     method: Method<Input>,
     expected_status_code: i32,
-    callback: &F
-) where F: Fn(Result<Output, Error>) {
+    callback: Box<dyn Fn(Result<Output, Error>)>
+) {
     use web_sys::{RequestInit, Headers, Response};
     use wasm_bindgen::{JsValue, JsCast, prelude::*};
     use std::rc::Rc;
@@ -81,16 +81,16 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: 'static +  Des
         let response = Response::from(response);
         let status = response.status() as i32;
 
-        let callback = Rc::clone(&callback);
+        let callback2 = Rc::clone(&callback);
         let text_promise = Closure::wrap(Box::new(move |text: JsValue| {
             if let Some(t) = text.as_string() {
                 if t.is_empty() {
-                    callback(parse_response(status, expected_status_code, "null"))
+                    callback2(parse_response(status, expected_status_code, "null"))
                 } else {
-                    callback(parse_response(status, expected_status_code, &t))
+                    callback2(parse_response(status, expected_status_code, &t))
                 }
             } else {
-                callback(Err(Error::Unknown("Invalid utf8".to_string())));
+                callback2(Err(Error::Unknown("Invalid utf8".to_string())));
             }
         }) as Box<dyn FnMut(_)>);
     

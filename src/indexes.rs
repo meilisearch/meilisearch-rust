@@ -44,6 +44,7 @@ impl<'a> Index<'a> {
     /// Set the primary key of the index.  
     ///   
     /// If you prefer, you can use the method [set_primary_key](#method.set_primary_key), which is an alias.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn update(&mut self, primary_key: &str) -> Result<(), Error> {
         request::<serde_json::Value, JsonIndex>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
@@ -52,6 +53,23 @@ impl<'a> Index<'a> {
             200,
         )?;
         Ok(())
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn update(&mut self, primary_key: &str, callback: Box<dyn Fn(Result<(), Error>)>) {
+        request::<serde_json::Value, JsonIndex>(
+            &format!("{}/indexes/{}", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Put(json!({ "primaryKey": primary_key })),
+            200,
+            Box::new(move |value: Result<JsonIndex, Error>| {
+                if let Err(e) = value {
+                    callback(Err(e));
+                } else {
+                    callback(Ok(()));
+                }
+            })
+        );
     }
 
     /// Delete the index.
@@ -67,6 +85,7 @@ impl<'a> Index<'a> {
     /// let movies = client.get_index("movies").unwrap();
     /// movies.delete().unwrap();
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn delete(self) -> Result<(), Error> {
         Ok(request::<(), ()>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
@@ -108,6 +127,7 @@ impl<'a> Index<'a> {
     /// let results = movies.search::<Movie>(&query).unwrap();
     /// # assert!(results.hits.len()>0);
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn search<T: 'static +  DeserializeOwned>(&self, query: &Query) -> Result<SearchResults<T>, Error> {
         Ok(request::<(), SearchResults<T>>(
             &format!(
@@ -120,6 +140,22 @@ impl<'a> Index<'a> {
             Method::Get,
             200,
         )?)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn search<T: 'static +  DeserializeOwned>(&self, query: &Query, callback: Box<dyn Fn(Result<SearchResults<T>, Error>)>) {
+        request::<(), SearchResults<T>>(
+            &format!(
+                "{}/indexes/{}/search{}",
+                self.client.host,
+                self.uid,
+                query.to_url()
+            ),
+            self.client.apikey,
+            Method::Get,
+            200,
+            callback
+        );
     }
 
     /// Get one [document](../document/trait.Document.html) using its unique id.  
@@ -162,6 +198,7 @@ impl<'a> Index<'a> {
     ///     description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
     /// });
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn get_document<T: 'static +  Document>(&self, uid: T::UIDType) -> Result<T, Error> {
         Ok(request::<(), T>(
             &format!(
@@ -172,6 +209,20 @@ impl<'a> Index<'a> {
             Method::Get,
             200,
         )?)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn get_document<T: 'static +  Document>(&self, uid: T::UIDType, callback: Box<dyn Fn(Result<T, Error>)>) {
+        request::<(), T>(
+            &format!(
+                "{}/indexes/{}/documents/{}",
+                self.client.host, self.uid, uid
+            ),
+            self.client.apikey,
+            Method::Get,
+            200,
+            callback
+        )
     }
 
     /// Get [documents](../document/trait.Document.html) by batch.  
@@ -215,6 +266,7 @@ impl<'a> Index<'a> {
     ///
     /// assert!(movies.len() > 0);
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn get_documents<T: 'static +  Document>(
         &self,
         offset: Option<usize>,
@@ -237,6 +289,32 @@ impl<'a> Index<'a> {
             url.push_str(attributes_to_retrieve.to_string().as_str());
         }
         Ok(request::<(), Vec<T>>(&url, self.client.apikey, Method::Get, 200)?)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn get_documents<T: 'static +  Document>(
+        &self,
+        offset: Option<usize>,
+        limit: Option<usize>,
+        attributes_to_retrieve: Option<&str>,
+        callback: Box<dyn Fn(Result<Vec<T>, Error>)>
+    ) {
+        let mut url = format!("{}/indexes/{}/documents?", self.client.host, self.uid);
+        if let Some(offset) = offset {
+            url.push_str("offset=");
+            url.push_str(offset.to_string().as_str());
+            url.push_str("&");
+        }
+        if let Some(limit) = limit {
+            url.push_str("limit=");
+            url.push_str(limit.to_string().as_str());
+            url.push_str("&");
+        }
+        if let Some(attributes_to_retrieve) = attributes_to_retrieve {
+            url.push_str("attributesToRetrieve=");
+            url.push_str(attributes_to_retrieve.to_string().as_str());
+        }
+        request::<(), Vec<T>>(&url, self.client.apikey, Method::Get, 200, callback);
     }
 
     /// Add a list of [documents](../document/trait.Document.html) or replace them if they already exist.  
@@ -293,6 +371,7 @@ impl<'a> Index<'a> {
     /// let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
     /// assert!(movies.len() >= 3);
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn add_or_replace<T: Document>(
         &mut self,
         documents: Vec<T>,
@@ -317,13 +396,53 @@ impl<'a> Index<'a> {
         )
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub fn add_or_replace<T: Document>(
+        &'static mut self,
+        documents: Vec<T>,
+        primary_key: Option<&str>,
+        callback: Box<dyn Fn(Result<Progress, Error>)>
+    ) {
+        let url = if let Some(primary_key) = primary_key {
+            format!(
+                "{}/indexes/{}/documents?primaryKey={}",
+                self.client.host, self.uid, primary_key
+            )
+        } else {
+            format!("{}/indexes/{}/documents", self.client.host, self.uid)
+        };
+        request::<Vec<T>, ProgressJson>(
+            &url,
+            self.client.apikey,
+            Method::Post(documents),
+            202,
+            Box::new(move |value: Result<ProgressJson, Error>| {
+                match value {
+                    Ok(v) => callback(Ok(v.into_progress(&self))),
+                    Err(e) => callback(Err(e))
+                }
+            })
+        )
+    }
+
     /// Alias for [add_or_replace](#method.add_or_replace).
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn add_documents<T: Document>(
         &mut self,
         documents: Vec<T>,
         primary_key: Option<&str>,
     ) -> Result<Progress, Error> {
         self.add_or_replace(documents, primary_key)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn add_documents<T: Document>(
+        &'static mut self,
+        documents: Vec<T>,
+        primary_key: Option<&str>,
+        callback: Box<dyn Fn(Result<Progress, Error>)>
+    ) {
+        self.add_or_replace(documents, primary_key, callback)
     }
 
     /// Add a list of documents and update them if they already.  
@@ -378,6 +497,7 @@ impl<'a> Index<'a> {
     /// let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
     /// assert!(movies.len() >= 3);
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn add_or_update<T: Document>(
         &mut self,
         documents: Vec<T>,
@@ -395,6 +515,29 @@ impl<'a> Index<'a> {
             request::<Vec<T>, ProgressJson>(&url, self.client.apikey, Method::Put(documents), 202)?
                 .into_progress(self),
         )
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn add_or_update<T: Document>(
+        &'static mut self,
+        documents: Vec<T>,
+        primary_key: Option<&str>,
+        callback: Box<dyn Fn(Result<Progress, Error>)>
+    ) {
+        let url = if let Some(primary_key) = primary_key {
+            format!(
+                "{}/indexes/{}/documents?primaryKey={}",
+                self.client.host, self.uid, primary_key
+            )
+        } else {
+            format!("{}/indexes/{}/documents", self.client.host, self.uid)
+        };
+        request::<Vec<T>, ProgressJson>(&url, self.client.apikey, Method::Put(documents), 202, Box::new(move |value: Result<ProgressJson, Error>| {
+            match value {
+                Ok(v) => callback(Ok(v.into_progress(&self))),
+                Err(e) => callback(Err(e))
+            }
+        }));
     }
 
     /// Delete all documents in the index.
@@ -428,6 +571,7 @@ impl<'a> Index<'a> {
     /// # let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
     /// # assert_eq!(movies.len(), 0);
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn delete_all_documents(&mut self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
@@ -436,6 +580,22 @@ impl<'a> Index<'a> {
             202,
         )?
         .into_progress(self))
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn delete_all_documents(&'static mut self, callback: Box<dyn Fn(Result<Progress, Error>)>) {
+        request::<(), ProgressJson>(
+            &format!("{}/indexes/{}/documents", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Delete,
+            202,
+            Box::new(move |value: Result<ProgressJson, Error>| {
+                match value {
+                    Ok(v) => callback(Ok(v.into_progress(&self))),
+                    Err(e) => callback(Err(e))
+                }
+            })
+        );
     }
 
     /// Delete one document based on its unique id.  
@@ -470,6 +630,7 @@ impl<'a> Index<'a> {
     ///
     /// movies.delete_document("Interstellar").unwrap();
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn delete_document<T: Display>(&mut self, uid: T) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
             &format!(
@@ -481,6 +642,25 @@ impl<'a> Index<'a> {
             202,
         )?
         .into_progress(self))
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn delete_document<T: Display>(&'static mut self, uid: T, callback: Box<dyn Fn(Result<Progress, Error>)>) {
+        request::<(), ProgressJson>(
+            &format!(
+                "{}/indexes/{}/documents/{}",
+                self.client.host, self.uid, uid
+            ),
+            self.client.apikey,
+            Method::Delete,
+            202,
+            Box::new(move |value: Result<ProgressJson, Error>| {
+                match value {
+                    Ok(v) => callback(Ok(v.into_progress(&self))),
+                    Err(e) => callback(Err(e))
+                }
+            })
+        );
     }
 
     /// Delete a selection of documents based on array of document id's.  
@@ -516,6 +696,7 @@ impl<'a> Index<'a> {
     /// // delete some documents
     /// movies.delete_documents(vec!["Interstellar", "Unknown"]).unwrap();
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
         &mut self,
         uids: Vec<T>,
@@ -532,6 +713,28 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
+    pub fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
+        &'static mut self,
+        uids: Vec<T>,
+        callback: Box<dyn Fn(Result<Progress, Error>)>
+    ) {
+        request::<Vec<T>, ProgressJson>(
+            &format!(
+                "{}/indexes/{}/documents/delete-batch",
+                self.client.host, self.uid
+            ),
+            self.client.apikey,
+            Method::Post(uids),
+            202,
+            Box::new(move |value: Result<ProgressJson, Error>| {
+                match value {
+                    Ok(v) => callback(Ok(v.into_progress(&self))),
+                    Err(e) => callback(Err(e))
+                }
+            })
+        );
+    }
+
     /// Get the [settings](../settings/struct.Settings.html) of the Index.
     /// 
     /// ```
@@ -540,6 +743,7 @@ impl<'a> Index<'a> {
     /// let movie_index = client.get_or_create("movies").unwrap();
     /// let settings = movie_index.get_settings().unwrap();
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn get_settings(&self) -> Result<Settings, Error> {
         Ok(request::<(), Settings>(
             &format!(
@@ -550,6 +754,20 @@ impl<'a> Index<'a> {
             Method::Get,
             200,
         )?)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn get_settings(&self, callback: Box<dyn Fn(Result<Settings, Error>)>) {
+        request::<(), Settings>(
+            &format!(
+                "{}/indexes/{}/settings",
+                self.client.host, self.uid
+            ),
+            self.client.apikey,
+            Method::Get,
+            200,
+            callback
+        )
     }
 
     /// Update the settings of the index.  
@@ -569,6 +787,7 @@ impl<'a> Index<'a> {
     /// 
     /// let progress = movie_index.set_settings(&settings).unwrap();
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn set_settings(&mut self, settings: &Settings) -> Result<Progress, Error> {
         Ok(request::<&Settings, ProgressJson>(
             &format!(
@@ -579,6 +798,25 @@ impl<'a> Index<'a> {
             Method::Post(settings),
             202,
         )?.into_progress(self))
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn set_settings(&'static mut self, settings: &Settings, callback: Box<dyn Fn(Result<Progress, Error>)>) {
+        request::<&Settings, ProgressJson>(
+            &format!(
+                "{}/indexes/{}/settings",
+                self.client.host, self.uid
+            ),
+            self.client.apikey,
+            Method::Post(settings),
+            202,
+            Box::new(move |value: Result<ProgressJson, Error>| {
+                match value {
+                    Ok(v) => callback(Ok(v.into_progress(&self))),
+                    Err(e) => callback(Err(e))
+                }
+            })
+        );
     }
 
     /// Reset the settings of the index.  
@@ -593,6 +831,7 @@ impl<'a> Index<'a> {
     /// 
     /// let progress = movie_index.reset_settings().unwrap();
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn reset_settings(&mut self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
             &format!(
@@ -605,8 +844,33 @@ impl<'a> Index<'a> {
         )?.into_progress(self))
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub fn reset_settings(&'static mut self, callback: Box<dyn Fn(Result<Progress, Error>)>) {
+        request::<(), ProgressJson>(
+            &format!(
+                "{}/indexes/{}/settings",
+                self.client.host, self.uid
+            ),
+            self.client.apikey,
+            Method::Delete,
+            202,
+            Box::new(move |value: Result<ProgressJson, Error>| {
+                match value {
+                    Ok(v) => callback(Ok(v.into_progress(&self))),
+                    Err(e) => callback(Err(e))
+                }
+            })
+        );
+    }
+
     /// Alias for the [update method](#method.update).
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn set_primary_key(&mut self, primary_key: &str) -> Result<(), Error> {
         self.update(primary_key)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn set_primary_key(&mut self, primary_key: &str, callback: Box<dyn Fn(Result<(), Error>)>) {
+        self.update(primary_key, callback)
     }
 }

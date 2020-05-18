@@ -37,7 +37,8 @@ impl<'a> Progress<'a> {
     /// let progress = movies_index.delete_all_documents().unwrap();
     /// let status = progress.get_status().unwrap();
     /// ```
-    pub fn get_status(&self, #[cfg(target_arch = "wasm32")] callback: Box<dyn Fn(Result<Output, Error>)>) -> Result<Status, Error> {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn get_status(&self) -> Result<Status, Error> {
         let value = request::<(), Value>(
             &format!(
                 "{}/indexes/{}/updates/{}",
@@ -55,6 +56,33 @@ impl<'a> Progress<'a> {
         Err(Error::Unknown(
             "Invalid server response, src/progress.rs:56:9".to_string(),
         ))
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn get_status(&self, callback: Box<dyn Fn(Result<Status, Error>)>) {
+        request::<(), Value>(
+            &format!(
+                "{}/indexes/{}/updates/{}",
+                self.index.client.host, self.index.uid, self.id
+            ),
+            self.index.client.apikey,
+            Method::Get,
+            200,
+            Box::new(move  |value: Result<Value, Error>| {
+                match value {
+                    Ok(value) => if let Ok(status) = from_value::<ProcessedStatus>(value.clone()) {
+                        callback(Ok(Status::Processed(status)));
+                    } else if let Ok(status) = from_value::<EnqueuedStatus>(value) {
+                        callback(Ok(Status::Enqueued(status)));
+                    } else {
+                        callback(Err(Error::Unknown(
+                            "Invalid server response, src/progress.rs:56:9".to_string(),
+                        )))
+                    },
+                    Err(e) => callback(Err(e))
+                }
+            })
+        );
     }
 }
 
