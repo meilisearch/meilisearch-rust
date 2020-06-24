@@ -27,10 +27,12 @@ pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwn
         Method::Delete => delete(url).with_header("X-Meili-API-Key", apikey).send()?,
         Method::Post(body) => post(url)
             .with_header("X-Meili-API-Key", apikey)
+            .with_header("Content-Type", "application/json")
             .with_body(to_string(&body).unwrap())
             .send()?,
         Method::Put(body) => put(url)
             .with_header("X-Meili-API-Key", apikey)
+            .with_header("Content-Type", "application/json")
             .with_body(to_string(&body).unwrap())
             .send()?,
     };
@@ -73,10 +75,12 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
         }
         Method::Post(body) => {
             request.method("POST");
+            headers.append("Content-Type", "application/json").unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
         Method::Put(body) => {
             request.method("PUT");
+            headers.append("Content-Type", "application/json").unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
     }

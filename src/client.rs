@@ -78,11 +78,10 @@ impl<'a> Client<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    /// # let client = Client::new("http://localhost:7700", "");
-    /// # client.create_index("movies", None);
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "");
-    ///
+    /// # client.create_index("movies", None);
+    /// 
     /// // get the index named "movies"
     /// let movies = client.get_index("movies").unwrap();
     /// ```
