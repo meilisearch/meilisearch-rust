@@ -60,7 +60,7 @@ pub struct Query<'a> {
     /// Number of characters to keep on each side of the start of the matching word. See [attributes_to_crop](#structfield.attributes_to_crop).  
     ///   
     /// Default: 200
-    pub crop_lenght: Option<usize>,
+    pub crop_length: Option<usize>,
     /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-highlight)
     pub attributes_to_highlight: Option<&'a str>,
     /// Specify a filter to be used with the query. See the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html).
@@ -77,7 +77,7 @@ impl<'a> Query<'a> {
             attributes_to_retrieve: None,
             attributes_to_crop: None,
             attributes_to_highlight: None,
-            crop_lenght: None,
+            crop_length: None,
             filters: None,
         }
     }
@@ -111,9 +111,9 @@ impl<'a> Query<'a> {
             ..self
         }
     }
-    pub fn with_crop_lenght(self, crop_lenght: usize) -> Query<'a> {
+    pub fn with_crop_length(self, crop_length: usize) -> Query<'a> {
         Query {
-            crop_lenght: Some(crop_lenght),
+            crop_length: Some(crop_length),
             ..self
         }
     }
@@ -150,9 +150,9 @@ impl<'a> Query<'a> {
             url.push_str(encode(attributes_to_crop).as_str());
             url.push('&');
         }
-        if let Some(crop_lenght) = self.crop_lenght {
+        if let Some(crop_length) = self.crop_length {
             url.push_str("cropLength=");
-            url.push_str(crop_lenght.to_string().as_str());
+            url.push_str(crop_length.to_string().as_str());
             url.push('&');
         }
         if let Some(attributes_to_highlight) = self.attributes_to_highlight {
