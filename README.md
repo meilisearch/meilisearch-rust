@@ -83,7 +83,7 @@ WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extensi
 
 ## 🤖 Compatibility with MeiliSearch
 
-This crate is currently supporting MeiliSearch v10.0 and will be maintained.
+This crate is currently supporting MeiliSearch v11.0 and will be maintained.
 
 ## Running the tests
 
@@ -91,6 +91,6 @@ All the tests are documentation tests.
 Since they are all making operations on the MeiliSearch server, running all the tests simultaneously would cause panics.
 To run the tests one by one, run `cargo test -- --test-threads=1`.
 
-Current version: 0.1.3
+Current version: 0.1.4
 
 License: MIT

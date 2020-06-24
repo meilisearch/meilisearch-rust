@@ -79,7 +79,7 @@
 //! 
 //! # 🤖 Compatibility with MeiliSearch
 //!
-//! This crate is currently supporting MeiliSearch v10.0 and will be maintained.
+//! This crate is currently supporting MeiliSearch v11.0 and will be maintained.
 //!
 //! # Running the tests
 //!
