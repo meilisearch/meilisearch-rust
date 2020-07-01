@@ -32,30 +32,15 @@ impl<'a> Client<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "");
     ///
-    /// let indexes: Vec<Index> = client.list_all_indexes().unwrap();
+    /// let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
     /// println!("{:?}", indexes);
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn list_all_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
-        let json_indexes = request::<(), Vec<JsonIndex>>(
-            &format!("{}/indexes", self.host),
-            self.apikey,
-            Method::Get,
-            200,
-        )?;
-
-        let mut indexes = Vec::new();
-        for json_index in json_indexes {
-            indexes.push(json_index.into_index(self))
-        }
-
-        Ok(indexes)
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn list_all_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
         let json_indexes = request::<(), Vec<JsonIndex>>(
             &format!("{}/indexes", self.host),
@@ -78,25 +63,17 @@ impl<'a> Client<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// 
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "");
-    /// # client.create_index("movies", None);
+    /// # client.create_index("movies", None).await;
     /// 
     /// // get the index named "movies"
-    /// let movies = client.get_index("movies").unwrap();
+    /// let movies = client.get_index("movies").await.unwrap();
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_index(&'a self, uid: &'a str) -> Result<Index<'a>, Error> {
-        Ok(request::<(), JsonIndex>(
-            &format!("{}/indexes/{}", self.host, uid),
-            self.apikey,
-            Method::Get,
-            200,
-        )?
-        .into_index(self))
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn get_index(&'a self, uid: &'a str) -> Result<Index<'a>, Error> {
         Ok(request::<(), JsonIndex>(
             &format!("{}/indexes/{}", self.host, uid),
@@ -121,34 +98,19 @@ impl<'a> Client<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "");
-    /// # if let Ok(mut movies) = client.get_index("movies") {
-    /// #   movies.delete();
+    /// 
+    /// # if let Ok(mut movies) = client.get_index("movies").await {
+    /// #   movies.delete().await.unwrap();
     /// # }
-    ///
     /// // create a new index called movies and access it
-    /// let movies = client.create_index("movies", None);
+    /// let movies = client.create_index("movies", None).await;
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn create_index(
-        &'a self,
-        uid: &'a str,
-        primary_key: Option<&str>,
-    ) -> Result<Index<'a>, Error> {
-        Ok(request::<Value, JsonIndex>(
-            &format!("{}/indexes", self.host),
-            self.apikey,
-            Method::Post(json!({
-                "uid": uid,
-                "primaryKey": primary_key,
-            })),
-            201,
-        )?
-        .into_index(self))
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn create_index(
         &'a self,
         uid: &'a str,
@@ -168,17 +130,6 @@ impl<'a> Client<'a> {
 
     /// Delete an index from its UID.  
     /// To delete an index from the [index object](../indexes/struct.Index.html), use [the delete method](../indexes/struct.Index.html#method.delete).
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn delete_index(&self, uid: &str) -> Result<(), Error> {
-        Ok(request::<(), ()>(
-            &format!("{}/indexes/{}", self.host, uid),
-            self.apikey,
-            Method::Delete,
-            204,
-        )?)
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn delete_index(&self, uid: &str) -> Result<(), Error> {
         Ok(request::<(), ()>(
             &format!("{}/indexes/{}", self.host, uid),
@@ -189,16 +140,6 @@ impl<'a> Client<'a> {
     }
 
     /// This will try to get an index and create the index if it does not exist.
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_or_create(&'a self, uid: &'a str) -> Result<Index<'a>, Error> {
-        if let Ok(index) = self.get_index(uid) {
-            Ok(index)
-        } else {
-            self.create_index(uid, None)
-        }
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn get_or_create(&'a self, uid: &'a str) -> Result<Index<'a>, Error> {
         if let Ok(index) = self.get_index(uid).await {
             Ok(index)
@@ -208,12 +149,6 @@ impl<'a> Client<'a> {
     }
 
     /// Alias for [list_all_indexes](#method.list_all_indexes).
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
-        self.list_all_indexes()
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn get_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
         self.list_all_indexes().await
     }

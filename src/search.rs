@@ -169,15 +169,6 @@ impl<'a> Query<'a> {
     }
 
     /// Alias for [the Index method](../indexes/struct.Index.html#method.search).
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn execute<T: 'static + DeserializeOwned>(
-        &self,
-        index: &Index,
-    ) -> Result<SearchResults<T>, Error> {
-        index.search::<T>(&self)
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn execute<T: 'static + DeserializeOwned>(
         &'a self,
         index: &Index<'a>,

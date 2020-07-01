@@ -29,12 +29,15 @@ impl JsonIndex {
 ///
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
+/// # #[tokio::main]
+/// # async fn main() {
 /// let client = Client::new("http://localhost:7700", "");
 ///
 /// // get the index called movies or create it if it does not exist
-/// let movies = client.get_or_create("movies").unwrap();
+/// let movies = client.get_or_create("movies").await.unwrap();
 ///
 /// // do something with the index
+/// # }
 /// ```
 #[derive(Debug)]
 pub struct Index<'a> {
@@ -46,18 +49,6 @@ impl<'a> Index<'a> {
     /// Set the primary key of the index.  
     ///   
     /// If you prefer, you can use the method [set_primary_key](#method.set_primary_key), which is an alias.
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn update(&mut self, primary_key: &str) -> Result<(), Error> {
-        request::<serde_json::Value, JsonIndex>(
-            &format!("{}/indexes/{}", self.client.host, self.uid),
-            self.client.apikey,
-            Method::Put(json!({ "primaryKey": primary_key })),
-            200,
-        )?;
-        Ok(())
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn update(&mut self, primary_key: &str) -> Result<(), Error> {
         request::<serde_json::Value, JsonIndex>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
@@ -74,24 +65,16 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
-    /// # client.create_index("movies", None);
+    /// # client.create_index("movies", None).await;
     ///
     /// // get the index named "movies" and delete it
-    /// let movies = client.get_index("movies").unwrap();
-    /// movies.delete().unwrap();
+    /// let movies = client.get_index("movies").await.unwrap();
+    /// movies.delete().await.unwrap();
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn delete(self) -> Result<(), Error> {
-        Ok(request::<(), ()>(
-            &format!("{}/indexes/{}", self.client.host, self.uid),
-            self.client.apikey,
-            Method::Delete,
-            204,
-        )?)
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn delete(self) -> Result<(), Error> {
         Ok(request::<(), ()>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
@@ -122,36 +105,20 @@ impl<'a> Index<'a> {
     ///     }
     /// }
     ///
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movies = client.get_or_create("movies").unwrap();
+    /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
     /// // add some documents
-    /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).unwrap();
+    /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     ///
     /// let query = Query::new("Interstellar").with_limit(5);
-    /// let results = movies.search::<Movie>(&query).unwrap();
+    /// let results = movies.search::<Movie>(&query).await.unwrap();
     /// # assert!(results.hits.len()>0);
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn search<T: 'static + DeserializeOwned>(
-        &self,
-        query: &Query,
-    ) -> Result<SearchResults<T>, Error> {
-        Ok(request::<(), SearchResults<T>>(
-            &format!(
-                "{}/indexes/{}/search{}",
-                self.client.host,
-                self.uid,
-                query.to_url()
-            ),
-            self.client.apikey,
-            Method::Get,
-            200,
-        )?)
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn search<T: 'static + DeserializeOwned>(
         &self,
         query: &Query<'_>,
@@ -178,10 +145,6 @@ impl<'a> Index<'a> {
     /// use serde::{Serialize, Deserialize};
     ///
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// let client = Client::new("http://localhost:7700", "");
-    /// # client.create_index("movies", None);
-    /// let movies = client.get_index("movies").unwrap();
-    /// # let mut movies = client.get_index("movies").unwrap();
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
@@ -197,32 +160,25 @@ impl<'a> Index<'a> {
     ///        &self.name
     ///    }
     /// }
-    ///
-    /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).unwrap();
+    /// 
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// # client.create_index("movies", None).await;
+    /// let movies = client.get_index("movies").await.unwrap();
+    /// # let mut movies = client.get_index("movies").await.unwrap();
+    /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// #
     /// // retrieve a document (you have to put the document in the index before)
-    /// let interstellar = movies.get_document::<Movie>(String::from("Interstellar")).unwrap();
+    /// let interstellar = movies.get_document::<Movie>(String::from("Interstellar")).await.unwrap();
     ///
     /// assert_eq!(interstellar, Movie{
     ///     name: String::from("Interstellar"),
     ///     description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
     /// });
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_document<T: 'static + Document>(&self, uid: T::UIDType) -> Result<T, Error> {
-        Ok(request::<(), T>(
-            &format!(
-                "{}/indexes/{}/documents/{}",
-                self.client.host, self.uid, uid
-            ),
-            self.client.apikey,
-            Method::Get,
-            200,
-        )?)
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn get_document<T: 'static + Document>(&self, uid: T::UIDType) -> Result<T, Error> {
         Ok(request::<(), T>(
             &format!(
@@ -248,10 +204,6 @@ impl<'a> Index<'a> {
     /// use serde::{Serialize, Deserialize};
     ///
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// let client = Client::new("http://localhost:7700", "");
-    /// # client.create_index("movies", None);
-    /// let movie_index = client.get_index("movies").unwrap();
-    /// # let mut movie_index = client.get_index("movies").unwrap();
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
@@ -267,46 +219,23 @@ impl<'a> Index<'a> {
     ///        &self.name
     ///    }
     /// }
-    ///
-    /// # movie_index.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).unwrap();
+    /// 
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// # client.create_index("movies", None).await;
+    /// let movie_index = client.get_index("movies").await.unwrap();
+    /// # let mut movie_index = client.get_index("movies").await.unwrap();
+    /// 
+    /// # movie_index.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// #
     /// // retrieve movies (you have to put some movies in the index before)
-    /// let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
+    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
     ///
     /// assert!(movies.len() > 0);
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_documents<T: 'static + Document>(
-        &self,
-        offset: Option<usize>,
-        limit: Option<usize>,
-        attributes_to_retrieve: Option<&str>,
-    ) -> Result<Vec<T>, Error> {
-        let mut url = format!("{}/indexes/{}/documents?", self.client.host, self.uid);
-        if let Some(offset) = offset {
-            url.push_str("offset=");
-            url.push_str(offset.to_string().as_str());
-            url.push_str("&");
-        }
-        if let Some(limit) = limit {
-            url.push_str("limit=");
-            url.push_str(limit.to_string().as_str());
-            url.push_str("&");
-        }
-        if let Some(attributes_to_retrieve) = attributes_to_retrieve {
-            url.push_str("attributesToRetrieve=");
-            url.push_str(attributes_to_retrieve.to_string().as_str());
-        }
-        Ok(request::<(), Vec<T>>(
-            &url,
-            self.client.apikey,
-            Method::Get,
-            200,
-        )?)
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn get_documents<T: 'static + Document>(
         &self,
         offset: Option<usize>,
@@ -353,9 +282,6 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
-    /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movie_index = client.get_or_create("movies").unwrap();
-    ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///    name: String,
@@ -368,7 +294,12 @@ impl<'a> Index<'a> {
     ///        &self.name
     ///    }
     /// }
-    ///
+    /// 
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// 
     /// movie_index.add_or_replace(vec![
     ///     Movie{
     ///         name: String::from("Interstellar"),
@@ -383,39 +314,14 @@ impl<'a> Index<'a> {
     ///         name: String::from("Apollo13"),
     ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
     ///     },
-    /// ], Some("name")).unwrap();
+    /// ], Some("name")).await.unwrap();
     /// sleep(Duration::from_secs(1)); // MeiliSearch may take some time to execute the request
     ///
     /// // retrieve movies (you have to put some movies in the index before)
-    /// let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
+    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
     /// assert!(movies.len() >= 3);
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn add_or_replace<T: Document>(
-        &mut self,
-        documents: Vec<T>,
-        primary_key: Option<&str>,
-    ) -> Result<Progress, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
-        Ok(
-            request::<Vec<T>, ProgressJson>(
-                &url,
-                self.client.apikey,
-                Method::Post(documents),
-                202,
-            )?
-            .into_progress(self),
-        )
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn add_or_replace<T: Document>(
         &'a self,
         documents: Vec<T>,
@@ -441,16 +347,6 @@ impl<'a> Index<'a> {
     }
 
     /// Alias for [add_or_replace](#method.add_or_replace).
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn add_documents<T: Document>(
-        &mut self,
-        documents: Vec<T>,
-        primary_key: Option<&str>,
-    ) -> Result<Progress, Error> {
-        self.add_or_replace(documents, primary_key)
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn add_documents<T: Document>(
         &'a self,
         documents: Vec<T>,
@@ -474,9 +370,6 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
-    /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movie_index = client.get_or_create("movies").unwrap();
-    ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///    name: String,
@@ -489,7 +382,12 @@ impl<'a> Index<'a> {
     ///        &self.name
     ///    }
     /// }
-    ///
+    /// 
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// 
     /// movie_index.add_or_update(vec![
     ///     Movie{
     ///         name: String::from("Interstellar"),
@@ -504,34 +402,14 @@ impl<'a> Index<'a> {
     ///         name: String::from("Apollo13"),
     ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
     ///     },
-    /// ], Some("name")).unwrap();
+    /// ], Some("name")).await.unwrap();
     /// sleep(Duration::from_secs(1)); // MeiliSearch may take some time to execute the request
     ///
     /// // retrieve movies (you have to put some movies in the index before)
-    /// let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
+    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
     /// assert!(movies.len() >= 3);
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn add_or_update<T: Document>(
-        &mut self,
-        documents: Vec<T>,
-        primary_key: Option<&str>,
-    ) -> Result<Progress, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
-        Ok(
-            request::<Vec<T>, ProgressJson>(&url, self.client.apikey, Method::Put(documents), 202)?
-                .into_progress(self),
-        )
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn add_or_update<T: Document>(
         &'a self,
         documents: Vec<T>,
@@ -573,27 +451,19 @@ impl<'a> Index<'a> {
     /// #    }
     /// # }
     /// #
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// #
     /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movie_index = client.get_or_create("movies").unwrap();
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// // add some documents
     ///
-    /// movie_index.delete_all_documents().unwrap();
-    /// # let movies = movie_index.get_documents::<Movie>(None, None, None).unwrap();
+    /// movie_index.delete_all_documents().await.unwrap();
+    /// # let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
     /// # assert_eq!(movies.len(), 0);
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn delete_all_documents(&mut self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/documents", self.client.host, self.uid),
-            self.client.apikey,
-            Method::Delete,
-            202,
-        )?
-        .into_progress(self))
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn delete_all_documents(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
@@ -626,31 +496,19 @@ impl<'a> Index<'a> {
     /// #    }
     /// # }
     /// #
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// #
     /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movies = client.get_or_create("movies").unwrap();
+    /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
-    /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).unwrap();
+    /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// // add a document with id = Interstellar
     ///
-    /// movies.delete_document("Interstellar").unwrap();
+    /// movies.delete_document("Interstellar").await.unwrap();
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn delete_document<T: Display>(&mut self, uid: T) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
-            &format!(
-                "{}/indexes/{}/documents/{}",
-                self.client.host, self.uid, uid
-            ),
-            self.client.apikey,
-            Method::Delete,
-            202,
-        )?
-        .into_progress(self))
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn delete_document<T: Display>(&'a self, uid: T) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!(
@@ -686,35 +544,20 @@ impl<'a> Index<'a> {
     /// #    }
     /// # }
     /// #
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// #
     /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movies = client.get_or_create("movies").unwrap();
+    /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
     /// // add some documents
-    /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).unwrap();
+    /// # movies.add_or_replace(vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     ///
     /// // delete some documents
-    /// movies.delete_documents(vec!["Interstellar", "Unknown"]).unwrap();
+    /// movies.delete_documents(vec!["Interstellar", "Unknown"]).await.unwrap();
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
-        &mut self,
-        uids: Vec<T>,
-    ) -> Result<Progress, Error> {
-        Ok(request::<Vec<T>, ProgressJson>(
-            &format!(
-                "{}/indexes/{}/documents/delete-batch",
-                self.client.host, self.uid
-            ),
-            self.client.apikey,
-            Method::Post(uids),
-            202,
-        )?
-        .into_progress(self))
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
         &'a self,
         uids: Vec<T>,
@@ -735,21 +578,13 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
-    /// let movie_index = client.get_or_create("movies").unwrap();
-    /// let settings = movie_index.get_settings().unwrap();
+    /// let movie_index = client.get_or_create("movies").await.unwrap();
+    /// let settings = movie_index.get_settings().await.unwrap();
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_settings(&self) -> Result<Settings, Error> {
-        Ok(request::<(), Settings>(
-            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            self.client.apikey,
-            Method::Get,
-            200,
-        )?)
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn get_settings(&self) -> Result<Settings, Error> {
         Ok(request::<(), Settings>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
@@ -766,28 +601,19 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movie_index = client.get_or_create("movies").unwrap();
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
     /// let settings = Settings::new()
     ///     .with_stop_words(stop_words.clone())
     ///     .with_accept_new_fields(false);
     ///
-    /// let progress = movie_index.set_settings(&settings).unwrap();
+    /// let progress = movie_index.set_settings(&settings).await.unwrap();
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn set_settings(&mut self, settings: &Settings) -> Result<Progress, Error> {
-        Ok(request::<&Settings, ProgressJson>(
-            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            self.client.apikey,
-            Method::Post(settings),
-            202,
-        )?
-        .into_progress(self))
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn set_settings(&'a self, settings: &Settings) -> Result<Progress<'a>, Error> {
         Ok(request::<&Settings, ProgressJson>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
@@ -805,23 +631,14 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movie_index = client.get_or_create("movies").unwrap();
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let progress = movie_index.reset_settings().unwrap();
+    /// let progress = movie_index.reset_settings().await.unwrap();
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn reset_settings(&mut self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            self.client.apikey,
-            Method::Delete,
-            202,
-        )?
-        .into_progress(self))
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn reset_settings(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
@@ -833,12 +650,6 @@ impl<'a> Index<'a> {
     }
 
     /// Alias for the [update method](#method.update).
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn set_primary_key(&mut self, primary_key: &str) -> Result<(), Error> {
-        self.update(primary_key)
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn set_primary_key(&mut self, primary_key: &str) -> Result<(), Error> {
         self.update(primary_key).await
     }

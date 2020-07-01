@@ -12,37 +12,38 @@ pub(crate) enum Method<T: Serialize> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) fn request<Input: Serialize + std::fmt::Debug, Output: DeserializeOwned>(
+pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static + DeserializeOwned>(
     url: &str,
     apikey: &str,
     method: Method<Input>,
-    expected_status_code: i32,
+    expected_status_code: u16
 ) -> Result<Output, Error> {
-    use minreq::{delete, get, post, put};
-
     trace!("{:?} on {}", method, url);
 
+    let client = reqwest::Client::new();
+
     let response = match &method {
-        Method::Get => get(url).with_header("X-Meili-API-Key", apikey).send()?,
-        Method::Delete => delete(url).with_header("X-Meili-API-Key", apikey).send()?,
-        Method::Post(body) => post(url)
-            .with_header("X-Meili-API-Key", apikey)
-            .with_header("Content-Type", "application/json")
-            .with_body(to_string(&body).unwrap())
-            .send()?,
-        Method::Put(body) => put(url)
-            .with_header("X-Meili-API-Key", apikey)
-            .with_header("Content-Type", "application/json")
-            .with_body(to_string(&body).unwrap())
-            .send()?,
+        Method::Get => client.get(url).header("X-Meili-API-Key", apikey).send().await?,
+        Method::Delete => client.delete(url).header("X-Meili-API-Key", apikey).send().await?,
+        Method::Post(body) => client.post(url)
+            .header("X-Meili-API-Key", apikey)
+            .header("Content-Type", "application/json")
+            .body(to_string(&body).unwrap())
+            .send().await?,
+        Method::Put(body) => client.put(url)
+            .header("X-Meili-API-Key", apikey)
+            .header("Content-Type", "application/json")
+            .body(to_string(&body).unwrap())
+            .send().await?,
     };
 
-    let mut body = response.as_str()?;
+    let status = response.status().as_u16();
+    let mut body = response.text().await?;
     if body.is_empty() {
-        body = "null";
+        body = "null".to_string();
     }
 
-    parse_response(response.status_code, expected_status_code, body)
+    parse_response(status, expected_status_code, body)
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -50,7 +51,7 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
     url: &str,
     apikey: &str,
     method: Method<Input>,
-    expected_status_code: i32
+    expected_status_code: u16
 ) -> Result<Output, Error> {
     use wasm_bindgen::JsValue;
     use web_sys::{Headers, RequestInit, Response};
@@ -93,7 +94,7 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
             return Err(Error::UnreachableServer)
         },
     };
-    let status = response.status() as i32;
+    let status = response.status() as u16;
     let text = match response.text() {
         Ok(text) => match JsFuture::from(text).await {
             Ok(text) => text,
@@ -110,9 +111,9 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
 
     if let Some(t) = text.as_string() {
         if t.is_empty() {
-            parse_response(status, expected_status_code, "null")
+            parse_response(status, expected_status_code, String::from("null"))
         } else {
-            parse_response(status, expected_status_code, &t)
+            parse_response(status, expected_status_code, t)
         }
     } else {
         error!("Invalid response");
@@ -121,12 +122,12 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
 }
 
 fn parse_response<Output: DeserializeOwned>(
-    status_code: i32,
-    expected_status_code: i32,
-    body: &str,
+    status_code: u16,
+    expected_status_code: u16,
+    body: String,
 ) -> Result<Output, Error> {
     if status_code == expected_status_code {
-        match from_str::<Output>(body) {
+        match from_str::<Output>(&body) {
             Ok(output) => {
                 trace!("Request succeed");
                 return Ok(output);
@@ -138,5 +139,5 @@ fn parse_response<Output: DeserializeOwned>(
         };
     }
     warn!("Expected response code {}, got {}", expected_status_code, status_code);
-    Err(Error::from(body))
+    Err(Error::from(body.as_str()))
 }

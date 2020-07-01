@@ -31,13 +31,13 @@ impl From<&str> for Error {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-impl From<minreq::Error> for Error {
-    fn from(error: minreq::Error) -> Error {
-        match error {
-            minreq::Error::IoError(e) if e.kind() == std::io::ErrorKind::ConnectionRefused => {
+impl From<reqwest::Error> for Error {
+    fn from(error: reqwest::Error) -> Error {
+        match error.status() {
+            None => {
                 Error::UnreachableServer
             }
-            e => Error::Unknown(format!("{:?}", e)),
+            Some(e) => Error::Unknown(format!("{:?}", e)),
         }
     }
 }

@@ -32,33 +32,14 @@ impl<'a> Progress<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
-    /// let mut movies_index = client.get_or_create("movies").unwrap();
-    /// let progress = movies_index.delete_all_documents().unwrap();
-    /// let status = progress.get_status().unwrap();
+    /// let mut movies_index = client.get_or_create("movies").await.unwrap();
+    /// let progress = movies_index.delete_all_documents().await.unwrap();
+    /// let status = progress.get_status().await.unwrap();
+    /// # }
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn get_status(&self) -> Result<Status, Error> {
-        let value = request::<(), Value>(
-            &format!(
-                "{}/indexes/{}/updates/{}",
-                self.index.client.host, self.index.uid, self.id
-            ),
-            self.index.client.apikey,
-            Method::Get,
-            200,
-        )?;
-        if let Ok(status) = from_value::<ProcessedStatus>(value.clone()) {
-            return Ok(Status::Processed(status));
-        } else if let Ok(status) = from_value::<EnqueuedStatus>(value) {
-            return Ok(Status::Enqueued(status));
-        }
-        Err(Error::Unknown(
-            "Invalid server response, src/progress.rs:56:9".to_string(),
-        ))
-    }
-
-    #[cfg(target_arch = "wasm32")]
     pub async fn get_status(&self) -> Result<Status, Error> {
         let value = request::<(), Value>(
             &format!(
