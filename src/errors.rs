@@ -16,6 +16,21 @@ pub enum Error {
     Unknown(String),
 }
 
+impl std::fmt::Display for Error {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        match self {
+            Error::UnreachableServer => write!(formatter, "Error::UnreachableServer: The MeiliSearch server can't be reached."),
+            Error::IndexAlreadyExist => write!(formatter, "Error::IndexAlreadyExist: The creation of an index failed because it already exists."),
+            Error::IndexNotFound => write!(formatter, "Error::IndexNotFound: The requested index does not exist."),
+            Error::InvalidIndexUid => write!(formatter, "Error::InvalidIndexUid: The requested UID is invalid. Index UID can only be composed of alphanumeric characters, hyphens (-), and underscores (_)."),
+            Error::CantInferPrimaryKey => write!(formatter, "Error::CantInferPrimaryKey: MeiliSearch was unable to infer the primary key of added documents."),
+            Error::Unknown(message) => write!(formatter, "Error::Unknown: An unknown error occured. Please open an issue (https://github.com/Mubelotix/meilisearch-sdk/issues). Message: {:?}", message),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
+
 impl From<&str> for Error {
     fn from(message: &str) -> Error {
         match message {
