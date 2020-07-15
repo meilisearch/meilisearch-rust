@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 /// Struct representing errors.  
 /// Unknow Errors are unexpected. You should consider panicking and open a GitHub issue (after ensuring you are using the supported version of the MeiliSearch server).
 pub enum Error {
@@ -14,6 +14,12 @@ pub enum Error {
     CantInferPrimaryKey,
     /// That's unexpected. Please open a GitHub issue after ensuring you are using the supported version of the MeiliSearch server.
     Unknown(String),
+    /// The http client encountered an error.
+    #[cfg(not(target_arch = "wasm32"))]
+    Http(reqwest::Error),
+    #[cfg(target_arch = "wasm32")]
+    /// Never happens on wasm target.
+    Http(())
 }
 
 impl std::fmt::Display for Error {
@@ -24,6 +30,7 @@ impl std::fmt::Display for Error {
             Error::IndexNotFound => write!(formatter, "Error::IndexNotFound: The requested index does not exist."),
             Error::InvalidIndexUid => write!(formatter, "Error::InvalidIndexUid: The requested UID is invalid. Index UID can only be composed of alphanumeric characters, hyphens (-), and underscores (_)."),
             Error::CantInferPrimaryKey => write!(formatter, "Error::CantInferPrimaryKey: MeiliSearch was unable to infer the primary key of added documents."),
+            Error::Http(error) => write!(formatter, "Error::Http: The http request failed: {:?}.", error),
             Error::Unknown(message) => write!(formatter, "Error::Unknown: An unknown error occured. Please open an issue (https://github.com/Mubelotix/meilisearch-sdk/issues). Message: {:?}", message),
         }
     }
@@ -52,7 +59,7 @@ impl From<reqwest::Error> for Error {
             None => {
                 Error::UnreachableServer
             }
-            Some(e) => Error::Unknown(format!("{:?}", e)),
+            Some(_e) => Error::Http(error),
         }
     }
 }
