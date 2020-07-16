@@ -144,6 +144,26 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
+    /// Get the [synonyms](https://docs.meilisearch.com/guides/advanced_guides/synonyms.html) of the Index.
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let movie_index = client.get_or_create("movies").await.unwrap();
+    /// let synonyms = movie_index.get_synonyms().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn get_synonyms(&self) -> Result<HashMap<String, Vec<String>>, Error> {
+        Ok(request::<(), HashMap<String, Vec<String>>>(
+            &format!("{}/indexes/{}/settings/synonyms", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
     /// Update the settings of the index.  
     /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
     ///
@@ -174,6 +194,35 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
+    /// Update the synonyms of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let mut synonyms = std::collections::HashMap::new();
+    /// synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
+    /// synonyms.insert(String::from("logan"), vec![String::from("xmen"), String::from("wolverine")]);
+    /// synonyms.insert(String::from("wow"), vec![String::from("world of warcraft")]);
+    ///
+    /// let progress = movie_index.set_synonyms(&synonyms).await.unwrap();
+    /// # }
+    /// ```
+    pub async fn set_synonyms(&'a self, synonyms: &HashMap<String, Vec<String>>) -> Result<Progress<'a>, Error> {
+        Ok(request::<&HashMap<String, Vec<String>>, ProgressJson>(
+            &format!("{}/indexes/{}/settings/synonyms", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Post(synonyms),
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
     /// Reset the settings of the index.  
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
     ///
@@ -192,6 +241,30 @@ impl<'a> Index<'a> {
     pub async fn reset_settings(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Delete,
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
+    /// Reset the synonyms of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let progress = movie_index.reset_settings().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn reset_synonyms(&'a self) -> Result<Progress<'a>, Error> {
+        Ok(request::<(), ProgressJson>(
+            &format!("{}/indexes/{}/settings/synonyms", self.client.host, self.uid),
             self.client.apikey,
             Method::Delete,
             202,
