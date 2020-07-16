@@ -12,6 +12,8 @@ pub enum Error {
     InvalidIndexUid,
     /// You tried to add documents on an Index but MeiliSearch can't infer the primary key. Consider specifying the key.
     CantInferPrimaryKey,
+    /// Server is in maintenance. You can set the maintenance state by using the `set_healthy` method of a Client.
+    ServerInMaintenance,
     /// That's unexpected. Please open a GitHub issue after ensuring you are using the supported version of the MeiliSearch server.
     Unknown(String),
     /// The http client encountered an error.
@@ -31,6 +33,7 @@ impl std::fmt::Display for Error {
             Error::InvalidIndexUid => write!(formatter, "Error::InvalidIndexUid: The requested UID is invalid. Index UID can only be composed of alphanumeric characters, hyphens (-), and underscores (_)."),
             Error::CantInferPrimaryKey => write!(formatter, "Error::CantInferPrimaryKey: MeiliSearch was unable to infer the primary key of added documents."),
             Error::Http(error) => write!(formatter, "Error::Http: The http request failed: {:?}.", error),
+            Error::ServerInMaintenance => write!(formatter, "Error::ServerInMaintenance: Server is in maintenance, please try again later."),
             Error::Unknown(message) => write!(formatter, "Error::Unknown: An unknown error occured. Please open an issue (https://github.com/Mubelotix/meilisearch-sdk/issues). Message: {:?}", message),
         }
     }
@@ -44,6 +47,7 @@ impl From<&str> for Error {
             "{\"message\":\"Impossible to create index; index already exists\"}" => Error::IndexAlreadyExist,
             "{\"message\":\"Index must have a valid uid; Index uid can be of type integer or string only composed of alphanumeric characters, hyphens (-) and underscores (_).\"}" => Error::InvalidIndexUid,
             "{\"message\":\"Could not infer a primary key\"}" => Error::CantInferPrimaryKey,
+            m if m.starts_with("{\"message\":\"Server is in maintenance, please try again later\"") => Error::ServerInMaintenance,
             m if m.starts_with("{\"message\":\"Index ") && m.ends_with(" not found\"}") => Error::IndexNotFound,
             e => {
                 Error::Unknown(e.to_string())

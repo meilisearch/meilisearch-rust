@@ -1,6 +1,6 @@
 use crate::{errors::*, indexes::*, request::*};
 use serde_json::{json, Value};
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
@@ -175,6 +175,70 @@ impl<'a> Client<'a> {
             Method::Get,
             200,
         ).await
+    }
+
+    /// Get health of MeiliSearch server.
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// 
+    /// match client.get_health().await {
+    ///     Ok(()) => println!("server is operationnal"),
+    ///     Err(Error::ServerInMaintenance) => eprintln!("server is in maintenance"),
+    ///     _ => panic!("should never happen"),
+    /// }
+    /// # }
+    /// ```
+    pub async fn get_health(&self) -> Result<(), Error> {
+        let r = request::<(), ()>(
+            &format!("{}/health", self.host),
+            self.apikey,
+            Method::Get,
+            204,
+        ).await;
+        match r {
+            Err(Error::Unknown(m)) if &m == "null" => Ok(()),
+            e => e
+        }
+    }
+
+    /// Update health of MeiliSearch server.
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// 
+    /// client.set_health(false).await.unwrap();
+    /// # client.set_health(true).await.unwrap();
+    /// # }
+    /// ```
+    pub async fn set_health(&self, health: bool) -> Result<(), Error> {
+        #[derive(Debug, Serialize)]
+        struct HealthBody {
+            health: bool
+        }
+
+        let r = request::<HealthBody, ()>(
+            &format!("{}/health", self.host),
+            self.apikey,
+            Method::Put(HealthBody { health }),
+            204,
+        ).await;
+        match r {
+            Err(Error::Unknown(m)) if &m == "null" => Ok(()),
+            e => e
+        }
     }
 }
 
