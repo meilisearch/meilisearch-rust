@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use crate::{indexes::Index, errors::Error, request::{request, Method}, progress::{Progress, ProgressJson}};
 
 /// Struct reprensenting a set of settings.  
 /// You can build this struct using the builder syntax.  
@@ -119,5 +120,82 @@ impl Settings {
             accept_new_fields: Some(accept_new_fields),
             ..self
         }
+    }
+}
+
+impl<'a> Index<'a> {
+    /// Get the [settings](../settings/struct.Settings.html) of the Index.
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let movie_index = client.get_or_create("movies").await.unwrap();
+    /// let settings = movie_index.get_settings().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn get_settings(&self) -> Result<Settings, Error> {
+        Ok(request::<(), Settings>(
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
+    /// Update the settings of the index.  
+    /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
+    /// let settings = Settings::new()
+    ///     .with_stop_words(stop_words.clone())
+    ///     .with_accept_new_fields(false);
+    ///
+    /// let progress = movie_index.set_settings(&settings).await.unwrap();
+    /// # }
+    /// ```
+    pub async fn set_settings(&'a self, settings: &Settings) -> Result<Progress<'a>, Error> {
+        Ok(request::<&Settings, ProgressJson>(
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Post(settings),
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
+    /// Reset the settings of the index.  
+    /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let progress = movie_index.reset_settings().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn reset_settings(&'a self) -> Result<Progress<'a>, Error> {
+        Ok(request::<(), ProgressJson>(
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Delete,
+            202,
+        ).await?
+        .into_progress(self))
     }
 }
