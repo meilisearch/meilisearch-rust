@@ -1,5 +1,7 @@
 use crate::{errors::*, indexes::*, request::*};
 use serde_json::{json, Value};
+use serde::Deserialize;
+use std::collections::HashMap;
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug)]
@@ -152,4 +154,34 @@ impl<'a> Client<'a> {
     pub async fn get_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
         self.list_all_indexes().await
     }
+
+    /// Get stats of all indexes.
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let stats = client.get_stats().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn get_stats(&self) -> Result<ClientStats, Error> {
+        request::<serde_json::Value, ClientStats>(
+            &format!("{}/stats", self.host),
+            self.apikey,
+            Method::Get,
+            200,
+        ).await
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClientStats {
+    pub database_size: usize,
+    pub last_update: String,
+    pub indexes: HashMap<String, IndexStats>,
 }

@@ -3,7 +3,7 @@ use crate::{
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
-use std::fmt::Display;
+use std::{fmt::Display, collections::HashMap};
 
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
@@ -578,4 +578,36 @@ impl<'a> Index<'a> {
     pub async fn set_primary_key(&mut self, primary_key: &str) -> Result<(), Error> {
         self.update(primary_key).await
     }
+
+    /// Get stats of an index.
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let movies = client.get_or_create("movies").await.unwrap();
+    /// 
+    /// let stats = movies.get_stats().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn get_stats(&self) -> Result<IndexStats, Error> {
+        request::<serde_json::Value, IndexStats>(
+            &format!("{}/indexes/{}/stats", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Get,
+            200,
+        ).await
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexStats {
+    pub number_of_documents: usize,
+    pub is_indexing: bool,
+    pub fields_distribution: HashMap<String, usize>,
 }
