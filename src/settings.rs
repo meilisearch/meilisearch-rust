@@ -264,6 +264,26 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
+    /// Get [displayed attributes](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) of the Index.
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let movie_index = client.get_or_create("movies").await.unwrap();
+    /// let displayed_attributes = movie_index.get_displayed_attributes().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn get_displayed_attributes(&self) -> Result<Vec<String>, Error> {
+        Ok(request::<(), Vec<String>>(
+            &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
     /// Update [settings](../settings/struct.Settings.html) of the index.  
     /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
     ///
@@ -455,6 +475,30 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
+    /// Update [displayed attributes](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let progress = movie_index.set_displayed_attributes(vec!["title", "description", "release_date", "rank", "poster"]).await.unwrap();
+    /// # }
+    /// ```
+    pub async fn set_displayed_attributes(&'a self, displayed_attributes: Vec<&str>) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<&str>, ProgressJson>(
+            &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Post(displayed_attributes),
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
     /// Reset [settings](../settings/struct.Settings.html) of the index.  
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
     ///
@@ -618,6 +662,30 @@ impl<'a> Index<'a> {
     pub async fn reset_searchable_attributes(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/settings/searchable-attributes", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Delete,
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
+    /// Reset [displayed attributes](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) of the index (enable all attributes).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let progress = movie_index.reset_displayed_attributes().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn reset_displayed_attributes(&'a self) -> Result<Progress<'a>, Error> {
+        Ok(request::<(), ProgressJson>(
+            &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
             self.client.apikey,
             Method::Delete,
             202,
