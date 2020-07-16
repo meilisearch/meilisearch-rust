@@ -69,7 +69,7 @@
 //!
 //! Output:
 //!
-//! ```ignore
+//! ```text
 //! [Book { book_id: 4, title: "Harry Potter and the Half-Blood Prince" }]
 //! ```
 //! 

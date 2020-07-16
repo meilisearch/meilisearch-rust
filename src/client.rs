@@ -240,6 +240,28 @@ impl<'a> Client<'a> {
             e => e
         }
     }
+
+    /// Get version of the MeiliSearch server.
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let version = client.get_version().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn get_version(&self) -> Result<Version, Error> {
+        request::<(), Version>(
+            &format!("{}/version", self.host),
+            self.apikey,
+            Method::Get,
+            200,
+        ).await
+    }
 }
 
 #[derive(Deserialize)]
@@ -248,4 +270,21 @@ pub struct ClientStats {
     pub database_size: usize,
     pub last_update: String,
     pub indexes: HashMap<String, IndexStats>,
+}
+
+/// Version of a MeiliSearch server.
+/// Example: 
+/// ```text
+/// Version {
+///    commit_sha: "b46889b5f0f2f8b91438a08a358ba8f05fc09fc1".to_string(),
+///    build_date: "2019-11-15T09:51:54.278247+00:00".to_string(),
+///    pkg_version: "0.1.1".to_string(),
+/// }
+/// ```
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Version {
+    pub commit_sha: String,
+    pub build_date: String,
+    pub pkg_version: String,
 }

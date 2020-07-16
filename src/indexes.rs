@@ -49,7 +49,7 @@ impl<'a> Index<'a> {
     /// Set the primary key of the index.  
     ///   
     /// If you prefer, you can use the method [set_primary_key](#method.set_primary_key), which is an alias.
-    pub async fn update(&mut self, primary_key: &str) -> Result<(), Error> {
+    pub async fn update(&self, primary_key: &str) -> Result<(), Error> {
         request::<serde_json::Value, JsonIndex>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             self.client.apikey,
@@ -575,7 +575,7 @@ impl<'a> Index<'a> {
     }
 
     /// Alias for the [update method](#method.update).
-    pub async fn set_primary_key(&mut self, primary_key: &str) -> Result<(), Error> {
+    pub async fn set_primary_key(&self, primary_key: &str) -> Result<(), Error> {
         self.update(primary_key).await
     }
 
