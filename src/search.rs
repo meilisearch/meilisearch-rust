@@ -1,5 +1,7 @@
 use crate::{errors::Error, indexes::Index};
 use serde::{de::DeserializeOwned, Deserialize};
+use std::collections::HashMap;
+use serde_json::to_string;
 
 // TODO support https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#matches
 // TODO highlighting
@@ -18,6 +20,10 @@ pub struct SearchResults<T> {
     pub nb_hits: usize,
     /// whether nbHits is exhaustive
     pub exhaustive_nb_hits: bool,
+    /// Distribution of the given facets.
+    pub facets_distribution: Option<HashMap<String, HashMap<String, usize>>>,
+    /// Whether facet_distribution is exhaustive
+    pub exhaustive_facets_count: Option<bool>,
     /// processing time of the query
     pub processing_time_ms: usize,
     /// query originating the response
@@ -50,6 +56,12 @@ pub struct Query<'a> {
     /// Example: If you want to get only two documents, set limit to 2.
     /// Default: 20
     pub limit: Option<usize>,
+    /// Specify a filter to be used with the query. See the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html).
+    pub filters: Option<&'a str>,
+    /// Facet names and values to filter on. See [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#facet-filters).
+    pub facet_filters: Option<Vec<Vec<&'a str>>>,
+    /// Facets for which to retrieve the matching count. The value `Some(None)` is the wildcard.
+    pub facets_distribution: Option<Option<Vec<&'a str>>>,
     /// Attributes to display in the returned documents. Comma-separated list of attributes whose fields will be present in the returned documents.
     ///
     /// Example: If you want to get only the overview and title field and not the other fields, set `attributes_to_retrieve` to `overview,title`.
@@ -63,8 +75,6 @@ pub struct Query<'a> {
     pub crop_length: Option<usize>,
     /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-highlight)
     pub attributes_to_highlight: Option<&'a str>,
-    /// Specify a filter to be used with the query. See the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html).
-    pub filters: Option<&'a str>,
 }
 
 #[allow(missing_docs)]
@@ -74,11 +84,13 @@ impl<'a> Query<'a> {
             query,
             offset: None,
             limit: None,
+            filters: None,
+            facet_filters: None,
+            facets_distribution: None,
             attributes_to_retrieve: None,
             attributes_to_crop: None,
             attributes_to_highlight: None,
             crop_length: None,
-            filters: None,
         }
     }
     pub fn with_offset(self, offset: usize) -> Query<'a> {
@@ -90,6 +102,24 @@ impl<'a> Query<'a> {
     pub fn with_limit(self, limit: usize) -> Query<'a> {
         Query {
             limit: Some(limit),
+            ..self
+        }
+    }
+    pub fn with_filters(self, filters: &'a str) -> Query<'a> {
+        Query {
+            filters: Some(filters),
+            ..self
+        }
+    }
+    pub fn with_facet_filters(self, facet_filters: Vec<Vec<&'a str>>) -> Query<'a> {
+        Query {
+            facet_filters: Some(facet_filters),
+            ..self
+        }
+    }
+    pub fn with_facets_distribution(self, facets_distribution: Option<Vec<&'a str>>) -> Query<'a> {
+        Query {
+            facets_distribution: Some(facets_distribution),
             ..self
         }
     }
@@ -117,52 +147,51 @@ impl<'a> Query<'a> {
             ..self
         }
     }
-    pub fn with_filters(self, filters: &'a str) -> Query<'a> {
-        Query {
-            filters: Some(filters),
-            ..self
-        }
-    }
 }
 
 impl<'a> Query<'a> {
     pub(crate) fn to_url(&self) -> String {
         use urlencoding::encode;
-        let mut url = format!("?q={}&", encode(self.query));
+        let mut url = format!("?q={}", encode(self.query));
 
         if let Some(offset) = self.offset {
-            url.push_str("offset=");
+            url.push_str("&offset=");
             url.push_str(offset.to_string().as_str());
-            url.push('&');
         }
         if let Some(limit) = self.limit {
-            url.push_str("limit=");
+            url.push_str("&limit=");
             url.push_str(limit.to_string().as_str());
-            url.push('&');
-        }
-        if let Some(attributes_to_retrieve) = self.attributes_to_retrieve {
-            url.push_str("attributesToRetrieve=");
-            url.push_str(encode(attributes_to_retrieve).as_str());
-            url.push('&');
-        }
-        if let Some(attributes_to_crop) = self.attributes_to_crop {
-            url.push_str("attributesToCrop=");
-            url.push_str(encode(attributes_to_crop).as_str());
-            url.push('&');
-        }
-        if let Some(crop_length) = self.crop_length {
-            url.push_str("cropLength=");
-            url.push_str(crop_length.to_string().as_str());
-            url.push('&');
-        }
-        if let Some(attributes_to_highlight) = self.attributes_to_highlight {
-            url.push_str("attributesToHighlight=");
-            url.push_str(encode(attributes_to_highlight).as_str());
-            url.push('&');
         }
         if let Some(filters) = self.filters {
-            url.push_str("filters=");
+            url.push_str("&filters=");
             url.push_str(encode(filters).as_str());
+        }
+        if let Some(facet_filters) = &self.facet_filters {
+            url.push_str("&facetFilters=");
+            url.push_str(encode(&to_string(&facet_filters).unwrap()).as_str());
+        }
+        if let Some(facets_distribution) = &self.facets_distribution {
+            url.push_str("&facetsDistribution=");
+            match facets_distribution {
+                Some(facets_distribution) => url.push_str(encode(&to_string(&facets_distribution).unwrap()).as_str()),
+                None => url.push_str("*")
+            }
+        }
+        if let Some(attributes_to_retrieve) = self.attributes_to_retrieve {
+            url.push_str("&attributesToRetrieve=");
+            url.push_str(encode(attributes_to_retrieve).as_str());
+        }
+        if let Some(attributes_to_crop) = self.attributes_to_crop {
+            url.push_str("&attributesToCrop=");
+            url.push_str(encode(attributes_to_crop).as_str());
+        }
+        if let Some(crop_length) = self.crop_length {
+            url.push_str("&cropLength=");
+            url.push_str(crop_length.to_string().as_str());
+        }
+        if let Some(attributes_to_highlight) = self.attributes_to_highlight {
+            url.push_str("&attributesToHighlight=");
+            url.push_str(encode(attributes_to_highlight).as_str());
         }
 
         url
