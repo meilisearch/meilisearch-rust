@@ -204,7 +204,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Update settings of the index.  
+    /// Update [settings](../settings/struct.Settings.html) of the index.  
     /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
     ///
     /// # Example
@@ -234,7 +234,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Update synonyms of the index.
+    /// Update [synonyms](https://docs.meilisearch.com/guides/advanced_guides/synonyms.html) of the index.
     ///
     /// # Example
     ///
@@ -263,7 +263,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Update stop-words of the index.
+    /// Update [stop-words](https://docs.meilisearch.com/guides/advanced_guides/stop_words.html) of the index.
     ///
     /// # Example
     ///
@@ -322,7 +322,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset settings of the index.  
+    /// Reset [settings](../settings/struct.Settings.html) of the index.  
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
     ///
     /// # Example
@@ -347,7 +347,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset synonyms of the index.
+    /// Reset [synonyms](https://docs.meilisearch.com/guides/advanced_guides/synonyms.html) of the index.
     ///
     /// # Example
     ///
@@ -371,7 +371,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset stop-words of the index.
+    /// Reset [stop-words](https://docs.meilisearch.com/guides/advanced_guides/stop_words.html) of the index.
     ///
     /// # Example
     ///
