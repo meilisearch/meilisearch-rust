@@ -124,7 +124,7 @@ impl Settings {
 }
 
 impl<'a> Index<'a> {
-    /// Get the [settings](../settings/struct.Settings.html) of the Index.
+    /// Get [settings](../settings/struct.Settings.html) of the Index.
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -144,7 +144,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get the [synonyms](https://docs.meilisearch.com/guides/advanced_guides/synonyms.html) of the Index.
+    /// Get [synonyms](https://docs.meilisearch.com/guides/advanced_guides/synonyms.html) of the Index.
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -164,7 +164,27 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Update the settings of the index.  
+    /// Get [stop-words](https://docs.meilisearch.com/guides/advanced_guides/stop_words.html) of the Index.
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let movie_index = client.get_or_create("movies").await.unwrap();
+    /// let stop_words = movie_index.get_stop_words().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn get_stop_words(&self) -> Result<Vec<String>, Error> {
+        Ok(request::<(), Vec<String>>(
+            &format!("{}/indexes/{}/settings/stop-words", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
+    /// Update settings of the index.  
     /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
     ///
     /// # Example
@@ -194,7 +214,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Update the synonyms of the index.
+    /// Update synonyms of the index.
     ///
     /// # Example
     ///
@@ -223,7 +243,32 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset the settings of the index.  
+    /// Update stop-words of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let stop_words = vec![String::from("the"), String::from("of"), String::from("to")];
+    /// let progress = movie_index.set_stop_words(&stop_words).await.unwrap();
+    /// # }
+    /// ```
+    pub async fn set_stop_words(&'a self, stop_words: &Vec<String>) -> Result<Progress<'a>, Error> {
+        Ok(request::<&Vec<String>, ProgressJson>(   // todo check if it would be better to use &Vec<&str>
+            &format!("{}/indexes/{}/settings/stop-words", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Post(stop_words),
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
+    /// Reset settings of the index.  
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
     ///
     /// # Example
@@ -248,7 +293,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset the synonyms of the index.
+    /// Reset synonyms of the index.
     ///
     /// # Example
     ///
@@ -265,6 +310,30 @@ impl<'a> Index<'a> {
     pub async fn reset_synonyms(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/settings/synonyms", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Delete,
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
+    /// Reset stop-words of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let progress = movie_index.reset_stop_words().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn reset_stop_words(&'a self) -> Result<Progress<'a>, Error> {
+        Ok(request::<(), ProgressJson>(
+            &format!("{}/indexes/{}/settings/stop-words", self.client.host, self.uid),
             self.client.apikey,
             Method::Delete,
             202,
