@@ -204,6 +204,26 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
+    /// Get [attributes for faceting](https://docs.meilisearch.com/guides/advanced_guides/faceted_search.html) of the Index.
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let movie_index = client.get_or_create("movies").await.unwrap();
+    /// let stop_words = movie_index.get_attributes_for_faceting().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn get_attributes_for_faceting(&self) -> Result<Vec<String>, Error> {
+        Ok(request::<(), Vec<String>>(
+            &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
     /// Update [settings](../settings/struct.Settings.html) of the index.  
     /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
     ///
@@ -322,6 +342,31 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
+    /// Update [attributes for faceting](https://docs.meilisearch.com/guides/advanced_guides/faceted_search.html) of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let attributes_for_faceting = vec![String::from("genre"), String::from("director")];
+    /// let progress = movie_index.set_attributes_for_faceting(&attributes_for_faceting).await.unwrap();
+    /// # }
+    /// ```
+    pub async fn set_attributes_for_faceting(&'a self, ranking_rules: &Vec<String>) -> Result<Progress<'a>, Error> {
+        Ok(request::<&Vec<String>, ProgressJson>(   // todo check if it would be better to use &Vec<&str>
+            &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Post(ranking_rules),
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
     /// Reset [settings](../settings/struct.Settings.html) of the index.  
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
     ///
@@ -413,6 +458,30 @@ impl<'a> Index<'a> {
     pub async fn reset_ranking_rules(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/settings/ranking-rules", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Delete,
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
+    /// Reset [attributes for faceting](https://docs.meilisearch.com/guides/advanced_guides/faceted_search.html) of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let progress = movie_index.reset_attributes_for_faceting().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn reset_attributes_for_faceting(&'a self) -> Result<Progress<'a>, Error> {
+        Ok(request::<(), ProgressJson>(
+            &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
             self.client.apikey,
             Method::Delete,
             202,
