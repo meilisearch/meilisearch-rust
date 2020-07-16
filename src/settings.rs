@@ -259,7 +259,7 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let progress = movie_index.reset_settings().await.unwrap();
+    /// let progress = movie_index.reset_synonyms().await.unwrap();
     /// # }
     /// ```
     pub async fn reset_synonyms(&'a self) -> Result<Progress<'a>, Error> {
