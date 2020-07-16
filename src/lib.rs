@@ -52,7 +52,7 @@
 //!     let mut books = client.get_or_create("books").await.unwrap();
 //!
 //!     // Add some books in the index
-//!     books.add_documents(vec![
+//!     books.add_documents(&vec![
 //!         Book{book_id: 123,  title: String::from("Pride and Prejudice")},
 //!         Book{book_id: 456,  title: String::from("Le Petit Prince")},
 //!         Book{book_id: 1,    title: String::from("Alice In Wonderland")},
