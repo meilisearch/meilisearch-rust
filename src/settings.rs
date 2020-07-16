@@ -284,6 +284,26 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
+    /// Get the [accept-new-fields](https://docs.meilisearch.com/guides/advanced_guides/settings.html#accept-new-fields) value of the Index.
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let movie_index = client.get_or_create("movies").await.unwrap();
+    /// let accept_new_field = movie_index.get_accept_new_fields().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn get_accept_new_fields(&self) -> Result<bool, Error> {
+        Ok(request::<(), bool>(
+            &format!("{}/indexes/{}/settings/accept-new-fields", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
     /// Update [settings](../settings/struct.Settings.html) of the index.  
     /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
     ///
@@ -494,6 +514,30 @@ impl<'a> Index<'a> {
             &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(displayed_attributes),
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
+    /// Update [accept-new-fields](https://docs.meilisearch.com/guides/advanced_guides/settings.html#accept-new-fields) of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let progress = movie_index.set_accept_new_fields(false).await.unwrap();
+    /// # }
+    /// ```
+    pub async fn set_accept_new_fields(&'a self, accept_new_fields: bool) -> Result<Progress<'a>, Error> {
+        Ok(request::<bool, ProgressJson>(
+            &format!("{}/indexes/{}/settings/accept-new-fields", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Post(accept_new_fields),
             202,
         ).await?
         .into_progress(self))
