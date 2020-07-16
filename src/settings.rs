@@ -40,6 +40,9 @@ pub struct Settings {
     /// List of [ranking rules](https://docs.meilisearch.com/guides/main_concepts/relevancy.html#order-of-the-rules) sorted by order of importance
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_rules: Option<Vec<String>>,
+    /// Attributes to use as [facets](https://docs.meilisearch.com/guides/advanced_guides/faceted_search.html)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes_for_faceting: Option<Vec<String>>,
     /// Search returns documents with distinct (different) values of the given field
     #[serde(skip_serializing_if = "Option::is_none")]
     pub distinct_attribute: Option<String>,
@@ -62,6 +65,7 @@ impl Settings {
             synonyms: None,
             stop_words: None,
             ranking_rules: None,
+            attributes_for_faceting: None,
             distinct_attribute: None,
             searchable_attributes: None,
             displayed_attributes: None,
@@ -83,6 +87,12 @@ impl Settings {
     pub fn with_ranking_rules(self, ranking_rules: Vec<String>) -> Settings {
         Settings {
             ranking_rules: Some(ranking_rules),
+            ..self
+        }
+    }
+    pub fn with_attributes_for_faceting(self, attributes_for_faceting: Vec<String>) -> Settings {
+        Settings {
+            attributes_for_faceting: Some(attributes_for_faceting),
             ..self
         }
     }
