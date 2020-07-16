@@ -192,7 +192,7 @@ impl<'a> Index<'a> {
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let stop_words = movie_index.get_ranking_rules().await.unwrap();
+    /// let ranking_rules = movie_index.get_ranking_rules().await.unwrap();
     /// # }
     /// ```
     pub async fn get_ranking_rules(&self) -> Result<Vec<String>, Error> {
@@ -212,12 +212,32 @@ impl<'a> Index<'a> {
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let stop_words = movie_index.get_attributes_for_faceting().await.unwrap();
+    /// let attributes_for_faceting = movie_index.get_attributes_for_faceting().await.unwrap();
     /// # }
     /// ```
     pub async fn get_attributes_for_faceting(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
             &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
+    /// Get the [distinct attribute](https://docs.meilisearch.com/guides/advanced_guides/settings.html#distinct-attribute) of the Index.
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let movie_index = client.get_or_create("movies").await.unwrap();
+    /// let distinct_attribute = movie_index.get_attributes_for_faceting().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn get_distinct_attribute(&self) -> Result<String, Error> {
+        Ok(request::<(), String>(
+            &format!("{}/indexes/{}/settings/distinct-attribute", self.client.host, self.uid),
             self.client.apikey,
             Method::Get,
             200,
@@ -367,6 +387,30 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
+    /// Update the [distinct attribute](https://docs.meilisearch.com/guides/advanced_guides/settings.html#distinct-attribute) of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let progress = movie_index.set_distinct_attribute("movie_id").await.unwrap();
+    /// # }
+    /// ```
+    pub async fn set_distinct_attribute(&'a self, distinct_attribute: &str) -> Result<Progress<'a>, Error> {
+        Ok(request::<&str, ProgressJson>(
+            &format!("{}/indexes/{}/settings/distinct-attribute", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Post(distinct_attribute),
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
     /// Reset [settings](../settings/struct.Settings.html) of the index.  
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
     ///
@@ -482,6 +526,30 @@ impl<'a> Index<'a> {
     pub async fn reset_attributes_for_faceting(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
+            self.client.apikey,
+            Method::Delete,
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
+    /// Reset the [distinct attribute](https://docs.meilisearch.com/guides/advanced_guides/settings.html#distinct-attribute) of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let progress = movie_index.reset_distinct_attribute().await.unwrap();
+    /// # }
+    /// ```
+    pub async fn reset_distinct_attribute(&'a self) -> Result<Progress<'a>, Error> {
+        Ok(request::<(), ProgressJson>(
+            &format!("{}/indexes/{}/settings/distinct-attribute", self.client.host, self.uid),
             self.client.apikey,
             Method::Delete,
             202,
