@@ -374,12 +374,12 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let stop_words = vec![String::from("the"), String::from("of"), String::from("to")];
-    /// let progress = movie_index.set_stop_words(&stop_words).await.unwrap();
+    /// let stop_words = &["the", "of", "to"];
+    /// let progress = movie_index.set_stop_words(stop_words).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_stop_words(&'a self, stop_words: &Vec<String>) -> Result<Progress<'a>, Error> {
-        Ok(request::<&Vec<String>, ProgressJson>(   // todo check if it would be better to use &Vec<&str>
+    pub async fn set_stop_words(&'a self, stop_words: &[&str]) -> Result<Progress<'a>, Error> {
+        Ok(request::<&[&str], ProgressJson>(
             &format!("{}/indexes/{}/settings/stop-words", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(stop_words),
@@ -399,21 +399,21 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let ranking_rules = vec![
-    ///     String::from("typo"),
-    ///     String::from("words"),
-    ///     String::from("proximity"),
-    ///     String::from("attribute"),
-    ///     String::from("wordsPosition"),
-    ///     String::from("exactness"),
-    ///     String::from("asc(release_date)"),
-    ///     String::from("desc(rank)"),
+    /// let ranking_rules = &[
+    ///     "typo",
+    ///     "words",
+    ///     "proximity",
+    ///     "attribute",
+    ///     "wordsPosition",
+    ///     "exactness",
+    ///     "asc(release_date)",
+    ///     "desc(rank)",
     /// ];
-    /// let progress = movie_index.set_ranking_rules(&ranking_rules).await.unwrap();
+    /// let progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_ranking_rules(&'a self, ranking_rules: &Vec<String>) -> Result<Progress<'a>, Error> {
-        Ok(request::<&Vec<String>, ProgressJson>(   // todo check if it would be better to use &Vec<&str>
+    pub async fn set_ranking_rules(&'a self, ranking_rules: &[&str]) -> Result<Progress<'a>, Error> {
+        Ok(request::<&[&str], ProgressJson>(
             &format!("{}/indexes/{}/settings/ranking-rules", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(ranking_rules),
@@ -433,12 +433,12 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let attributes_for_faceting = vec![String::from("genre"), String::from("director")];
-    /// let progress = movie_index.set_attributes_for_faceting(&attributes_for_faceting).await.unwrap();
+    /// let attributes_for_faceting = &["genre", "director"];
+    /// let progress = movie_index.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_attributes_for_faceting(&'a self, ranking_rules: &Vec<String>) -> Result<Progress<'a>, Error> {
-        Ok(request::<&Vec<String>, ProgressJson>(   // todo check if it would be better to use &Vec<&str>
+    pub async fn set_attributes_for_faceting(&'a self, ranking_rules: &[&str]) -> Result<Progress<'a>, Error> {
+        Ok(request::<&[&str], ProgressJson>(
             &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(ranking_rules),
@@ -482,11 +482,11 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let progress = movie_index.set_searchable_attributes(vec!["title", "description", "uid"]).await.unwrap();
+    /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_searchable_attributes(&'a self, searchable_attributes: Vec<&str>) -> Result<Progress<'a>, Error> {
-        Ok(request::<Vec<&str>, ProgressJson>(
+    pub async fn set_searchable_attributes(&'a self, searchable_attributes: &[&str]) -> Result<Progress<'a>, Error> {
+        Ok(request::<&[&str], ProgressJson>(
             &format!("{}/indexes/{}/settings/searchable-attributes", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(searchable_attributes),
@@ -506,11 +506,11 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let progress = movie_index.set_displayed_attributes(vec!["title", "description", "release_date", "rank", "poster"]).await.unwrap();
+    /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_displayed_attributes(&'a self, displayed_attributes: Vec<&str>) -> Result<Progress<'a>, Error> {
-        Ok(request::<Vec<&str>, ProgressJson>(
+    pub async fn set_displayed_attributes(&'a self, displayed_attributes: &[&str]) -> Result<Progress<'a>, Error> {
+        Ok(request::<&[&str], ProgressJson>(
             &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(displayed_attributes),
