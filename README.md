@@ -79,10 +79,8 @@ Output:
 
 ## 🌐 Running in the browser with WASM
 
-This crate fully supports WASM. However, there are some syntax differences between a native and a WASM program using `meilisearch-sdk`.
-That means that you can't use the exact same code for native and web programs but it is very similar.
-Only some `.await` are to be added on a native program to make a working Wasm program. (Because all `meilisearch-sdk`'s methods are `async` on Wasm and `sync` on native target (but `async` is planned for native too))
-However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using meilisearch, see [tutorial todo here]().
+This crate fully supports WASM. The only difference between the WASM and the native version is that the native version has one more variant (Error::Http) in the Error enum. That should not matter so much but we could add this variant in WASM too.
+However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using meilisearch, see the [tutorial (not available yet)]().
 
 WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
 
