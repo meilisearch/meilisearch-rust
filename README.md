@@ -1,4 +1,4 @@
-# meilisearch-sdk [![Latest Version]][crates.io]
+# meilisearch-sdk (WIP) [![Latest Version]][crates.io]
 [Latest Version]: https://img.shields.io/crates/v/meilisearch-sdk
 [crates.io]: https://crates.io/crates/meilisearch-sdk
 
