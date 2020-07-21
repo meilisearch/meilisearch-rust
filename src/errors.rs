@@ -1,5 +1,5 @@
 #[derive(Debug)]
-/// Struct representing errors.  
+/// Struct representing errors.
 /// Unknow Errors are unexpected. You should consider panicking and open a GitHub issue (after ensuring you are using the supported version of the MeiliSearch server).
 pub enum Error {
     /// There is no MeiliSearch server listening on the [specified host](../client/struct.Client.html#method.new).

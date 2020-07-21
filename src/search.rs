@@ -43,16 +43,16 @@ pub struct SearchResults<T> {
 ///     .with_limit(21);
 /// ```
 pub struct Query<'a> {
-    /// The query parameter is the only mandatory parameter.  
+    /// The query parameter is the only mandatory parameter.
     /// This is the string used by the search engine to find relevant documents.
     pub query: &'a str,
-    /// A number of documents to skip. If the value of the parameter offset is n, n first documents to skip. This is helpful for pagination.  
-    ///   
-    /// Example: If you want to skip the first document, set offset to 1.  
+    /// A number of documents to skip. If the value of the parameter offset is n, n first documents to skip. This is helpful for pagination.
+    ///
+    /// Example: If you want to skip the first document, set offset to 1.
     /// Default: 0
     pub offset: Option<usize>,
-    /// Set a limit to the number of documents returned by search queries. If the value of the parameter limit is n, there will be n documents in the search query response. This is helpful for pagination.  
-    ///   
+    /// Set a limit to the number of documents returned by search queries. If the value of the parameter limit is n, there will be n documents in the search query response. This is helpful for pagination.
+    ///
     /// Example: If you want to get only two documents, set limit to 2.
     /// Default: 20
     pub limit: Option<usize>,
@@ -69,8 +69,8 @@ pub struct Query<'a> {
     pub attributes_to_retrieve: Option<&'a str>,
     /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-crop)
     pub attributes_to_crop: Option<&'a str>,
-    /// Number of characters to keep on each side of the start of the matching word. See [attributes_to_crop](#structfield.attributes_to_crop).  
-    ///   
+    /// Number of characters to keep on each side of the start of the matching word. See [attributes_to_crop](#structfield.attributes_to_crop).
+    ///
     /// Default: 200
     pub crop_length: Option<usize>,
     /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-highlight)

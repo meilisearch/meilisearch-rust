@@ -11,8 +11,8 @@ pub struct Client<'a> {
 }
 
 impl<'a> Client<'a> {
-    /// Create a client using the specified server.  
-    /// Don't put a '/' at the end of the host.  
+    /// Create a client using the specified server.
+    /// Don't put a '/' at the end of the host.
     /// If you are not in production mode, the second field is useless.
     /// In production mode, see [the documentation](https://docs.meilisearch.com/references/keys.html) to get the needed key.
     ///
@@ -65,13 +65,13 @@ impl<'a> Client<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    /// 
+    ///
     /// # #[tokio::main]
     /// # async fn main() {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "");
     /// # client.create_index("movies", None).await;
-    /// 
+    ///
     /// // get the index named "movies"
     /// let movies = client.get_index("movies").await.unwrap();
     /// # }
@@ -105,7 +105,7 @@ impl<'a> Client<'a> {
     /// # async fn main() {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "");
-    /// 
+    ///
     /// # if let Ok(mut movies) = client.get_index("movies").await {
     /// #   movies.delete().await.unwrap();
     /// # }
@@ -130,7 +130,7 @@ impl<'a> Client<'a> {
         .into_index(self))
     }
 
-    /// Delete an index from its UID.  
+    /// Delete an index from its UID.
     /// To delete an index from the [index object](../indexes/struct.Index.html), use [the delete method](../indexes/struct.Index.html#method.delete).
     pub async fn delete_index(&self, uid: &str) -> Result<(), Error> {
         Ok(request::<(), ()>(
@@ -156,7 +156,7 @@ impl<'a> Client<'a> {
     }
 
     /// Get stats of all indexes.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -178,7 +178,7 @@ impl<'a> Client<'a> {
     }
 
     /// Get health of MeiliSearch server.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -187,7 +187,7 @@ impl<'a> Client<'a> {
     /// # #[tokio::main]
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
-    /// 
+    ///
     /// match client.get_health().await {
     ///     Ok(()) => println!("server is operationnal"),
     ///     Err(Error::ServerInMaintenance) => eprintln!("server is in maintenance"),
@@ -209,7 +209,7 @@ impl<'a> Client<'a> {
     }
 
     /// Update health of MeiliSearch server.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -218,7 +218,7 @@ impl<'a> Client<'a> {
     /// # #[tokio::main]
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
-    /// 
+    ///
     /// client.set_health(false).await.unwrap();
     /// # client.set_health(true).await.unwrap();
     /// # }
@@ -242,7 +242,7 @@ impl<'a> Client<'a> {
     }
 
     /// Get version of the MeiliSearch server.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -273,7 +273,7 @@ pub struct ClientStats {
 }
 
 /// Version of a MeiliSearch server.
-/// Example: 
+/// Example:
 /// ```text
 /// Version {
 ///    commit_sha: "b46889b5f0f2f8b91438a08a358ba8f05fc09fc1".to_string(),
