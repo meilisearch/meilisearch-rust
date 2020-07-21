@@ -46,8 +46,8 @@ pub struct Index<'a> {
 }
 
 impl<'a> Index<'a> {
-    /// Set the primary key of the index.  
-    ///   
+    /// Set the primary key of the index.
+    ///
     /// If you prefer, you can use the method [set_primary_key](#method.set_primary_key), which is an alias.
     pub async fn update(&self, primary_key: &str) -> Result<(), Error> {
         request::<serde_json::Value, JsonIndex>(
@@ -136,7 +136,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get one [document](../document/trait.Document.html) using its unique id.  
+    /// Get one [document](../document/trait.Document.html) using its unique id.
     /// Serde is needed. Add `serde = {version="1.0", features=["derive"]}` in the dependencies section of your Cargo.toml.
     ///
     /// # Example
@@ -160,7 +160,7 @@ impl<'a> Index<'a> {
     ///        &self.name
     ///    }
     /// }
-    /// 
+    ///
     /// # #[tokio::main]
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
@@ -191,11 +191,11 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get [documents](../document/trait.Document.html) by batch.  
-    ///   
+    /// Get [documents](../document/trait.Document.html) by batch.
+    ///
     /// Using the optional parameters offset and limit, you can browse through all your documents.
-    /// If None, offset will be set to 0, limit to 20, and all attributes will be retrieved.  
-    ///   
+    /// If None, offset will be set to 0, limit to 20, and all attributes will be retrieved.
+    ///
     /// *Note: Documents are ordered by MeiliSearch depending on the hash of their id.*
     ///
     /// # Example
@@ -219,14 +219,14 @@ impl<'a> Index<'a> {
     ///        &self.name
     ///    }
     /// }
-    /// 
+    ///
     /// # #[tokio::main]
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
     /// # client.create_index("movies", None).await;
     /// let movie_index = client.get_index("movies").await.unwrap();
     /// # let mut movie_index = client.get_index("movies").await.unwrap();
-    /// 
+    ///
     /// # movie_index.add_or_replace(&vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// #
@@ -265,11 +265,11 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Add a list of [documents](../document/trait.Document.html) or replace them if they already exist.  
-    ///   
+    /// Add a list of [documents](../document/trait.Document.html) or replace them if they already exist.
+    ///
     /// If you send an already existing document (same id) the **whole existing document** will be overwritten by the new document.
-    /// Fields previously in the document not present in the new document are removed.  
-    ///   
+    /// Fields previously in the document not present in the new document are removed.
+    ///
     /// For a partial update of the document see [add_or_update](#method.add_or_update).
     ///
     /// You can use the alias [add_documents](#method.add_documents) if you prefer.
@@ -294,12 +294,12 @@ impl<'a> Index<'a> {
     ///        &self.name
     ///    }
     /// }
-    /// 
+    ///
     /// # #[tokio::main]
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
-    /// 
+    ///
     /// movie_index.add_or_replace(&vec![
     ///     Movie{
     ///         name: String::from("Interstellar"),
@@ -355,11 +355,11 @@ impl<'a> Index<'a> {
         self.add_or_replace(documents, primary_key).await
     }
 
-    /// Add a list of documents and update them if they already.  
-    ///   
+    /// Add a list of documents and update them if they already.
+    ///
     /// If you send an already existing document (same id) the old document will be only partially updated according to the fields of the new document.
-    /// Thus, any fields not present in the new document are kept and remained unchanged.  
-    ///   
+    /// Thus, any fields not present in the new document are kept and remained unchanged.
+    ///
     /// To completely overwrite a document, check out the [add_and_replace documents](#method.add_or_replace) method.
     ///
     /// # Example
@@ -382,12 +382,12 @@ impl<'a> Index<'a> {
     ///        &self.name
     ///    }
     /// }
-    /// 
+    ///
     /// # #[tokio::main]
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
-    /// 
+    ///
     /// movie_index.add_or_update(&vec![
     ///     Movie{
     ///         name: String::from("Interstellar"),
@@ -474,7 +474,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Delete one document based on its unique id.  
+    /// Delete one document based on its unique id.
     ///
     /// # Example
     ///
@@ -522,8 +522,8 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Delete a selection of documents based on array of document id's.  
-    ///   
+    /// Delete a selection of documents based on array of document id's.
+    ///
     /// # Example
     ///
     /// ```
@@ -580,7 +580,7 @@ impl<'a> Index<'a> {
     }
 
     /// Get stats of an index.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -590,7 +590,7 @@ impl<'a> Index<'a> {
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "");
     /// let movies = client.get_or_create("movies").await.unwrap();
-    /// 
+    ///
     /// let stats = movies.get_stats().await.unwrap();
     /// # }
     /// ```

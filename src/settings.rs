@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use crate::{indexes::Index, errors::Error, request::{request, Method}, progress::{Progress, ProgressJson}};
 
-/// Struct reprensenting a set of settings.  
-/// You can build this struct using the builder syntax.  
+/// Struct reprensenting a set of settings.
+/// You can build this struct using the builder syntax.
 ///
 /// # Example
 ///
@@ -304,7 +304,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Update [settings](../settings/struct.Settings.html) of the index.  
+    /// Update [settings](../settings/struct.Settings.html) of the index.
     /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
     ///
     /// # Example
@@ -543,7 +543,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset [settings](../settings/struct.Settings.html) of the index.  
+    /// Reset [settings](../settings/struct.Settings.html) of the index.
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
     ///
     /// # Example

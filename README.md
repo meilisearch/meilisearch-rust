@@ -9,9 +9,10 @@ Features such as typo-tolerance, filters, and synonyms are provided out-of-the-b
 
 ### Table of Contents
 - [🔧 Installation](#-installation)
-- [🚀 Getting started](#-getting-started)
+- [🚀 Getting Started](#-getting-started)
 - [🌐 Running in the browser with WASM](#-running-in-the-browser-with-wasm)
 - [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
+- [Running the tests](#running-the-tests)
 
 ## 🔧 Installation
 
