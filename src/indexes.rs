@@ -1,5 +1,5 @@
 use crate::{
-    client::Client, document::*, errors::Error, progress::*, request::*, search::*, settings::*,
+    client::Client, document::*, errors::Error, progress::*, request::*, search::*,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
