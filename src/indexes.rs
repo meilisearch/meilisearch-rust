@@ -111,7 +111,7 @@ impl<'a> Index<'a> {
     /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
     /// // add some documents
-    /// # movies.add_or_replace(&vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     ///
     /// let query = Query::new("Interstellar").with_limit(5);
@@ -167,7 +167,7 @@ impl<'a> Index<'a> {
     /// # client.create_index("movies", None).await;
     /// let movies = client.get_index("movies").await.unwrap();
     /// # let mut movies = client.get_index("movies").await.unwrap();
-    /// # movies.add_or_replace(&vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// #
     /// // retrieve a document (you have to put the document in the index before)
@@ -227,7 +227,7 @@ impl<'a> Index<'a> {
     /// let movie_index = client.get_index("movies").await.unwrap();
     /// # let mut movie_index = client.get_index("movies").await.unwrap();
     ///
-    /// # movie_index.add_or_replace(&vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
+    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// #
     /// // retrieve movies (you have to put some movies in the index before)
@@ -300,7 +300,7 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// movie_index.add_or_replace(&vec![
+    /// movie_index.add_or_replace(&[
     ///     Movie{
     ///         name: String::from("Interstellar"),
     ///         description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
@@ -324,7 +324,7 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn add_or_replace<T: Document>(
         &'a self,
-        documents: &Vec<T>,
+        documents: &[T],
         primary_key: Option<&str>,
     ) -> Result<Progress<'a>, Error> {
         let url = if let Some(primary_key) = primary_key {
@@ -336,7 +336,7 @@ impl<'a> Index<'a> {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
         Ok(
-            request::<&Vec<T>, ProgressJson>(
+            request::<&[T], ProgressJson>(
                 &url,
                 self.client.apikey,
                 Method::Post(documents),
@@ -349,7 +349,7 @@ impl<'a> Index<'a> {
     /// Alias for [add_or_replace](#method.add_or_replace).
     pub async fn add_documents<T: Document>(
         &'a self,
-        documents: &Vec<T>,
+        documents: &[T],
         primary_key: Option<&str>,
     ) -> Result<Progress<'a>, Error> {
         self.add_or_replace(documents, primary_key).await
@@ -388,7 +388,7 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// movie_index.add_or_update(&vec![
+    /// movie_index.add_or_update(&[
     ///     Movie{
     ///         name: String::from("Interstellar"),
     ///         description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
@@ -412,7 +412,7 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn add_or_update<T: Document>(
         &'a self,
-        documents: &Vec<T>,
+        documents: &[T],
         primary_key: Option<&str>,
     ) -> Result<Progress<'a>, Error> {
         let url = if let Some(primary_key) = primary_key {
@@ -424,7 +424,7 @@ impl<'a> Index<'a> {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
         Ok(
-            request::<&Vec<T>, ProgressJson>(&url, self.client.apikey, Method::Put(documents), 202).await?
+            request::<&[T], ProgressJson>(&url, self.client.apikey, Method::Put(documents), 202).await?
                 .into_progress(self),
         )
     }
@@ -502,7 +502,7 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "");
     /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
-    /// # movies.add_or_replace(&vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// // add a document with id = Interstellar
     ///
@@ -551,18 +551,18 @@ impl<'a> Index<'a> {
     /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
     /// // add some documents
-    /// # movies.add_or_replace(&vec![Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     ///
     /// // delete some documents
-    /// movies.delete_documents(&vec!["Interstellar", "Unknown"]).await.unwrap();
+    /// movies.delete_documents(&["Interstellar", "Unknown"]).await.unwrap();
     /// # }
     /// ```
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
         &'a self,
-        uids: &Vec<T>,
+        uids: &[T],
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&Vec<T>, ProgressJson>(
+        Ok(request::<&[T], ProgressJson>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
                 self.client.host, self.uid
