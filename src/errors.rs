@@ -41,17 +41,29 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<&str> for Error {
-    fn from(message: &str) -> Error {
-        match message {
-            "{\"message\":\"Impossible to create index; index already exists\"}" => Error::IndexAlreadyExist,
-            "{\"message\":\"Index must have a valid uid; Index uid can be of type integer or string only composed of alphanumeric characters, hyphens (-) and underscores (_).\"}" => Error::InvalidIndexUid,
-            "{\"message\":\"Could not infer a primary key\"}" => Error::CantInferPrimaryKey,
-            m if m.starts_with("{\"message\":\"Server is in maintenance, please try again later\"") => Error::ServerInMaintenance,
-            m if m.starts_with("{\"message\":\"Index ") && m.ends_with(" not found\"}") => Error::IndexNotFound,
-            e => {
-                Error::Unknown(e.to_string())
-            },
+impl From<&serde_json::Value> for Error {
+    fn from(message: &serde_json::Value) -> Error {
+        // Error codes from https://github.com/meilisearch/MeiliSearch/blob/v0.12.0/meilisearch-error/src/lib.rs
+        match message.get("errorCode").and_then(|v| v.as_str()) {
+            Some("index_not_found") => Error::IndexNotFound,
+            Some("index_already_exists") => Error::IndexAlreadyExist,
+            Some("invalid_index_uid") => Error::InvalidIndexUid,
+            Some("missing_primary_key") => Error::CantInferPrimaryKey,
+            Some("maintenance") => Error::ServerInMaintenance,
+            Some(_) => Error::Unknown(message.to_string()),
+            None => {
+                // Meilisearch 0.11 and below 
+                match message.get("message").and_then(|v| v.as_str()) {
+                    Some("Impossible to create index; index already exists") => Error::IndexAlreadyExist,
+                    Some("Could not infer a primary key") => Error::CantInferPrimaryKey,
+                    Some(m) if m.starts_with("Server is in maintenance, please try again later") => Error::ServerInMaintenance,
+                    Some(m) if m.starts_with("Index ") && m.ends_with(" not found") => Error::IndexNotFound,
+                    Some(m) if m.starts_with("Index must have a valid uid;") => Error::InvalidIndexUid,
+                    _ => {
+                        Error::Unknown(message.to_string())
+                    },
+                }
+            }
         }
     }
 }

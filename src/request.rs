@@ -134,10 +134,13 @@ fn parse_response<Output: DeserializeOwned>(
             }
             Err(e) => {
                 error!("Request succeed but failed to parse response");
-                return Err(Error::from(e.to_string().as_str()));
+                return Err(Error::Unknown(e.to_string()));
             }
         };
     }
     warn!("Expected response code {}, got {}", expected_status_code, status_code);
-    Err(Error::from(body.as_str()))
+    match from_str(&body) {
+        Ok(e) => Err(Error::from(&e)),
+        Err(e) => Err(Error::Unknown(e.to_string()))
+    }
 }
