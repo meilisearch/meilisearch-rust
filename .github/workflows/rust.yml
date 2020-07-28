@@ -1,0 +1,23 @@
+name: Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --verbose
+    - name: Docker setup
+      run: docker run -d -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --no-analytics=true
+    - name: Run tests
+      run: cargo test --verbose -- --test-threads=1
