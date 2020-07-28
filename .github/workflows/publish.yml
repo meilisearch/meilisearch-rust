@@ -1,0 +1,24 @@
+name: Publish to crates.io
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: Rust project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@master
+        with:
+          rust-version: stable
+      - name: Check release validity
+        run: sh .github/scripts/check-release.sh
+      - name: Build
+        run: cargo build --release
+      - name: Login
+        run: cargo login ${{ secrets.CRATES_TOKEN }}
+      - name: Publish to crates.io
+        run: cargo publish
