@@ -268,7 +268,7 @@ impl<'a> Client<'a> {
 #[serde(rename_all = "camelCase")]
 pub struct ClientStats {
     pub database_size: usize,
-    pub last_update: String,
+    pub last_update: Option<String>,
     pub indexes: HashMap<String, IndexStats>,
 }
 
