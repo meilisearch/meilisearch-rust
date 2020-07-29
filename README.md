@@ -74,7 +74,7 @@ NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 Here is a quickstart for a search request (please follow the [installation](#-installation) steps before)
 
 ```rust
-use meilisearch_sdk::{document::*, indexes::*, client::*, search::*};
+use meilisearch_sdk::{document::*, client::*, search::*};
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -98,7 +98,7 @@ async fn main() {
     let client = Client::new("http://localhost:7700", "masterKey");
 
     // Get the index called "books"
-    let mut books = client.get_or_create("books").await.unwrap();
+    let books = client.get_or_create("books").await.unwrap();
 
     // Add some books in the index
     books.add_documents(&[
