@@ -22,7 +22,7 @@ impl<'a> Client<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// ```
     pub const fn new(host: &'a str, apikey: &'a str) -> Client<'a> {
         Client { host, apikey }
@@ -37,7 +37,7 @@ impl<'a> Client<'a> {
     /// # #[tokio::main]
     /// # async fn main() {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
     /// let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
     /// println!("{:?}", indexes);
@@ -69,7 +69,7 @@ impl<'a> Client<'a> {
     /// # #[tokio::main]
     /// # async fn main() {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.create_index("movies", None).await;
     ///
     /// // get the index named "movies"
@@ -104,7 +104,7 @@ impl<'a> Client<'a> {
     /// # #[tokio::main]
     /// # async fn main() {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
     /// # if let Ok(mut movies) = client.get_index("movies").await {
     /// #   movies.delete().await.unwrap();
@@ -164,7 +164,7 @@ impl<'a> Client<'a> {
     /// #
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let stats = client.get_stats().await.unwrap();
     /// # }
     /// ```
@@ -186,7 +186,7 @@ impl<'a> Client<'a> {
     /// #
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
     /// match client.get_health().await {
     ///     Ok(()) => println!("server is operationnal"),
@@ -217,7 +217,7 @@ impl<'a> Client<'a> {
     /// #
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
     /// client.set_health(false).await.unwrap();
     /// # client.set_health(true).await.unwrap();
@@ -250,7 +250,7 @@ impl<'a> Client<'a> {
     /// #
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let version = client.get_version().await.unwrap();
     /// # }
     /// ```

@@ -130,7 +130,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let settings = movie_index.get_settings().await.unwrap();
     /// # }
@@ -150,7 +150,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let synonyms = movie_index.get_synonyms().await.unwrap();
     /// # }
@@ -170,7 +170,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let stop_words = movie_index.get_stop_words().await.unwrap();
     /// # }
@@ -190,7 +190,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let ranking_rules = movie_index.get_ranking_rules().await.unwrap();
     /// # }
@@ -210,7 +210,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let attributes_for_faceting = movie_index.get_attributes_for_faceting().await.unwrap();
     /// # }
@@ -230,7 +230,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let distinct_attribute = movie_index.get_distinct_attribute().await.unwrap();
     /// # }
@@ -250,7 +250,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let searchable_attributes = movie_index.get_searchable_attributes().await.unwrap();
     /// # }
@@ -270,7 +270,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let displayed_attributes = movie_index.get_displayed_attributes().await.unwrap();
     /// # }
@@ -290,7 +290,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let accept_new_field = movie_index.get_accept_new_fields().await.unwrap();
     /// # }
@@ -313,7 +313,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
@@ -342,7 +342,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let mut synonyms = std::collections::HashMap::new();
@@ -371,7 +371,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let stop_words = &["the", "of", "to"];
@@ -396,7 +396,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let ranking_rules = &[
@@ -430,7 +430,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let attributes_for_faceting = &["genre", "director"];
@@ -455,7 +455,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.set_distinct_attribute("movie_id").await.unwrap();
@@ -479,7 +479,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"]).await.unwrap();
@@ -503,7 +503,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"]).await.unwrap();
@@ -527,7 +527,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.set_accept_new_fields(false).await.unwrap();
@@ -552,7 +552,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_settings().await.unwrap();
@@ -576,7 +576,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_synonyms().await.unwrap();
@@ -600,7 +600,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_stop_words().await.unwrap();
@@ -625,7 +625,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_ranking_rules().await.unwrap();
@@ -649,7 +649,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_attributes_for_faceting().await.unwrap();
@@ -673,7 +673,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_distinct_attribute().await.unwrap();
@@ -697,7 +697,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_searchable_attributes().await.unwrap();
@@ -721,7 +721,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_displayed_attributes().await.unwrap();
