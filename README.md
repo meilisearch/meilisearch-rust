@@ -51,7 +51,7 @@ impl Document for Book {
 #[tokio::main]
 async fn main() {
     // Create a client (without sending any request so that can't fail)
-    let client = Client::new("http://localhost:7700", "");
+    let client = Client::new("http://localhost:7700", "masterKey");
 
     // Get the index called "books"
     let mut books = client.get_or_create("books").await.unwrap();

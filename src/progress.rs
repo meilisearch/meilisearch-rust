@@ -34,7 +34,7 @@ impl<'a> Progress<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movies_index = client.get_or_create("movies").await.unwrap();
     /// let progress = movies_index.delete_all_documents().await.unwrap();
     /// let status = progress.get_status().await.unwrap();

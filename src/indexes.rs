@@ -31,7 +31,7 @@ impl JsonIndex {
 /// # use meilisearch_sdk::{client::*, indexes::*};
 /// # #[tokio::main]
 /// # async fn main() {
-/// let client = Client::new("http://localhost:7700", "");
+/// let client = Client::new("http://localhost:7700", "masterKey");
 ///
 /// // get the index called movies or create it if it does not exist
 /// let movies = client.get_or_create("movies").await.unwrap();
@@ -67,7 +67,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.create_index("movies", None).await;
     ///
     /// // get the index named "movies" and delete it
@@ -107,7 +107,7 @@ impl<'a> Index<'a> {
     ///
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
     /// // add some documents
@@ -163,7 +163,7 @@ impl<'a> Index<'a> {
     ///
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.create_index("movies", None).await;
     /// let movies = client.get_index("movies").await.unwrap();
     /// # let mut movies = client.get_index("movies").await.unwrap();
@@ -222,7 +222,7 @@ impl<'a> Index<'a> {
     ///
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.create_index("movies", None).await;
     /// let movie_index = client.get_index("movies").await.unwrap();
     /// # let mut movie_index = client.get_index("movies").await.unwrap();
@@ -297,7 +297,7 @@ impl<'a> Index<'a> {
     ///
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// movie_index.add_or_replace(&[
@@ -385,7 +385,7 @@ impl<'a> Index<'a> {
     ///
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// movie_index.add_or_update(&[
@@ -454,7 +454,7 @@ impl<'a> Index<'a> {
     /// # #[tokio::main]
     /// # async fn main() {
     /// #
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// // add some documents
@@ -499,7 +499,7 @@ impl<'a> Index<'a> {
     /// # #[tokio::main]
     /// # async fn main() {
     /// #
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
@@ -547,7 +547,7 @@ impl<'a> Index<'a> {
     /// # #[tokio::main]
     /// # async fn main() {
     /// #
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
     /// // add some documents
@@ -588,7 +588,7 @@ impl<'a> Index<'a> {
     /// #
     /// # #[tokio::main]
     /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "");
+    /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movies = client.get_or_create("movies").await.unwrap();
     ///
     /// let stats = movies.get_stats().await.unwrap();
