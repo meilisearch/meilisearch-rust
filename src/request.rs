@@ -91,8 +91,8 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
         Ok(response) => Response::from(response),
         Err(e) => {
             error!("Network error: {:?}", e);
-            return Err(Error::UnreachableServer)
-        },
+            return Err(Error::UnreachableServer);
+        }
     };
     let status = response.status() as u16;
     let text = match response.text() {
@@ -102,7 +102,7 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
                 error!("Invalid response: {:?}", e);
                 return Err(Error::HttpError("Invalid response".to_string()));
             }
-        }
+        },
         Err(e) => {
             error!("Invalid response: {:?}", e);
             return Err(Error::HttpError("Invalid response".to_string()));
@@ -141,6 +141,6 @@ fn parse_response<Output: DeserializeOwned>(
     warn!("Expected response code {}, got {}", expected_status_code, status_code);
     match from_str(&body) {
         Ok(e) => Err(Error::from(&e)),
-        Err(e) => Err(Error::ParseError(e))
+        Err(e) => Err(Error::ParseError(e)),
     }
 }

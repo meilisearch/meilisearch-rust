@@ -49,7 +49,8 @@ impl<'a> Progress<'a> {
             self.index.client.apikey,
             Method::Get,
             200,
-        ).await?;
+        )
+        .await?;
 
         if let Ok(status) = from_value::<ProcessedStatus>(value.clone()) {
             Ok(Status::Processed(status))

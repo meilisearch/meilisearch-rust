@@ -1,6 +1,6 @@
-/// The enum representing the errors that can occur
-#[non_exhaustive]
+/// An enum representing the errors that can occur.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     MeiliSearchError {
         /// The human readable error message
@@ -35,14 +35,21 @@ pub enum Error {
     HttpError(String),
 }
 
-#[non_exhaustive]
+/// The type of error that was encountered.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum ErrorType {
+    /// The submitted request was invalid.
     InvalidRequest,
+    /// The MeiliSearch instance encountered an internal error.
     Internal,
+    /// Authentication was either incorrect or missing.
     Authentication,
 }
 
+/// The error code.
+///
+/// Officially documented at https://docs.meilisearch.com/errors.
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum ErrorCode {
@@ -109,11 +116,14 @@ pub enum ErrorCode {
     /// MeiliSearch only supports JSON payloads.
     UnsupportedMediaType,
 
-    /// That's unexpected. Please open a GitHub issue after ensuring you are using the supported version of the MeiliSearch server.
+    /// That's unexpected. Please open a GitHub issue after ensuring you are
+    /// using the supported version of the MeiliSearch server.
     Unknown(String),
 }
 
 impl ErrorType {
+    /// Converts the error type to the string representation returned by
+    /// MeiliSearch.
     pub fn as_str(&self) -> &'static str {
         match self {
             ErrorType::InvalidRequest => "invalid_request_error",
@@ -121,6 +131,9 @@ impl ErrorType {
             ErrorType::Authentication => "authentication_error",
         }
     }
+    /// Converts the error type string returned by MeiliSearch into an
+    /// `ErrorType` enum.  If the error type input is not recognized, None is
+    /// returned.
     pub fn parse(input: &str) -> Option<Self> {
         match input {
             "invalid_request_error" => Some(ErrorType::InvalidRequest),
@@ -132,6 +145,8 @@ impl ErrorType {
 }
 
 impl ErrorCode {
+    /// Converts the error code to the string representation returned by
+    /// MeiliSearch.
     pub fn as_str(&self) -> &str {
         match self {
             ErrorCode::IndexCreationFailed => "index_creation_failed",
@@ -166,6 +181,9 @@ impl ErrorCode {
             ErrorCode::Unknown(inner) => inner,
         }
     }
+    /// Converts the error code string returned by MeiliSearch into an `ErrorCode`
+    /// enum.  If the error type input is not recognized, `ErrorCode::Unknown`
+    /// is returned.
     pub fn parse(input: &str) -> Self {
         match input {
             "index_creation_failed" => ErrorCode::IndexCreationFailed,
@@ -198,22 +216,16 @@ impl ErrorCode {
 }
 
 impl std::fmt::Display for ErrorCode {
-    fn fmt(
-        &self,
-        formatter: &mut std::fmt::Formatter<'_>,
-    ) -> std::result::Result<(), std::fmt::Error> {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         match self {
-            ErrorCode::Unknown(inner) => write!(formatter, "unknown ({})", inner),
-            _ => write!(formatter, "{}", self.as_str()),
+            ErrorCode::Unknown(inner) => write!(fmt, "unknown ({})", inner),
+            _ => write!(fmt, "{}", self.as_str()),
         }
     }
 }
 
 impl std::fmt::Display for Error {
-    fn fmt(
-        &self,
-        formatter: &mut std::fmt::Formatter<'_>,
-    ) -> std::result::Result<(), std::fmt::Error> {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         match self {
             Error::MeiliSearchError {
                 message,
@@ -221,19 +233,17 @@ impl std::fmt::Display for Error {
                 error_type,
                 error_link,
             } => write!(
-                formatter,
+                fmt,
                 "Meilisearch {}: {}: {}. {}",
                 error_type.as_str(),
                 error_code,
                 message,
                 error_link,
             ),
-            Error::UnreachableServer => {
-                write!(formatter, "The MeiliSearch server can't be reached.")
-            }
-            Error::ParseError(e) => write!(formatter, "Error parsing response JSON: {}", e),
-            Error::HttpError(e) => write!(formatter, "HTTP request failed: {}", e),
-            Error::Empty => write!(formatter, "An error occured without a message"),
+            Error::UnreachableServer => write!(fmt, "The MeiliSearch server can't be reached."),
+            Error::ParseError(e) => write!(fmt, "Error parsing response JSON: {}", e),
+            Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e),
+            Error::Empty => write!(fmt, "An error occured without a message"),
         }
     }
 }
@@ -263,6 +273,7 @@ impl From<&serde_json::Value> for Error {
             .and_then(|v| v.as_str())
             .and_then(|s| ErrorType::parse(s))
             .unwrap_or(ErrorType::Internal);
+
         // If the response doesn't contain an errorType field, the error type
         // is assumed to be an internal error.
 

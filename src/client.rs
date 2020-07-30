@@ -203,12 +203,13 @@ impl<'a> Client<'a> {
             self.apikey,
             Method::Get,
             204,
-        ).await;
+        )
+        .await;
         match r {
             // This shouldn't be an error; The status code is 200, but the request
             // function only supports one successful error code for some reason
             Err(Error::Empty) => Ok(()),
-            e => e
+            e => e,
         }
     }
 
@@ -238,12 +239,13 @@ impl<'a> Client<'a> {
             self.apikey,
             Method::Put(HealthBody { health }),
             204,
-        ).await;
+        )
+        .await;
         match r {
             // This shouldn't be an error; The status code is 200, but the request
             // function only supports one successful error code for some reason
             Err(Error::Empty) => Ok(()),
-            e => e
+            e => e,
         }
     }
 
