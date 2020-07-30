@@ -72,11 +72,13 @@ $ sh scripts/update-readme.sh
 
 Then, add the generated `README.md` file to your git commit.
 
-You can check the current README is up-to-date by running:
+You can check the current `README.md` is up-to-date by running:
 
 ```sh
 $ sh scripts/check-readme.sh
 ```
+
+If it's not, the CI will fail on your PR.
 
 ### Release Process
 
