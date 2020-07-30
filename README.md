@@ -1,3 +1,7 @@
+<!-- Do NOT update manually the README.md file -->
+<!-- Update the README.tpl or src/lib.rs files instead, and run: -->
+<!-- sh scripts/update-readme.sh -->
+
 <p align="center">
   <img src="https://res.cloudinary.com/meilisearch/image/upload/v1587402338/SDKs/meilisearch_rust.svg" alt="MeiliSearch-Dotnet" width="200" height="200" />
 </p>
@@ -39,7 +43,7 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.2"
+meilisearch-sdk = 0.2.0
 ```
 
 The following optional dependencies may also be useful:

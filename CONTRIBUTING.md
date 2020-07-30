@@ -60,6 +60,24 @@ $ rustup update
 $ rustup component add clippy
 ```
 
+### Update the README
+
+The README is generated. Please do not update manually the `README.md` file.
+
+Instead, update the `README.tpl` and `src/lib.rs` files, and run:
+
+```sh
+$ sh scripts/update-readme.sh
+```
+
+Then, add the generated `README.md` file to your git commit.
+
+You can check the current README is up-to-date by running:
+
+```sh
+$ sh scripts/check-readme.sh
+```
+
 ### Release Process
 
 MeiliSearch tools follow the [Semantic Versioning Convention](https://semver.org/).

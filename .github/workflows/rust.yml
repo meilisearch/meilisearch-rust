@@ -22,6 +22,8 @@ jobs:
         cargo clippy -- -D warnings
     - name: Build
       run: cargo build --verbose
+    - name: Check the README.md file is up-to-date
+      run: sh scripts/check-readme.sh
     - name: Docker setup
       run: docker run -d -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --no-analytics=true --master-key=masterKey
     - name: Run tests
