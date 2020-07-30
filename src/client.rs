@@ -13,9 +13,7 @@ pub struct Client<'a> {
 impl<'a> Client<'a> {
     /// Create a client using the specified server.
     /// Don't put a '/' at the end of the host.
-    /// If you are not in production mode, the second field is useless.
-    /// In production mode, see [the documentation](https://docs.meilisearch.com/references/keys.html) to get the needed key.
-    ///
+    /// In production mode, see [the documentation about authentication](https://docs.meilisearch.com/guides/advanced_guides/authentication.html#authentication).
     /// # Example
     ///
     /// ```
