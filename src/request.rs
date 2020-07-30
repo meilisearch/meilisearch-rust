@@ -100,12 +100,12 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
             Ok(text) => text,
             Err(e) => {
                 error!("Invalid response: {:?}", e);
-                return Err(Error::Unknown("Invalid response".to_string()));
+                return Err(Error::HttpError("Invalid response".to_string()));
             }
         }
         Err(e) => {
             error!("Invalid response: {:?}", e);
-            return Err(Error::Unknown("Invalid response".to_string()));
+            return Err(Error::HttpError("Invalid response".to_string()));
         }
     };
 
@@ -117,7 +117,7 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
         }
     } else {
         error!("Invalid response");
-        Err(Error::Unknown("Invalid utf8".to_string()))
+        Err(Error::HttpError("Invalid utf8".to_string()))
     }
 }
 

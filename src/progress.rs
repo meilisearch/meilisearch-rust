@@ -50,14 +50,16 @@ impl<'a> Progress<'a> {
             Method::Get,
             200,
         ).await?;
+
         if let Ok(status) = from_value::<ProcessedStatus>(value.clone()) {
-            return Ok(Status::Processed(status));
-        } else if let Ok(status) = from_value::<EnqueuedStatus>(value) {
-            return Ok(Status::Enqueued(status));
+            Ok(Status::Processed(status))
+        } else {
+            let result = from_value::<EnqueuedStatus>(value);
+            match result {
+                Ok(status) => Ok(Status::Enqueued(status)),
+                Err(e) => Err(Error::ParseError(e)),
+            }
         }
-        Err(Error::Unknown(
-            "Invalid server response, src/progress.rs:56:9".to_string(),
-        ))
     }
 }
 
