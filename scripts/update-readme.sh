@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
 # Checking that cargo is installed
-if ! command -v cargo &> /dev/null
-then
+command -v cargo > /dev/null 2>&1
+if [ "$?" -ne 0 ]; then
     echo 'You must install cargo to make this script working.'
     echo 'See https://doc.rust-lang.org/cargo/getting-started/installation.html'
     exit
