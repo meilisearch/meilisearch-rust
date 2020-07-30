@@ -45,6 +45,21 @@ $ cargo test -- --test-threads=1
 
 Each PR should pass the tests to be accepted.
 
+### Clippy
+
+Each PR should pass [`clippy`](https://github.com/rust-lang/rust-clippy) (the linter) to be accepted.
+
+```bash
+$ cargo clippy -- -D warnings
+```
+
+If you don't have `clippy` installed on your machine yet, run:
+
+```bash
+$ rustup update
+$ rustup component add clippy
+```
+
 ### Release Process
 
 MeiliSearch tools follow the [Semantic Versioning Convention](https://semver.org/).
