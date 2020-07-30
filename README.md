@@ -74,8 +74,6 @@ NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 
 ## 🚀 Getting Started
 
-Here is a quickstart for a search request (please follow the [installation](#-installation) steps before)
-
 ```rust
 use meilisearch_sdk::{document::*, client::*, search::*};
 use serde::{Serialize, Deserialize};

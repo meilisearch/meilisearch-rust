@@ -1,17 +1,51 @@
-//! # Indexes
+//! ```
+//! use meilisearch_sdk::{document::*, client::*, search::*};
+//! use serde::{Serialize, Deserialize};
 //!
+//! #[derive(Serialize, Deserialize, Debug)]
+//! struct Book {
+//!     book_id: usize,
+//!     title: String,
+//! }
+//!
+//! // That trait is required to make a struct usable by an index
+//! impl Document for Book {
+//!     type UIDType = usize;
+//!
+//!     fn get_uid(&self) -> &Self::UIDType {
+//!         &self.book_id
+//!     }
+//! }
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     // Create a client (without sending any request so that can't fail)
+//!     let client = Client::new("http://localhost:7700", "masterKey");
+//!
+//!     // Get the index called "books"
+//!     let books = client.get_or_create("books").await.unwrap();
+//!
+//!     // Add some books in the index
+//!     books.add_documents(&[
+//!         Book{book_id: 123,  title: String::from("Pride and Prejudice")},
+//!         Book{book_id: 456,  title: String::from("Le Petit Prince")},
+//!         Book{book_id: 1,    title: String::from("Alice In Wonderland")},
+//!         Book{book_id: 1344, title: String::from("The Hobbit")},
+//!         Book{book_id: 4,    title: String::from("Harry Potter and the Half-Blood Prince")},
+//!         Book{book_id: 42,   title: String::from("The Hitchhiker's Guide to the Galaxy")},
+//!     ], Some("book_id")).await.unwrap();
+//!
+//!     // Query books (note that there is a typo)
+//!     let query = Query::new("harry pottre");
+//!     println!("{:?}", books.search::<Book>(&query).await.unwrap().hits);
+//! }
 //! ```
-//! # use meilisearch_sdk::{client::*, indexes::*};
-//! # #[tokio::main]
-//! # async fn main() {
-//! # let client = Client::new("http://localhost:7700", "masterKey");
-//! // list all indexes
-//! let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
-//! # }
+//!
+//! Output:
+//!
+//! ```text
+//! [Book { book_id: 4, title: "Harry Potter and the Half-Blood Prince" }]
 //! ```
-//! ...
-//! ETC...
-//! ...
 
 /// Module containing the Client struct.
 pub mod client;
