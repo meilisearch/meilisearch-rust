@@ -43,14 +43,14 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = 0.2.0
+meilisearch-sdk = "0.2.0"
 ```
 
 The following optional dependencies may also be useful:
 
 ```toml
 tokio = { version = "0.2", features = ["macros"] }
-serde = { version="1.0", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
 ```
 
 Since this crate is async, you have to run your program in the [tokio](https://crates.io/crates/tokio) runtime. When targetting Wasm, the browser will replace tokio.
