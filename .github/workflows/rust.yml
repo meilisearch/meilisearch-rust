@@ -15,6 +15,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Run linter (clippy)
+      # Will fail when encountering warnings
+      run: |
+        rustup component add clippy
+        cargo clippy -- -D warnings
     - name: Build
       run: cargo build --verbose
     - name: Docker setup
