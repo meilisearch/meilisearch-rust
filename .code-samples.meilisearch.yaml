@@ -1,0 +1,355 @@
+# This code-samples file is used by the MeiliSearch documentation
+# Every example written here will be automatically fetched by
+# the documentation on build
+# You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
+---
+get_one_index_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+list_all_indexes_1: |-
+  let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
+create_an_index_1: |-
+  let movie_index: Index = client.create_index("movies", Some("movie_id")).await.unwrap();
+update_an_index_1: |-
+  let movie_review_index: Index = client.get_index("movie_review").await.unwrap();
+  movie_review_index.update("movie_review_id").await.unwrap();
+delete_an_index_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  movie_index.delete().await.unwrap();
+get_one_document_1: |-
+  // First, we have to define the type of our documents and implement the Document trait
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: usize,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: String,
+  }
+  impl Document for Movie {
+    type UIDType = usize;
+    fn get_uid(&self) -> &Self::UIDType {
+      &self.id
+    }
+  }
+
+  // Then, we can use our struct and benefit from the strong type system of Rust at compile time
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let movie: Movie = movie_index.get_document(25684).await.unwrap();
+get_documents_1: |-
+  // First, we have to define the type of our documents and implement the Document trait
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: usize,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: String,
+  }
+  impl Document for Movie {
+    type UIDType = usize;
+    fn get_uid(&self) -> &Self::UIDType {
+      &self.id
+    }
+  }
+
+  // Then, we can use our struct and benefit from the strong type system of Rust at compile time
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let movie: Vec<Movie> = movie_index.get_documents(None, Some(2), None).await.unwrap();
+add_or_replace_documents_1: |-
+  // First, we have to define the type of our documents and implement the Document trait
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: usize,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: String,
+  }
+  impl Document for Movie {
+    type UIDType = usize;
+    fn get_uid(&self) -> &Self::UIDType {
+      &self.id
+    }
+  }
+
+  // Then, we can use our struct and benefit from the strong type system of Rust at compile time
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = movie_index.add_or_replace(&[
+    Movie {
+      id: 287947,
+      title: "Shazam".to_string(),
+      poster: "https://image.tmdb.org/t/p/w1280/xnopI5Xtky18MPhK40cZAGAOVeV.jpg".to_string(),
+      overview: "A boy is given the ability to become an adult superhero in times of need with a single magic word.".to_string(),
+      release_date: "2019-03-23".to_string()
+    }
+  ], None).await.unwrap();
+add_or_update_documents_1: |-
+  // First, we have to define the type of our documents and implement the Document trait
+  #[derive(Serialize, Deserialize, Debug)]
+  struct IncompleteMovie {
+    id: usize,
+    title: String
+  }
+  impl Document for IncompleteMovie {
+    type UIDType = usize;
+    fn get_uid(&self) -> &Self::UIDType {
+      &self.id
+    }
+  }
+
+  // Then, we can use our struct and benefit from the strong type system of Rust at compile time
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = movie_index.add_or_update(&[
+    Movie {
+      id: 287947,
+      title: "Shazam ⚡️".to_string()
+    }
+  ], None).await.unwrap();
+delete_all_documents_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = movie_index.delete_all_documents().await.unwrap();
+delete_one_document_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = movie_index.delete_document(25684).await.unwrap();
+delete_documents_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = movie_index.delete_documents([23488, 153738, 437035, 363869]).await.unwrap();
+search_1: |-
+  // Define the type of our documents and implement the Document trait
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: usize,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: String,
+  }
+  impl Document for Movie {
+    type UIDType = usize;
+    fn get_uid(&self) -> &Self::UIDType {
+      &self.id
+    }
+  }
+
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let query: Query = Query::new("American ninja");
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
+get_update_1: |-
+  let status: Status = progress.get_status().await.unwrap();
+get_all_updates_1: |-
+  // unavailable for now
+get_keys_1: |-
+  // unavailable for now
+get_settings_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let settings: Settings = movie_index.get_settings().await.unwrap();
+update_settings_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+
+  let mut synonyms = std::collections::HashMap::new();
+  synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
+  synonyms.insert(String::from("logan"), String::from("wolverine")]);
+
+  let settings = Settings::new()
+    .with_ranking_rules(vec![
+      "typo".to_string(),
+      "words".to_string(),
+      "proximity".to_string(),
+      "attribute".to_string(),
+      "wordsPosition".to_string(),
+      "exactness".to_string(),
+      "desc(release_date)".to_string(),
+      "desc(rank)".to_string()
+    ])
+    .with_distinct_attribute(movie_id.to_string())
+    .with_searchable_attributes(vec![
+      "uid".to_string(),
+      "movie_id".to_string(),
+      "title".to_string(),
+      "description".to_string(),
+      "poster".to_string(),
+      "release_date".to_string(),
+      "rank".to_string()
+    ])
+    .with_displayed_attributes(vec![
+      "title".to_string(),
+      "description".to_string(),
+      "poster".to_string(),
+      "release_date".to_string(),
+      "rank".to_string()
+    ])
+    .with_stop_words(vec![
+      "the".to_string(),
+      "a".to_string(),
+      "an".to_string()
+    ]),
+    .with_synonyms(synonyms)
+    .with_accept_new_fields(false);
+
+  let progress: Progress = movie_index.set_settings(&settings).await.unwrap();
+reset_settings_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = movie_index.reset_settings().await.unwrap();
+get_synonyms_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let synonyms: HashMap<String, Vec<String>> = movie_index.get_synonyms().await.unwrap();
+update_synonyms_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+
+  let mut synonyms = std::collections::HashMap::new();
+  synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
+  synonyms.insert(String::from("logan"), vec![String::from("xmen"), String::from("wolverine")]);
+  synonyms.insert(String::from("wow"), vec![String::from("world of warcraft")]);
+
+  let progress: Progress = movie_index.set_synonyms(&synonyms).await.unwrap();
+reset_synonyms_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  movie_index.reset_synonyms().await.unwrap();
+get_stop_words_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let stop_words: Vec<String> = movie_index.get_stop_words().await.unwrap();
+update_stop_words_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let stop_words = &["of", "the", "to"];
+  let progress: Progress = movie_index.set_stop_words(stop_words).await.unwrap();
+reset_stop_words_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = movie_index.reset_stop_words().await.unwrap();
+get_ranking_rules_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let ranking_rules: Vec<String> = client.get_ranking_rules().await.unwrap();
+update_ranking_rules_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+
+  let ranking_rules = &[
+    "typo",
+    "words",
+    "proximity",
+    "attribute",
+    "wordsPosition",
+    "exactness",
+    "asc(release_date)",
+    "desc(rank)",
+  ];
+
+  let progress: Progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
+reset_ranking_rules_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = client.reset_ranking_rules().await.unwrap();
+get_distinct_attribute_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let distinct_attribute: Option<String> = movie_index.get_distinct_attribute().await.unwrap();
+update_distinct_attribute_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = movie_index.set_distinct_attribute("movie_id").await.unwrap();
+reset_distinct_attribute_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = client.reset_distinct_attribute().await.unwrap();
+get_searchable_attributes_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let searchable_attributes: Vec<String> = movie_index.get_searchable_attributes().await.unwrap();
+update_searchable_attributes_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+
+  let searchable_attributes = &[
+    "title",
+    "description",
+    "uid"
+  ];
+
+  let progress: Progress = movie_index.set_searchable_attributes(searchable_attributes).await.unwrap();
+reset_searchable_attributes_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = client.reset_searchable_attributes().await.unwrap();
+get_attributes_for_faceting_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let attributes_for_faceting: Vec<String> = movie_index.get_attributes_for_faceting().await.unwrap();
+update_attributes_for_faceting_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+
+  let attributes_for_faceting = &[
+    "genre",
+    "director"
+  ];
+
+  let progress: Progress = movie_index.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
+reset_attributes_for_faceting_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = client.reset_attributes_for_faceting().await.unwrap();
+get_displayed_attributes_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let displayed_attributes: Vec<String> = movie_index.get_displayed_attributes().await.unwrap();
+update_displayed_attributes_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+
+  let displayed_attributes = &[
+    "title",
+    "description",
+    "release_date",
+    "rank",
+    "poster"
+  ];
+
+  let progress: Progress = movie_index.set_displayed_attributes(displayed_attributes).await.unwrap();
+reset_displayed_attributes_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = client.reset_displayed_attributes().await.unwrap();
+get_accept_new_fields_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let accept_new_fields: bool = movie_index.get_accept_new_fields().await.unwrap();
+update_accept_new_fields_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let progress: Progress = movie_index.set_accept_new_fields(false).await.unwrap();
+get_index_stats_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
+  let stats: IndexStats = movie_index.get_stats().await.unwrap();
+get_indexes_stats_1: |-
+  let stats: ClientStats = client.get_stats().await.unwrap();
+get_health_1: |-
+  match client.get_health().await {
+    Ok(()) => println!("server is operationnal"),
+    Err(Error::ServerInMaintenance) => eprintln!("server is in maintenance"), // TODO update this because it will soon be broken
+    _ => panic!("should never happen"),
+  }
+update_health_1: |-
+  client.set_health(false).await.unwrap();
+get_version_1: |-
+  let version: Version = client.get_version().await.unwrap();
+get_pretty_sys_info_1: |-
+  // this route is not supported because it will be soon removed
+get_sys_info_1: |-
+  // // this route is not supported because it will be soon removed
+distinct_attribute_guide_1: |-
+field_properties_guide_searchable_1: |-
+field_properties_guide_displayed_1: |-
+filtering_guide_1: |-
+filtering_guide_2: |-
+filtering_guide_3: |-
+filtering_guide_4: |-
+search_parameter_guide_query_1: |-
+search_parameter_guide_offset_1: |-
+search_parameter_guide_limit_1: |-
+search_parameter_guide_retrieve_1: |-
+search_parameter_guide_crop_1: |-
+search_parameter_guide_highlight_1: |-
+search_parameter_guide_filter_1: |-
+search_parameter_guide_filter_2: |-
+search_parameter_guide_matches_1: |-
+settings_guide_stop_words_1: |-
+settings_guide_ranking_rules_1: |-
+settings_guide_distinct_1: |-
+settings_guide_searchable_1: |-
+settings_guide_displayed_1: |-
+settings_guide_accept_new_fields_1: |-
+documents_guide_add_movie_1: |-
+search_guide_1: |-
+search_guide_2: |-
+getting_started_create_index_md: |-
+getting_started_add_documents_md: |-
+getting_started_search_md: |-
+faceted_search_update_settings_1: |-
+faceted_search_facet_filters_1: |-
+faceted_search_facets_distribution_1: |-
+faceted_search_walkthrough_attributes_for_faceting_1: |-
+faceted_search_walkthrough_facet_filters_1: |-
+faceted_search_walkthrough_facets_distribution_1: |-
