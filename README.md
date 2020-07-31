@@ -30,7 +30,6 @@
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
 - [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
-- [🎬 Examples](#-examples)
 - [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
 
