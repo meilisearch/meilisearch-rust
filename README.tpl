@@ -34,7 +34,6 @@
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
 - [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
-- [🎬 Examples](#-examples)
 - [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
 
@@ -82,10 +81,6 @@ NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 This package is compatible with the following MeiliSearch versions:
 - `v0.12.X`
 - `v0.11.X`
-
-## 🎬 Examples
-
-_TODO_
 
 ## 🌐 Running in the Browser with WASM
 
