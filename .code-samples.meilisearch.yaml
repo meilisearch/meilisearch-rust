@@ -345,8 +345,83 @@ documents_guide_add_movie_1: |-
 search_guide_1: |-
 search_guide_2: |-
 getting_started_create_index_md: |-
+  ```toml
+  [dependencies]
+  meilisearch-sdk = "0.2"
+  tokio = { version = "0.2", features = ["macros"] }  # required if you are not targeting wasm
+  serde = { version="1.0",   features = ["derive"] }  # required if you are going to use documents
+  serde_json = "1.0"                                  # required in some parts of this guide
+  ```
+
+  ```rust
+  use meilisearch_sdk::{document::*, client::*, search::*};
+  use serde::{Serialize, Deserialize};
+
+  #[tokio::main]
+  async fn main() {
+    let client = Client::new("http://localhost:7700", "masterKey");
+    let movie_index = client.create_index("movies", None).await.unwrap();
+  }
+  ```
+
+  [About this crate](https://github.com/meilisearch/meilisearch-rust)
 getting_started_add_documents_md: |-
+  The Rust library is quite different from the other libraries since documents are stronly typed.
+  You can implement the `Document` trait on a struct to be able to use it with Meilisearch.
+
+  ```rust
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64, 
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType {
+      &self.id
+    }
+  }
+  ```
+
+  But you can also use schemaless values, by putting a `serde_json::Value` inside your own struct like this:
+
+  ```rust
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    #[serde(flatten)]
+    value: serde_json::Value,
+  }
+
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType {
+      &self.id
+    }
+  }
+  ```
+
+  Then, you can add documents to an index like this:
+
+  ```rust
+  // reading an parsing the file
+  use std::{io::prelude::*, fs::File};
+  let mut file = File::open("movies.json").unwrap();
+  let mut content = String::new();
+  file.read_to_string(&mut content).unwrap();
+  let movies: Vec<Movie> = serde_json::from_str(&content).unwrap();
+  
+  // adding documents
+  movie_index.add_documents(&movies, None).await.unwrap();
+  ```
 getting_started_search_md: |-
+  ```rust
+  let query: Query = Query::new("botman");
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
+  ```
 faceted_search_update_settings_1: |-
 faceted_search_facet_filters_1: |-
 faceted_search_facets_distribution_1: |-
