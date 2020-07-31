@@ -290,14 +290,39 @@ filtering_guide_2: |-
 filtering_guide_3: |-
 filtering_guide_4: |-
 search_parameter_guide_query_1: |-
+  let query: Query = Query::new("shifu");
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_offset_1: |-
+    let query: Query = Query::new("shifu")
+      .with_offset(1);
+    let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_limit_1: |-
+  let query: Query = Query::new("shifu")
+    .with_limit(2);
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_retrieve_1: |-
+  let query: Query = Query::new("shifu")
+    .with_attributes_to_retrieve("overview,title");
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_crop_1: |-
+  let query: Query = Query::new("shifu")
+    .with_attributes_to_crop("overview")
+    .with_crop_length(10);
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_highlight_1: |-
+  let query: Query = Query::new("shifu")
+    .with_attributes_to_highlight("overview");
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_filter_1: |-
+  let query: Query = Query::new("n")
+    .with_filters("title = Nightshift");
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_filter_2: |-
+  let query: Query = Query::new("shifu")
+    .with_filters("title=\"Kung Fu Panda\"");
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_matches_1: |-
+  // unsupported for now
 settings_guide_stop_words_1: |-
 settings_guide_ranking_rules_1: |-
 settings_guide_distinct_1: |-
@@ -388,6 +413,9 @@ getting_started_search_md: |-
 faceted_search_update_settings_1: |-
 faceted_search_facet_filters_1: |-
 faceted_search_facets_distribution_1: |-
+  let query: Query = Query::new("Batman")
+    .with_facets_distribution(vec!["genres"]);
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 faceted_search_walkthrough_attributes_for_faceting_1: |-
 faceted_search_walkthrough_facet_filters_1: |-
 faceted_search_walkthrough_facets_distribution_1: |-
