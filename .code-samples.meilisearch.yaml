@@ -15,7 +15,7 @@ update_an_index_1: |-
 delete_an_index_1: |-
   movie_index.delete().await.unwrap();
 get_one_document_1: |-
-  // First, we have to define the type of our documents and implement the Document trait
+  // Define the type of our documents and implement the Document trait
   #[derive(Serialize, Deserialize, Debug)]
   struct Movie {
     id: String,
@@ -30,10 +30,10 @@ get_one_document_1: |-
     fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
-  // Then, we can use our struct and benefit from the strong type system of Rust at compile time
-  let movie: Movie = movie_index.get_document(25684).await.unwrap();
+  // We can now use our struct and benefit from the strong type system of Rust at compile time
+  let movie: Movie = movie_index.get_document(String::from("25684")).await.unwrap();
 get_documents_1: |-
-  // First, we have to define the type of our documents and implement the Document trait
+  // Define the type of our documents and implement the Document trait
   #[derive(Serialize, Deserialize, Debug)]
   struct Movie {
     id: String,
@@ -48,10 +48,9 @@ get_documents_1: |-
     fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
-  // Then, we can use our struct and benefit from the strong type system of Rust at compile time
   let movie: Vec<Movie> = movie_index.get_documents(None, Some(2), None).await.unwrap();
 add_or_replace_documents_1: |-
-  // First, we have to define the type of our documents and implement the Document trait
+  // Define the type of our documents and implement the Document trait
   #[derive(Serialize, Deserialize, Debug)]
   struct Movie {
     id: String,
@@ -66,34 +65,36 @@ add_or_replace_documents_1: |-
     fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
-  // Then, we can use our struct and benefit from the strong type system of Rust at compile time
+  // Note that the data differs a bit from other examples because we are using the exact same format as the database you downloaded, and the other examples are not
   let progress: Progress = movie_index.add_or_replace(&[
     Movie {
-      id: 287947,
+      id: "287947".to_string(),
       title: "Shazam".to_string(),
       poster: "https://image.tmdb.org/t/p/w1280/xnopI5Xtky18MPhK40cZAGAOVeV.jpg".to_string(),
       overview: "A boy is given the ability to become an adult superhero in times of need with a single magic word.".to_string(),
-      release_date: "2019-03-23".to_string()
+      release_date: 1553299200,
+      genre: vec![
+        "Action".to_string(),
+        "Comedy".to_string(),
+        "Fantasy".to_string()
+      ]
     }
   ], None).await.unwrap();
 add_or_update_documents_1: |-
-  // First, we have to define the type of our documents and implement the Document trait
+  // Define the type of our documents and implement the Document trait
   #[derive(Serialize, Deserialize, Debug)]
   struct IncompleteMovie {
-    id: usize,
+    id: String,
     title: String
   }
   impl Document for IncompleteMovie {
-    type UIDType = usize;
-    fn get_uid(&self) -> &Self::UIDType {
-      &self.id
-    }
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
-  // Then, we can use our struct and benefit from the strong type system of Rust at compile time
   let progress: Progress = movie_index.add_or_update(&[
-    Movie {
-      id: 287947,
+    IncompleteMovie {
+      id: "287947".to_string(),
       title: "Shazam ⚡️".to_string()
     }
   ], None).await.unwrap();
@@ -102,7 +103,7 @@ delete_all_documents_1: |-
 delete_one_document_1: |-
   let progress: Progress = movie_index.delete_document(25684).await.unwrap();
 delete_documents_1: |-
-  let progress: Progress = movie_index.delete_documents([23488, 153738, 437035, 363869]).await.unwrap();
+  let progress: Progress = movie_index.delete_documents(&[23488, 153738, 437035, 363869]).await.unwrap();
 search_1: |-
   // Define the type of our documents and implement the Document trait
   #[derive(Serialize, Deserialize, Debug)]
@@ -122,6 +123,7 @@ search_1: |-
   let query: Query = Query::new("American ninja");
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 get_update_1: |-
+  // This example assumes that there is a "progress" variable
   let status: Status = progress.get_status().await.unwrap();
 get_all_updates_1: |-
   // unavailable for now
@@ -132,8 +134,9 @@ get_settings_1: |-
 update_settings_1: |-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
-  synonyms.insert(String::from("logan"), String::from("wolverine")]);
+  synonyms.insert(String::from("logan"), vec![String::from("wolverine")]);
 
+  // That's quite ugly but we are working on an improvement
   let settings = Settings::new()
     .with_ranking_rules(vec![
       "typo".to_string(),
@@ -145,7 +148,7 @@ update_settings_1: |-
       "desc(release_date)".to_string(),
       "desc(rank)".to_string()
     ])
-    .with_distinct_attribute(movie_id.to_string())
+    .with_distinct_attribute("movie_id".to_string())
     .with_searchable_attributes(vec![
       "uid".to_string(),
       "movie_id".to_string(),
@@ -166,7 +169,7 @@ update_settings_1: |-
       "the".to_string(),
       "a".to_string(),
       "an".to_string()
-    ]),
+    ])
     .with_synonyms(synonyms)
     .with_accept_new_fields(false);
 
@@ -174,6 +177,7 @@ update_settings_1: |-
 reset_settings_1: |-
   let progress: Progress = movie_index.reset_settings().await.unwrap();
 get_synonyms_1: |-
+  use std::collections::HashMap;
   let synonyms: HashMap<String, Vec<String>> = movie_index.get_synonyms().await.unwrap();
 update_synonyms_1: |-
   let mut synonyms = std::collections::HashMap::new();
@@ -192,7 +196,7 @@ update_stop_words_1: |-
 reset_stop_words_1: |-
   let progress: Progress = movie_index.reset_stop_words().await.unwrap();
 get_ranking_rules_1: |-
-  let ranking_rules: Vec<String> = client.get_ranking_rules().await.unwrap();
+  let ranking_rules: Vec<String> = movie_index.get_ranking_rules().await.unwrap();
 update_ranking_rules_1: |-
   let ranking_rules = &[
     "typo",
@@ -207,13 +211,13 @@ update_ranking_rules_1: |-
 
   let progress: Progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
 reset_ranking_rules_1: |-
-  let progress: Progress = client.reset_ranking_rules().await.unwrap();
+  let progress: Progress = movie_index.reset_ranking_rules().await.unwrap();
 get_distinct_attribute_1: |-
   let distinct_attribute: Option<String> = movie_index.get_distinct_attribute().await.unwrap();
 update_distinct_attribute_1: |-
   let progress: Progress = movie_index.set_distinct_attribute("movie_id").await.unwrap();
 reset_distinct_attribute_1: |-
-  let progress: Progress = client.reset_distinct_attribute().await.unwrap();
+  let progress: Progress = movie_index.reset_distinct_attribute().await.unwrap();
 get_searchable_attributes_1: |-
   let searchable_attributes: Vec<String> = movie_index.get_searchable_attributes().await.unwrap();
 update_searchable_attributes_1: |-
@@ -225,7 +229,7 @@ update_searchable_attributes_1: |-
 
   let progress: Progress = movie_index.set_searchable_attributes(searchable_attributes).await.unwrap();
 reset_searchable_attributes_1: |-
-  let progress: Progress = client.reset_searchable_attributes().await.unwrap();
+  let progress: Progress = movie_index.reset_searchable_attributes().await.unwrap();
 get_attributes_for_faceting_1: |-
   let attributes_for_faceting: Vec<String> = movie_index.get_attributes_for_faceting().await.unwrap();
 update_attributes_for_faceting_1: |-
@@ -236,7 +240,7 @@ update_attributes_for_faceting_1: |-
 
   let progress: Progress = movie_index.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
 reset_attributes_for_faceting_1: |-
-  let progress: Progress = client.reset_attributes_for_faceting().await.unwrap();
+  let progress: Progress = movie_index.reset_attributes_for_faceting().await.unwrap();
 get_displayed_attributes_1: |-
   let displayed_attributes: Vec<String> = movie_index.get_displayed_attributes().await.unwrap();
 update_displayed_attributes_1: |-
@@ -250,7 +254,7 @@ update_displayed_attributes_1: |-
 
   let progress: Progress = movie_index.set_displayed_attributes(displayed_attributes).await.unwrap();
 reset_displayed_attributes_1: |-
-  let progress: Progress = client.reset_displayed_attributes().await.unwrap();
+  let progress: Progress = movie_index.reset_displayed_attributes().await.unwrap();
 get_accept_new_fields_1: |-
   let accept_new_fields: bool = movie_index.get_accept_new_fields().await.unwrap();
 update_accept_new_fields_1: |-
@@ -260,19 +264,16 @@ get_index_stats_1: |-
 get_indexes_stats_1: |-
   let stats: ClientStats = client.get_stats().await.unwrap();
 get_health_1: |-
-  match client.get_health().await {
-    Ok(()) => println!("server is operationnal"),
-    Err(Error::ServerInMaintenance) => eprintln!("server is in maintenance"), // TODO update this because it will soon be broken
-    _ => panic!("should never happen"),
-  }
+  // get_health() return an Err() if the server is not healthy, so this example would panic due to the unwrap
+  client.get_health().await.unwrap();
 update_health_1: |-
   client.set_health(false).await.unwrap();
 get_version_1: |-
   let version: Version = client.get_version().await.unwrap();
 get_pretty_sys_info_1: |-
-  // this route is not supported because it will be soon removed
+  // This route is not supported because it will be soon removed
 get_sys_info_1: |-
-  // // this route is not supported because it will be soon removed
+  // This route is not supported because it will be soon removed
 distinct_attribute_guide_1: |-
   let jacket_index: Index = client.get_index("jackets").await.unwrap();
   let progress: Progress = jacket_index.set_distinct_attribute("product_id").await.unwrap();
@@ -337,6 +338,7 @@ filtering_guide_2: |-
   }
   
   // Build the query
+  // Warning: the testing database you downloaded does not contains the fields used in the filters so this example will not work on this database
   let query: Query = Query::new("Batman")
     .with_filters("release_date > 795484800 AND (director = \"Tim Burton\" OR director = \"Christopher Nolan\")");
   
@@ -359,6 +361,7 @@ filtering_guide_3: |-
   }
   
   // Build the query
+  // Warning: the testing database you downloaded does not contains the field "director" used in the filters so this example will not work on this database
   let query: Query = Query::new("horror")
     .with_filters("director = \"Jordan Peele\"");
   
@@ -379,42 +382,164 @@ filtering_guide_4: |-
     type UIDType = String;
     fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
+
   
   // Build the query
+  // Warning: the testing database you downloaded does not contains the fields used in the filters so this example will not work on this database
   let query: Query = Query::new("Planet of the Apes")
     .with_filters("rating >= 3 AND (NOT director = \"Tim Burton\")");
   
   // Apply the query and get results
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_query_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
   let query: Query = Query::new("shifu");
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_offset_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
   let query: Query = Query::new("shifu")
     .with_offset(1);
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_limit_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
   let query: Query = Query::new("shifu")
     .with_limit(2);
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_retrieve_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
   let query: Query = Query::new("shifu")
     .with_attributes_to_retrieve("overview,title");
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_crop_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
   let query: Query = Query::new("shifu")
     .with_attributes_to_crop("overview")
     .with_crop_length(10);
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_highlight_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
   let query: Query = Query::new("shifu")
     .with_attributes_to_highlight("overview");
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_filter_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
   let query: Query = Query::new("n")
     .with_filters("title = Nightshift");
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_filter_2: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
   let query: Query = Query::new("shifu")
     .with_filters("title=\"Kung Fu Panda\"");
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
@@ -475,7 +600,7 @@ documents_guide_add_movie_1: |-
   // Define the type of our documents
   #[derive(Serialize, Deserialize, Debug)]
   struct IncompleteMovie {
-    movie_id: String,
+    id: String,
     title: String
   }
   impl Document for IncompleteMovie {
@@ -486,7 +611,7 @@ documents_guide_add_movie_1: |-
   // Add a document to our index
   let progress: Progress = movie_index.add_documents(&[
     IncompleteMovie {
-      movie_id: "123sq178".to_string(),
+      id: "123sq178".to_string(),
       title: "Amelie Poulain".to_string(),
     }
   ], None).await.unwrap();
@@ -545,13 +670,16 @@ getting_started_create_index_md: |-
   ```
 
   ```rust
-  use meilisearch_sdk::{document::*, client::*, search::*};
+  use meilisearch_sdk::{indexes::*, document::*, client::*, search::*, progress::*, settings::*};
   use serde::{Serialize, Deserialize};
 
   #[tokio::main]
   async fn main() {
     let client = Client::new("http://localhost:7700", "masterKey");
-    let movie_index = client.create_index("movies", None).await.unwrap();
+    // create an index if the index does not exist
+    let movie_index = client.get_or_create("movies").await.unwrap();  
+
+    // here is where you have to insert any other sample of this documentation
   }
   ```
 
@@ -609,6 +737,21 @@ getting_started_add_documents_md: |-
   ```
 getting_started_search_md: |-
   ```rust
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
   let query: Query = Query::new("botman");
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
   ```
@@ -630,8 +773,9 @@ faceted_search_facet_filters_1: |-
     fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
   
+  // Warning: the testing database you downloaded does not contains the fields used in the filters so this example will not work on this database
   let query: Query = Query::new("thriller")
-    .with_facets_filters(vec![vec!["genres:Horror", "genres:Mystery"], vec!["director:Jordan Peele"]]);
+    .with_facet_filters(vec![vec!["genres:Horror", "genres:Mystery"], vec!["director:Jordan Peele"]]);
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 faceted_search_facets_distribution_1: |-
   // Define the type of what we are searching for
@@ -670,8 +814,9 @@ faceted_search_walkthrough_facet_filters_1: |-
     fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
   
+  // Warning: the testing database you downloaded does not contains the fields used in the filters so this example will not work on this database
   let query: Query = Query::new("thriller")
-    .with_facets_filters(vec![vec!["genres:Horror", "genres:Mystery"], vec!["director:Jordan Peele"]]);
+    .with_facet_filters(vec![vec!["genres:Horror", "genres:Mystery"], vec!["director:Jordan Peele"]]);
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 faceted_search_walkthrough_facets_distribution_1: |-
   // Define the type of what we are searching for
