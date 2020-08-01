@@ -317,15 +317,119 @@ search_parameter_guide_filter_2: |-
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_matches_1: |-
   // unsupported for now
+settings_guide_synonyms_1: |-
+  let mut synonyms = std::collections::HashMap::new();
+  synonyms.insert("sweater".to_string(), vec![String::from("jumper")]);
+  synonyms.insert("jumper".to_string(), vec![String::from("sweater")]);
+
+  let top_index: Index = client.get_index("top").await.unwrap();
+  let progress: Progress = top_index.set_synonyms(&synonyms).await.unwrap();
 settings_guide_stop_words_1: |-
+  let progress: Progress = movie_index.set_stop_words(&["the", "a", "an"]).await.unwrap();
+settings_guide_attributes_for_faceting_1: |-
+  let progress: Progress = movie_index.set_attributes_for_faceting(&["director", "genres"]).await.unwrap();
 settings_guide_ranking_rules_1: |-
+  let ranking_rules = &[
+    "typo",
+    "words",
+    "proximity",
+    "attribute",
+    "wordsPosition",
+    "exactness",
+    "asc(release_date)",
+    "desc(rank)",
+  ];
+
+  let progress: Progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
 settings_guide_distinct_1: |-
+  let jacket_index: Index = client.get_index("jackets").await.unwrap();
+  let progress: Progress = jacket_index.set_distinct_attribute("product_id").await.unwrap();
 settings_guide_searchable_1: |-
+  let searchable_attributes = &[
+    "uid",
+    "movie_id",
+    "title",
+    "description",
+    "poster",
+    "release_date",
+    "rank"
+  ];
+
+  let progress: Progress = movie_index.set_searchable_attributes(searchable_attributes).await.unwrap();
 settings_guide_displayed_1: |-
+  let displayed_attributes = &[
+    "title",
+    "description",
+    "poster",
+    "release_date",
+    "rank"
+  ];
+
+  let progress: Progress = movie_index.set_displayed_attributes(displayed_attributes).await.unwrap();
 settings_guide_accept_new_fields_1: |-
+  let progress: Progress = movie_index.set_accept_new_fields(false).await.unwrap();
 documents_guide_add_movie_1: |-
+  // Define the type of our documents
+  #[derive(Serialize, Deserialize, Debug)]
+  struct IncompleteMovie {
+    movie_id: String,
+    title: String
+  }
+  impl Document for IncompleteMovie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
+  // Add a document to our index
+  let progress: Progress = movie_index.add_documents(&[
+    IncompleteMovie {
+      movie_id: "123sq178".to_string(),
+      title: "Amelie Poulain".to_string(),
+    }
+  ], None).await.unwrap();
 search_guide_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64, 
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  
+  // Build the query
+  let query: Query = Query::new("shifu")
+    .with_limit(5)
+    .with_offset(10);
+  
+  // Apply the query and get results
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_guide_2: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64, 
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  
+  // Build the query
+  let query: Query = Query::new("Avengers")
+    .with_filters("release_date > 795484800");
+  
+  // Apply the query and get results
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 getting_started_create_index_md: |-
   ```toml
   [dependencies]
