@@ -133,7 +133,6 @@ get_keys_1: |-
 get_settings_1: |-
   let settings: Settings = movie_index.get_settings().await.unwrap();
 update_settings_1: |-
-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
   synonyms.insert(String::from("logan"), String::from("wolverine")]);
@@ -180,7 +179,6 @@ reset_settings_1: |-
 get_synonyms_1: |-
   let synonyms: HashMap<String, Vec<String>> = movie_index.get_synonyms().await.unwrap();
 update_synonyms_1: |-
-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
   synonyms.insert(String::from("logan"), vec![String::from("xmen"), String::from("wolverine")]);
@@ -199,7 +197,6 @@ reset_stop_words_1: |-
 get_ranking_rules_1: |-
   let ranking_rules: Vec<String> = client.get_ranking_rules().await.unwrap();
 update_ranking_rules_1: |-
-
   let ranking_rules = &[
     "typo",
     "words",
@@ -223,7 +220,6 @@ reset_distinct_attribute_1: |-
 get_searchable_attributes_1: |-
   let searchable_attributes: Vec<String> = movie_index.get_searchable_attributes().await.unwrap();
 update_searchable_attributes_1: |-
-
   let searchable_attributes = &[
     "title",
     "description",
@@ -236,7 +232,6 @@ reset_searchable_attributes_1: |-
 get_attributes_for_faceting_1: |-
   let attributes_for_faceting: Vec<String> = movie_index.get_attributes_for_faceting().await.unwrap();
 update_attributes_for_faceting_1: |-
-
   let attributes_for_faceting = &[
     "genre",
     "director"
@@ -248,7 +243,6 @@ reset_attributes_for_faceting_1: |-
 get_displayed_attributes_1: |-
   let displayed_attributes: Vec<String> = movie_index.get_displayed_attributes().await.unwrap();
 update_displayed_attributes_1: |-
-
   let displayed_attributes = &[
     "title",
     "description",
