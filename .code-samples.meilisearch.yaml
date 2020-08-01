@@ -4,6 +4,7 @@
 # You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
 ---
 get_one_index_1: |-
+  let movie_index: Index = client.get_index("movies").await.unwrap();
 list_all_indexes_1: |-
   let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
 create_an_index_1: |-
@@ -17,17 +18,16 @@ get_one_document_1: |-
   // First, we have to define the type of our documents and implement the Document trait
   #[derive(Serialize, Deserialize, Debug)]
   struct Movie {
-    id: usize,
+    id: String,
     title: String,
     poster: String,
     overview: String,
-    release_date: String,
+    release_date: i64,
+    genre: Vec<String>
   }
   impl Document for Movie {
-    type UIDType = usize;
-    fn get_uid(&self) -> &Self::UIDType {
-      &self.id
-    }
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   // Then, we can use our struct and benefit from the strong type system of Rust at compile time
@@ -36,17 +36,16 @@ get_documents_1: |-
   // First, we have to define the type of our documents and implement the Document trait
   #[derive(Serialize, Deserialize, Debug)]
   struct Movie {
-    id: usize,
+    id: String,
     title: String,
     poster: String,
     overview: String,
-    release_date: String,
+    release_date: i64,
+    genre: Vec<String>
   }
   impl Document for Movie {
-    type UIDType = usize;
-    fn get_uid(&self) -> &Self::UIDType {
-      &self.id
-    }
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   // Then, we can use our struct and benefit from the strong type system of Rust at compile time
@@ -55,17 +54,16 @@ add_or_replace_documents_1: |-
   // First, we have to define the type of our documents and implement the Document trait
   #[derive(Serialize, Deserialize, Debug)]
   struct Movie {
-    id: usize,
+    id: String,
     title: String,
     poster: String,
     overview: String,
-    release_date: String,
+    release_date: i64,
+    genre: Vec<String>
   }
   impl Document for Movie {
-    type UIDType = usize;
-    fn get_uid(&self) -> &Self::UIDType {
-      &self.id
-    }
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   // Then, we can use our struct and benefit from the strong type system of Rust at compile time
@@ -109,17 +107,16 @@ search_1: |-
   // Define the type of our documents and implement the Document trait
   #[derive(Serialize, Deserialize, Debug)]
   struct Movie {
-    id: usize,
+    id: String,
     title: String,
     poster: String,
     overview: String,
-    release_date: String,
+    release_date: i64,
+    genre: Vec<String>
   }
   impl Document for Movie {
-    type UIDType = usize;
-    fn get_uid(&self) -> &Self::UIDType {
-      &self.id
-    }
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   let query: Query = Query::new("American ninja");
@@ -277,19 +274,125 @@ get_pretty_sys_info_1: |-
 get_sys_info_1: |-
   // // this route is not supported because it will be soon removed
 distinct_attribute_guide_1: |-
+  let jacket_index: Index = client.get_index("jackets").await.unwrap();
+  let progress: Progress = jacket_index.set_distinct_attribute("product_id").await.unwrap();
 field_properties_guide_searchable_1: |-
+  let searchable_attributes = &[
+    "uid",
+    "movie_id",
+    "title",
+    "description",
+    "poster",
+    "release_date",
+    "rank"
+  ];
+
+  let progress: Progress = movie_index.set_searchable_attributes(searchable_attributes).await.unwrap();
 field_properties_guide_displayed_1: |-
+  let displayed_attributes = &[
+    "title",
+    "description",
+    "poster",
+    "release_date",
+    "rank"
+  ];
+
+  let progress: Progress = movie_index.set_displayed_attributes(displayed_attributes).await.unwrap();
 filtering_guide_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  
+  // Build the query
+  let query: Query = Query::new("Avengers")
+    .with_filters("release_date > 795484800");
+  
+  // Apply the query and get results
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 filtering_guide_2: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  
+  // Build the query
+  let query: Query = Query::new("Batman")
+    .with_filters("release_date > 795484800 AND (director = \"Tim Burton\" OR director = \"Christopher Nolan\")");
+  
+  // Apply the query and get results
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 filtering_guide_3: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  
+  // Build the query
+  let query: Query = Query::new("horror")
+    .with_filters("director = \"Jordan Peele\"");
+  
+  // Apply the query and get results
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 filtering_guide_4: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  
+  // Build the query
+  let query: Query = Query::new("Planet of the Apes")
+    .with_filters("rating >= 3 AND (NOT director = \"Tim Burton\")");
+  
+  // Apply the query and get results
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_query_1: |-
   let query: Query = Query::new("shifu");
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_offset_1: |-
-    let query: Query = Query::new("shifu")
-      .with_offset(1);
-    let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
+  let query: Query = Query::new("shifu")
+    .with_offset(1);
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 search_parameter_guide_limit_1: |-
   let query: Query = Query::new("shifu")
     .with_limit(2);
@@ -327,7 +430,7 @@ settings_guide_synonyms_1: |-
 settings_guide_stop_words_1: |-
   let progress: Progress = movie_index.set_stop_words(&["the", "a", "an"]).await.unwrap();
 settings_guide_attributes_for_faceting_1: |-
-  let progress: Progress = movie_index.set_attributes_for_faceting(&["director", "genres"]).await.unwrap();
+  let progress: Progress = movie_index.set_attributes_for_faceting(&["director", "genre"]).await.unwrap();
 settings_guide_ranking_rules_1: |-
   let ranking_rules = &[
     "typo",
@@ -395,7 +498,8 @@ search_guide_1: |-
     title: String,
     poster: String,
     overview: String,
-    release_date: i64, 
+    release_date: i64,
+    genre: Vec<String>
   }
   impl Document for Movie {
     type UIDType = String;
@@ -417,7 +521,8 @@ search_guide_2: |-
     title: String,
     poster: String,
     overview: String,
-    release_date: i64, 
+    release_date: i64,
+    genre: Vec<String>
   }
   impl Document for Movie {
     type UIDType = String;
@@ -462,13 +567,12 @@ getting_started_add_documents_md: |-
     title: String,
     poster: String,
     overview: String,
-    release_date: i64, 
+    release_date: i64,
+    genre: Vec<String>
   }
   impl Document for Movie {
     type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType {
-      &self.id
-    }
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
   ```
 
@@ -509,11 +613,82 @@ getting_started_search_md: |-
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
   ```
 faceted_search_update_settings_1: |-
+  let progress: Progress = movie_index.set_attributes_for_faceting(&["director", "genre"]).await.unwrap();
 faceted_search_facet_filters_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  
+  let query: Query = Query::new("thriller")
+    .with_facets_filters(vec![vec!["genres:Horror", "genres:Mystery"], vec!["director:Jordan Peele"]]);
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 faceted_search_facets_distribution_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  
   let query: Query = Query::new("Batman")
-    .with_facets_distribution(vec!["genres"]);
+    .with_facets_distribution(Some(vec!["genre"]));
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 faceted_search_walkthrough_attributes_for_faceting_1: |-
+  let progress: Progress = movie_index.set_attributes_for_faceting(&["director", "producer", "genre", "production_companies"]).await.unwrap();
 faceted_search_walkthrough_facet_filters_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  
+  let query: Query = Query::new("thriller")
+    .with_facets_filters(vec![vec!["genres:Horror", "genres:Mystery"], vec!["director:Jordan Peele"]]);
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 faceted_search_walkthrough_facets_distribution_1: |-
+  // Define the type of what we are searching for
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  
+  let query: Query = Query::new("Batman")
+    .with_facets_distribution(Some(vec!["genre"]));
+  let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
