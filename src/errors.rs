@@ -36,7 +36,7 @@ pub enum Error {
 }
 
 /// The type of error that was encountered.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum ErrorType {
     /// The submitted request was invalid.
@@ -50,7 +50,7 @@ pub enum ErrorType {
 /// The error code.
 ///
 /// Officially documented at https://docs.meilisearch.com/errors.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum ErrorCode {
     /// An error occurred while trying to create an index.
@@ -118,7 +118,22 @@ pub enum ErrorCode {
 
     /// That's unexpected. Please open a GitHub issue after ensuring you are
     /// using the supported version of the MeiliSearch server.
-    Unknown(String),
+    Unknown(UnknownErrorCode),
+}
+
+
+#[derive(Clone)]
+pub struct UnknownErrorCode(String);
+
+impl std::fmt::Display for UnknownErrorCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.0, f)
+    }
+}
+impl std::fmt::Debug for UnknownErrorCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&self.0, f)
+    }
 }
 
 impl ErrorType {
@@ -178,7 +193,7 @@ impl ErrorCode {
             ErrorCode::SearchError => "search_error",
             ErrorCode::UnsupportedMediaType => "unsupported_media_type",
             // Other than this variant, all the other `&str`s are 'static
-            ErrorCode::Unknown(inner) => inner,
+            ErrorCode::Unknown(inner) => &inner.0,
         }
     }
     /// Converts the error code string returned by MeiliSearch into an `ErrorCode`
@@ -210,7 +225,7 @@ impl ErrorCode {
             "unretrievable_document" => ErrorCode::UnretrievableDocument,
             "search_error" => ErrorCode::SearchError,
             "unsupported_media_type" => ErrorCode::UnsupportedMediaType,
-            inner => ErrorCode::Unknown(inner.to_string()),
+            inner => ErrorCode::Unknown(UnknownErrorCode(inner.to_string())),
         }
     }
 }
@@ -281,7 +296,9 @@ impl From<&serde_json::Value> for Error {
             .get("errorCode")
             .and_then(|v| v.as_str())
             .map(|s| ErrorCode::parse(s))
-            .unwrap_or_else(|| ErrorCode::Unknown(String::from("missing errorCode")));
+            .unwrap_or_else(|| {
+                ErrorCode::Unknown(UnknownErrorCode(String::from("missing errorCode")))
+            });
 
         Error::MeiliSearchError {
             message,
