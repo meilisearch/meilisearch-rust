@@ -126,7 +126,7 @@ Output:
 ## 🤖 Compatibility with MeiliSearch
 
 This package is compatible with the following MeiliSearch versions:
-- `v0.13.0`
+- `v0.13.X`
 
 ## 🌐 Running in the Browser with WASM
 

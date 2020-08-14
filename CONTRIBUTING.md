@@ -76,6 +76,8 @@ You can check the current `README.md` is up-to-date by running:
 
 ```sh
 $ sh scripts/check-readme.sh
+# To see the diff
+$ sh scripts/check-readme.sh --diff
 ```
 
 If it's not, the CI will fail on your PR.

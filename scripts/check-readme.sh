@@ -16,6 +16,8 @@ curent_readme="README.md"
 generated_readme="README.md_tmp"
 cargo readme > "$generated_readme"
 
+# Exiting with the right message
+echo ''
 diff "$curent_readme" "$generated_readme" > /dev/null 2>&1
 if [ "$?" = 0 ]; then
     echo "OK"
@@ -23,7 +25,18 @@ if [ "$?" = 0 ]; then
     exit 0
 else
     echo "The current README.md is not up-to-date with the template."
-    echo "Run: sh scripts/update-readme.sh"
+
+    # Displaying the diff if the --diff flag is activated
+    if [ "$1" = '--diff' ]; then
+        echo 'Diff found:'
+        diff "$curent_readme" "$generated_readme"
+    else
+        echo 'To see the diff, run:'
+        echo '  $ sh scripts/check-readme.sh --diff'
+        echo 'To update the README, run:'
+        echo '  $ sh scripts/update-readme.sh'
+    fi
+
     rm -f "$generated_readme"
     exit 1
 fi
