@@ -90,7 +90,6 @@ pub struct SettingsUpdate {
     pub displayed_attributes: UpdateState<HashSet<String>>,
     pub stop_words: UpdateState<BTreeSet<String>>,
     pub synonyms: UpdateState<BTreeMap<String, Vec<String>>>,
-    pub accept_new_fields: UpdateState<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

@@ -82,7 +82,7 @@ About this automation:
 
 Make a PR modifying the file [`Cargo.toml`](/Cargo.toml) with the right version.
 
-```ruby
+```toml
 version = "X.X.X"
 ```
 

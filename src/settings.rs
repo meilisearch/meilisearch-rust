@@ -12,20 +12,17 @@ use crate::{indexes::Index, errors::Error, request::{request, Method}, progress:
 /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
 ///
 /// let settings = Settings::new()
-///     .with_stop_words(stop_words.clone())
-///     .with_accept_new_fields(false);
+///     .with_stop_words(stop_words.clone());
 ///
 /// // OR
 ///
 /// let mut settings = Settings::new();
 /// settings.stop_words = Some(stop_words.clone());
-/// settings.accept_new_fields = Some(false);
 ///
 /// // OR
 ///
 /// let settings = Settings {
 ///     stop_words: Some(stop_words.clone()),
-///     accept_new_fields: Some(false),
 ///     ..Settings::new()
 /// };
 /// ```
@@ -53,9 +50,6 @@ pub struct Settings {
     /// Fields displayed in the returned documents
     #[serde(skip_serializing_if = "Option::is_none")]
     pub displayed_attributes: Option<Vec<String>>,
-    /// Defines whether new fields should be searchable and displayed or not
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub accept_new_fields: Option<bool>,
 }
 
 #[allow(missing_docs)]
@@ -70,7 +64,6 @@ impl Settings {
             distinct_attribute: None,
             searchable_attributes: None,
             displayed_attributes: None,
-            accept_new_fields: None,
         }
     }
     pub fn with_synonyms(self, synonyms: HashMap<String, Vec<String>>) -> Settings {
@@ -112,12 +105,6 @@ impl Settings {
     pub fn with_displayed_attributes(self, displayed_attributes: Vec<String>) -> Settings {
         Settings {
             displayed_attributes: Some(displayed_attributes),
-            ..self
-        }
-    }
-    pub fn with_accept_new_fields(self, accept_new_fields: bool) -> Settings {
-        Settings {
-            accept_new_fields: Some(accept_new_fields),
             ..self
         }
     }
@@ -284,26 +271,6 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get the [accept-new-fields](https://docs.meilisearch.com/guides/advanced_guides/settings.html#accept-new-fields) value of the Index.
-    ///
-    /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let accept_new_field = movie_index.get_accept_new_fields().await.unwrap();
-    /// # }
-    /// ```
-    pub async fn get_accept_new_fields(&self) -> Result<bool, Error> {
-        Ok(request::<(), bool>(
-            &format!("{}/indexes/{}/settings/accept-new-fields", self.client.host, self.uid),
-            self.client.apikey,
-            Method::Get,
-            200,
-        ).await?)
-    }
-
     /// Update [settings](../settings/struct.Settings.html) of the index.
     /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
     ///
@@ -318,8 +285,7 @@ impl<'a> Index<'a> {
     ///
     /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
     /// let settings = Settings::new()
-    ///     .with_stop_words(stop_words.clone())
-    ///     .with_accept_new_fields(false);
+    ///     .with_stop_words(stop_words.clone());
     ///
     /// let progress = movie_index.set_settings(&settings).await.unwrap();
     /// # }
@@ -514,30 +480,6 @@ impl<'a> Index<'a> {
             &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(displayed_attributes),
-            202,
-        ).await?
-        .into_progress(self))
-    }
-
-    /// Update [accept-new-fields](https://docs.meilisearch.com/guides/advanced_guides/settings.html#accept-new-fields) of the index.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
-    ///
-    /// let progress = movie_index.set_accept_new_fields(false).await.unwrap();
-    /// # }
-    /// ```
-    pub async fn set_accept_new_fields(&'a self, accept_new_fields: bool) -> Result<Progress<'a>, Error> {
-        Ok(request::<bool, ProgressJson>(
-            &format!("{}/indexes/{}/settings/accept-new-fields", self.client.host, self.uid),
-            self.client.apikey,
-            Method::Post(accept_new_fields),
             202,
         ).await?
         .into_progress(self))
