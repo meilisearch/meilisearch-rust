@@ -102,11 +102,19 @@ About this automation:
 
 #### How to Publish the Release
 
-Make a PR modifying the file [`Cargo.toml`](/Cargo.toml) with the right version.
+Make a PR modifying the file [`Cargo.toml`](/Cargo.toml):
 
 ```toml
 version = "X.X.X"
 ```
+
+and the [`src/lib.rs`](/src/lib.rs):
+
+```rust
+//! meilisearch-sdk = "X.X.X"
+```
+
+with the right version.
 
 Once the changes are merged on `master`, you can publish the current draft release via the [GitHub interface](https://github.com/meilisearch/meilisearch-rust/releases).
 
