@@ -1,3 +1,39 @@
+//! # 🔧 Installation
+//!
+//! To use `meilisearch-sdk`, add this to your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! meilisearch-sdk = "0.2.0"
+//! ```
+//!
+//! The following optional dependencies may also be useful:
+//!
+//! ```toml
+//! tokio = { version = "0.2", features = ["macros"] }
+//! serde = { version = "1.0", features = ["derive"] }
+//! ```
+//!
+//! Since this crate is async, you have to run your program in the [tokio](https://crates.io/crates/tokio) runtime. When targetting Wasm, the browser will replace tokio.
+//!
+//! Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
+//!
+//! ## Run a MeiliSearch Instance
+//!
+//! This crate requires a MeiliSearch server to run.
+//!
+//! There are many easy ways to [download and run a MeiliSearch instance](https://docs.meilisearch.com/guides/advanced_guides/installation.html#download-and-launch).
+//!
+//! For example, if you use Docker:
+//! ```bash
+//! $ docker pull getmeili/meilisearch:latest # Fetch the latest version of MeiliSearch image from Docker Hub
+//! $ docker run -it --rm -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --master-key=masterKey
+//! ```
+//!
+//! NB: you can also download MeiliSearch from **Homebrew** or **APT**.
+//!
+//! # 🚀 Getting Started
+//!
 //! ```
 //! use meilisearch_sdk::{document::*, client::*, search::*};
 //! use serde::{Serialize, Deserialize};

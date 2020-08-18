@@ -29,7 +29,7 @@
 
 **MeiliSearch Rust** is a client for **MeiliSearch** written in Rust. **MeiliSearch** is a powerful, fast, open-source, easy to use and deploy search engine. Both searching and indexing are highly customizable. Features such as typo-tolerance, filters, and synonyms are provided out-of-the-box.
 
-### Table of Contents
+## Table of Contents
 
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
@@ -70,7 +70,6 @@ $ docker run -it --rm -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --m
 ```
 
 NB: you can also download MeiliSearch from **Homebrew** or **APT**.
-
 
 ## 🚀 Getting Started
 
