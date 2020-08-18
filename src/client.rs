@@ -182,16 +182,18 @@ impl<'a> Client<'a> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::{Error, ErrorCode}};
     /// #
     /// # #[tokio::main]
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
     /// match client.get_health().await {
-    ///     Ok(()) => println!("server is operationnal"),
-    ///     Err(Error::ServerInMaintenance) => eprintln!("server is in maintenance"),
-    ///     _ => panic!("should never happen"),
+    ///     Ok(()) => println!("server is operational"),
+    ///     Err(Error::MeiliSearchError { error_code: ErrorCode::Maintenance, .. }) => {
+    ///         eprintln!("server is in maintenance")
+    ///     },
+    ///     Err(e) => panic!("should never happen: {}", e),
     /// }
     /// # }
     /// ```
@@ -201,10 +203,13 @@ impl<'a> Client<'a> {
             self.apikey,
             Method::Get,
             204,
-        ).await;
+        )
+        .await;
         match r {
-            Err(Error::Unknown(m)) if &m == "null" => Ok(()),
-            e => e
+            // This shouldn't be an error; The status code is 200, but the request
+            // function only supports one successful error code for some reason
+            Err(Error::Empty) => Ok(()),
+            e => e,
         }
     }
 
@@ -234,10 +239,13 @@ impl<'a> Client<'a> {
             self.apikey,
             Method::Put(HealthBody { health }),
             204,
-        ).await;
+        )
+        .await;
         match r {
-            Err(Error::Unknown(m)) if &m == "null" => Ok(()),
-            e => e
+            // This shouldn't be an error; The status code is 200, but the request
+            // function only supports one successful error code for some reason
+            Err(Error::Empty) => Ok(()),
+            e => e,
         }
     }
 
