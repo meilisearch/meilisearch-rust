@@ -1,3 +1,7 @@
+<!-- Do NOT update manually the README.md file -->
+<!-- Update the README.tpl or src/lib.rs files instead, and run: -->
+<!-- sh scripts/update-readme.sh -->
+
 <p align="center">
   <img src="https://res.cloudinary.com/meilisearch/image/upload/v1587402338/SDKs/meilisearch_rust.svg" alt="MeiliSearch-Dotnet" width="200" height="200" />
 </p>
@@ -25,12 +29,12 @@
 
 **MeiliSearch Rust** is a client for **MeiliSearch** written in Rust. **MeiliSearch** is a powerful, fast, open-source, easy to use and deploy search engine. Both searching and indexing are highly customizable. Features such as typo-tolerance, filters, and synonyms are provided out-of-the-box.
 
-### Table of Contents
+## Table of Contents
 
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
-- [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
 - [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
+- [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
 
 ## 🔧 Installation
@@ -39,14 +43,14 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.2"
+meilisearch-sdk = "0.2.0"
 ```
 
 The following optional dependencies may also be useful:
 
 ```toml
 tokio = { version = "0.2", features = ["macros"] }
-serde = { version="1.0", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
 ```
 
 Since this crate is async, you have to run your program in the [tokio](https://crates.io/crates/tokio) runtime. When targetting Wasm, the browser will replace tokio.
@@ -67,10 +71,7 @@ $ docker run -it --rm -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --m
 
 NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 
-
 ## 🚀 Getting Started
-
-Here is a quickstart for a search request (please follow the [installation](#-installation) steps before)
 
 ```rust
 use meilisearch_sdk::{document::*, client::*, search::*};
@@ -121,12 +122,7 @@ Output:
 [Book { book_id: 4, title: "Harry Potter and the Half-Blood Prince" }]
 ```
 
-## 🤖 Compatibility with MeiliSearch
-
-This package is compatible with the following MeiliSearch versions:
-- `v0.13.0`
-
-## 🌐 Running in the Browser with WASM
+### 🌐 Running in the Browser with WASM
 
 This crate fully supports WASM.
 
@@ -135,6 +131,11 @@ The only difference between the WASM and the native version is that the native v
 However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using MeiliSearch, see the [tutorial (not available yet)]().
 
 WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
+
+## 🤖 Compatibility with MeiliSearch
+
+This package is compatible with the following MeiliSearch versions:
+- `v0.13.X`
 
 ## ⚙️ Development Workflow and Contributing
 

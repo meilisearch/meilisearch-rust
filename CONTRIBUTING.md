@@ -60,6 +60,28 @@ $ rustup update
 $ rustup component add clippy
 ```
 
+### Update the README
+
+The README is generated. Please do not update manually the `README.md` file.
+
+Instead, update the `README.tpl` and `src/lib.rs` files, and run:
+
+```sh
+$ sh scripts/update-readme.sh
+```
+
+Then, add the generated `README.md` file to your git commit.
+
+You can check the current `README.md` is up-to-date by running:
+
+```sh
+$ sh scripts/check-readme.sh
+# To see the diff
+$ sh scripts/check-readme.sh --diff
+```
+
+If it's not, the CI will fail on your PR.
+
 ### Release Process
 
 MeiliSearch tools follow the [Semantic Versioning Convention](https://semver.org/).
@@ -80,11 +102,19 @@ About this automation:
 
 #### How to Publish the Release
 
-Make a PR modifying the file [`Cargo.toml`](/Cargo.toml) with the right version.
+Make a PR modifying the file [`Cargo.toml`](/Cargo.toml):
 
 ```toml
 version = "X.X.X"
 ```
+
+and the [`src/lib.rs`](/src/lib.rs):
+
+```rust
+//! meilisearch-sdk = "X.X.X"
+```
+
+with the right version.
 
 Once the changes are merged on `master`, you can publish the current draft release via the [GitHub interface](https://github.com/meilisearch/meilisearch-rust/releases).
 

@@ -1,31 +1,41 @@
-//! MeiliSearch-sdk is an async client for [MeiliSearch](https://www.meilisearch.com/) written in Rust.
-//! [MeiliSearch](https://www.meilisearch.com/) is a powerful, fast, open-source, easy to use and deploy search engine.
-//! Both searching and indexing are highly customizable.
-//! Features such as typo-tolerance, filters, and synonyms are provided out-of-the-box.
-//!
-//! ## Table of Contents
-//! - [🔧 Installation](#-installation)
-//! - [🚀 Getting started](#-getting-started)
-//! - [🌐 Running in the browser with WASM](#-running-in-the-browser-with-wasm)
-//! - [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
-//!
 //! # 🔧 Installation
 //!
-//! This crate requires a MeiliSearch server to run. See [here](https://docs.meilisearch.com/guides/advanced_guides/installation.html#download-and-launch) to install and run MeiliSearch.
+//! To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 //!
-//! Then, put `meilisearch-sdk = "0.1"` in your Cargo.toml, as usual.
+//! ```toml
+//! [dependencies]
+//! meilisearch-sdk = "0.2.0"
+//! ```
 //!
-//! Since this crate is async, you have to run your program in the tokio runtime (cf the example below). You will need `tokio = { version = "0.2", features=["macros"] }` in your Cargo.toml. When targetting Wasm, the browser will replace tokio.
+//! The following optional dependencies may also be useful:
+//!
+//! ```toml
+//! tokio = { version = "0.2", features = ["macros"] }
+//! serde = { version = "1.0", features = ["derive"] }
+//! ```
+//!
+//! Since this crate is async, you have to run your program in the [tokio](https://crates.io/crates/tokio) runtime. When targetting Wasm, the browser will replace tokio.
 //!
 //! Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
-//! Add `serde = {version="1.0", features=["derive"]}` in your Cargo.toml.
+//!
+//! ## Run a MeiliSearch Instance
+//!
+//! This crate requires a MeiliSearch server to run.
+//!
+//! There are many easy ways to [download and run a MeiliSearch instance](https://docs.meilisearch.com/guides/advanced_guides/installation.html#download-and-launch).
+//!
+//! For example, if you use Docker:
+//! ```bash
+//! $ docker pull getmeili/meilisearch:latest # Fetch the latest version of MeiliSearch image from Docker Hub
+//! $ docker run -it --rm -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --master-key=masterKey
+//! ```
+//!
+//! NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 //!
 //! # 🚀 Getting Started
 //!
-//! Here is a quickstart for a search request (please follow the [installation](#-installation) steps before)
-//!
-//! ```rust
-//! use meilisearch_sdk::{document::*, indexes::*, client::*, search::*};
+//! ```
+//! use meilisearch_sdk::{document::*, client::*, search::*};
 //! use serde::{Serialize, Deserialize};
 //!
 //! #[derive(Serialize, Deserialize, Debug)]
@@ -49,7 +59,7 @@
 //!     let client = Client::new("http://localhost:7700", "masterKey");
 //!
 //!     // Get the index called "books"
-//!     let mut books = client.get_or_create("books").await.unwrap();
+//!     let books = client.get_or_create("books").await.unwrap();
 //!
 //!     // Add some books in the index
 //!     books.add_documents(&[
@@ -73,22 +83,15 @@
 //! [Book { book_id: 4, title: "Harry Potter and the Half-Blood Prince" }]
 //! ```
 //!
-//! # 🌐 Running in the browser with WASM
+//! ## 🌐 Running in the Browser with WASM
 //!
-//! This crate fully supports WASM. The only difference between the WASM and the native version is that the native version has one more variant (Error::Http) in the Error enum. That should not matter so much but we could add this variant in WASM too.
-//! However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using meilisearch, see the [tutorial (not available yet)]().
+//! This crate fully supports WASM.
+//!
+//! The only difference between the WASM and the native version is that the native version has one more variant (`Error::Http`) in the Error enum. That should not matter so much but we could add this variant in WASM too.
+//!
+//! However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using MeiliSearch, see the [tutorial (not available yet)]().
 //!
 //! WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
-//!
-//! # 🤖 Compatibility with MeiliSearch
-//!
-//! This crate is currently supporting MeiliSearch v11.0 and will be maintained.
-//!
-//! # Running the tests
-//!
-//! All the tests are documentation tests.
-//! Since they are all making operations on the MeiliSearch server, running all the tests simultaneously would cause panics.
-//! To run the tests one by one, run `cargo test -- --test-threads=1`.
 
 /// Module containing the Client struct.
 pub mod client;
