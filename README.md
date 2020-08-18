@@ -33,8 +33,8 @@
 
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
-- [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
 - [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
+- [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
 
 ## 🔧 Installation
@@ -122,12 +122,7 @@ Output:
 [Book { book_id: 4, title: "Harry Potter and the Half-Blood Prince" }]
 ```
 
-## 🤖 Compatibility with MeiliSearch
-
-This package is compatible with the following MeiliSearch versions:
-- `v0.13.X`
-
-## 🌐 Running in the Browser with WASM
+### 🌐 Running in the Browser with WASM
 
 This crate fully supports WASM.
 
@@ -136,6 +131,11 @@ The only difference between the WASM and the native version is that the native v
 However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using MeiliSearch, see the [tutorial (not available yet)]().
 
 WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
+
+## 🤖 Compatibility with MeiliSearch
+
+This package is compatible with the following MeiliSearch versions:
+- `v0.13.X`
 
 ## ⚙️ Development Workflow and Contributing
 

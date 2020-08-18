@@ -82,6 +82,16 @@
 //! ```text
 //! [Book { book_id: 4, title: "Harry Potter and the Half-Blood Prince" }]
 //! ```
+//!
+//! ## 🌐 Running in the Browser with WASM
+//!
+//! This crate fully supports WASM.
+//!
+//! The only difference between the WASM and the native version is that the native version has one more variant (`Error::Http`) in the Error enum. That should not matter so much but we could add this variant in WASM too.
+//!
+//! However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using MeiliSearch, see the [tutorial (not available yet)]().
+//!
+//! WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
 
 /// Module containing the Client struct.
 pub mod client;
