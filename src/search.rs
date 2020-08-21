@@ -48,6 +48,8 @@ pub struct SearchResults<T> {
     pub query: String,
 }
 
+type AttributeToCrop<'a> = (&'a str, Option<usize>);
+
 /// A struct representing a query.
 /// You can add search parameters using the builder syntax.
 /// See [here](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#query-q) for the list and description of all parameters.
@@ -82,8 +84,8 @@ pub struct Query<'a> {
     pub facets_distribution: Option<Option<&'a [&'a str]>>,
     /// Attributes to **display** in the returned documents.
     pub attributes_to_retrieve: Option<&'a [&'a str]>,
-    /// Attributes to crop. The value `Some(None)` is the wildcard. Attributes names can be joined by an optional `usize` that overwrites the `crop_length` parameter.
-    pub attributes_to_crop: Option<Option<&'a [(&'a str, Option<usize>)]>>,
+    /// Attributes to crop. The value `Some(None)` is the wildcard. Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
+    pub attributes_to_crop: Option<Option<&'a [AttributeToCrop<'a>]>>,
     /// Number of characters to keep on each side of the start of the matching word. See [attributes_to_crop](#structfield.attributes_to_crop).
     ///
     /// Default: 200
