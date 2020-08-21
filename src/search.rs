@@ -3,15 +3,24 @@ use serde::{de::DeserializeOwned, Deserialize};
 use std::collections::HashMap;
 use serde_json::to_string;
 
-// TODO support https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#matches
-// TODO highlighting
+/// A single result.  
+/// Contains the complete object and optionally the formatted object (will be set if there were formatting options in the query).
+#[derive(Deserialize, Debug)]
+pub struct SearchResult<T> {
+    /// The full result.
+    #[serde(flatten)]
+    pub result: T,
+    /// The formatted result.
+    #[serde(rename = "_formatted")]
+    pub formatted_result: Option<T>
+}
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
 pub struct SearchResults<T> {
     /// results of the query
-    pub hits: Vec<T>,
+    pub hits: Vec<SearchResult<T>>,
     /// number of documents skipped
     pub offset: usize,
     /// number of documents to take
