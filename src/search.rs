@@ -212,29 +212,25 @@ impl<'a> Query<'a> {
             url.push_str("&attributesToRetrieve=");
             url.push_str(encode(attributes_to_retrieve).as_str());
         }
-        if let Some(attributes_to_crop) = self.attributes_to_crop {
-            match attributes_to_crop {
-                Some(attributes_to_crop) => {
-                    url.push_str("&attributesToCrop=");
-                    let mut first = true;
-                    for (attribute_to_crop, crop_length) in attributes_to_crop {
-                        if first {
-                            first = false;
-                        } else {
-                            url.push(',');
-                        }
-                        url.push_str(encode(attribute_to_crop).as_str());
-                        if let Some(crop_length) = crop_length {
-                            url.push(':');
-                            url.push_str(crop_length.to_string().as_str());
-                        }
+        match self.attributes_to_crop {
+            Some(None) => url.push_str("&attributesToCrop=*"),
+            Some(Some(attributes_to_crop)) => {
+                url.push_str("&attributesToCrop=");
+                let mut first = true;
+                for (attribute_to_crop, crop_length) in attributes_to_crop {
+                    if first {
+                        first = false;
+                    } else {
+                        url.push(',');
                     }
-                },
-                None => {
-                    url.push_str("&attributesToCrop=*");
+                    url.push_str(encode(attribute_to_crop).as_str());
+                    if let Some(crop_length) = crop_length {
+                        url.push(':');
+                        url.push_str(crop_length.to_string().as_str());
+                    }
                 }
             }
-            
+            None => (),
         }
         if let Some(crop_length) = self.crop_length {
             url.push_str("&cropLength=");
