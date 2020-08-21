@@ -19,7 +19,6 @@ get_one_document_1: |-
 get_documents_1: |-
   let movie: Vec<Movie> = movie_index.get_documents(None, Some(2), None).await.unwrap();
 add_or_replace_documents_1: |-
-  // Note that the data differs a bit from other examples because we are using the exact same format as the database you downloaded, and the other examples are not
   let progress: Progress = movie_index.add_or_replace(&[
     Movie {
       id: "287947".to_string(),
@@ -109,8 +108,7 @@ update_settings_1: |-
       "a".to_string(),
       "an".to_string()
     ])
-    .with_synonyms(synonyms)
-    .with_accept_new_fields(false);
+    .with_synonyms(synonyms);
 
   let progress: Progress = movie_index.set_settings(&settings).await.unwrap();
 reset_settings_1: |-
@@ -194,10 +192,6 @@ update_displayed_attributes_1: |-
   let progress: Progress = movie_index.set_displayed_attributes(displayed_attributes).await.unwrap();
 reset_displayed_attributes_1: |-
   let progress: Progress = movie_index.reset_displayed_attributes().await.unwrap();
-get_accept_new_fields_1: |-
-  let accept_new_fields: bool = movie_index.get_accept_new_fields().await.unwrap();
-update_accept_new_fields_1: |-
-  let progress: Progress = movie_index.set_accept_new_fields(false).await.unwrap();
 get_index_stats_1: |-
   let stats: IndexStats = movie_index.get_stats().await.unwrap();
 get_indexes_stats_1: |-
@@ -209,10 +203,6 @@ update_health_1: |-
   client.set_health(false).await.unwrap();
 get_version_1: |-
   let version: Version = client.get_version().await.unwrap();
-get_pretty_sys_info_1: |-
-  // This route is not supported because it will be soon removed
-get_sys_info_1: |-
-  // This route is not supported because it will be soon removed
 distinct_attribute_guide_1: |-
   let jacket_index: Index = client.get_index("jackets").await.unwrap();
   let progress: Progress = jacket_index.set_distinct_attribute("product_id").await.unwrap();
@@ -247,7 +237,6 @@ filtering_guide_1: |-
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 filtering_guide_2: |-
   // Build the query
-  // Warning: the testing database you downloaded does not contains the fields used in the filters so this example will not work on this database
   let query: Query = Query::new("Batman")
     .with_filters("release_date > 795484800 AND (director = \"Tim Burton\" OR director = \"Christopher Nolan\")");
   
@@ -255,16 +244,13 @@ filtering_guide_2: |-
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 filtering_guide_3: |-
   // Build the query
-  // Warning: the testing database you downloaded does not contains the field "director" used in the filters so this example will not work on this database
   let query: Query = Query::new("horror")
     .with_filters("director = \"Jordan Peele\"");
   
   // Apply the query and get results
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 filtering_guide_4: |-
-  
   // Build the query
-  // Warning: the testing database you downloaded does not contains the fields used in the filters so this example will not work on this database
   let query: Query = Query::new("Planet of the Apes")
     .with_filters("rating >= 3 AND (NOT director = \"Tim Burton\")");
   
@@ -353,8 +339,6 @@ settings_guide_displayed_1: |-
   ];
 
   let progress: Progress = movie_index.set_displayed_attributes(displayed_attributes).await.unwrap();
-settings_guide_accept_new_fields_1: |-
-  let progress: Progress = movie_index.set_accept_new_fields(false).await.unwrap();
 documents_guide_add_movie_1: |-
   // Define the type of our documents
   #[derive(Serialize, Deserialize, Debug)]
@@ -392,7 +376,7 @@ search_guide_2: |-
 getting_started_create_index_md: |-
   ```toml
   [dependencies]
-  meilisearch-sdk = "0.2"
+  meilisearch-sdk = "0.3"
   tokio = { version = "0.2", features = ["macros"] }  # required if you are not targeting wasm
   serde = { version="1.0",   features = ["derive"] }  # required if you are going to use documents
   serde_json = "1.0"                                  # required in some parts of this guide
@@ -416,7 +400,7 @@ getting_started_create_index_md: |-
 
   [About this crate](https://github.com/meilisearch/meilisearch-rust)
 getting_started_add_documents_md: |-
-  The Rust library is quite different from the other libraries since documents are stronly typed.
+  Documents in the Rust library are stronly typed.
   You have to implement the `Document` trait on a struct to be able to use it with Meilisearch.
 
   ```rust
@@ -452,7 +436,7 @@ getting_started_add_documents_md: |-
   }
   ```
 
-  Then, you can add documents to an index like this:
+  Then, add documents into the index:
 
   ```rust
   // reading an parsing the file
@@ -492,3 +476,4 @@ faceted_search_walkthrough_facets_distribution_1: |-
   let query: Query = Query::new("Batman")
     .with_facets_distribution(Some(vec!["genre"]));
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
+  
