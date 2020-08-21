@@ -3,8 +3,14 @@ use serde::{de::DeserializeOwned, Deserialize};
 use std::collections::HashMap;
 use serde_json::to_string;
 
+#[derive(Deserialize, Debug)]
+pub struct MatchRange {
+    start: usize,
+    length: usize
+}
+
 /// A single result.  
-/// Contains the complete object and optionally the formatted object (will be set if there were formatting options in the query).
+/// Contains the complete object, optionally the formatted object, and optionnaly an object that contains information about the matches.
 #[derive(Deserialize, Debug)]
 pub struct SearchResult<T> {
     /// The full result.
@@ -12,7 +18,10 @@ pub struct SearchResult<T> {
     pub result: T,
     /// The formatted result.
     #[serde(rename = "_formatted")]
-    pub formatted_result: Option<T>
+    pub formatted_result: Option<T>,
+    /// The object that contains information about the matches.
+    #[serde(rename = "_matchesInfo")]
+    pub matches_info: Option<HashMap<String, Vec<MatchRange>>>
 }
 
 #[derive(Deserialize, Debug)]
@@ -84,6 +93,8 @@ pub struct Query<'a> {
     pub crop_length: Option<usize>,
     /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-highlight)
     pub attributes_to_highlight: Option<&'a str>,
+    /// Defines whether an object that contains information about the matches should be returned or not
+    pub matches: Option<bool>
 }
 
 #[allow(missing_docs)]
@@ -100,6 +111,7 @@ impl<'a> Query<'a> {
             attributes_to_crop: None,
             attributes_to_highlight: None,
             crop_length: None,
+            matches: None,
         }
     }
     pub fn with_offset(self, offset: usize) -> Query<'a> {
@@ -156,6 +168,12 @@ impl<'a> Query<'a> {
             ..self
         }
     }
+    pub fn with_matches(self, matches: bool) -> Query<'a> {
+        Query {
+            matches: Some(matches),
+            ..self
+        }
+    }
 }
 
 impl<'a> Query<'a> {
@@ -174,6 +192,10 @@ impl<'a> Query<'a> {
         if let Some(filters) = self.filters {
             url.push_str("&filters=");
             url.push_str(encode(filters).as_str());
+        }
+        if let Some(matches) = self.matches {
+            url.push_str("&matches=");
+            url.push_str(matches.to_string().as_str());
         }
         if let Some(facet_filters) = &self.facet_filters {
             url.push_str("&facetFilters=");
