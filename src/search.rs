@@ -246,7 +246,7 @@ impl<'a> Query<'a> {
         match self.attributes_to_highlight {
             Some(None) => url.push_str("&attributesToHighlight=*"),
             Some(Some(attributes_to_highlight)) => {
-                url.push_str("&attributesToHighlight=[");
+                url.push_str("&attributesToHighlight=");
                 let mut first = true;
                 for attribute_to_highlight in attributes_to_highlight {
                     if first {
@@ -256,7 +256,6 @@ impl<'a> Query<'a> {
                     }
                     url.push_str(encode(attribute_to_highlight).as_str());
                 }
-                url.push(']');
             }
             None => ()
         }
@@ -270,5 +269,49 @@ impl<'a> Query<'a> {
         index: &Index<'a>,
     ) -> Result<SearchResults<T>, Error> {
         index.search::<T>(&self).await
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn serialize_query_to_url() {
+        let query = Query::new("test")
+            .with_attributes_to_crop(Some(&[("first", None)]));
+        assert_eq!(query.to_url(), "?q=test&attributesToCrop=first");
+
+        let query = Query::new("test")
+            .with_attributes_to_crop(Some(&[("first", None), ("second", None)]));
+        assert_eq!(query.to_url(), "?q=test&attributesToCrop=first,second");
+
+        let query = Query::new("test")
+            .with_attributes_to_crop(Some(&[("first", Some(5)), ("second", Some(8))]));
+        assert_eq!(query.to_url(), "?q=test&attributesToCrop=first:5,second:8");
+
+        let query = Query::new("test")
+            .with_attributes_to_crop(Some(&[("firs🤔t", Some(5)), ("second", Some(8))]));
+        assert_eq!(query.to_url(), "?q=test&attributesToCrop=firs%F0%9F%A4%94t:5,second:8");
+
+        let query = Query::new("test")
+            .with_attributes_to_retrieve(&["first"]);
+        assert_eq!(query.to_url(), "?q=test&attributesToRetrieve=first");
+
+        let query = Query::new("test")
+            .with_attributes_to_retrieve(&["first", "second"]);
+        assert_eq!(query.to_url(), "?q=test&attributesToRetrieve=first,second");
+
+        let query = Query::new("test")
+            .with_attributes_to_highlight(Some(&["first"]));
+        assert_eq!(query.to_url(), "?q=test&attributesToHighlight=first");
+
+        let query = Query::new("test")
+            .with_attributes_to_highlight(Some(&["first", "second"]));
+        assert_eq!(query.to_url(), "?q=test&attributesToHighlight=first,second");
+
+        let query = Query::new("test")
+            .with_attributes_to_highlight(None);
+        assert_eq!(query.to_url(), "?q=test&attributesToHighlight=*");
     }
 }
