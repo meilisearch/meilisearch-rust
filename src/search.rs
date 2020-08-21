@@ -77,9 +77,9 @@ pub struct Query<'a> {
     /// Specify a filter to be used with the query. See the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html).
     pub filters: Option<&'a str>,
     /// Facet names and values to filter on. See [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#facet-filters).
-    pub facet_filters: Option<Vec<Vec<&'a str>>>,
+    pub facet_filters: Option<&'a [&'a [&'a str]]>,
     /// Facets for which to retrieve the matching count. The value `Some(None)` is the wildcard.
-    pub facets_distribution: Option<Option<Vec<&'a str>>>,
+    pub facets_distribution: Option<Option<&'a [&'a str]>>,
     /// Attributes to **display** in the returned documents.
     pub attributes_to_retrieve: Option<&'a [&'a str]>,
     /// Attributes to crop. The value `Some(None)` is the wildcard. Attributes names can be joined by an optional `usize` that overwrites the `crop_length` parameter.
@@ -129,13 +129,13 @@ impl<'a> Query<'a> {
             ..self
         }
     }
-    pub fn with_facet_filters(self, facet_filters: Vec<Vec<&'a str>>) -> Query<'a> {
+    pub fn with_facet_filters(self, facet_filters: &'a[&'a[&'a str]]) -> Query<'a> {
         Query {
             facet_filters: Some(facet_filters),
             ..self
         }
     }
-    pub fn with_facets_distribution(self, facets_distribution: Option<Vec<&'a str>>) -> Query<'a> {
+    pub fn with_facets_distribution(self, facets_distribution: Option<&'a[&'a str]>) -> Query<'a> {
         Query {
             facets_distribution: Some(facets_distribution),
             ..self
