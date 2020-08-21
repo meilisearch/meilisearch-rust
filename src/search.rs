@@ -91,8 +91,8 @@ pub struct Query<'a> {
     ///
     /// Default: 200
     pub crop_length: Option<usize>,
-    /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-highlight)
-    pub attributes_to_highlight: Option<&'a str>,
+    /// Attributes whose values will contain **highlighted matching query words**. The value `Some(None)` is the wildcard.
+    pub attributes_to_highlight: Option<Option<&'a [&'a str]>>,
     /// Defines whether an object that contains information about the matches should be returned or not
     pub matches: Option<bool>
 }
@@ -156,7 +156,7 @@ impl<'a> Query<'a> {
             ..self
         }
     }
-    pub fn with_attributes_to_highlight(self, attributes_to_highlight: &'a str) -> Query<'a> {
+    pub fn with_attributes_to_highlight(self, attributes_to_highlight: Option<&'a [&'a str]>) -> Query<'a> {
         Query {
             attributes_to_highlight: Some(attributes_to_highlight),
             ..self
@@ -240,9 +240,22 @@ impl<'a> Query<'a> {
             url.push_str("&cropLength=");
             url.push_str(crop_length.to_string().as_str());
         }
-        if let Some(attributes_to_highlight) = self.attributes_to_highlight {
-            url.push_str("&attributesToHighlight=");
-            url.push_str(encode(attributes_to_highlight).as_str());
+        match self.attributes_to_highlight {
+            Some(None) => url.push_str("&attributesToHighlight=*"),
+            Some(Some(attributes_to_highlight)) => {
+                url.push_str("&attributesToHighlight=[");
+                let mut first = true;
+                for attribute_to_highlight in attributes_to_highlight {
+                    if first {
+                        first = false;
+                    } else {
+                        url.push(',');
+                    }
+                    url.push_str(encode(attribute_to_highlight).as_str());
+                }
+                url.push(']');
+            }
+            None => ()
         }
 
         url
