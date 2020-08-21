@@ -85,8 +85,8 @@ pub struct Query<'a> {
     /// Example: If you want to get only the overview and title field and not the other fields, set `attributes_to_retrieve` to `overview,title`.
     /// Default: The [displayed attributes list](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) which contains by default all attributes found in the documents.
     pub attributes_to_retrieve: Option<&'a str>,
-    /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-crop)
-    pub attributes_to_crop: Option<&'a str>,
+    /// Attributes to crop. The value `Some(None)` is the wildcard. Attributes names can be joined by an optional `usize` that overwrites the `crop_length` parameter.
+    pub attributes_to_crop: Option<Option<&'a [(&'a str, Option<usize>)]>>,
     /// Number of characters to keep on each side of the start of the matching word. See [attributes_to_crop](#structfield.attributes_to_crop).
     ///
     /// Default: 200
@@ -150,7 +150,7 @@ impl<'a> Query<'a> {
             ..self
         }
     }
-    pub fn with_attributes_to_crop(self, attributes_to_crop: &'a str) -> Query<'a> {
+    pub fn with_attributes_to_crop(self, attributes_to_crop: Option<&'a [(&'a str, Option<usize>)]>) -> Query<'a> {
         Query {
             attributes_to_crop: Some(attributes_to_crop),
             ..self
@@ -213,8 +213,28 @@ impl<'a> Query<'a> {
             url.push_str(encode(attributes_to_retrieve).as_str());
         }
         if let Some(attributes_to_crop) = self.attributes_to_crop {
-            url.push_str("&attributesToCrop=");
-            url.push_str(encode(attributes_to_crop).as_str());
+            match attributes_to_crop {
+                Some(attributes_to_crop) => {
+                    url.push_str("&attributesToCrop=");
+                    let mut first = true;
+                    for (attribute_to_crop, crop_length) in attributes_to_crop {
+                        if first {
+                            first = false;
+                        } else {
+                            url.push(',');
+                        }
+                        url.push_str(encode(attribute_to_crop).as_str());
+                        if let Some(crop_length) = crop_length {
+                            url.push(':');
+                            url.push_str(crop_length.to_string().as_str());
+                        }
+                    }
+                },
+                None => {
+                    url.push_str("&attributesToCrop=*");
+                }
+            }
+            
         }
         if let Some(crop_length) = self.crop_length {
             url.push_str("&cropLength=");
