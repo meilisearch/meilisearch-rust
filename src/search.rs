@@ -80,11 +80,8 @@ pub struct Query<'a> {
     pub facet_filters: Option<Vec<Vec<&'a str>>>,
     /// Facets for which to retrieve the matching count. The value `Some(None)` is the wildcard.
     pub facets_distribution: Option<Option<Vec<&'a str>>>,
-    /// Attributes to display in the returned documents. Comma-separated list of attributes whose fields will be present in the returned documents.
-    ///
-    /// Example: If you want to get only the overview and title field and not the other fields, set `attributes_to_retrieve` to `overview,title`.
-    /// Default: The [displayed attributes list](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) which contains by default all attributes found in the documents.
-    pub attributes_to_retrieve: Option<&'a str>,
+    /// Attributes to **display** in the returned documents.
+    pub attributes_to_retrieve: Option<&'a [&'a str]>,
     /// Attributes to crop. The value `Some(None)` is the wildcard. Attributes names can be joined by an optional `usize` that overwrites the `crop_length` parameter.
     pub attributes_to_crop: Option<Option<&'a [(&'a str, Option<usize>)]>>,
     /// Number of characters to keep on each side of the start of the matching word. See [attributes_to_crop](#structfield.attributes_to_crop).
@@ -144,7 +141,7 @@ impl<'a> Query<'a> {
             ..self
         }
     }
-    pub fn with_attributes_to_retrieve(self, attributes_to_retrieve: &'a str) -> Query<'a> {
+    pub fn with_attributes_to_retrieve(self, attributes_to_retrieve: &'a [&'a str]) -> Query<'a> {
         Query {
             attributes_to_retrieve: Some(attributes_to_retrieve),
             ..self
@@ -210,7 +207,15 @@ impl<'a> Query<'a> {
         }
         if let Some(attributes_to_retrieve) = self.attributes_to_retrieve {
             url.push_str("&attributesToRetrieve=");
-            url.push_str(encode(attributes_to_retrieve).as_str());
+            let mut first = true;
+            for attribute_to_retrieve in attributes_to_retrieve {
+                if first {
+                    first = false;
+                } else {
+                    url.push(',');
+                }
+                url.push_str(encode(attribute_to_retrieve).as_str());
+            }
         }
         match self.attributes_to_crop {
             Some(None) => url.push_str("&attributesToCrop=*"),
