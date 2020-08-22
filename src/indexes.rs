@@ -123,15 +123,14 @@ impl<'a> Index<'a> {
         &self,
         query: &Query<'_>,
     ) -> Result<SearchResults<T>, Error> {
-        Ok(request::<(), SearchResults<T>>(
+        Ok(request::<&Query, SearchResults<T>>(
             &format!(
-                "{}/indexes/{}/search{}",
+                "{}/indexes/{}/search",
                 self.client.host,
-                self.uid,
-                query.to_url()
+                self.uid
             ),
             self.client.apikey,
-            Method::Get,
+            Method::Post(query),
             200,
         ).await?)
     }
