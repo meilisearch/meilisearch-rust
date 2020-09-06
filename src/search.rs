@@ -27,23 +27,23 @@ pub struct SearchResult<T> {
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
 pub struct SearchResults<T> {
-    /// results of the query
+    /// Results of the query
     pub hits: Vec<SearchResult<T>>,
-    /// number of documents skipped
+    /// Number of documents skipped
     pub offset: usize,
-    /// number of documents to take
+    /// Number of results returned
     pub limit: usize,
-    /// total number of matches
+    /// Total number of matches
     pub nb_hits: usize,
-    /// whether nbHits is exhaustive
+    /// Whether nb_hits is exhaustive
     pub exhaustive_nb_hits: bool,
-    /// Distribution of the given facets.
+    /// Distribution of the given facets
     pub facets_distribution: Option<HashMap<String, HashMap<String, usize>>>,
     /// Whether facet_distribution is exhaustive
     pub exhaustive_facets_count: Option<bool>,
-    /// processing time of the query
+    /// Processing time of the query
     pub processing_time_ms: usize,
-    /// query originating the response
+    /// Query originating the response
     pub query: String,
 }
 
@@ -69,7 +69,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
 /// A struct representing a query.
 /// You can add search parameters using the builder syntax.
-/// See [here](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#query-q) for the list and description of all parameters.
+/// See [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#query-q) for the official list and description of all parameters.
 ///
 /// # Example
 ///
@@ -83,49 +83,67 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")] 
 pub struct Query<'a> {
-    /// The query parameter is the only mandatory parameter.
-    /// This is the string used by the search engine to find relevant documents.
+    /// The text that will be searched for among the documents.  
+    /// This is the only mandatory parameter.  
     #[serde(rename = "q")]
     pub query: &'a str,
-    /// A number of documents to skip. If the value of the parameter offset is n, n first documents to skip. This is helpful for pagination.
-    ///
-    /// Example: If you want to skip the first document, set offset to 1.
-    /// Default: 0
+    /// The number of documents to skip.  
+    /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.  
+    /// This is helpful for pagination.  
+    ///   
+    /// Example: If you want to skip the first document, set offset to `1`.  
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub offset: Option<usize>,
-    /// Set a limit to the number of documents returned by search queries. If the value of the parameter limit is n, there will be n documents in the search query response. This is helpful for pagination.
-    ///
-    /// Example: If you want to get only two documents, set limit to 2.
-    /// Default: 20
+    /// The maximum number of documents returned.  
+    /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.  
+    /// This is helpful for pagination.  
+    ///   
+    /// Example: If you don't want to get more than two documents, set limit to `2`.  
+    /// Default: `20`  
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub limit: Option<usize>,
-    /// Specify a filter to be used with the query. See the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html).
+    /// Filters applied to documents.  
+    /// Read the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub filters: Option<&'a str>,
-    /// Facet names and values to filter on. See [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#facet-filters).
+    /// Facet names and values to filter on.  
+    /// Read [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#facet-filters) for a complete explanation.
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub facet_filters: Option<&'a [&'a [&'a str]]>,
-    /// Facets for which to retrieve the matching count.
+    /// Facets for which to retrieve the matching count.  
+    ///   
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.  
+    /// Default: all attributes found in the documents.
     #[serde(skip_serializing_if = "Option::is_none")] 
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub facets_distribution: Option<Selectors<&'a [&'a str]>>,
-    /// Attributes to **display** in the returned documents.
+    /// Attributes to display in the returned documents.  
+    ///   
+    /// Default: all attributes found in the documents.
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub attributes_to_retrieve: Option<&'a [&'a str]>,
-    /// Attributes to crop. Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
+    /// Attributes whose values have to be cropped.  
+    /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.  
+    ///   
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     #[serde(skip_serializing_if = "Option::is_none")] 
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
-    /// Number of characters to keep on each side of the start of the matching word. See [attributes_to_crop](#structfield.attributes_to_crop).
-    ///
-    /// Default: 200
+    /// Number of characters to keep on each side of the start of the matching word.  
+    /// See [attributes_to_crop](#structfield.attributes_to_crop).  
+    ///   
+    /// Default: `200`
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub crop_length: Option<usize>,
-    /// Attributes whose values will contain **highlighted matching query words**.
+    /// Attributes whose values will contain **highlighted matching terms**.  
+    ///   
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     #[serde(skip_serializing_if = "Option::is_none")] 
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
-    /// Defines whether an object that contains information about the matches should be returned or not
+    /// Defines whether an object that contains information about the matches should be returned or not.
+    ///   
+    /// Default: `false`
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub matches: Option<bool>
 }
