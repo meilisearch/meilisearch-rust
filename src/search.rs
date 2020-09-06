@@ -9,7 +9,7 @@ pub struct MatchRange {
 }
 
 /// A single result.  
-/// Contains the complete object, optionally the formatted object, and optionnaly an object that contains information about the matches.
+/// Contains the complete object, optionally the formatted object, and optionaly an object that contains information about the matches.
 #[derive(Deserialize, Debug)]
 pub struct SearchResult<T> {
     /// The full result.
@@ -67,9 +67,10 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// # use meilisearch_sdk::search::Query;
 /// let query = Query::new("space")
 ///     .with_offset(42)
-///     .with_limit(21);
+///     .with_limit(21)
+///     .build();
 /// ```
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")] 
 pub struct Query<'a> {
     /// The query parameter is the only mandatory parameter.
@@ -136,65 +137,48 @@ impl<'a> Query<'a> {
             matches: None,
         }
     }
-    pub fn with_offset(self, offset: usize) -> Query<'a> {
-        Query {
-            offset: Some(offset),
-            ..self
-        }
+    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut Query<'a> {
+        self.offset = Some(offset);
+        self
     }
-    pub fn with_limit(self, limit: usize) -> Query<'a> {
-        Query {
-            limit: Some(limit),
-            ..self
-        }
+    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut Query<'a> {
+        self.limit = Some(limit);
+        self
     }
-    pub fn with_filters(self, filters: &'a str) -> Query<'a> {
-        Query {
-            filters: Some(filters),
-            ..self
-        }
+    pub fn with_filters<'b>(&'b mut self, filters: &'a str) -> &'b mut Query<'a> {
+        self.filters = Some(filters);
+        self
     }
-    pub fn with_facet_filters(self, facet_filters: &'a[&'a[&'a str]]) -> Query<'a> {
-        Query {
-            facet_filters: Some(facet_filters),
-            ..self
-        }
+    pub fn with_facet_filters<'b>(&'b mut self, facet_filters: &'a[&'a[&'a str]]) -> &'b mut Query<'a> {
+        self.facet_filters = Some(facet_filters);
+        self
     }
-    pub fn with_facets_distribution(self, facets_distribution: Option<&'a[&'a str]>) -> Query<'a> {
-        Query {
-            facets_distribution: Some(facets_distribution),
-            ..self
-        }
+    pub fn with_facets_distribution<'b>(&'b mut self, facets_distribution: Option<&'a[&'a str]>) -> &'b mut Query<'a> {
+        self.facets_distribution = Some(facets_distribution);
+        self
     }
-    pub fn with_attributes_to_retrieve(self, attributes_to_retrieve: &'a [&'a str]) -> Query<'a> {
-        Query {
-            attributes_to_retrieve: Some(attributes_to_retrieve),
-            ..self
-        }
+    pub fn with_attributes_to_retrieve<'b>(&'b mut self, attributes_to_retrieve: &'a [&'a str]) -> &'b mut Query<'a> {
+        self.attributes_to_retrieve = Some(attributes_to_retrieve);
+        self
     }
-    pub fn with_attributes_to_crop(self, attributes_to_crop: Option<&'a [(&'a str, Option<usize>)]>) -> Query<'a> {
-        Query {
-            attributes_to_crop: Some(attributes_to_crop),
-            ..self
-        }
+    pub fn with_attributes_to_crop<'b>(&'b mut self, attributes_to_crop: Option<&'a [(&'a str, Option<usize>)]>) -> &'b mut Query<'a> {
+        self.attributes_to_crop = Some(attributes_to_crop);
+        self
     }
-    pub fn with_attributes_to_highlight(self, attributes_to_highlight: Option<&'a [&'a str]>) -> Query<'a> {
-        Query {
-            attributes_to_highlight: Some(attributes_to_highlight),
-            ..self
-        }
+    pub fn with_attributes_to_highlight<'b>(&'b mut self, attributes_to_highlight: Option<&'a [&'a str]>) -> &'b mut Query<'a> {
+        self.attributes_to_highlight = Some(attributes_to_highlight);
+        self
     }
-    pub fn with_crop_length(self, crop_length: usize) -> Query<'a> {
-        Query {
-            crop_length: Some(crop_length),
-            ..self
-        }
+    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut Query<'a> {
+        self.crop_length = Some(crop_length);
+        self
     }
-    pub fn with_matches(self, matches: bool) -> Query<'a> {
-        Query {
-            matches: Some(matches),
-            ..self
-        }
+    pub fn with_matches<'b>(&'b mut self, matches: bool) -> &'b mut Query<'a> {
+        self.matches = Some(matches);
+        self
+    }
+    pub fn build(&mut self) -> Query<'a> {
+        self.clone()
     }
 }
 
