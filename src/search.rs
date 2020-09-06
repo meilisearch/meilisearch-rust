@@ -47,12 +47,22 @@ pub struct SearchResults<T> {
     pub query: String,
 }
 
-fn serialize_with_wildcard<S, T>(data: &Option<Option<T>>, s: S) -> Result<S::Ok, S::Error> where S: Serializer, T: Serialize {
+fn serialize_with_wildcard<S, T>(data: &Option<Selectors<T>>, s: S) -> Result<S::Ok, S::Error> where S: Serializer, T: Serialize {
     match data {
-        Some(None) => s.serialize_str("*"),
-        Some(data) => data.serialize(s),
+        Some(Selectors::All) => s.serialize_str("*"),
+        Some(Selectors::Some(data)) => data.serialize(s),
         None => s.serialize_none(),
     }
+}
+
+/// Some list fields in a `Query` can be set to a wildcard value.
+/// This structure allows you to choose between the wildcard value and an exhaustive list of selectors.
+#[derive(Debug, Clone)]
+pub enum Selectors<T> {
+    /// A list of selectors
+    Some(T),
+    /// The wildcard
+    All,
 }
 
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
@@ -95,26 +105,26 @@ pub struct Query<'a> {
     /// Facet names and values to filter on. See [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#facet-filters).
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub facet_filters: Option<&'a [&'a [&'a str]]>,
-    /// Facets for which to retrieve the matching count. The value `Some(None)` is the wildcard.
+    /// Facets for which to retrieve the matching count.
     #[serde(skip_serializing_if = "Option::is_none")] 
     #[serde(serialize_with = "serialize_with_wildcard")]
-    pub facets_distribution: Option<Option<&'a [&'a str]>>,
+    pub facets_distribution: Option<Selectors<&'a [&'a str]>>,
     /// Attributes to **display** in the returned documents.
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub attributes_to_retrieve: Option<&'a [&'a str]>,
-    /// Attributes to crop. The value `Some(None)` is the wildcard. Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
+    /// Attributes to crop. Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
     #[serde(skip_serializing_if = "Option::is_none")] 
     #[serde(serialize_with = "serialize_with_wildcard")]
-    pub attributes_to_crop: Option<Option<&'a [AttributeToCrop<'a>]>>,
+    pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
     /// Number of characters to keep on each side of the start of the matching word. See [attributes_to_crop](#structfield.attributes_to_crop).
     ///
     /// Default: 200
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub crop_length: Option<usize>,
-    /// Attributes whose values will contain **highlighted matching query words**. The value `Some(None)` is the wildcard.
+    /// Attributes whose values will contain **highlighted matching query words**.
     #[serde(skip_serializing_if = "Option::is_none")] 
     #[serde(serialize_with = "serialize_with_wildcard")]
-    pub attributes_to_highlight: Option<Option<&'a [&'a str]>>,
+    pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
     /// Defines whether an object that contains information about the matches should be returned or not
     #[serde(skip_serializing_if = "Option::is_none")] 
     pub matches: Option<bool>
@@ -153,7 +163,7 @@ impl<'a> Query<'a> {
         self.facet_filters = Some(facet_filters);
         self
     }
-    pub fn with_facets_distribution<'b>(&'b mut self, facets_distribution: Option<&'a[&'a str]>) -> &'b mut Query<'a> {
+    pub fn with_facets_distribution<'b>(&'b mut self, facets_distribution: Selectors<&'a[&'a str]>) -> &'b mut Query<'a> {
         self.facets_distribution = Some(facets_distribution);
         self
     }
@@ -161,11 +171,11 @@ impl<'a> Query<'a> {
         self.attributes_to_retrieve = Some(attributes_to_retrieve);
         self
     }
-    pub fn with_attributes_to_crop<'b>(&'b mut self, attributes_to_crop: Option<&'a [(&'a str, Option<usize>)]>) -> &'b mut Query<'a> {
+    pub fn with_attributes_to_crop<'b>(&'b mut self, attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>) -> &'b mut Query<'a> {
         self.attributes_to_crop = Some(attributes_to_crop);
         self
     }
-    pub fn with_attributes_to_highlight<'b>(&'b mut self, attributes_to_highlight: Option<&'a [&'a str]>) -> &'b mut Query<'a> {
+    pub fn with_attributes_to_highlight<'b>(&'b mut self, attributes_to_highlight: Selectors<&'a [&'a str]>) -> &'b mut Query<'a> {
         self.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
