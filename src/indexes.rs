@@ -114,7 +114,7 @@ impl<'a> Index<'a> {
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     ///
-    /// let query = Query::new("Interstellar").with_limit(5);
+    /// let query = Query::new("Interstellar").with_limit(5).build();
     /// let results = movies.search::<Movie>(&query).await.unwrap();
     /// # assert!(results.hits.len()>0);
     /// # }
