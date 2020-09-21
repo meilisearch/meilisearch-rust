@@ -6,7 +6,7 @@
   <img src="https://res.cloudinary.com/meilisearch/image/upload/v1587402338/SDKs/meilisearch_rust.svg" alt="MeiliSearch-Dotnet" width="200" height="200" />
 </p>
 
-<h1 align="center">MeiliSearch Rust SDK (WIP)</h1>
+<h1 align="center">MeiliSearch Rust SDK</h1>
 
 <h4 align="center">
   <a href="https://github.com/meilisearch/MeiliSearch">MeiliSearch</a> |
