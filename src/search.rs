@@ -2,7 +2,7 @@ use crate::{errors::Error, indexes::Index};
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub struct MatchRange {
     start: usize,
     length: usize
@@ -49,8 +49,28 @@ pub struct SearchResults<T> {
 
 fn serialize_with_wildcard<S, T>(data: &Option<Selectors<T>>, s: S) -> Result<S::Ok, S::Error> where S: Serializer, T: Serialize {
     match data {
-        Some(Selectors::All) => s.serialize_str("*"),
+        Some(Selectors::All) => ["*"].serialize(s),
         Some(Selectors::Some(data)) => data.serialize(s),
+        None => s.serialize_none(),
+    }
+}
+
+fn serialize_attributes_to_crop_with_wildcard<S>(data: &Option<Selectors<&[AttributeToCrop]>>, s: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    match data {
+        Some(Selectors::All) => ["*"].serialize(s),
+        Some(Selectors::Some(data)) => {
+            let mut results = Vec::new();
+            for (name, value) in data.iter() {
+                let mut result = String::new();
+                result.push_str(name);
+                if let Some(value) = value {
+                    result.push(':');
+                    result.push_str(value.to_string().as_str());
+                }
+                results.push(result)
+            }
+            results.serialize(s)
+        },
         None => s.serialize_none(),
     }
 }
@@ -120,15 +140,17 @@ pub struct Query<'a> {
     pub facets_distribution: Option<Selectors<&'a [&'a str]>>,
     /// Attributes to display in the returned documents.  
     ///   
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.  
     /// Default: all attributes found in the documents.
     #[serde(skip_serializing_if = "Option::is_none")] 
-    pub attributes_to_retrieve: Option<&'a [&'a str]>,
+    #[serde(serialize_with = "serialize_with_wildcard")]
+    pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
     /// Attributes whose values have to be cropped.  
     /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.  
     ///   
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     #[serde(skip_serializing_if = "Option::is_none")] 
-    #[serde(serialize_with = "serialize_with_wildcard")]
+    #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
     /// Number of characters to keep on each side of the start of the matching word.  
     /// See [attributes_to_crop](#structfield.attributes_to_crop).  
@@ -190,7 +212,7 @@ impl<'a> Query<'a> {
         self.facets_distribution = Some(facets_distribution);
         self
     }
-    pub fn with_attributes_to_retrieve<'b>(&'b mut self, attributes_to_retrieve: &'a [&'a str]) -> &'b mut Query<'a> {
+    pub fn with_attributes_to_retrieve<'b>(&'b mut self, attributes_to_retrieve: Selectors<&'a [&'a str]>) -> &'b mut Query<'a> {
         self.attributes_to_retrieve = Some(attributes_to_retrieve);
         self
     }
@@ -222,5 +244,270 @@ impl<'a> Query<'a> {
         index: &Index<'a>,
     ) -> Result<SearchResults<T>, Error> {
         index.search::<T>(&self).await
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::{client::*, document, search::*};
+    use serde::{Serialize, Deserialize};
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Document {
+        id: usize,
+        value: String,
+        kind: String,
+    }
+
+    impl document::Document for Document {
+        type UIDType = usize;
+
+        fn get_uid(&self) -> &Self::UIDType {
+            &self.id
+        }
+    }
+
+    #[allow(unused_must_use)]
+    async fn setup_test_index<'a>(client: &'a Client<'a>, name: &'a str) -> Index<'a> {
+        // try to delete
+        client.delete_index(name).await;
+
+        let index = client.create_index(name, None).await.unwrap();
+        index.add_documents(&[
+            Document { id: 0, kind: "text".into(), value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string() },
+            Document { id: 1, kind: "text".into(), value: "dolor sit amet, consectetur adipiscing elit".to_string() },
+            Document { id: 2, kind: "title".into(), value: "The Social Network".to_string() },
+            Document { id: 3, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
+            Document { id: 4, kind: "title".into(), value: "Harry Potter and the Chamber of Secrets".to_string() },
+            Document { id: 5, kind: "title".into(), value: "Harry Potter and the Prisoner of Azkaban".to_string() },
+            Document { id: 6, kind: "title".into(), value: "Harry Potter and the Goblet of Fire".to_string() },
+            Document { id: 7, kind: "title".into(), value: "Harry Potter and the Order of the Phoenix".to_string() },
+            Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string() },
+            Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
+        ], None).await.unwrap();
+        index.set_attributes_for_faceting(&["kind"]).await.unwrap();
+        sleep(Duration::from_secs(1));
+        index
+    }
+
+    #[tokio::test]
+    async fn test_query_string() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_string").await;
+
+        let mut query = Query::new();
+        query.with_query("dolor");
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 2);
+
+        client.delete_index("test_query_string").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_limit() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_limit").await;
+
+        let mut query = Query::new();
+        query.with_limit(5);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 5);
+
+        client.delete_index("test_query_limit").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_offset() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_offset").await;
+
+        let mut query = Query::new();
+        query.with_offset(6);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 4);
+
+        client.delete_index("test_query_offset").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_filters() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_filters").await;
+
+        let mut query = Query::new();
+        query.with_filters("value = \"The Social Network\"");
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 1);
+
+        let mut query = Query::new();
+        query.with_filters("NOT value = \"The Social Network\"");
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 9);
+
+        client.delete_index("test_query_filters").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_facet_filters() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_facet_filters").await;
+
+        let mut query = Query::new();
+        query.with_facet_filters(&[&["kind:title"]]);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 8);
+
+        let mut query = Query::new();
+        query.with_facet_filters(&[&["kind:text"]]);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 2);
+
+        let mut query = Query::new();
+        query.with_facet_filters(&[&["kind:text", "kind:title"]]);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 10);
+
+        client.delete_index("test_query_facet_filters").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_facet_distribution() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_facet_distribution").await;
+
+        let mut query = Query::new();
+        query.with_facets_distribution(Selectors::All);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.facets_distribution.unwrap().get("kind").unwrap().get("title").unwrap(), &8);
+
+        let mut query = Query::new();
+        query.with_facets_distribution(Selectors::Some(&["kind"]));
+        query.with_facet_filters(&[&["kind:text"]]);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.facets_distribution.clone().unwrap().get("kind").unwrap().get("title").unwrap(), &0);
+        assert_eq!(results.facets_distribution.unwrap().get("kind").unwrap().get("text").unwrap(), &2);
+
+        client.delete_index("test_query_facet_distribution").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_attributes_to_retrieve() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_attributes_to_retrieve").await;
+
+        let mut query = Query::new();
+        query.with_attributes_to_retrieve(Selectors::All);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 10);
+
+        let mut query = Query::new();
+        query.with_attributes_to_retrieve(Selectors::Some(&["kind", "id"])); // omit the "value" field
+        assert!(index.search::<Document>(&query).await.is_err()); // error: missing "value" field
+
+        client.delete_index("test_query_attributes_to_retrieve").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_attributes_to_crop() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_attributes_to_crop").await;
+
+        let mut query = Query::new();
+        query.with_query("lorem ipsum");
+        query.with_attributes_to_crop(Selectors::All);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
+            id: 0,
+            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
+            kind: "text".to_string()
+        });
+
+        let mut query = Query::new();
+        query.with_query("lorem ipsum");
+        query.with_attributes_to_crop(Selectors::Some(&[("value", Some(50)), ("kind", None)]));
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
+            id: 0,
+            value: "Lorem ipsum dolor sit amet, consectetur adipiscing".to_string(),
+            kind: "text".to_string()
+        });
+
+        client.delete_index("test_query_attributes_to_crop").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_crop_lenght() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_crop_lenght").await;
+
+        let mut query = Query::new();
+        query.with_query("lorem ipsum");
+        query.with_attributes_to_crop(Selectors::All);
+        query.with_crop_length(200);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
+            id: 0,
+            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
+            kind: "text".to_string()
+        });
+
+        let mut query = Query::new();
+        query.with_query("lorem ipsum");
+        query.with_attributes_to_crop(Selectors::All);
+        query.with_crop_length(50);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
+            id: 0,
+            value: "Lorem ipsum dolor sit amet, consectetur adipiscing".to_string(),
+            kind: "text".to_string()
+        });
+
+        client.delete_index("test_query_crop_lenght").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_attributes_to_highlight() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_attributes_to_highlight").await;
+
+        let mut query = Query::new();
+        query.with_query("dolor text");
+        query.with_attributes_to_highlight(Selectors::All);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
+            id: 1,
+            value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
+            kind: "<em>text</em>".to_string()
+        });
+
+        let mut query = Query::new();
+        query.with_query("dolor text");
+        query.with_attributes_to_highlight(Selectors::Some(&["value"]));
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
+            id: 1,
+            value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
+            kind: "text".to_string()
+        });
+
+        client.delete_index("test_query_attributes_to_highlight").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_matches() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_matches").await;
+
+        let mut query = Query::new();
+        query.with_query("dolor text");
+        query.with_matches(true);
+        let results: SearchResults<Document> = index.search(&query).await.unwrap();
+        assert_eq!(results.hits[0].matches_info.as_ref().unwrap().len(), 2);
+        assert_eq!(results.hits[0].matches_info.as_ref().unwrap().get("value").unwrap(), &vec![MatchRange{start: 0, length: 5}]);
+
+        client.delete_index("test_query_matches").await.unwrap();
     }
 }
