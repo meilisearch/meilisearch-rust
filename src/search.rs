@@ -75,7 +75,8 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use meilisearch_sdk::search::Query;
-/// let query = Query::new("space")
+/// let query = Query::new()
+///     .with_query("space")
 ///     .with_offset(42)
 ///     .with_limit(21)
 ///     .build();
@@ -84,9 +85,9 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 #[serde(rename_all = "camelCase")] 
 pub struct Query<'a> {
     /// The text that will be searched for among the documents.  
-    /// This is the only mandatory parameter.  
+    #[serde(skip_serializing_if = "Option::is_none")] 
     #[serde(rename = "q")]
-    pub query: &'a str,
+    pub query: Option<&'a str>,
     /// The number of documents to skip.  
     /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.  
     /// This is helpful for pagination.  
@@ -150,9 +151,9 @@ pub struct Query<'a> {
 
 #[allow(missing_docs)]
 impl<'a> Query<'a> {
-    pub fn new(query: &'a str) -> Query<'a> {
+    pub fn new() -> Query<'a> {
         Query {
-            query,
+            query: None,
             offset: None,
             limit: None,
             filters: None,
@@ -164,6 +165,10 @@ impl<'a> Query<'a> {
             crop_length: None,
             matches: None,
         }
+    }
+    pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut Query<'a> {
+        self.query = Some(query);
+        self
     }
     pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut Query<'a> {
         self.offset = Some(offset);
