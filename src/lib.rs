@@ -72,7 +72,7 @@
 //!     ], Some("book_id")).await.unwrap();
 //!
 //!     // Query books (note that there is a typo)
-//!     let query = Query::new("harry pottre");
+//!     let query = Query::new().with_query("harry pottre").build();
 //!     println!("{:?}", books.search::<Book>(&query).await.unwrap().hits);
 //! }
 //! ```
