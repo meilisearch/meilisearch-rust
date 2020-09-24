@@ -29,7 +29,7 @@ pub enum Error {
 
     /// The http client encountered an error.
     #[cfg(not(target_arch = "wasm32"))]
-    HttpError(reqwest::Error),
+    HttpError(isahc::Error),
     /// The http client encountered an error.
     #[cfg(target_arch = "wasm32")]
     HttpError(String),
@@ -309,12 +309,10 @@ impl From<&serde_json::Value> for Error {
     }
 }
 
+
 #[cfg(not(target_arch = "wasm32"))]
-impl From<reqwest::Error> for Error {
-    fn from(error: reqwest::Error) -> Error {
-        match error.status() {
-            None => Error::UnreachableServer,
-            Some(_e) => Error::HttpError(error),
-        }
+impl From<isahc::Error> for Error {
+    fn from(error: isahc::Error) -> Error {
+        Error::HttpError(error)
     }
 }
