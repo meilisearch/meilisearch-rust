@@ -9,7 +9,7 @@ pub struct MatchRange {
 }
 
 /// A single result.  
-/// Contains the complete object, optionally the formatted object, and optionaly an object that contains information about the matches.
+/// Contains the complete object, optionally the formatted object, and optionally an object that contains information about the matches.
 #[derive(Deserialize, Debug)]
 pub struct SearchResult<T> {
     /// The full result.
