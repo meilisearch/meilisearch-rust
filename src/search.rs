@@ -171,6 +171,24 @@ pub struct Query<'a> {
     pub matches: Option<bool>
 }
 
+impl<'a> Default for Query<'a> {
+    fn default() -> Self {
+        Query {
+            query: None,
+            offset: None,
+            limit: None,
+            filters: None,
+            facet_filters: None,
+            facets_distribution: None,
+            attributes_to_retrieve: None,
+            attributes_to_crop: None,
+            crop_length: None,
+            attributes_to_highlight: None,
+            matches: None,
+        }
+    }
+}
+
 #[allow(missing_docs)]
 impl<'a> Query<'a> {
     pub fn new() -> Query<'a> {
@@ -183,8 +201,8 @@ impl<'a> Query<'a> {
             facets_distribution: None,
             attributes_to_retrieve: None,
             attributes_to_crop: None,
-            attributes_to_highlight: None,
             crop_length: None,
+            attributes_to_highlight: None,
             matches: None,
         }
     }
