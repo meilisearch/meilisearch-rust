@@ -106,5 +106,4 @@ pub mod progress;
 mod request;
 /// Module related to search queries and results.
 pub mod search;
-/// Module containing settings
 pub mod settings;

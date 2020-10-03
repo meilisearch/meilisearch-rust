@@ -1,3 +1,11 @@
+//! There are several ways to set and get settings on an [Index](../indexes/struct.Index.html).\
+//! \
+//! First, there are [individual methods](../indexes/struct.Index.html#impl) you can use to set a single setting.\
+//! \
+//! There is also a [Settings](struct.Settings.html) struct used to get or set a batch of settings.\
+//! The fields of this struct are generic so type inference won't work on unused fields.
+//! If you don't want to set the types manually for unused fields, you can use [shortcuts types](#types) at the cost of flexibility.
+
 use crate::{
     errors::Error,
     indexes::Index,
@@ -8,29 +16,43 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-/// Struct reprensenting a set of settings.
-/// You can build this struct using the builder syntax.
-///
-/// # Example
-///
+/// Meilisearch server settings.\
+/// \
+/// [*See also the `meilisearch_sdk::settings` module*](index.html).\
+/// \
+/// This struct contains all Meilisearch settings available.\
+/// Fields are generic and optional so Rust's type inference will be limited with this struct.
+/// You may have to specify manually all the types.\
+/// You might prefer to use [methods of the `Index` struct](../indexes/struct.Index.html#impl) to set settings one by one.\
+/// 
+/// # Examples
+/// 
 /// ```
-/// # use meilisearch_sdk::settings::Settings;
-/// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
-///
+/// let mut synonyms: HashMap<&str, &[&str]> = HashMap::new();
+/// synonyms.insert("green", &["emerald", "viridescent"]);
+/// synonyms.insert("fast", &["speedy", "quick", "rapid", "swift", "turbo"]);
+/// 
 /// let settings = Settings::new()
-///     .with_stop_words(stop_words.clone());
-///
-/// // OR
-///
-/// let mut settings = Settings::new();
-/// settings.stop_words = Some(stop_words.clone());
-///
-/// // OR
-///
-/// let settings = Settings {
-///     stop_words: Some(stop_words.clone()),
-///     ..Settings::new()
-/// };
+///     .with_distinct_attribute("id")
+///     .with_synonyms(synonyms)
+///     .with_stop_words(&["a", "the", "and"])
+///     .with_attributes_for_faceting(&["genres"])
+///     .with_displayed_attributes(&["title", "description", "genres"])
+///     .with_searchable_attributes(&["title", "description"])
+///     .with_ranking_rules(&["typo", "words", "proximity", "attribute", "wordsPosition", "exactness"]);
+/// ```
+/// 
+/// ```
+/// let mut synonyms: HashMap<&str, &[&str]> = HashMap::new();
+/// synonyms.insert("green", &["emerald", "viridescent"]);
+/// synonyms.insert("fast", &["speedy", "quick", "rapid", "swift", "turbo"]);
+/// 
+/// // type inference does not work for unused fields (see module documentation for shortcuts)
+/// let settings = Settings::<_,_,_,_,&[&str],_,&[&str],&[&str]>::new()
+///     .with_distinct_attribute("id")
+///     .with_synonyms(synonyms)
+///     .with_stop_words(&["a", "the", "and"])
+///     .with_ranking_rules(&["typo", "words", "proximity", "attribute", "wordsPosition", "exactness"]);
 /// ```
 #[derive(Serialize, Deserialize, Default, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -74,6 +96,47 @@ pub struct Settings<
     #[serde(skip_serializing_if = "Option::is_none")]
     pub displayed_attributes: Option<DisplayedList>,
 }
+
+/// A shortcut type for [Settings](struct.Settings.html) containing owned data only.\
+/// Fields are stored as `Vec<String>`, `String` or `HashMap<String, Vec<String>>`.\
+/// It is useful for using the builder syntax without any type inference issue.\
+/// \
+/// # Example
+/// \
+/// ```
+/// let mut synonyms: HashMap<String, Vec<String>> = HashMap::new();
+/// synonyms.insert("green".to_string(), vec!["emerald".to_string(), "viridescent".to_string()]);
+/// synonyms.insert("fast".to_string(), vec!["speedy".to_string(), "quick".to_string(), "rapid".to_string(), "swift".to_string(), "turbo".to_string()]);
+/// 
+/// let settings = OwnedSettings::new()
+///     .with_distinct_attribute("id".to_string())
+///     .with_synonyms(synonyms)
+///     .with_stop_words(vec!["a".to_string(), "the".to_string(), "and".to_string()])
+///     .with_ranking_rules(vec!["typo".to_string(), "words".to_string(), "proximity".to_string(), "attribute".to_string(), "wordsPosition".to_string(), "exactness".to_string()]);
+/// ```
+pub type OwnedSettings = GenericSettings<String, Vec<String>>;
+/// A shortcut type for [Settings](struct.Settings.html) containing borrowed data only.\
+/// Fields are stored as `&[&str]`, `&str` or `HashMap<&str, &[&str]>`.\
+/// It is useful for using the builder syntax without any type inference issue.\
+/// \
+/// # Example
+/// \
+/// ```
+/// let mut synonyms: HashMap<&str, &[&str]> = HashMap::new();
+/// synonyms.insert("green", &["emerald", "viridescent"]);
+/// synonyms.insert("fast", &["speedy", "quick", "rapid", "swift", "turbo"]);
+/// 
+/// let settings = BorrowedSettings::new()
+///     .with_distinct_attribute("id")
+///     .with_synonyms(synonyms)
+///     .with_stop_words(&["a", "the", "and"])
+///     .with_ranking_rules(&["typo", "words", "proximity", "attribute", "wordsPosition", "exactness"]);
+/// ```
+pub type BorrowedSettings<'a> = GenericSettings<&'a str, &'a [&'a str]>;
+/// A shortcut type for [Settings](struct.Settings.html) for which fields have the exact same type.\
+/// Fields are stored as `T`, `U` or `HashMap<T, U>`.\
+/// It is useful for using the builder syntax without any type inference issue.
+pub type GenericSettings<T, U> = Settings<T, U, U, U, U, T, U, U>;
 
 #[allow(missing_docs)]
 impl<
@@ -260,32 +323,8 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn get_settings(
         &self,
-    ) -> Result<
-        Settings<
-            String,
-            Vec<String>,
-            Vec<String>,
-            Vec<String>,
-            Vec<String>,
-            String,
-            Vec<String>,
-            Vec<String>,
-        >,
-        Error,
-    > {
-        Ok(request::<
-            (),
-            Settings<
-                String,
-                Vec<String>,
-                Vec<String>,
-                Vec<String>,
-                Vec<String>,
-                String,
-                Vec<String>,
-                Vec<String>,
-            >,
-        >(
+    ) -> Result<OwnedSettings, Error> {
+        Ok(request::<(), OwnedSettings>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Get,
@@ -985,8 +1024,13 @@ impl<'a> Index<'a> {
 
 #[test]
 fn test() {
-    let mut sy = HashMap::new();
-    sy.insert("d", vec!["dd", "s"]);
-    let settings = Settings::<_,_,Vec<String>,Vec<String>,Vec<String>,&str, Vec<String>, _>::new().with_synonyms(sy).with_displayed_attributes(vec!["iji", "ppdij", "s"]);
-    println!("{}", serde_json::to_string(&settings).unwrap());
+    let mut synonyms: HashMap<String, Vec<String>> = HashMap::new();
+    synonyms.insert("green".to_string(), vec!["emerald".to_string(), "viridescent".to_string()]);
+    synonyms.insert("fast".to_string(), vec!["speedy".to_string(), "quick".to_string(), "rapid".to_string(), "swift".to_string(), "turbo".to_string()]);
+
+    let settings = OwnedSettings::new()
+        .with_distinct_attribute("id".to_string())
+        .with_synonyms(synonyms)
+        .with_stop_words(vec!["a".to_string(), "the".to_string(), "and".to_string()])
+        .with_ranking_rules(vec!["typo".to_string(), "words".to_string(), "proximity".to_string(), "attribute".to_string(), "wordsPosition".to_string(), "exactness".to_string()]);
 }
