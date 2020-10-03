@@ -24,16 +24,16 @@ use std::fmt::Debug;
 /// Fields are generic and optional so Rust's type inference will be limited with this struct.
 /// You may have to specify manually all the types.\
 /// You might prefer to use [methods of the `Index` struct](../indexes/struct.Index.html#impl) to set settings one by one.\
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// # use std::collections::HashMap;
 /// # use meilisearch_sdk::settings::Settings;
 /// let mut synonyms: HashMap<&str, &[&str]> = HashMap::new();
 /// synonyms.insert("green", &["emerald", "viridescent"]);
 /// synonyms.insert("fast", &["speedy", "quick", "rapid", "swift", "turbo"]);
-/// 
+///
 /// let settings = Settings::new()
 ///     .with_distinct_attribute("id")
 ///     .with_synonyms(synonyms)
@@ -43,14 +43,14 @@ use std::fmt::Debug;
 ///     .with_searchable_attributes(&["title", "description"])
 ///     .with_ranking_rules(&["typo", "words", "proximity", "attribute", "wordsPosition", "exactness"]);
 /// ```
-/// 
+///
 /// ```
 /// # use std::collections::HashMap;
 /// # use meilisearch_sdk::settings::Settings;
 /// let mut synonyms: HashMap<&str, &[&str]> = HashMap::new();
 /// synonyms.insert("green", &["emerald", "viridescent"]);
 /// synonyms.insert("fast", &["speedy", "quick", "rapid", "swift", "turbo"]);
-/// 
+///
 /// // type inference does not work for unused fields (see module documentation for shortcuts)
 /// let settings = Settings::<_,_,_,_,&[&str],_,&[&str],&[&str]>::new()
 ///     .with_distinct_attribute("id")
@@ -113,7 +113,7 @@ pub struct Settings<
 /// let mut synonyms: HashMap<String, Vec<String>> = HashMap::new();
 /// synonyms.insert("green".to_string(), vec!["emerald".to_string(), "viridescent".to_string()]);
 /// synonyms.insert("fast".to_string(), vec!["speedy".to_string(), "quick".to_string(), "rapid".to_string(), "swift".to_string(), "turbo".to_string()]);
-/// 
+///
 /// let settings = OwnedSettings::new()
 ///     .with_distinct_attribute("id".to_string())
 ///     .with_synonyms(synonyms)
@@ -133,7 +133,7 @@ pub type OwnedSettings = GenericSettings<String, Vec<String>>;
 /// let mut synonyms: HashMap<&str, &[&str]> = HashMap::new();
 /// synonyms.insert("green", &["emerald", "viridescent"]);
 /// synonyms.insert("fast", &["speedy", "quick", "rapid", "swift", "turbo"]);
-/// 
+///
 /// let settings = BorrowedSettings::new()
 ///     .with_distinct_attribute("id")
 ///     .with_synonyms(synonyms)
@@ -329,9 +329,7 @@ impl<'a> Index<'a> {
     /// let settings = movie_index.get_settings().await.unwrap();
     /// # }
     /// ```
-    pub async fn get_settings(
-        &self,
-    ) -> Result<OwnedSettings, Error> {
+    pub async fn get_settings(&self) -> Result<OwnedSettings, Error> {
         Ok(request::<(), OwnedSettings>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
@@ -520,7 +518,7 @@ impl<'a> Index<'a> {
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
-    /// 
+    ///
     /// let settings = BorrowedSettings::new()
     ///     .with_stop_words(&["a", "the", "of"]);
     ///
@@ -591,7 +589,10 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_synonyms(&synonyms).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_synonyms<U: Debug + Serialize + std::cmp::Eq + std::hash::Hash + ToString, T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
+    pub async fn set_synonyms<
+        U: Debug + Serialize + std::cmp::Eq + std::hash::Hash + ToString,
+        T: Debug + Serialize + IntoIterator<Item = impl ToString>,
+    >(
         &'a self,
         synonyms: &HashMap<U, T>,
     ) -> Result<Progress<'a>, Error> {
@@ -618,11 +619,14 @@ impl<'a> Index<'a> {
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
-    /// 
+    ///
     /// let progress = movie_index.set_stop_words(&["the", "of", "to"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_stop_words<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(&'a self, stop_words: T) -> Result<Progress<'a>, Error> {
+    pub async fn set_stop_words<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
+        &'a self,
+        stop_words: T,
+    ) -> Result<Progress<'a>, Error> {
         Ok(request::<T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/stop-words",
@@ -687,11 +691,13 @@ impl<'a> Index<'a> {
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
-    /// 
+    ///
     /// let progress = movie_index.set_attributes_for_faceting(&["genre", "director"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_attributes_for_faceting<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
+    pub async fn set_attributes_for_faceting<
+        T: Debug + Serialize + IntoIterator<Item = impl ToString>,
+    >(
         &'a self,
         ranking_rules: T,
     ) -> Result<Progress<'a>, Error> {
@@ -753,7 +759,9 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_searchable_attributes<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
+    pub async fn set_searchable_attributes<
+        T: Debug + Serialize + IntoIterator<Item = impl ToString>,
+    >(
         &'a self,
         searchable_attributes: T,
     ) -> Result<Progress<'a>, Error> {
@@ -784,7 +792,9 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_displayed_attributes<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
+    pub async fn set_displayed_attributes<
+        T: Debug + Serialize + IntoIterator<Item = impl ToString>,
+    >(
         &'a self,
         displayed_attributes: T,
     ) -> Result<Progress<'a>, Error> {
