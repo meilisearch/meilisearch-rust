@@ -28,6 +28,8 @@ use std::fmt::Debug;
 /// # Examples
 /// 
 /// ```
+/// # use std::collections::HashMap;
+/// # use meilisearch_sdk::settings::Settings;
 /// let mut synonyms: HashMap<&str, &[&str]> = HashMap::new();
 /// synonyms.insert("green", &["emerald", "viridescent"]);
 /// synonyms.insert("fast", &["speedy", "quick", "rapid", "swift", "turbo"]);
@@ -43,6 +45,8 @@ use std::fmt::Debug;
 /// ```
 /// 
 /// ```
+/// # use std::collections::HashMap;
+/// # use meilisearch_sdk::settings::Settings;
 /// let mut synonyms: HashMap<&str, &[&str]> = HashMap::new();
 /// synonyms.insert("green", &["emerald", "viridescent"]);
 /// synonyms.insert("fast", &["speedy", "quick", "rapid", "swift", "turbo"]);
@@ -104,6 +108,8 @@ pub struct Settings<
 /// # Example
 /// \
 /// ```
+/// # use std::collections::HashMap;
+/// # use meilisearch_sdk::settings::OwnedSettings;
 /// let mut synonyms: HashMap<String, Vec<String>> = HashMap::new();
 /// synonyms.insert("green".to_string(), vec!["emerald".to_string(), "viridescent".to_string()]);
 /// synonyms.insert("fast".to_string(), vec!["speedy".to_string(), "quick".to_string(), "rapid".to_string(), "swift".to_string(), "turbo".to_string()]);
@@ -122,6 +128,8 @@ pub type OwnedSettings = GenericSettings<String, Vec<String>>;
 /// # Example
 /// \
 /// ```
+/// # use std::collections::HashMap;
+/// # use meilisearch_sdk::settings::BorrowedSettings;
 /// let mut synonyms: HashMap<&str, &[&str]> = HashMap::new();
 /// synonyms.insert("green", &["emerald", "viridescent"]);
 /// synonyms.insert("fast", &["speedy", "quick", "rapid", "swift", "turbo"]);
@@ -507,15 +515,14 @@ impl<'a> Index<'a> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::BorrowedSettings};
     /// # #[tokio::main]
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
-    ///
-    /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
-    /// let settings = Settings::new()
-    ///     .with_stop_words(stop_words.clone());
+    /// 
+    /// let settings = BorrowedSettings::new()
+    ///     .with_stop_words(&["a", "the", "of"]);
     ///
     /// let progress = movie_index.set_settings(&settings).await.unwrap();
     /// # }
@@ -615,8 +622,8 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_stop_words(&["the", "of", "to"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_stop_words<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(&'a self, stop_words: &T) -> Result<Progress<'a>, Error> {
-        Ok(request::<&T, ProgressJson>(
+    pub async fn set_stop_words<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(&'a self, stop_words: T) -> Result<Progress<'a>, Error> {
+        Ok(request::<T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
@@ -655,9 +662,9 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn set_ranking_rules<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
         &'a self,
-        ranking_rules: &T,
+        ranking_rules: T,
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&T, ProgressJson>(
+        Ok(request::<T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
@@ -686,9 +693,9 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn set_attributes_for_faceting<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
         &'a self,
-        ranking_rules: &T,
+        ranking_rules: T,
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&T, ProgressJson>(
+        Ok(request::<T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/attributes-for-faceting",
                 self.client.host, self.uid
@@ -748,9 +755,9 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn set_searchable_attributes<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
         &'a self,
-        searchable_attributes: &T,
+        searchable_attributes: T,
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&T, ProgressJson>(
+        Ok(request::<T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
@@ -779,9 +786,9 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn set_displayed_attributes<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
         &'a self,
-        displayed_attributes: &T,
+        displayed_attributes: T,
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&T, ProgressJson>(
+        Ok(request::<T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
