@@ -58,10 +58,9 @@ delete_one_document_1: |-
 delete_documents_1: |-
   let progress: Progress = movie_index.delete_documents(&[23488, 153738, 437035, 363869]).await.unwrap();
 search_1: |-
-  let query: Query = Query::new("American ninja");
+  let query: Query = Query::new().with_query("American ninja").build();
   let results: SearchResults<Movie> = movie_index.search(&query).await.unwrap();
 get_update_1: |-
-  // This example assumes that there is a "progress" variable
   let status: Status = progress.get_status().await.unwrap();
 get_all_updates_1: |-
   // unavailable for now
