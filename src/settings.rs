@@ -1,6 +1,12 @@
+use crate::{
+    errors::Error,
+    indexes::Index,
+    progress::{Progress, ProgressJson},
+    request::{request, Method},
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::{indexes::Index, errors::Error, request::{request, Method}, progress::{Progress, ProgressJson}};
+use std::fmt::Debug;
 
 /// Struct reprensenting a set of settings.
 /// You can build this struct using the builder syntax.
@@ -28,34 +34,80 @@ use crate::{indexes::Index, errors::Error, request::{request, Method}, progress:
 /// ```
 #[derive(Serialize, Deserialize, Default, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Settings {
+pub struct Settings<
+    SynKey,
+    SynList,
+    SWordsList,
+    RankList,
+    FacetsList,
+    DAttribute,
+    SearchableList,
+    DisplayedList,
+> where
+    SynKey: std::cmp::Eq + std::hash::Hash,
+    SynList: IntoIterator,
+    SWordsList: IntoIterator,
+    RankList: IntoIterator,
+    FacetsList: IntoIterator,
+    SearchableList: IntoIterator,
+    DisplayedList: IntoIterator,
+{
     /// List of associated words treated similarly
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub synonyms: Option<HashMap<String, Vec<String>>>,
+    pub synonyms: Option<HashMap<SynKey, SynList>>,
     /// List of words ignored by MeiliSearch when present in search queries
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub stop_words: Option<Vec<String>>,
+    pub stop_words: Option<SWordsList>,
     /// List of [ranking rules](https://docs.meilisearch.com/guides/main_concepts/relevancy.html#order-of-the-rules) sorted by order of importance
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ranking_rules: Option<Vec<String>>,
+    pub ranking_rules: Option<RankList>,
     /// Attributes to use as [facets](https://docs.meilisearch.com/guides/advanced_guides/faceted_search.html)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub attributes_for_faceting: Option<Vec<String>>,
+    pub attributes_for_faceting: Option<FacetsList>,
     /// Search returns documents with distinct (different) values of the given field
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub distinct_attribute: Option<String>,
+    pub distinct_attribute: Option<DAttribute>,
     /// Fields in which to search for matching query words sorted by order of importance
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub searchable_attributes: Option<Vec<String>>,
+    pub searchable_attributes: Option<SearchableList>,
     /// Fields displayed in the returned documents
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub displayed_attributes: Option<Vec<String>>,
+    pub displayed_attributes: Option<DisplayedList>,
 }
 
 #[allow(missing_docs)]
-impl Settings {
+impl<
+        SynKey: std::cmp::Eq + std::hash::Hash,
+        SynList: IntoIterator,
+        SWordsList: IntoIterator,
+        RankList: IntoIterator,
+        FacetsList: IntoIterator,
+        DAttribute,
+        SearchableList: IntoIterator,
+        DisplayedList: IntoIterator,
+    >
+    Settings<
+        SynKey,
+        SynList,
+        SWordsList,
+        RankList,
+        FacetsList,
+        DAttribute,
+        SearchableList,
+        DisplayedList,
+    >
+{
     /// Create undefined settings
-    pub fn new() -> Settings {
+    pub fn new() -> Settings<
+        SynKey,
+        SynList,
+        SWordsList,
+        RankList,
+        FacetsList,
+        DAttribute,
+        SearchableList,
+        DisplayedList,
+    > {
         Settings {
             synonyms: None,
             stop_words: None,
@@ -66,43 +118,127 @@ impl Settings {
             displayed_attributes: None,
         }
     }
-    pub fn with_synonyms(self, synonyms: HashMap<String, Vec<String>>) -> Settings {
+    pub fn with_synonyms(
+        self,
+        synonyms: HashMap<SynKey, SynList>,
+    ) -> Settings<
+        SynKey,
+        SynList,
+        SWordsList,
+        RankList,
+        FacetsList,
+        DAttribute,
+        SearchableList,
+        DisplayedList,
+    > {
         Settings {
             synonyms: Some(synonyms),
             ..self
         }
     }
-    pub fn with_stop_words(self, stop_words: Vec<String>) -> Settings {
+    pub fn with_stop_words(
+        self,
+        stop_words: SWordsList,
+    ) -> Settings<
+        SynKey,
+        SynList,
+        SWordsList,
+        RankList,
+        FacetsList,
+        DAttribute,
+        SearchableList,
+        DisplayedList,
+    > {
         Settings {
             stop_words: Some(stop_words),
             ..self
         }
     }
-    pub fn with_ranking_rules(self, ranking_rules: Vec<String>) -> Settings {
+    pub fn with_ranking_rules(
+        self,
+        ranking_rules: RankList,
+    ) -> Settings<
+        SynKey,
+        SynList,
+        SWordsList,
+        RankList,
+        FacetsList,
+        DAttribute,
+        SearchableList,
+        DisplayedList,
+    > {
         Settings {
             ranking_rules: Some(ranking_rules),
             ..self
         }
     }
-    pub fn with_attributes_for_faceting(self, attributes_for_faceting: Vec<String>) -> Settings {
+    pub fn with_attributes_for_faceting(
+        self,
+        attributes_for_faceting: FacetsList,
+    ) -> Settings<
+        SynKey,
+        SynList,
+        SWordsList,
+        RankList,
+        FacetsList,
+        DAttribute,
+        SearchableList,
+        DisplayedList,
+    > {
         Settings {
             attributes_for_faceting: Some(attributes_for_faceting),
             ..self
         }
     }
-    pub fn with_distinct_attribute(self, distinct_attribute: String) -> Settings {
+    pub fn with_distinct_attribute(
+        self,
+        distinct_attribute: DAttribute,
+    ) -> Settings<
+        SynKey,
+        SynList,
+        SWordsList,
+        RankList,
+        FacetsList,
+        DAttribute,
+        SearchableList,
+        DisplayedList,
+    > {
         Settings {
             distinct_attribute: Some(distinct_attribute),
             ..self
         }
     }
-    pub fn with_searchable_attributes(self, searchable_attributes: Vec<String>) -> Settings {
+    pub fn with_searchable_attributes(
+        self,
+        searchable_attributes: SearchableList,
+    ) -> Settings<
+        SynKey,
+        SynList,
+        SWordsList,
+        RankList,
+        FacetsList,
+        DAttribute,
+        SearchableList,
+        DisplayedList,
+    > {
         Settings {
             searchable_attributes: Some(searchable_attributes),
             ..self
         }
     }
-    pub fn with_displayed_attributes(self, displayed_attributes: Vec<String>) -> Settings {
+    pub fn with_displayed_attributes(
+        self,
+        displayed_attributes: DisplayedList,
+    ) -> Settings<
+        SynKey,
+        SynList,
+        SWordsList,
+        RankList,
+        FacetsList,
+        DAttribute,
+        SearchableList,
+        DisplayedList,
+    > {
         Settings {
             displayed_attributes: Some(displayed_attributes),
             ..self
@@ -122,13 +258,40 @@ impl<'a> Index<'a> {
     /// let settings = movie_index.get_settings().await.unwrap();
     /// # }
     /// ```
-    pub async fn get_settings(&self) -> Result<Settings, Error> {
-        Ok(request::<(), Settings>(
+    pub async fn get_settings(
+        &self,
+    ) -> Result<
+        Settings<
+            String,
+            Vec<String>,
+            Vec<String>,
+            Vec<String>,
+            Vec<String>,
+            String,
+            Vec<String>,
+            Vec<String>,
+        >,
+        Error,
+    > {
+        Ok(request::<
+            (),
+            Settings<
+                String,
+                Vec<String>,
+                Vec<String>,
+                Vec<String>,
+                Vec<String>,
+                String,
+                Vec<String>,
+                Vec<String>,
+            >,
+        >(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [synonyms](https://docs.meilisearch.com/guides/advanced_guides/synonyms.html) of the Index.
@@ -144,11 +307,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn get_synonyms(&self) -> Result<HashMap<String, Vec<String>>, Error> {
         Ok(request::<(), HashMap<String, Vec<String>>>(
-            &format!("{}/indexes/{}/settings/synonyms", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/synonyms",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [stop-words](https://docs.meilisearch.com/guides/advanced_guides/stop_words.html) of the Index.
@@ -164,11 +331,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn get_stop_words(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/stop-words", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/stop-words",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [ranking rules](https://docs.meilisearch.com/guides/main_concepts/relevancy.html#ranking-rules) of the Index.
@@ -184,11 +355,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn get_ranking_rules(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/ranking-rules", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/ranking-rules",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [attributes for faceting](https://docs.meilisearch.com/guides/advanced_guides/faceted_search.html) of the Index.
@@ -204,11 +379,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn get_attributes_for_faceting(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/attributes-for-faceting",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get the [distinct attribute](https://docs.meilisearch.com/guides/advanced_guides/settings.html#distinct-attribute) of the Index.
@@ -224,11 +403,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn get_distinct_attribute(&self) -> Result<Option<String>, Error> {
         Ok(request::<(), Option<String>>(
-            &format!("{}/indexes/{}/settings/distinct-attribute", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/distinct-attribute",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [searchable attributes](https://docs.meilisearch.com/guides/advanced_guides/field_properties.html#searchable-fields) of the Index.
@@ -244,11 +427,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn get_searchable_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/searchable-attributes", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/searchable-attributes",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [displayed attributes](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) of the Index.
@@ -264,11 +451,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn get_displayed_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/displayed-attributes",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Update [settings](../settings/struct.Settings.html) of the index.
@@ -290,13 +481,49 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_settings(&settings).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_settings(&'a self, settings: &Settings) -> Result<Progress<'a>, Error> {
-        Ok(request::<&Settings, ProgressJson>(
+    pub async fn set_settings<
+        SynKey: ToString + Debug + std::cmp::Eq + Serialize + std::hash::Hash,
+        SynonymsValue: Debug + Serialize,
+        SynList: IntoIterator<Item = SynonymsValue> + Debug + Serialize,
+        StopwordsValue: Debug + Serialize,
+        SWordsList: Debug + IntoIterator<Item = StopwordsValue> + Serialize,
+        RankList: IntoIterator + Debug + Serialize,
+        FacetsList: IntoIterator + Debug + Serialize,
+        DAttribute: Serialize + Debug,
+        SearchableList: IntoIterator + Debug + Serialize,
+        DisplayedList: IntoIterator + Debug + Serialize,
+    >(
+        &'a self,
+        settings: &Settings<
+            SynKey,
+            SynList,
+            SWordsList,
+            RankList,
+            FacetsList,
+            DAttribute,
+            SearchableList,
+            DisplayedList,
+        >,
+    ) -> Result<Progress<'a>, Error> {
+        Ok(request::<
+            &Settings<
+                SynKey,
+                SynList,
+                SWordsList,
+                RankList,
+                FacetsList,
+                DAttribute,
+                SearchableList,
+                DisplayedList,
+            >,
+            ProgressJson,
+        >(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.apikey,
             Method::Post(settings),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -305,27 +532,35 @@ impl<'a> Index<'a> {
     /// # Example
     ///
     /// ```
+    /// # use std::collections::HashMap;
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # #[tokio::main]
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let mut synonyms = std::collections::HashMap::new();
-    /// synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
-    /// synonyms.insert(String::from("logan"), vec![String::from("xmen"), String::from("wolverine")]);
-    /// synonyms.insert(String::from("wow"), vec![String::from("world of warcraft")]);
+    /// let mut synonyms: HashMap<&str, &[&str]> = HashMap::new();
+    /// synonyms.insert("wolverine", &["xmen", "logan"]);
+    /// synonyms.insert("logan", &["xmen", "wolverine"]);
+    /// synonyms.insert("wow", &["world of warcraft"]);
     ///
     /// let progress = movie_index.set_synonyms(&synonyms).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_synonyms(&'a self, synonyms: &HashMap<String, Vec<String>>) -> Result<Progress<'a>, Error> {
-        Ok(request::<&HashMap<String, Vec<String>>, ProgressJson>(
-            &format!("{}/indexes/{}/settings/synonyms", self.client.host, self.uid),
+    pub async fn set_synonyms(
+        &'a self,
+        synonyms: &HashMap<&str, &[&str]>,
+    ) -> Result<Progress<'a>, Error> {
+        Ok(request::<&HashMap<&str, &[&str]>, ProgressJson>(
+            &format!(
+                "{}/indexes/{}/settings/synonyms",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Post(synonyms),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -346,11 +581,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn set_stop_words(&'a self, stop_words: &[&str]) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
-            &format!("{}/indexes/{}/settings/stop-words", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/stop-words",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Post(stop_words),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -378,13 +617,20 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_ranking_rules(&'a self, ranking_rules: &[&str]) -> Result<Progress<'a>, Error> {
+    pub async fn set_ranking_rules(
+        &'a self,
+        ranking_rules: &[&str],
+    ) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
-            &format!("{}/indexes/{}/settings/ranking-rules", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/ranking-rules",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Post(ranking_rules),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -403,13 +649,20 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_attributes_for_faceting(&'a self, ranking_rules: &[&str]) -> Result<Progress<'a>, Error> {
+    pub async fn set_attributes_for_faceting(
+        &'a self,
+        ranking_rules: &[&str],
+    ) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
-            &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/attributes-for-faceting",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Post(ranking_rules),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -427,13 +680,20 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_distinct_attribute("movie_id").await.unwrap();
     /// # }
     /// ```
-    pub async fn set_distinct_attribute(&'a self, distinct_attribute: &str) -> Result<Progress<'a>, Error> {
+    pub async fn set_distinct_attribute(
+        &'a self,
+        distinct_attribute: &str,
+    ) -> Result<Progress<'a>, Error> {
         Ok(request::<&str, ProgressJson>(
-            &format!("{}/indexes/{}/settings/distinct-attribute", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/distinct-attribute",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Post(distinct_attribute),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -451,13 +711,20 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_searchable_attributes(&'a self, searchable_attributes: &[&str]) -> Result<Progress<'a>, Error> {
+    pub async fn set_searchable_attributes(
+        &'a self,
+        searchable_attributes: &[&str],
+    ) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
-            &format!("{}/indexes/{}/settings/searchable-attributes", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/searchable-attributes",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Post(searchable_attributes),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -475,13 +742,20 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_displayed_attributes(&'a self, displayed_attributes: &[&str]) -> Result<Progress<'a>, Error> {
+    pub async fn set_displayed_attributes(
+        &'a self,
+        displayed_attributes: &[&str],
+    ) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
-            &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/displayed-attributes",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Post(displayed_attributes),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -506,7 +780,8 @@ impl<'a> Index<'a> {
             self.client.apikey,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -526,11 +801,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn reset_synonyms(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/synonyms", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/synonyms",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -550,11 +829,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn reset_stop_words(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/stop-words", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/stop-words",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -575,11 +858,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn reset_ranking_rules(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/ranking-rules", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/ranking-rules",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -599,11 +886,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn reset_attributes_for_faceting(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/attributes-for-faceting",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -623,11 +914,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn reset_distinct_attribute(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/distinct-attribute", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/distinct-attribute",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -647,11 +942,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn reset_searchable_attributes(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/searchable-attributes", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/searchable-attributes",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -671,11 +970,23 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn reset_displayed_attributes(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/displayed-attributes",
+                self.client.host, self.uid
+            ),
             self.client.apikey,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
+}
+
+#[test]
+fn test() {
+    let mut sy = HashMap::new();
+    sy.insert("d", vec!["dd", "s"]);
+    let settings = Settings::<_,_,Vec<String>,Vec<String>,Vec<String>,&str, Vec<String>, _>::new().with_synonyms(sy).with_displayed_attributes(vec!["iji", "ppdij", "s"]);
+    println!("{}", serde_json::to_string(&settings).unwrap());
 }
