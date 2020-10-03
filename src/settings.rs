@@ -521,16 +521,14 @@ impl<'a> Index<'a> {
     /// # }
     /// ```
     pub async fn set_settings<
-        SynKey: ToString + Debug + std::cmp::Eq + Serialize + std::hash::Hash,
-        SynonymsValue: Debug + Serialize,
-        SynList: IntoIterator<Item = SynonymsValue> + Debug + Serialize,
-        StopwordsValue: Debug + Serialize,
-        SWordsList: Debug + IntoIterator<Item = StopwordsValue> + Serialize,
-        RankList: IntoIterator + Debug + Serialize,
-        FacetsList: IntoIterator + Debug + Serialize,
-        DAttribute: Serialize + Debug,
-        SearchableList: IntoIterator + Debug + Serialize,
-        DisplayedList: IntoIterator + Debug + Serialize,
+        SynKey: Debug + Serialize + std::cmp::Eq + std::hash::Hash,
+        SynList: Debug + Serialize + IntoIterator,
+        SWordsList: Debug + Serialize + IntoIterator,
+        RankList: Debug + Serialize + IntoIterator,
+        FacetsList: Debug + Serialize + IntoIterator,
+        DAttribute: Debug + Serialize,
+        SearchableList: Debug + Serialize + IntoIterator,
+        DisplayedList: Debug + Serialize + IntoIterator,
     >(
         &'a self,
         settings: &Settings<
@@ -586,11 +584,11 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_synonyms(&synonyms).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_synonyms(
+    pub async fn set_synonyms<U: Debug + Serialize + std::cmp::Eq + std::hash::Hash + ToString, T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
         &'a self,
-        synonyms: &HashMap<&str, &[&str]>,
+        synonyms: &HashMap<U, T>,
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&HashMap<&str, &[&str]>, ProgressJson>(
+        Ok(request::<&HashMap<U, T>, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
@@ -613,13 +611,12 @@ impl<'a> Index<'a> {
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
-    ///
-    /// let stop_words = &["the", "of", "to"];
-    /// let progress = movie_index.set_stop_words(stop_words).await.unwrap();
+    /// 
+    /// let progress = movie_index.set_stop_words(&["the", "of", "to"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_stop_words(&'a self, stop_words: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_stop_words<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(&'a self, stop_words: &T) -> Result<Progress<'a>, Error> {
+        Ok(request::<&T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
@@ -656,11 +653,11 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_ranking_rules(
+    pub async fn set_ranking_rules<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
         &'a self,
-        ranking_rules: &[&str],
+        ranking_rules: &T,
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+        Ok(request::<&T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
@@ -683,16 +680,15 @@ impl<'a> Index<'a> {
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
-    ///
-    /// let attributes_for_faceting = &["genre", "director"];
-    /// let progress = movie_index.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
+    /// 
+    /// let progress = movie_index.set_attributes_for_faceting(&["genre", "director"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_attributes_for_faceting(
+    pub async fn set_attributes_for_faceting<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
         &'a self,
-        ranking_rules: &[&str],
+        ranking_rules: &T,
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+        Ok(request::<&T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/attributes-for-faceting",
                 self.client.host, self.uid
@@ -719,11 +715,11 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_distinct_attribute("movie_id").await.unwrap();
     /// # }
     /// ```
-    pub async fn set_distinct_attribute(
+    pub async fn set_distinct_attribute<T: Debug + Serialize + ToString>(
         &'a self,
-        distinct_attribute: &str,
+        distinct_attribute: T,
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&str, ProgressJson>(
+        Ok(request::<T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
@@ -750,11 +746,11 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_searchable_attributes(
+    pub async fn set_searchable_attributes<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
         &'a self,
-        searchable_attributes: &[&str],
+        searchable_attributes: &T,
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+        Ok(request::<&T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
@@ -781,11 +777,11 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"]).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_displayed_attributes(
+    pub async fn set_displayed_attributes<T: Debug + Serialize + IntoIterator<Item = impl ToString>>(
         &'a self,
-        displayed_attributes: &[&str],
+        displayed_attributes: &T,
     ) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+        Ok(request::<&T, ProgressJson>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
@@ -1020,17 +1016,4 @@ impl<'a> Index<'a> {
         .await?
         .into_progress(self))
     }
-}
-
-#[test]
-fn test() {
-    let mut synonyms: HashMap<String, Vec<String>> = HashMap::new();
-    synonyms.insert("green".to_string(), vec!["emerald".to_string(), "viridescent".to_string()]);
-    synonyms.insert("fast".to_string(), vec!["speedy".to_string(), "quick".to_string(), "rapid".to_string(), "swift".to_string(), "turbo".to_string()]);
-
-    let settings = OwnedSettings::new()
-        .with_distinct_attribute("id".to_string())
-        .with_synonyms(synonyms)
-        .with_stop_words(vec!["a".to_string(), "the".to_string(), "and".to_string()])
-        .with_ranking_rules(vec!["typo".to_string(), "words".to_string(), "proximity".to_string(), "attribute".to_string(), "wordsPosition".to_string(), "exactness".to_string()]);
 }
