@@ -25,29 +25,29 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
         Method::Get => Request::get(url)
             .header("X-Meili-API-Key", apikey)
             .body(())
-            .map_err(|e| isahc::Error::InvalidHttpFormat(e))?
+            .map_err(isahc::Error::InvalidHttpFormat)?
             .send_async().await?,
         Method::Delete => Request::delete(url)
             .header("X-Meili-API-Key", apikey)
             .body(())
-            .map_err(|e| isahc::Error::InvalidHttpFormat(e))?
+            .map_err(isahc::Error::InvalidHttpFormat)?
             .send_async().await?,
         Method::Post(body) => Request::post(url)
             .header("X-Meili-API-Key", apikey)
             .header("Content-Type", "application/json")
             .body(to_string(&body).unwrap())
-            .map_err(|e| isahc::Error::InvalidHttpFormat(e))?
+            .map_err(isahc::Error::InvalidHttpFormat)?
             .send_async().await?,
         Method::Put(body) => Request::put(url)
             .header("X-Meili-API-Key", apikey)
             .header("Content-Type", "application/json")
             .body(to_string(&body).unwrap())
-            .map_err(|e| isahc::Error::InvalidHttpFormat(e))?
+            .map_err(isahc::Error::InvalidHttpFormat)?
             .send_async().await?,
     };
 
     let status = response.status().as_u16();
-    let mut body = response.text_async().await.map_err(|e| isahc::Error::Io(e))?;
+    let mut body = response.text_async().await.map_err(isahc::Error::Io)?;
     if body.is_empty() {
         body = "null".to_string();
     }
