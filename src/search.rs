@@ -101,7 +101,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use meilisearch_sdk::{search::Query, indexes::Index};
-/// # let index: Index = unsafe { std::mem::uninitialized() };
+/// # let index: Index = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
 /// let query = Query::new(&index)
 ///     .with_query("space")
 ///     .with_offset(42)
@@ -111,7 +111,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use meilisearch_sdk::{search::Query, indexes::Index};
-/// # let index: Index = unsafe { std::mem::uninitialized() };
+/// # let index: Index = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
 /// let query = index.search()
 ///     .with_query("space")
 ///     .with_offset(42)
