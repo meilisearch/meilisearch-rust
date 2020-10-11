@@ -5,7 +5,7 @@ use std::collections::HashMap;
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct MatchRange {
     start: usize,
-    length: usize
+    length: usize,
 }
 
 /// A single result.  
@@ -20,7 +20,7 @@ pub struct SearchResult<T> {
     pub formatted_result: Option<T>,
     /// The object that contains information about the matches.
     #[serde(rename = "_matchesInfo")]
-    pub matches_info: Option<HashMap<String, Vec<MatchRange>>>
+    pub matches_info: Option<HashMap<String, Vec<MatchRange>>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -47,7 +47,10 @@ pub struct SearchResults<T> {
     pub query: String,
 }
 
-fn serialize_with_wildcard<S: Serializer, T: Serialize>(data: &Option<Selectors<T>>, s: S) -> Result<S::Ok, S::Error> {
+fn serialize_with_wildcard<S: Serializer, T: Serialize>(
+    data: &Option<Selectors<T>>,
+    s: S,
+) -> Result<S::Ok, S::Error> {
     match data {
         Some(Selectors::All) => ["*"].serialize(s),
         Some(Selectors::Some(data)) => data.serialize(s),
@@ -55,7 +58,10 @@ fn serialize_with_wildcard<S: Serializer, T: Serialize>(data: &Option<Selectors<
     }
 }
 
-fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(data: &Option<Selectors<&[AttributeToCrop]>>, s: S) -> Result<S::Ok, S::Error> {
+fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
+    data: &Option<Selectors<&[AttributeToCrop]>>,
+    s: S,
+) -> Result<S::Ok, S::Error> {
     match data {
         Some(Selectors::All) => ["*"].serialize(s),
         Some(Selectors::Some(data)) => {
@@ -70,7 +76,7 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(data: &Option<Selec
                 results.push(result)
             }
             results.serialize(s)
-        },
+        }
         None => s.serialize_none(),
     }
 }
@@ -113,12 +119,12 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///     .build(); // you can also execute() instead of build()
 /// ```
 #[derive(Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")] 
+#[serde(rename_all = "camelCase")]
 pub struct Query<'a> {
     #[serde(skip_serializing)]
     index: &'a Index<'a>,
     /// The text that will be searched for among the documents.  
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "q")]
     pub query: Option<&'a str>,
     /// The number of documents to skip.  
@@ -126,7 +132,7 @@ pub struct Query<'a> {
     /// This is helpful for pagination.  
     ///   
     /// Example: If you want to skip the first document, set offset to `1`.  
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<usize>,
     /// The maximum number of documents returned.  
     /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.  
@@ -134,54 +140,54 @@ pub struct Query<'a> {
     ///   
     /// Example: If you don't want to get more than two documents, set limit to `2`.  
     /// Default: `20`  
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
     /// Filters applied to documents.  
     /// Read the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html) to learn the syntax.
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub filters: Option<&'a str>,
     /// Facet names and values to filter on.  
     /// Read [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#facet-filters) for a complete explanation.
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub facet_filters: Option<&'a [&'a [&'a str]]>,
     /// Facets for which to retrieve the matching count.  
     ///   
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.  
     /// Default: all attributes found in the documents.
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub facets_distribution: Option<Selectors<&'a [&'a str]>>,
     /// Attributes to display in the returned documents.  
     ///   
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.  
     /// Default: all attributes found in the documents.
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
     /// Attributes whose values have to be cropped.  
     /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.  
     ///   
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
     /// Number of characters to keep on each side of the start of the matching word.  
     /// See [attributes_to_crop](#structfield.attributes_to_crop).  
     ///   
     /// Default: `200`
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_length: Option<usize>,
     /// Attributes whose values will contain **highlighted matching terms**.  
     ///   
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    #[serde(skip_serializing_if = "Option::is_none")] 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
     /// Defines whether an object that contains information about the matches should be returned or not.
     ///   
     /// Default: `false`
-    #[serde(skip_serializing_if = "Option::is_none")] 
-    pub matches: Option<bool>
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub matches: Option<bool>,
 }
 
 #[allow(missing_docs)]
@@ -218,23 +224,38 @@ impl<'a> Query<'a> {
         self.filters = Some(filters);
         self
     }
-    pub fn with_facet_filters<'b>(&'b mut self, facet_filters: &'a[&'a[&'a str]]) -> &'b mut Query<'a> {
+    pub fn with_facet_filters<'b>(
+        &'b mut self,
+        facet_filters: &'a [&'a [&'a str]],
+    ) -> &'b mut Query<'a> {
         self.facet_filters = Some(facet_filters);
         self
     }
-    pub fn with_facets_distribution<'b>(&'b mut self, facets_distribution: Selectors<&'a[&'a str]>) -> &'b mut Query<'a> {
+    pub fn with_facets_distribution<'b>(
+        &'b mut self,
+        facets_distribution: Selectors<&'a [&'a str]>,
+    ) -> &'b mut Query<'a> {
         self.facets_distribution = Some(facets_distribution);
         self
     }
-    pub fn with_attributes_to_retrieve<'b>(&'b mut self, attributes_to_retrieve: Selectors<&'a [&'a str]>) -> &'b mut Query<'a> {
+    pub fn with_attributes_to_retrieve<'b>(
+        &'b mut self,
+        attributes_to_retrieve: Selectors<&'a [&'a str]>,
+    ) -> &'b mut Query<'a> {
         self.attributes_to_retrieve = Some(attributes_to_retrieve);
         self
     }
-    pub fn with_attributes_to_crop<'b>(&'b mut self, attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>) -> &'b mut Query<'a> {
+    pub fn with_attributes_to_crop<'b>(
+        &'b mut self,
+        attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>,
+    ) -> &'b mut Query<'a> {
         self.attributes_to_crop = Some(attributes_to_crop);
         self
     }
-    pub fn with_attributes_to_highlight<'b>(&'b mut self, attributes_to_highlight: Selectors<&'a [&'a str]>) -> &'b mut Query<'a> {
+    pub fn with_attributes_to_highlight<'b>(
+        &'b mut self,
+        attributes_to_highlight: Selectors<&'a [&'a str]>,
+    ) -> &'b mut Query<'a> {
         self.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
@@ -261,7 +282,7 @@ impl<'a> Query<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{client::*, document, search::*};
-    use serde::{Serialize, Deserialize};
+    use serde::{Deserialize, Serialize};
     use std::thread::sleep;
     use std::time::Duration;
 
@@ -308,7 +329,8 @@ mod tests {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_string").await;
 
-        let results: SearchResults<Document> = index.search().with_query("dolor").execute().await.unwrap();
+        let results: SearchResults<Document> =
+            index.search().with_query("dolor").execute().await.unwrap();
         assert_eq!(results.hits.len(), 2);
 
         client.delete_index("test_query_string").await.unwrap();
@@ -319,7 +341,8 @@ mod tests {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_limit").await;
 
-        let results: SearchResults<Document> = index.search().with_limit(5).execute().await.unwrap();
+        let results: SearchResults<Document> =
+            index.search().with_limit(5).execute().await.unwrap();
         assert_eq!(results.hits.len(), 5);
 
         client.delete_index("test_query_limit").await.unwrap();
@@ -330,7 +353,8 @@ mod tests {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_offset").await;
 
-        let results: SearchResults<Document> = index.search().with_offset(6).execute().await.unwrap();
+        let results: SearchResults<Document> =
+            index.search().with_offset(6).execute().await.unwrap();
         assert_eq!(results.hits.len(), 4);
 
         client.delete_index("test_query_offset").await.unwrap();
@@ -341,10 +365,20 @@ mod tests {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_filters").await;
 
-        let results: SearchResults<Document> = index.search().with_filters("value = \"The Social Network\"").execute().await.unwrap();
+        let results: SearchResults<Document> = index
+            .search()
+            .with_filters("value = \"The Social Network\"")
+            .execute()
+            .await
+            .unwrap();
         assert_eq!(results.hits.len(), 1);
 
-        let results: SearchResults<Document> = index.search().with_filters("NOT value = \"The Social Network\"").execute().await.unwrap();
+        let results: SearchResults<Document> = index
+            .search()
+            .with_filters("NOT value = \"The Social Network\"")
+            .execute()
+            .await
+            .unwrap();
         assert_eq!(results.hits.len(), 9);
 
         client.delete_index("test_query_filters").await.unwrap();
@@ -370,7 +404,10 @@ mod tests {
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
         assert_eq!(results.hits.len(), 10);
 
-        client.delete_index("test_query_facet_filters").await.unwrap();
+        client
+            .delete_index("test_query_facet_filters")
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -381,16 +418,47 @@ mod tests {
         let mut query = Query::new(&index);
         query.with_facets_distribution(Selectors::All);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.facets_distribution.unwrap().get("kind").unwrap().get("title").unwrap(), &8);
+        assert_eq!(
+            results
+                .facets_distribution
+                .unwrap()
+                .get("kind")
+                .unwrap()
+                .get("title")
+                .unwrap(),
+            &8
+        );
 
         let mut query = Query::new(&index);
         query.with_facets_distribution(Selectors::Some(&["kind"]));
         query.with_facet_filters(&[&["kind:text"]]);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.facets_distribution.clone().unwrap().get("kind").unwrap().get("title").unwrap(), &0);
-        assert_eq!(results.facets_distribution.unwrap().get("kind").unwrap().get("text").unwrap(), &2);
+        assert_eq!(
+            results
+                .facets_distribution
+                .clone()
+                .unwrap()
+                .get("kind")
+                .unwrap()
+                .get("title")
+                .unwrap(),
+            &0
+        );
+        assert_eq!(
+            results
+                .facets_distribution
+                .unwrap()
+                .get("kind")
+                .unwrap()
+                .get("text")
+                .unwrap(),
+            &2
+        );
 
-        client.delete_index("test_query_facet_distribution").await.unwrap();
+        client
+            .delete_index("test_query_facet_distribution")
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -398,14 +466,22 @@ mod tests {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_attributes_to_retrieve").await;
 
-        let results: SearchResults<Document> = index.search().with_attributes_to_retrieve(Selectors::All).execute().await.unwrap();
+        let results: SearchResults<Document> = index
+            .search()
+            .with_attributes_to_retrieve(Selectors::All)
+            .execute()
+            .await
+            .unwrap();
         assert_eq!(results.hits.len(), 10);
 
         let mut query = Query::new(&index);
         query.with_attributes_to_retrieve(Selectors::Some(&["kind", "id"])); // omit the "value" field
         assert!(index.execute_query::<Document>(&query).await.is_err()); // error: missing "value" field
 
-        client.delete_index("test_query_attributes_to_retrieve").await.unwrap();
+        client
+            .delete_index("test_query_attributes_to_retrieve")
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -427,13 +503,19 @@ mod tests {
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::Some(&[("value", Some(50)), ("kind", None)]));
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
-            id: 0,
-            value: "Lorem ipsum dolor sit amet, consectetur adipiscing".to_string(),
-            kind: "text".to_string()
-        });
+        assert_eq!(
+            results.hits[0].formatted_result.as_ref().unwrap(),
+            &Document {
+                id: 0,
+                value: "Lorem ipsum dolor sit amet, consectetur adipiscing".to_string(),
+                kind: "text".to_string()
+            }
+        );
 
-        client.delete_index("test_query_attributes_to_crop").await.unwrap();
+        client
+            .delete_index("test_query_attributes_to_crop")
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -457,11 +539,14 @@ mod tests {
         query.with_attributes_to_crop(Selectors::All);
         query.with_crop_length(50);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
-            id: 0,
-            value: "Lorem ipsum dolor sit amet, consectetur adipiscing".to_string(),
-            kind: "text".to_string()
-        });
+        assert_eq!(
+            results.hits[0].formatted_result.as_ref().unwrap(),
+            &Document {
+                id: 0,
+                value: "Lorem ipsum dolor sit amet, consectetur adipiscing".to_string(),
+                kind: "text".to_string()
+            }
+        );
 
         client.delete_index("test_query_crop_lenght").await.unwrap();
     }
@@ -475,23 +560,32 @@ mod tests {
         query.with_query("dolor text");
         query.with_attributes_to_highlight(Selectors::All);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
-            id: 1,
-            value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
-            kind: "<em>text</em>".to_string()
-        });
+        assert_eq!(
+            results.hits[0].formatted_result.as_ref().unwrap(),
+            &Document {
+                id: 1,
+                value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
+                kind: "<em>text</em>".to_string()
+            }
+        );
 
         let mut query = Query::new(&index);
         query.with_query("dolor text");
         query.with_attributes_to_highlight(Selectors::Some(&["value"]));
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
-            id: 1,
-            value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
-            kind: "text".to_string()
-        });
+        assert_eq!(
+            results.hits[0].formatted_result.as_ref().unwrap(),
+            &Document {
+                id: 1,
+                value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
+                kind: "text".to_string()
+            }
+        );
 
-        client.delete_index("test_query_attributes_to_highlight").await.unwrap();
+        client
+            .delete_index("test_query_attributes_to_highlight")
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -504,7 +598,18 @@ mod tests {
         query.with_matches(true);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
         assert_eq!(results.hits[0].matches_info.as_ref().unwrap().len(), 2);
-        assert_eq!(results.hits[0].matches_info.as_ref().unwrap().get("value").unwrap(), &vec![MatchRange{start: 0, length: 5}]);
+        assert_eq!(
+            results.hits[0]
+                .matches_info
+                .as_ref()
+                .unwrap()
+                .get("value")
+                .unwrap(),
+            &vec![MatchRange {
+                start: 0,
+                length: 5
+            }]
+        );
 
         client.delete_index("test_query_matches").await.unwrap();
     }
