@@ -23,4 +23,4 @@ wasm-bindgen-futures = "0.4"
 
 [dev-dependencies]
 env_logger = "0.8"
-tokio = { version = "0.2", features = ["macros"] }
+tokio = { version = "0.3", features = ["macros"] }
