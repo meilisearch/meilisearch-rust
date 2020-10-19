@@ -49,7 +49,7 @@ meilisearch-sdk = "0.3.0"
 The following optional dependencies may also be useful:
 
 ```toml
-tokio = { version = "0.2", features = ["macros"] }
+tokio = { version = "0.3", features = ["macros"] }
 serde = { version = "1.0", features = ["derive"] }
 ```
 
