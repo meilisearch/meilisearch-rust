@@ -111,8 +111,7 @@ async fn main() {
     ], Some("book_id")).await.unwrap();
 
     // Query books (note that there is a typo)
-    let query = Query::new("harry pottre");
-    println!("{:?}", books.search::<Book>(&query).await.unwrap().hits);
+    println!("{:?}", books.search().with_query("harry pottre").execute::<Book>().await.unwrap().hits);
 }
 ```
 

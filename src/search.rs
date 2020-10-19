@@ -1,87 +1,203 @@
 use crate::{errors::Error, indexes::Index};
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
-use serde_json::to_string;
 
-// TODO support https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#matches
-// TODO highlighting
+#[derive(Deserialize, Debug, PartialEq)]
+pub struct MatchRange {
+    start: usize,
+    length: usize,
+}
+
+/// A single result.  
+/// Contains the complete object, optionally the formatted object, and optionally an object that contains information about the matches.
+#[derive(Deserialize, Debug)]
+pub struct SearchResult<T> {
+    /// The full result.
+    #[serde(flatten)]
+    pub result: T,
+    /// The formatted result.
+    #[serde(rename = "_formatted")]
+    pub formatted_result: Option<T>,
+    /// The object that contains information about the matches.
+    #[serde(rename = "_matchesInfo")]
+    pub matches_info: Option<HashMap<String, Vec<MatchRange>>>,
+}
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
 pub struct SearchResults<T> {
-    /// results of the query
-    pub hits: Vec<T>,
-    /// number of documents skipped
+    /// Results of the query
+    pub hits: Vec<SearchResult<T>>,
+    /// Number of documents skipped
     pub offset: usize,
-    /// number of documents to take
+    /// Number of results returned
     pub limit: usize,
-    /// total number of matches
+    /// Total number of matches
     pub nb_hits: usize,
-    /// whether nbHits is exhaustive
+    /// Whether nb_hits is exhaustive
     pub exhaustive_nb_hits: bool,
-    /// Distribution of the given facets.
+    /// Distribution of the given facets
     pub facets_distribution: Option<HashMap<String, HashMap<String, usize>>>,
     /// Whether facet_distribution is exhaustive
     pub exhaustive_facets_count: Option<bool>,
-    /// processing time of the query
+    /// Processing time of the query
     pub processing_time_ms: usize,
-    /// query originating the response
+    /// Query originating the response
     pub query: String,
 }
 
+fn serialize_with_wildcard<S: Serializer, T: Serialize>(
+    data: &Option<Selectors<T>>,
+    s: S,
+) -> Result<S::Ok, S::Error> {
+    match data {
+        Some(Selectors::All) => ["*"].serialize(s),
+        Some(Selectors::Some(data)) => data.serialize(s),
+        None => s.serialize_none(),
+    }
+}
+
+fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
+    data: &Option<Selectors<&[AttributeToCrop]>>,
+    s: S,
+) -> Result<S::Ok, S::Error> {
+    match data {
+        Some(Selectors::All) => ["*"].serialize(s),
+        Some(Selectors::Some(data)) => {
+            let mut results = Vec::new();
+            for (name, value) in data.iter() {
+                let mut result = String::new();
+                result.push_str(name);
+                if let Some(value) = value {
+                    result.push(':');
+                    result.push_str(value.to_string().as_str());
+                }
+                results.push(result)
+            }
+            results.serialize(s)
+        }
+        None => s.serialize_none(),
+    }
+}
+
+/// Some list fields in a `Query` can be set to a wildcard value.
+/// This structure allows you to choose between the wildcard value and an exhaustive list of selectors.
+#[derive(Debug, Clone)]
+pub enum Selectors<T> {
+    /// A list of selectors
+    Some(T),
+    /// The wildcard
+    All,
+}
+
+type AttributeToCrop<'a> = (&'a str, Option<usize>);
+
 /// A struct representing a query.
 /// You can add search parameters using the builder syntax.
-/// See [here](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#query-q) for the list and description of all parameters.
+/// See [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#query-q) for the official list and description of all parameters.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```
-/// # use meilisearch_sdk::search::Query;
-/// let query = Query::new("space")
+/// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
+/// # let client = Client::new("http://localhost:7700", "masterKey");
+/// # let index = client.assume_index("does not matter");
+/// let query = Query::new(&index)
+///     .with_query("space")
 ///     .with_offset(42)
-///     .with_limit(21);
+///     .with_limit(21)
+///     .build(); // you can also execute() instead of build()
 /// ```
+///
+/// ```
+/// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
+/// # let client = Client::new("http://localhost:7700", "masterKey");
+/// # let index = client.assume_index("does not matter");
+/// let query = index.search()
+///     .with_query("space")
+///     .with_offset(42)
+///     .with_limit(21)
+///     .build(); // you can also execute() instead of build()
+/// ```
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Query<'a> {
-    /// The query parameter is the only mandatory parameter.
-    /// This is the string used by the search engine to find relevant documents.
-    pub query: &'a str,
-    /// A number of documents to skip. If the value of the parameter offset is n, n first documents to skip. This is helpful for pagination.
-    ///
-    /// Example: If you want to skip the first document, set offset to 1.
-    /// Default: 0
+    #[serde(skip_serializing)]
+    index: &'a Index<'a>,
+    /// The text that will be searched for among the documents.  
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "q")]
+    pub query: Option<&'a str>,
+    /// The number of documents to skip.  
+    /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.  
+    /// This is helpful for pagination.  
+    ///   
+    /// Example: If you want to skip the first document, set offset to `1`.  
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<usize>,
-    /// Set a limit to the number of documents returned by search queries. If the value of the parameter limit is n, there will be n documents in the search query response. This is helpful for pagination.
-    ///
-    /// Example: If you want to get only two documents, set limit to 2.
-    /// Default: 20
+    /// The maximum number of documents returned.  
+    /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.  
+    /// This is helpful for pagination.  
+    ///   
+    /// Example: If you don't want to get more than two documents, set limit to `2`.  
+    /// Default: `20`  
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
-    /// Specify a filter to be used with the query. See the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html).
+    /// Filters applied to documents.  
+    /// Read the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html) to learn the syntax.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub filters: Option<&'a str>,
-    /// Facet names and values to filter on. See [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#facet-filters).
-    pub facet_filters: Option<Vec<Vec<&'a str>>>,
-    /// Facets for which to retrieve the matching count. The value `Some(None)` is the wildcard.
-    pub facets_distribution: Option<Option<Vec<&'a str>>>,
-    /// Attributes to display in the returned documents. Comma-separated list of attributes whose fields will be present in the returned documents.
-    ///
-    /// Example: If you want to get only the overview and title field and not the other fields, set `attributes_to_retrieve` to `overview,title`.
-    /// Default: The [displayed attributes list](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) which contains by default all attributes found in the documents.
-    pub attributes_to_retrieve: Option<&'a str>,
-    /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-crop)
-    pub attributes_to_crop: Option<&'a str>,
-    /// Number of characters to keep on each side of the start of the matching word. See [attributes_to_crop](#structfield.attributes_to_crop).
-    ///
-    /// Default: 200
+    /// Facet names and values to filter on.  
+    /// Read [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#facet-filters) for a complete explanation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub facet_filters: Option<&'a [&'a [&'a str]]>,
+    /// Facets for which to retrieve the matching count.  
+    ///   
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.  
+    /// Default: all attributes found in the documents.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "serialize_with_wildcard")]
+    pub facets_distribution: Option<Selectors<&'a [&'a str]>>,
+    /// Attributes to display in the returned documents.  
+    ///   
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.  
+    /// Default: all attributes found in the documents.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "serialize_with_wildcard")]
+    pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
+    /// Attributes whose values have to be cropped.  
+    /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.  
+    ///   
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
+    pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
+    /// Number of characters to keep on each side of the start of the matching word.  
+    /// See [attributes_to_crop](#structfield.attributes_to_crop).  
+    ///   
+    /// Default: `200`
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_length: Option<usize>,
-    /// TODO [doc](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#attributes-to-highlight)
-    pub attributes_to_highlight: Option<&'a str>,
+    /// Attributes whose values will contain **highlighted matching terms**.  
+    ///   
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "serialize_with_wildcard")]
+    pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
+    /// Defines whether an object that contains information about the matches should be returned or not.
+    ///   
+    /// Default: `false`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub matches: Option<bool>,
 }
 
 #[allow(missing_docs)]
 impl<'a> Query<'a> {
-    pub fn new(query: &'a str) -> Query<'a> {
+    pub fn new(index: &'a Index<'a>) -> Query<'a> {
         Query {
-            query,
+            index,
+            query: None,
             offset: None,
             limit: None,
             filters: None,
@@ -89,119 +205,414 @@ impl<'a> Query<'a> {
             facets_distribution: None,
             attributes_to_retrieve: None,
             attributes_to_crop: None,
-            attributes_to_highlight: None,
             crop_length: None,
+            attributes_to_highlight: None,
+            matches: None,
         }
     }
-    pub fn with_offset(self, offset: usize) -> Query<'a> {
-        Query {
-            offset: Some(offset),
-            ..self
-        }
+    pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut Query<'a> {
+        self.query = Some(query);
+        self
     }
-    pub fn with_limit(self, limit: usize) -> Query<'a> {
-        Query {
-            limit: Some(limit),
-            ..self
-        }
+    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut Query<'a> {
+        self.offset = Some(offset);
+        self
     }
-    pub fn with_filters(self, filters: &'a str) -> Query<'a> {
-        Query {
-            filters: Some(filters),
-            ..self
-        }
+    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut Query<'a> {
+        self.limit = Some(limit);
+        self
     }
-    pub fn with_facet_filters(self, facet_filters: Vec<Vec<&'a str>>) -> Query<'a> {
-        Query {
-            facet_filters: Some(facet_filters),
-            ..self
-        }
+    pub fn with_filters<'b>(&'b mut self, filters: &'a str) -> &'b mut Query<'a> {
+        self.filters = Some(filters);
+        self
     }
-    pub fn with_facets_distribution(self, facets_distribution: Option<Vec<&'a str>>) -> Query<'a> {
-        Query {
-            facets_distribution: Some(facets_distribution),
-            ..self
-        }
+    pub fn with_facet_filters<'b>(
+        &'b mut self,
+        facet_filters: &'a [&'a [&'a str]],
+    ) -> &'b mut Query<'a> {
+        self.facet_filters = Some(facet_filters);
+        self
     }
-    pub fn with_attributes_to_retrieve(self, attributes_to_retrieve: &'a str) -> Query<'a> {
-        Query {
-            attributes_to_retrieve: Some(attributes_to_retrieve),
-            ..self
-        }
+    pub fn with_facets_distribution<'b>(
+        &'b mut self,
+        facets_distribution: Selectors<&'a [&'a str]>,
+    ) -> &'b mut Query<'a> {
+        self.facets_distribution = Some(facets_distribution);
+        self
     }
-    pub fn with_attributes_to_crop(self, attributes_to_crop: &'a str) -> Query<'a> {
-        Query {
-            attributes_to_crop: Some(attributes_to_crop),
-            ..self
-        }
+    pub fn with_attributes_to_retrieve<'b>(
+        &'b mut self,
+        attributes_to_retrieve: Selectors<&'a [&'a str]>,
+    ) -> &'b mut Query<'a> {
+        self.attributes_to_retrieve = Some(attributes_to_retrieve);
+        self
     }
-    pub fn with_attributes_to_highlight(self, attributes_to_highlight: &'a str) -> Query<'a> {
-        Query {
-            attributes_to_highlight: Some(attributes_to_highlight),
-            ..self
-        }
+    pub fn with_attributes_to_crop<'b>(
+        &'b mut self,
+        attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>,
+    ) -> &'b mut Query<'a> {
+        self.attributes_to_crop = Some(attributes_to_crop);
+        self
     }
-    pub fn with_crop_length(self, crop_length: usize) -> Query<'a> {
-        Query {
-            crop_length: Some(crop_length),
-            ..self
-        }
+    pub fn with_attributes_to_highlight<'b>(
+        &'b mut self,
+        attributes_to_highlight: Selectors<&'a [&'a str]>,
+    ) -> &'b mut Query<'a> {
+        self.attributes_to_highlight = Some(attributes_to_highlight);
+        self
+    }
+    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut Query<'a> {
+        self.crop_length = Some(crop_length);
+        self
+    }
+    pub fn with_matches<'b>(&'b mut self, matches: bool) -> &'b mut Query<'a> {
+        self.matches = Some(matches);
+        self
+    }
+    pub fn build(&mut self) -> Query<'a> {
+        self.clone()
+    }
+
+    /// Execute the query and fetch the results.
+    pub async fn execute<T: 'static + DeserializeOwned>(
+        &'a self,
+    ) -> Result<SearchResults<T>, Error> {
+        self.index.execute_query::<T>(&self).await
     }
 }
 
-impl<'a> Query<'a> {
-    pub(crate) fn to_url(&self) -> String {
-        use urlencoding::encode;
-        let mut url = format!("?q={}", encode(self.query));
+#[cfg(test)]
+mod tests {
+    use crate::{client::*, document, search::*};
+    use serde::{Deserialize, Serialize};
+    use std::thread::sleep;
+    use std::time::Duration;
 
-        if let Some(offset) = self.offset {
-            url.push_str("&offset=");
-            url.push_str(offset.to_string().as_str());
-        }
-        if let Some(limit) = self.limit {
-            url.push_str("&limit=");
-            url.push_str(limit.to_string().as_str());
-        }
-        if let Some(filters) = self.filters {
-            url.push_str("&filters=");
-            url.push_str(encode(filters).as_str());
-        }
-        if let Some(facet_filters) = &self.facet_filters {
-            url.push_str("&facetFilters=");
-            url.push_str(encode(&to_string(&facet_filters).unwrap()).as_str());
-        }
-        if let Some(facets_distribution) = &self.facets_distribution {
-            url.push_str("&facetsDistribution=");
-            match facets_distribution {
-                Some(facets_distribution) => url.push_str(encode(&to_string(&facets_distribution).unwrap()).as_str()),
-                None => url.push_str("*")
-            }
-        }
-        if let Some(attributes_to_retrieve) = self.attributes_to_retrieve {
-            url.push_str("&attributesToRetrieve=");
-            url.push_str(encode(attributes_to_retrieve).as_str());
-        }
-        if let Some(attributes_to_crop) = self.attributes_to_crop {
-            url.push_str("&attributesToCrop=");
-            url.push_str(encode(attributes_to_crop).as_str());
-        }
-        if let Some(crop_length) = self.crop_length {
-            url.push_str("&cropLength=");
-            url.push_str(crop_length.to_string().as_str());
-        }
-        if let Some(attributes_to_highlight) = self.attributes_to_highlight {
-            url.push_str("&attributesToHighlight=");
-            url.push_str(encode(attributes_to_highlight).as_str());
-        }
-
-        url
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Document {
+        id: usize,
+        value: String,
+        kind: String,
     }
 
-    /// Alias for [the Index method](../indexes/struct.Index.html#method.search).
-    pub async fn execute<T: 'static + DeserializeOwned>(
-        &'a self,
-        index: &Index<'a>,
-    ) -> Result<SearchResults<T>, Error> {
-        index.search::<T>(&self).await
+    impl document::Document for Document {
+        type UIDType = usize;
+
+        fn get_uid(&self) -> &Self::UIDType {
+            &self.id
+        }
+    }
+
+    #[allow(unused_must_use)]
+    async fn setup_test_index<'a>(client: &'a Client<'a>, name: &'a str) -> Index<'a> {
+        // try to delete
+        client.delete_index(name).await;
+
+        let index = client.create_index(name, None).await.unwrap();
+        index.add_documents(&[
+            Document { id: 0, kind: "text".into(), value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string() },
+            Document { id: 1, kind: "text".into(), value: "dolor sit amet, consectetur adipiscing elit".to_string() },
+            Document { id: 2, kind: "title".into(), value: "The Social Network".to_string() },
+            Document { id: 3, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
+            Document { id: 4, kind: "title".into(), value: "Harry Potter and the Chamber of Secrets".to_string() },
+            Document { id: 5, kind: "title".into(), value: "Harry Potter and the Prisoner of Azkaban".to_string() },
+            Document { id: 6, kind: "title".into(), value: "Harry Potter and the Goblet of Fire".to_string() },
+            Document { id: 7, kind: "title".into(), value: "Harry Potter and the Order of the Phoenix".to_string() },
+            Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string() },
+            Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
+        ], None).await.unwrap();
+        index.set_attributes_for_faceting(&["kind"]).await.unwrap();
+        sleep(Duration::from_secs(1));
+        index
+    }
+
+    #[tokio::test]
+    async fn test_query_string() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_string").await;
+
+        let results: SearchResults<Document> =
+            index.search().with_query("dolor").execute().await.unwrap();
+        assert_eq!(results.hits.len(), 2);
+
+        client.delete_index("test_query_string").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_limit() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_limit").await;
+
+        let results: SearchResults<Document> =
+            index.search().with_limit(5).execute().await.unwrap();
+        assert_eq!(results.hits.len(), 5);
+
+        client.delete_index("test_query_limit").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_offset() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_offset").await;
+
+        let results: SearchResults<Document> =
+            index.search().with_offset(6).execute().await.unwrap();
+        assert_eq!(results.hits.len(), 4);
+
+        client.delete_index("test_query_offset").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_filters() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_filters").await;
+
+        let results: SearchResults<Document> = index
+            .search()
+            .with_filters("value = \"The Social Network\"")
+            .execute()
+            .await
+            .unwrap();
+        assert_eq!(results.hits.len(), 1);
+
+        let results: SearchResults<Document> = index
+            .search()
+            .with_filters("NOT value = \"The Social Network\"")
+            .execute()
+            .await
+            .unwrap();
+        assert_eq!(results.hits.len(), 9);
+
+        client.delete_index("test_query_filters").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_facet_filters() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_facet_filters").await;
+
+        let mut query = Query::new(&index);
+        query.with_facet_filters(&[&["kind:title"]]);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 8);
+
+        let mut query = Query::new(&index);
+        query.with_facet_filters(&[&["kind:text"]]);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 2);
+
+        let mut query = Query::new(&index);
+        query.with_facet_filters(&[&["kind:text", "kind:title"]]);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 10);
+
+        client
+            .delete_index("test_query_facet_filters")
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_facet_distribution() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_facet_distribution").await;
+
+        let mut query = Query::new(&index);
+        query.with_facets_distribution(Selectors::All);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(
+            results
+                .facets_distribution
+                .unwrap()
+                .get("kind")
+                .unwrap()
+                .get("title")
+                .unwrap(),
+            &8
+        );
+
+        let mut query = Query::new(&index);
+        query.with_facets_distribution(Selectors::Some(&["kind"]));
+        query.with_facet_filters(&[&["kind:text"]]);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(
+            results
+                .facets_distribution
+                .clone()
+                .unwrap()
+                .get("kind")
+                .unwrap()
+                .get("title")
+                .unwrap(),
+            &0
+        );
+        assert_eq!(
+            results
+                .facets_distribution
+                .unwrap()
+                .get("kind")
+                .unwrap()
+                .get("text")
+                .unwrap(),
+            &2
+        );
+
+        client
+            .delete_index("test_query_facet_distribution")
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_attributes_to_retrieve() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_attributes_to_retrieve").await;
+
+        let results: SearchResults<Document> = index
+            .search()
+            .with_attributes_to_retrieve(Selectors::All)
+            .execute()
+            .await
+            .unwrap();
+        assert_eq!(results.hits.len(), 10);
+
+        let mut query = Query::new(&index);
+        query.with_attributes_to_retrieve(Selectors::Some(&["kind", "id"])); // omit the "value" field
+        assert!(index.execute_query::<Document>(&query).await.is_err()); // error: missing "value" field
+
+        client
+            .delete_index("test_query_attributes_to_retrieve")
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_attributes_to_crop() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_attributes_to_crop").await;
+
+        let mut query = Query::new(&index);
+        query.with_query("lorem ipsum");
+        query.with_attributes_to_crop(Selectors::All);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
+            id: 0,
+            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
+            kind: "text".to_string()
+        });
+
+        let mut query = Query::new(&index);
+        query.with_query("lorem ipsum");
+        query.with_attributes_to_crop(Selectors::Some(&[("value", Some(50)), ("kind", None)]));
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(
+            results.hits[0].formatted_result.as_ref().unwrap(),
+            &Document {
+                id: 0,
+                value: "Lorem ipsum dolor sit amet, consectetur adipiscing".to_string(),
+                kind: "text".to_string()
+            }
+        );
+
+        client
+            .delete_index("test_query_attributes_to_crop")
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_crop_lenght() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_crop_lenght").await;
+
+        let mut query = Query::new(&index);
+        query.with_query("lorem ipsum");
+        query.with_attributes_to_crop(Selectors::All);
+        query.with_crop_length(200);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
+            id: 0,
+            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
+            kind: "text".to_string()
+        });
+
+        let mut query = Query::new(&index);
+        query.with_query("lorem ipsum");
+        query.with_attributes_to_crop(Selectors::All);
+        query.with_crop_length(50);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(
+            results.hits[0].formatted_result.as_ref().unwrap(),
+            &Document {
+                id: 0,
+                value: "Lorem ipsum dolor sit amet, consectetur adipiscing".to_string(),
+                kind: "text".to_string()
+            }
+        );
+
+        client.delete_index("test_query_crop_lenght").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_attributes_to_highlight() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_attributes_to_highlight").await;
+
+        let mut query = Query::new(&index);
+        query.with_query("dolor text");
+        query.with_attributes_to_highlight(Selectors::All);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(
+            results.hits[0].formatted_result.as_ref().unwrap(),
+            &Document {
+                id: 1,
+                value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
+                kind: "<em>text</em>".to_string()
+            }
+        );
+
+        let mut query = Query::new(&index);
+        query.with_query("dolor text");
+        query.with_attributes_to_highlight(Selectors::Some(&["value"]));
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(
+            results.hits[0].formatted_result.as_ref().unwrap(),
+            &Document {
+                id: 1,
+                value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
+                kind: "text".to_string()
+            }
+        );
+
+        client
+            .delete_index("test_query_attributes_to_highlight")
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_query_matches() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_matches").await;
+
+        let mut query = Query::new(&index);
+        query.with_query("dolor text");
+        query.with_matches(true);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(results.hits[0].matches_info.as_ref().unwrap().len(), 2);
+        assert_eq!(
+            results.hits[0]
+                .matches_info
+                .as_ref()
+                .unwrap()
+                .get("value")
+                .unwrap(),
+            &vec![MatchRange {
+                start: 0,
+                length: 5
+            }]
+        );
+
+        client.delete_index("test_query_matches").await.unwrap();
     }
 }

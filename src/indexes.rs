@@ -84,7 +84,8 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Search for documents matching a specific query in the index.
+    /// Search for documents matching a specific query in the index.\
+    /// See also the [search method](#method.search).
     ///
     /// # Example
     ///
@@ -114,26 +115,70 @@ impl<'a> Index<'a> {
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     ///
-    /// let query = Query::new("Interstellar").with_limit(5);
-    /// let results = movies.search::<Movie>(&query).await.unwrap();
+    /// let query = Query::new(&movies).with_query("Interstellar").with_limit(5).build();
+    /// let results = movies.execute_query::<Movie>(&query).await.unwrap();
     /// # assert!(results.hits.len()>0);
     /// # }
     /// ```
-    pub async fn search<T: 'static + DeserializeOwned>(
+    pub async fn execute_query<T: 'static + DeserializeOwned>(
         &self,
         query: &Query<'_>,
     ) -> Result<SearchResults<T>, Error> {
-        Ok(request::<(), SearchResults<T>>(
+        Ok(request::<&Query, SearchResults<T>>(
             &format!(
-                "{}/indexes/{}/search{}",
+                "{}/indexes/{}/search",
                 self.client.host,
-                self.uid,
-                query.to_url()
+                self.uid
             ),
             self.client.apikey,
-            Method::Get,
+            Method::Post(query),
             200,
         ).await?)
+    }
+
+    /// Search for documents matching a specific query in the index.\
+    /// See also the [execute_query method](#method.execute_query).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, search::*};
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    /// // that trait is used by the sdk when the primary key is needed
+    /// impl Document for Movie {
+    ///     type UIDType = String;
+    ///     fn get_uid(&self) -> &Self::UIDType {
+    ///         &self.name
+    ///     }
+    /// }
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// # client.delete_index("movies").await;
+    /// let mut movies = client.get_or_create("movies").await.unwrap();
+    ///
+    /// // add some documents
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(1));
+    /// 
+    /// let results = movies.search()
+    ///     .with_query("Interstellar")
+    ///     .with_limit(5)
+    ///     .execute::<Movie>()
+    ///     .await
+    ///     .unwrap();
+    /// # assert!(results.hits.len()>0);
+    /// # }
+    /// ```
+    pub fn search(&self) -> Query {
+        Query::new(self)
     }
 
     /// Get one [document](../document/trait.Document.html) using its unique id.

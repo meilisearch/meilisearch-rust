@@ -72,8 +72,7 @@
 //!     ], Some("book_id")).await.unwrap();
 //!
 //!     // Query books (note that there is a typo)
-//!     let query = Query::new("harry pottre");
-//!     println!("{:?}", books.search::<Book>(&query).await.unwrap().hits);
+//!     println!("{:?}", books.search().with_query("harry pottre").execute::<Book>().await.unwrap().hits);
 //! }
 //! ```
 //!
@@ -92,6 +91,8 @@
 //! However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using MeiliSearch, see the [tutorial (not available yet)]().
 //!
 //! WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
+
+#![warn(clippy::all)]
 
 /// Module containing the Client struct.
 pub mod client;

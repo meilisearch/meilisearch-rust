@@ -403,11 +403,11 @@ impl<'a> Index<'a> {
     /// let progress = movie_index.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
     /// # }
     /// ```
-    pub async fn set_attributes_for_faceting(&'a self, ranking_rules: &[&str]) -> Result<Progress<'a>, Error> {
+    pub async fn set_attributes_for_faceting(&'a self, attributes_for_faceting: &[&str]) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
             &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(ranking_rules),
+            Method::Post(attributes_for_faceting),
             202,
         ).await?
         .into_progress(self))
