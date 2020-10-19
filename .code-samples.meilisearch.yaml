@@ -72,7 +72,6 @@ update_settings_1: |-
   synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
   synonyms.insert(String::from("logan"), vec![String::from("wolverine")]);
 
-  // That's quite ugly but we are working on an improvement
   let settings = Settings::new()
     .with_ranking_rules(vec![
       "typo".to_string(),
