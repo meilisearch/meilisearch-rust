@@ -1,0 +1,546 @@
+# This code-samples file is used by the MeiliSearch documentation
+# Every example written here will be automatically fetched by
+# the documentation on build
+# You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
+---
+get_one_index_1: |-
+  let movies: Index = client.get_index("movies").await.unwrap();
+list_all_indexes_1: |-
+  let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
+create_an_index_1: |-
+  let movies: Index = client.create_index("movies", Some("movie_id")).await.unwrap();
+update_an_index_1: |-
+  let movie_review: Index = client.get_index("movie_review").await.unwrap();
+  movie_review.update("movie_review_id").await.unwrap();
+delete_an_index_1: |-
+  movies.delete().await.unwrap();
+get_one_document_1: |-
+  let movie: Movie = movies.get_document(String::from("25684")).await.unwrap();
+get_documents_1: |-
+  let documents: Vec<Movie> = movies.get_documents(None, Some(2), None).await.unwrap();
+add_or_replace_documents_1: |-
+  let progress: Progress = movies.add_or_replace(&[
+    Movie {
+      id: 287947,
+      title: "Shazam".to_string(),
+      poster: "https://image.tmdb.org/t/p/w1280/xnopI5Xtky18MPhK40cZAGAOVeV.jpg".to_string(),
+      overview: "A boy is given the ability to become an adult superhero in times of need with a single magic word.".to_string(),
+      release_date: "2019-03-23".to_string(),
+    }
+  ], None).await.unwrap();
+add_or_update_documents_1: |-
+  // Define the type of our documents
+  #[derive(Serialize, Deserialize, Debug)]
+  struct IncompleteMovie {
+    id: usize,
+    title: String
+  }
+  impl Document for IncompleteMovie {
+    type UIDType = usize;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
+  let progress: Progress = movies.add_or_update(&[
+    IncompleteMovie {
+      id: 287947,
+      title: "Shazam ⚡️".to_string()
+    }
+  ], None).await.unwrap();
+delete_all_documents_1: |-
+  let progress: Progress = movies.delete_all_documents().await.unwrap();
+delete_one_document_1: |-
+  let progress: Progress = movies.delete_document(25684).await.unwrap();
+delete_documents_1: |-
+  let progress: Progress = movies.delete_documents(&[23488, 153738, 437035, 363869]).await.unwrap();
+search_1: |-
+  let results: SearchResults<Movie> = movies
+    .search()
+    .with_query("American ninja")
+    .execute()
+    .await
+    .unwrap();
+get_update_1: |-
+  let status: Status = progress.get_status().await.unwrap();
+get_all_updates_1: |-
+  // unavailable for now
+get_keys_1: |-
+  // unavailable for now
+get_settings_1: |-
+  let settings: Settings = movies.get_settings().await.unwrap();
+update_settings_1: |-
+  let mut synonyms = std::collections::HashMap::new();
+  synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
+  synonyms.insert(String::from("logan"), vec![String::from("wolverine")]);
+
+  let settings = Settings::new()
+    .with_ranking_rules(vec![
+      "typo".to_string(),
+      "words".to_string(),
+      "proximity".to_string(),
+      "attribute".to_string(),
+      "wordsPosition".to_string(),
+      "exactness".to_string(),
+      "desc(release_date)".to_string(),
+      "desc(rank)".to_string()
+    ])
+    .with_distinct_attribute("movie_id".to_string())
+    .with_searchable_attributes(vec![
+      "uid".to_string(),
+      "movie_id".to_string(),
+      "title".to_string(),
+      "description".to_string(),
+      "poster".to_string(),
+      "release_date".to_string(),
+      "rank".to_string()
+    ])
+    .with_displayed_attributes(vec![
+      "title".to_string(),
+      "description".to_string(),
+      "poster".to_string(),
+      "release_date".to_string(),
+      "rank".to_string()
+    ])
+    .with_stop_words(vec![
+      "the".to_string(),
+      "a".to_string(),
+      "an".to_string()
+    ])
+    .with_synonyms(synonyms);
+
+  let progress: Progress = movies.set_settings(&settings).await.unwrap();
+reset_settings_1: |-
+  let progress: Progress = movies.reset_settings().await.unwrap();
+get_synonyms_1: |-
+  let synonyms: HashMap<String, Vec<String>> = movies.get_synonyms().await.unwrap();
+update_synonyms_1: |-
+  let mut synonyms = std::collections::HashMap::new();
+  synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
+  synonyms.insert(String::from("logan"), vec![String::from("xmen"), String::from("wolverine")]);
+  synonyms.insert(String::from("wow"), vec![String::from("world of warcraft")]);
+
+  let progress: Progress = movies.set_synonyms(&synonyms).await.unwrap();
+reset_synonyms_1: |-
+  movies.reset_synonyms().await.unwrap();
+get_stop_words_1: |-
+  let stop_words: Vec<String> = movies.get_stop_words().await.unwrap();
+update_stop_words_1: |-
+  let stop_words = &["of", "the", "to"];
+  let progress: Progress = movies.set_stop_words(stop_words).await.unwrap();
+reset_stop_words_1: |-
+  let progress: Progress = movies.reset_stop_words().await.unwrap();
+get_ranking_rules_1: |-
+  let ranking_rules: Vec<String> = movies.get_ranking_rules().await.unwrap();
+update_ranking_rules_1: |-
+  let ranking_rules = &[
+    "typo",
+    "words",
+    "proximity",
+    "attribute",
+    "wordsPosition",
+    "exactness",
+    "asc(release_date)",
+    "desc(rank)",
+  ];
+
+  let progress: Progress = movies.set_ranking_rules(ranking_rules).await.unwrap();
+reset_ranking_rules_1: |-
+  let progress: Progress = movies.reset_ranking_rules().await.unwrap();
+get_distinct_attribute_1: |-
+  let distinct_attribute: Option<String> = movies.get_distinct_attribute().await.unwrap();
+update_distinct_attribute_1: |-
+  let progress: Progress = movies.set_distinct_attribute("movie_id").await.unwrap();
+reset_distinct_attribute_1: |-
+  let progress: Progress = movies.reset_distinct_attribute().await.unwrap();
+get_searchable_attributes_1: |-
+  let searchable_attributes: Vec<String> = movies.get_searchable_attributes().await.unwrap();
+update_searchable_attributes_1: |-
+  let searchable_attributes = &[
+    "title",
+    "description",
+    "uid"
+  ];
+
+  let progress: Progress = movies.set_searchable_attributes(searchable_attributes).await.unwrap();
+reset_searchable_attributes_1: |-
+  let progress: Progress = movies.reset_searchable_attributes().await.unwrap();
+get_attributes_for_faceting_1: |-
+  let attributes_for_faceting: Vec<String> = movies.get_attributes_for_faceting().await.unwrap();
+update_attributes_for_faceting_1: |-
+  let attributes_for_faceting = &[
+    "genre",
+    "director"
+  ];
+
+  let progress: Progress = movies.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
+reset_attributes_for_faceting_1: |-
+  let progress: Progress = movies.reset_attributes_for_faceting().await.unwrap();
+get_displayed_attributes_1: |-
+  let displayed_attributes: Vec<String> = movies.get_displayed_attributes().await.unwrap();
+update_displayed_attributes_1: |-
+  let displayed_attributes = &[
+    "title",
+    "description",
+    "release_date",
+    "rank",
+    "poster"
+  ];
+
+  let progress: Progress = movies.set_displayed_attributes(displayed_attributes).await.unwrap();
+reset_displayed_attributes_1: |-
+  let progress: Progress = movies.reset_displayed_attributes().await.unwrap();
+get_index_stats_1: |-
+  let stats: IndexStats = movies.get_stats().await.unwrap();
+get_indexes_stats_1: |-
+  let stats: ClientStats = client.get_stats().await.unwrap();
+get_health_1: |-
+  // get_health() return an Err() if the server is not healthy, so this example would panic due to the unwrap
+  client.get_health().await.unwrap();
+update_health_1: |-
+  client.set_health(false).await.unwrap();
+get_version_1: |-
+  let version: Version = client.get_version().await.unwrap();
+distinct_attribute_guide_1: |-
+  let jackets: Index = client.get_index("jackets").await.unwrap();
+  let progress: Progress = jackets.set_distinct_attribute("product_id").await.unwrap();
+field_properties_guide_searchable_1: |-
+  let searchable_attributes = &[
+    "uid",
+    "movie_id",
+    "title",
+    "description",
+    "poster",
+    "release_date",
+    "rank"
+  ];
+
+  let progress: Progress = movies.set_searchable_attributes(searchable_attributes).await.unwrap();
+field_properties_guide_displayed_1: |-
+  let displayed_attributes = &[
+    "title",
+    "description",
+    "poster",
+    "release_date",
+    "rank"
+  ];
+
+  let progress: Progress = movies.set_displayed_attributes(displayed_attributes).await.unwrap();
+filtering_guide_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("Avengers")
+    .with_filters("release_date > 795484800")
+    .execute()
+    .await
+    .unwrap();
+filtering_guide_2: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("Batman")
+    .with_filters(r#"release_date > 795484800 AND (director = "Tim Burton" OR director = "Christopher Nolan")"#)
+    .execute()
+    .await
+    .unwrap();
+filtering_guide_3: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("horror")
+    .with_filters(r#"director = "Jordan Peele""#)
+    .execute()
+    .await
+    .unwrap();
+filtering_guide_4: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("Planet of the Apes")
+    .with_filters(r#"rating >= 3 AND (NOT director = "Tim Burton")"#)
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_query_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("shifu")
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_offset_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("shifu")
+    .with_offset(1)
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_limit_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("shifu")
+    .with_limit(2)
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_retrieve_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("shifu")
+    .with_attributes_to_retrieve(Selectors::Some(&["overview", "title"]))
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_crop_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("shifu")
+    .with_attributes_to_crop(Selectors::Some(&[("overview", None)]))
+    .with_crop_length(10)
+    .execute()
+    .await
+    .unwrap();
+  
+  // Get the formatted results
+  let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
+search_parameter_guide_highlight_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("shifu")
+    .with_attributes_to_highlight(Selectors::Some(&["overview"]))
+    .execute()
+    .await
+    .unwrap();
+  
+  // Get the formatted results
+  let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
+search_parameter_guide_filter_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("n")
+    .with_filters("title = Nightshift")
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_filter_2: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("n")
+    .with_filters(r#"title = "Kung Fu Panda""#)
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_matches_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("n")
+    .with_filters(r#"title="Kung Fu Panda""#)
+    .with_attributes_to_highlight(Selectors::Some(&["overview"]))
+    .with_matches(true)
+    .execute()
+    .await
+    .unwrap();
+  
+  // Get the matches info
+  let matched_info: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_info.as_ref().unwrap()).collect();
+settings_guide_synonyms_1: |-
+  let mut synonyms = HashMap::new();
+  synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
+  synonyms.insert(String::from("jumper"), vec![String::from("sweater")]);
+
+  let tops: Index = client.get_index("tops").await.unwrap();
+  let progress: Progress = tops.set_synonyms(&synonyms).await.unwrap();
+settings_guide_stop_words_1: |-
+  let progress: Progress = movies.set_stop_words(&["the", "a", "an"]).await.unwrap();
+settings_guide_attributes_for_faceting_1: |-
+  let progress: Progress = movies.set_attributes_for_faceting(&["director", "genres"]).await.unwrap();
+settings_guide_ranking_rules_1: |-
+  let ranking_rules = &[
+    "typo",
+    "words",
+    "proximity",
+    "attribute",
+    "wordsPosition",
+    "exactness",
+    "asc(release_date)",
+    "desc(rank)",
+  ];
+
+  let progress: Progress = movies.set_ranking_rules(ranking_rules).await.unwrap();
+settings_guide_distinct_1: |-
+  let jackets: Index = client.get_index("jackets").await.unwrap();
+  let progress: Progress = jackets.set_distinct_attribute("product_id").await.unwrap();
+settings_guide_searchable_1: |-
+  let searchable_attributes = &[
+    "uid",
+    "movie_id",
+    "title",
+    "description",
+    "poster",
+    "release_date",
+    "rank"
+  ];
+
+  let progress: Progress = movies.set_searchable_attributes(searchable_attributes).await.unwrap();
+settings_guide_displayed_1: |-
+  let displayed_attributes = &[
+    "title",
+    "description",
+    "poster",
+    "release_date",
+    "rank"
+  ];
+
+  let progress: Progress = movies.set_displayed_attributes(displayed_attributes).await.unwrap();
+documents_guide_add_movie_1: |-
+  // Define the type of our documents
+  #[derive(Serialize, Deserialize, Debug)]
+  struct IncompleteMovie {
+    id: String,
+    title: String
+  }
+  impl Document for IncompleteMovie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
+  // Add a document to our index
+  let progress: Progress = movies.add_documents(&[
+    IncompleteMovie {
+      id: "123sq178".to_string(),
+      title: "Amélie Poulain".to_string(),
+    }
+  ], None).await.unwrap();
+search_guide_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("shifu")
+    .with_limit(5)
+    .with_offset(10)
+    .execute()
+    .await
+    .unwrap();
+search_guide_2: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("Avengers")
+    .with_filters("release_date > 795484800")
+    .execute()
+    .await
+    .unwrap();
+getting_started_create_index_md: |-
+  ```toml
+  [dependencies]
+  meilisearch-sdk = "0.3"
+  tokio = { version = "0.2", features = ["macros"] }  # required if you are not targeting wasm
+  serde = { version="1.0",   features = ["derive"] }  # required if you are going to use documents
+  serde_json = "1.0"                                  # required in some parts of this guide
+  ```
+
+  ```rust
+  use meilisearch_sdk::{indexes::*, document::*, client::*, search::*, progress::*, settings::*};
+  use serde::{Serialize, Deserialize};
+
+  #[tokio::main]
+  async fn main() {
+    let client = Client::new("http://localhost:7700", "masterKey");
+    // create an index if the index does not exist
+    let movies = client.get_or_create("movies").await.unwrap();  
+
+    // some code
+  }
+  ```
+
+  [About this crate](https://github.com/meilisearch/meilisearch-rust)
+getting_started_add_documents_md: |-
+  Documents in the Rust library are stronly typed.
+  You have to implement the `Document` trait on a struct to be able to use it with Meilisearch.
+
+  ```rust
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: i64,
+    genre: Vec<String>
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  ```
+  
+  You will often need this `Movie` struct in other parts of this documentation. (you will have to change it a bit sometimes)
+  You can also use schemaless values, by putting a `serde_json::Value` inside your own struct like this:
+
+  ```rust
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    #[serde(flatten)]
+    value: serde_json::Value,
+  }
+
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+  ```
+
+  Then, add documents into the index:
+
+  ```rust
+  // reading and parsing the file
+  use std::{io::prelude::*, fs::File};
+  let mut file = File::open("movies.json").unwrap();
+  let mut content = String::new();
+  file.read_to_string(&mut content).unwrap();
+  let movies_docs: Vec<Movie> = serde_json::from_str(&content).unwrap();
+  
+  // adding documents
+  movies.add_documents(&movies_docs, None).await.unwrap();
+  ```
+getting_started_search_md: |-
+  You can build a Query and execute it later:
+  ```rust
+  let query: Query = Query::new(&movies)
+    .with_query("botman")
+    .build();
+  
+  let results: SearchResults<Movie> = movies.execute_query(&query).await.unwrap();
+  ```
+    
+  You can build a Query and execute it directly:
+  ```rust
+  let results: SearchResults<Movie> = Query::new(&movies)
+    .with_query("botman")
+    .execute()
+    .await
+    .unwrap();
+  ```
+
+  You can search in an Index directly:
+  ```rust
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("botman")
+    .execute()
+    .await
+    .unwrap();
+  ```
+faceted_search_update_settings_1: |-
+  let progress: Progress = movies.set_attributes_for_faceting(&["director", "genre"]).await.unwrap();
+faceted_search_facet_filters_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("thriller")
+    .with_facet_filters(&[&["genres:Horror", "genres:Mystery"], &["director:Jordan Peele"]])
+    .execute()
+    .await
+    .unwrap();
+faceted_search_facets_distribution_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("Batman")
+    .with_facets_distribution(Selectors::Some(&["genres"]))
+    .execute()
+    .await
+    .unwrap();
+  let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
+faceted_search_walkthrough_attributes_for_faceting_1: |-
+  let progress: Progress = movies.set_attributes_for_faceting(&["director", "producer", "genres", "production_companies"]).await.unwrap();
+faceted_search_walkthrough_facet_filters_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("thriller")
+    .with_facet_filters(&[&["genres:Horror", "genres:Mystery"], &["director:Jordan Peele"]])
+    .execute()
+    .await
+    .unwrap();
+faceted_search_walkthrough_facets_distribution_1: |-
+  let results: SearchResults<Movie> = movies.search()
+    .with_query("Batman")
+    .with_facets_distribution(Selectors::Some(&["genres"]))
+    .execute()
+    .await
+    .unwrap();
+  let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
