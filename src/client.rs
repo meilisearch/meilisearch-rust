@@ -186,7 +186,7 @@ impl<'a> Client<'a> {
     /// # async fn main() {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
-    /// match client.get_health().await {
+    /// match client.health().await {
     ///     Ok(()) => println!("server is operational"),
     ///     Err(Error::MeiliSearchError { error_code: ErrorCode::Maintenance, .. }) => {
     ///         eprintln!("server is in maintenance")
@@ -195,47 +195,11 @@ impl<'a> Client<'a> {
     /// }
     /// # }
     /// ```
-    pub async fn get_health(&self) -> Result<(), Error> {
+    pub async fn health(&self) -> Result<(), Error> {
         let r = request::<(), ()>(
             &format!("{}/health", self.host),
             self.apikey,
             Method::Get,
-            204,
-        )
-        .await;
-        match r {
-            // This shouldn't be an error; The status code is 200, but the request
-            // function only supports one successful error code for some reason
-            Err(Error::Empty) => Ok(()),
-            e => e,
-        }
-    }
-
-    /// Update health of MeiliSearch server.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
-    /// #
-    /// # #[tokio::main]
-    /// # async fn main() {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
-    ///
-    /// client.set_health(false).await.unwrap();
-    /// # client.set_health(true).await.unwrap();
-    /// # }
-    /// ```
-    pub async fn set_health(&self, health: bool) -> Result<(), Error> {
-        #[derive(Debug, Serialize)]
-        struct HealthBody {
-            health: bool
-        }
-
-        let r = request::<HealthBody, ()>(
-            &format!("{}/health", self.host),
-            self.apikey,
-            Method::Put(HealthBody { health }),
             204,
         )
         .await;

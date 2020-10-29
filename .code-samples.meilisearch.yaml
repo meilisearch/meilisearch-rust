@@ -193,10 +193,8 @@ get_index_stats_1: |-
 get_indexes_stats_1: |-
   let stats: ClientStats = client.get_stats().await.unwrap();
 get_health_1: |-
-  // get_health() return an Err() if the server is not healthy, so this example would panic due to the unwrap
-  client.get_health().await.unwrap();
-update_health_1: |-
-  client.set_health(false).await.unwrap();
+  // health() return an Err() if the server is not healthy, so this example would panic due to the unwrap
+  client.health().await.unwrap();
 get_version_1: |-
   let version: Version = client.get_version().await.unwrap();
 distinct_attribute_guide_1: |-
@@ -287,7 +285,7 @@ search_parameter_guide_crop_1: |-
     .execute()
     .await
     .unwrap();
-  
+
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
 search_parameter_guide_highlight_1: |-
@@ -297,7 +295,7 @@ search_parameter_guide_highlight_1: |-
     .execute()
     .await
     .unwrap();
-  
+
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
 search_parameter_guide_filter_1: |-
@@ -323,7 +321,7 @@ search_parameter_guide_matches_1: |-
     .execute()
     .await
     .unwrap();
-  
+
   // Get the matches info
   let matched_info: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_info.as_ref().unwrap()).collect();
 settings_guide_synonyms_1: |-
@@ -426,7 +424,7 @@ getting_started_create_index_md: |-
   async fn main() {
     let client = Client::new("http://localhost:7700", "masterKey");
     // create an index if the index does not exist
-    let movies = client.get_or_create("movies").await.unwrap();  
+    let movies = client.get_or_create("movies").await.unwrap();
 
     // some code
   }
@@ -452,7 +450,7 @@ getting_started_add_documents_md: |-
     fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
   ```
-  
+
   You will often need this `Movie` struct in other parts of this documentation. (you will have to change it a bit sometimes)
   You can also use schemaless values, by putting a `serde_json::Value` inside your own struct like this:
 
@@ -479,7 +477,7 @@ getting_started_add_documents_md: |-
   let mut content = String::new();
   file.read_to_string(&mut content).unwrap();
   let movies_docs: Vec<Movie> = serde_json::from_str(&content).unwrap();
-  
+
   // adding documents
   movies.add_documents(&movies_docs, None).await.unwrap();
   ```
@@ -489,10 +487,10 @@ getting_started_search_md: |-
   let query: Query = Query::new(&movies)
     .with_query("botman")
     .build();
-  
+
   let results: SearchResults<Movie> = movies.execute_query(&query).await.unwrap();
   ```
-    
+
   You can build a Query and execute it directly:
   ```rust
   let results: SearchResults<Movie> = Query::new(&movies)
