@@ -1,6 +1,6 @@
 use crate::{errors::*, indexes::*, request::*};
 use serde_json::{json, Value};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize};
 use std::collections::HashMap;
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
