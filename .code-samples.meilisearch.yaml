@@ -167,7 +167,7 @@ get_attributes_for_faceting_1: |-
   let attributes_for_faceting: Vec<String> = movies.get_attributes_for_faceting().await.unwrap();
 update_attributes_for_faceting_1: |-
   let attributes_for_faceting = &[
-    "genre",
+    "genres",
     "director"
   ];
 
@@ -287,7 +287,7 @@ search_parameter_guide_crop_1: |-
     .execute()
     .await
     .unwrap();
-  
+
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
 search_parameter_guide_highlight_1: |-
@@ -297,7 +297,7 @@ search_parameter_guide_highlight_1: |-
     .execute()
     .await
     .unwrap();
-  
+
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
 search_parameter_guide_filter_1: |-
@@ -323,7 +323,7 @@ search_parameter_guide_matches_1: |-
     .execute()
     .await
     .unwrap();
-  
+
   // Get the matches info
   let matched_info: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_info.as_ref().unwrap()).collect();
 settings_guide_synonyms_1: |-
@@ -426,7 +426,7 @@ getting_started_create_index_md: |-
   async fn main() {
     let client = Client::new("http://localhost:7700", "masterKey");
     // create an index if the index does not exist
-    let movies = client.get_or_create("movies").await.unwrap();  
+    let movies = client.get_or_create("movies").await.unwrap();
 
     // some code
   }
@@ -445,14 +445,14 @@ getting_started_add_documents_md: |-
     poster: String,
     overview: String,
     release_date: i64,
-    genre: Vec<String>
+    genres: Vec<String>
   }
   impl Document for Movie {
     type UIDType = String;
     fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
   ```
-  
+
   You will often need this `Movie` struct in other parts of this documentation. (you will have to change it a bit sometimes)
   You can also use schemaless values, by putting a `serde_json::Value` inside your own struct like this:
 
@@ -479,7 +479,7 @@ getting_started_add_documents_md: |-
   let mut content = String::new();
   file.read_to_string(&mut content).unwrap();
   let movies_docs: Vec<Movie> = serde_json::from_str(&content).unwrap();
-  
+
   // adding documents
   movies.add_documents(&movies_docs, None).await.unwrap();
   ```
@@ -489,10 +489,10 @@ getting_started_search_md: |-
   let query: Query = Query::new(&movies)
     .with_query("botman")
     .build();
-  
+
   let results: SearchResults<Movie> = movies.execute_query(&query).await.unwrap();
   ```
-    
+
   You can build a Query and execute it directly:
   ```rust
   let results: SearchResults<Movie> = Query::new(&movies)
@@ -511,7 +511,7 @@ getting_started_search_md: |-
     .unwrap();
   ```
 faceted_search_update_settings_1: |-
-  let progress: Progress = movies.set_attributes_for_faceting(&["director", "genre"]).await.unwrap();
+  let progress: Progress = movies.set_attributes_for_faceting(&["director", "genres"]).await.unwrap();
 faceted_search_facet_filters_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")
