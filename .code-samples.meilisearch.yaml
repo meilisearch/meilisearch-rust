@@ -410,7 +410,7 @@ search_guide_2: |-
 getting_started_create_index_md: |-
   ```toml
   [dependencies]
-  meilisearch-sdk = "0.3"
+  meilisearch-sdk = "0.4"
   tokio = { version = "0.2", features = ["macros"] }  # required if you are not targeting wasm
   serde = { version="1.0",   features = ["derive"] }  # required if you are going to use documents
   serde_json = "1.0"                                  # required in some parts of this guide
