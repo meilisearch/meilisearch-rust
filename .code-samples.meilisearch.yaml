@@ -193,10 +193,8 @@ get_index_stats_1: |-
 get_indexes_stats_1: |-
   let stats: ClientStats = client.get_stats().await.unwrap();
 get_health_1: |-
-  // get_health() return an Err() if the server is not healthy, so this example would panic due to the unwrap
-  client.get_health().await.unwrap();
-update_health_1: |-
-  client.set_health(false).await.unwrap();
+  // health() return an Err() if the server is not healthy, so this example would panic due to the unwrap
+  client.health().await.unwrap();
 get_version_1: |-
   let version: Version = client.get_version().await.unwrap();
 distinct_attribute_guide_1: |-

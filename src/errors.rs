@@ -21,7 +21,7 @@ pub enum Error {
     /// The MeiliSearch server returned invalid JSON for a request.
     ParseError(serde_json::Error),
     /// An erroring status code, but no body
-    // This is a hack to make Client::get_health work, since the request module
+    // This is a hack to make Client::health work, since the request module
     // treats anything other than the expected status as an error.  Since 204 is
     // specified, a successful status of 200 is treated as an error with an
     // empty body.
@@ -97,8 +97,7 @@ pub enum ErrorCode {
     InternalError,
     /// The provided token is invalid.
     InvalidToken,
-    /// The MeiliSearch instance is under maintenance. You can set the maintenance
-    /// state by using the `set_healthy` method of a Client.
+    /// The MeiliSearch instance is under maintenance.
     Maintenance,
     /// The requested resources are protected with an API key, which was not
     /// provided in the request header.
