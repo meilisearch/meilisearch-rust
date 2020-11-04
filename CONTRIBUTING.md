@@ -116,6 +116,18 @@ and the [`src/lib.rs`](/src/lib.rs):
 
 with the right version.
 
+You should run the following command after the changes applied to `lib.rs`:
+
+```bash
+$ sh scripts/update-readme.sh
+```
+
+Also, you might need to change the [code-samples file](/.code-samples.meilisearch.yaml) if the minor has been upgraded:
+
+```yml
+  meilisearch-sdk = "X.X"
+```
+
 Once the changes are merged on `master`, you can publish the current draft release via the [GitHub interface](https://github.com/meilisearch/meilisearch-rust/releases).
 
 A GitHub Action will be triggered and push the package to [crates.io](https://crates.io/crates/meilisearch-sdk).
