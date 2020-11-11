@@ -2,7 +2,6 @@ use crate::errors::Error;
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
-use isahc::prelude::*;
 
 #[derive(Debug)]
 pub(crate) enum Method<T: Serialize> {
@@ -19,6 +18,8 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
     method: Method<Input>,
     expected_status_code: u16
 ) -> Result<Output, Error> {
+    use isahc::prelude::*;
+
     trace!("{:?} on {}", method, url);
 
     let mut response = match &method {
