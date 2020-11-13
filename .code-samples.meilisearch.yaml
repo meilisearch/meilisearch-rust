@@ -432,7 +432,7 @@ getting_started_create_index_md: |-
 
   [About this crate](https://github.com/meilisearch/meilisearch-rust)
 getting_started_add_documents_md: |-
-  Documents in the Rust library are stronly typed.
+  Documents in the Rust library are strongly typed.
   You have to implement the `Document` trait on a struct to be able to use it with Meilisearch.
 
   ```rust
