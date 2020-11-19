@@ -18,8 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Check the README.md file is up-to-date
-      run: sh scripts/check-readme.sh
     - name: Build
       run: cargo build --verbose
     - name: MeiliSearch setup with Docker
@@ -32,8 +30,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Check the README.md file is up-to-date
-      run: sh scripts/check-readme.sh
     - name: Install clippy
       run: rustup component add clippy
     - name: Run linter (clippy)
