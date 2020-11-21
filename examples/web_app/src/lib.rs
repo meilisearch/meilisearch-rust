@@ -4,7 +4,7 @@ use meilisearch_sdk::{
     indexes::Index,
     search::{SearchResults, Selectors::All},
 };
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
@@ -21,12 +21,13 @@ pub static CLIENT: Client = Client::new(
 struct Model {
     link: Rc<ComponentLink<Self>>,
     index: Rc<Index<'static>>, // The lifetime of Index is the lifetime of the client
-    results: Rc<RefCell<Vec<Crate>>>,
+    results: Vec<Crate>,
+    processing_time_ms: usize,
 }
 
 enum Msg {
     Input(String),
-    Update,
+    Update(Vec<Crate>, usize),
 }
 
 impl Component for Model {
@@ -36,7 +37,8 @@ impl Component for Model {
         Self {
             link: Rc::new(link),
             index: Rc::new(CLIENT.assume_index("crates")),
-            results: Rc::new(RefCell::new(Vec::new())),
+            results: Vec::new(),
+            processing_time_ms: 0,
         }
     }
 
@@ -45,7 +47,6 @@ impl Component for Model {
             Msg::Input(value) => {
                 let index = Rc::clone(&self.index);
                 let link = Rc::clone(&self.link);
-                let results = Rc::clone(&self.results);
 
                 // Spawn a task loading results
                 spawn_local(async move {
@@ -62,12 +63,15 @@ impl Component for Model {
                         fresh_formatted_results.push(result.formatted_result.unwrap());
                     }
 
-                    *results.borrow_mut() = fresh_formatted_results;
-                    link.send_message(Msg::Update);
+                    link.send_message(Msg::Update(fresh_formatted_results, fresh_results.processing_time_ms));
                 });
                 false
             },
-            Msg::Update => true,
+            Msg::Update(results, processing_time_ms) => {
+                self.results = results;
+                self.processing_time_ms = processing_time_ms;
+                true
+            },
         }
     }
 
@@ -91,7 +95,7 @@ impl Component for Model {
                     </p>
                     <form role="search" id="search">
                         <input placeholder="name, keywords, description" autofocus=true autocapitalize="none" autocorrect=false autocomplete=false tabindex="1" type="search" id="textSearch" oninput=self.link.callback(|e: yew::html::InputData| Msg::Input(e.value))/>
-                        <span id="request-time">{"0 ms"}</span>
+                        <span id="request-time">{self.processing_time_ms}{" ms"}</span>
                     </form>
                     <nav>
                         <ul>
@@ -103,7 +107,7 @@ impl Component for Model {
             <main id="results">
                 <div class="inner-col">
                     <ol id="handlebars-list">
-                        {for self.results.borrow().iter().map(|r| r.to_html())}
+                        {for self.results.iter().map(|r| r.to_html())}
                     </ol>
                 </div>
             </main>
