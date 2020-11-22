@@ -5,7 +5,7 @@ use yew::prelude::*;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Crate {
     name: String,
-    downloads: usize,
+    downloads: Option<usize>,
     description: String,
     keywords: Vec<String>,
     categories: Vec<String>,
@@ -24,12 +24,16 @@ impl Document for Crate {
 
 impl Crate {
     pub fn get_readable_download_count(&self) -> String {
-        if self.downloads < 1000 {
-            self.downloads.to_string()
-        } else if self.downloads < 1000000 {
-            format!("{:.1}k", self.downloads as f64 / 1000.0)
+        if let Some(downloads) = self.downloads {
+            if downloads < 1000 {
+                downloads.to_string()
+            } else if downloads < 1000000 {
+                format!("{:.1}k", downloads as f64 / 1000.0)
+            } else {
+                format!("{:.1}M", downloads as f64 / 1000000.0)
+            }
         } else {
-            format!("{:.1}M", self.downloads as f64 / 1000000.0)
+            String::from("?")
         }
     }
 
@@ -54,7 +58,7 @@ impl Crate {
                         <span>{"v"}</span>
                         {&self.version}
                     </span>
-                    <span class="downloads" title=format!("{} recent downloads", self.downloads)>
+                    <span class="downloads" title=format!("{} recent downloads", self.downloads.unwrap_or(0))>
                         {self.get_readable_download_count()}
                     </span>
                     {for self.keywords.iter().map(|keyword|
