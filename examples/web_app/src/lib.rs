@@ -26,7 +26,9 @@ struct Model {
 }
 
 enum Msg {
+    /// An event sent to update the results with a query
     Input(String),
+    /// The event sent to display new results once they are received
     Update(Vec<Crate>, usize),
 }
 
@@ -36,6 +38,10 @@ impl Component for Model {
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Model {
         Self {
             link: Rc::new(link),
+
+            // The assume_index method avoids checking the existence of the index.
+            // It won't make any HTTP request so the function is not async so it's easier to use.
+            // Use only if you are sure that the index exists.
             index: Rc::new(CLIENT.assume_index("crates")),
             results: Vec::new(),
             processing_time_ms: 0,
@@ -44,12 +50,14 @@ impl Component for Model {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
+            // Sent when the value of the text input changed (so we have to make a new request)
             Msg::Input(value) => {
                 let index = Rc::clone(&self.index);
                 let link = Rc::clone(&self.link);
 
                 // Spawn a task loading results
                 spawn_local(async move {
+                    // Load the results
                     let fresh_results: SearchResults<Crate> = index
                         .search()
                         .with_query(&value)
@@ -63,15 +71,21 @@ impl Component for Model {
                         fresh_formatted_results.push(result.formatted_result.unwrap());
                     }
 
-                    link.send_message(Msg::Update(fresh_formatted_results, fresh_results.processing_time_ms));
+                    // We send a new event with the up-to-date data so that we can update the results and display them.
+                    link.send_message(Msg::Update(
+                        fresh_formatted_results,
+                        fresh_results.processing_time_ms,
+                    ));
                 });
                 false
-            },
-            Msg::Update(results, processing_time_ms) => {
-                self.results = results;
+            }
+
+            // Sent when new results are received
+            Msg::Update(fresh_results, processing_time_ms) => {
+                self.results = fresh_results;
                 self.processing_time_ms = processing_time_ms;
                 true
-            },
+            }
         }
     }
 
@@ -83,37 +97,21 @@ impl Component for Model {
         html! {
             <>
             <header id="serp">
-                <div class="inner-col">
-                    <h3>{"Meili crates browser 2000"}</h3>
-                    <p>
-                        {"This search bar is provided by "}<a href="https://meilisearch.com">{"Meili"}</a>{", it is a demonstration of our instant search engine."}<br/>
-                        {"If you want to take a look at the project source code, it's your lucky day as it is "}<a href="https://github.com/meilisearch/MeiliDB">{"available on github"}</a>{"."}<br/>
-                        {"We wrote a blog post about "}<a href="https://blog.meilisearch.com/meili-finds-rust-crates/">{"how we made this search engine available for you"}</a>{"."}<br/>
-                        {"The whole design was taken from "}<a href="https://lib.rs">{"lib.rs"}</a>{" because we love it."}<br/>
-                        <br/>{"We pull new crates and crates updates every "}<em>{"10 minutes"}</em>{" from "}<a href="https://docs.rs/releases">{"docs.rs"}</a>{" and all the downloads counts "}<em>{"every day at 3:30 PM UTC"}</em>{" from "}<a href="https://crates.io/data-access">{"crates.io"}</a>{". Currently we have something like "}<em>{" 31 729 crates"}</em>{"."}<br/>
-                        <br/>{"Have fun using it "}<img draggable="false" class="emoji" alt="⌨️" src="moz-extension://57a82bfe-3134-4c34-bdb1-bc4ada430e6c/data/components/twemoji/svg/2328.svg"/>{" "}<img draggable="false" class="emoji" alt="💨" src="moz-extension://57a82bfe-3134-4c34-bdb1-bc4ada430e6c/data/components/twemoji/svg/1f4a8.svg"/><br/>
-                    </p>
-                    <form role="search" id="search">
-                        <input placeholder="name, keywords, description" autofocus=true autocapitalize="none" autocorrect=false autocomplete=false tabindex="1" type="search" id="textSearch" oninput=self.link.callback(|e: yew::html::InputData| Msg::Input(e.value))/>
-                        <span id="request-time">{self.processing_time_ms}{" ms"}</span>
-                    </form>
-                    <nav>
-                        <ul>
-                            <li class="active">{"Sorted by relevance"}</li>
-                        </ul>
-                    </nav>
-                </div>
+                {header_content(self.processing_time_ms, Rc::clone(&self.link))}
             </header>
             <main id="results">
                 <div class="inner-col">
                     <ol id="handlebars-list">
-                        {for self.results.iter().map(|r| r.to_html())}
+                        {
+                            // Display the results
+                            for self.results.iter().map(|r| r.display())
+                        }
                     </ol>
                 </div>
             </main>
             <footer>
                 <div class="inner-col">
-                <p>{"Search powered by "}<a href="https://github.com/meilisearch/MeiliDB">{"MeiliDB"}</a>{"."}</p>
+                    <p>{"Search powered by "}<a href="https://github.com/meilisearch/MeiliDB">{"MeiliDB"}</a>{"."}</p>
                 </div>
             </footer>
             </>
@@ -121,6 +119,34 @@ impl Component for Model {
     }
 }
 
+fn header_content(processing_time_ms: usize, link: Rc<ComponentLink<Model>>) -> Html {
+    html! {
+        <div class="inner-col">
+            <h3>{"Meili crates browser 2000"}</h3>
+            <p>
+                {"This search bar is provided by "}<a href="https://meilisearch.com">{"Meili"}</a>{", it is a demonstration of our instant search engine."}<br/>
+                {"If you want to take a look at the project source code, it's your lucky day as it is "}<a href="https://github.com/meilisearch/MeiliDB">{"available on github"}</a>{"."}<br/>
+                {"We wrote a blog post about "}<a href="https://blog.meilisearch.com/meili-finds-rust-crates/">{"how we made this search engine available for you"}</a>{"."}<br/>
+                {"The whole design was taken from "}<a href="https://lib.rs">{"lib.rs"}</a>{" because we love it."}<br/>
+                <br/>{"We pull new crates and crates updates every "}<em>{"10 minutes"}</em>{" from "}<a href="https://docs.rs/releases">{"docs.rs"}</a>{" and all the downloads counts "}<em>{"every day at 3:30 PM UTC"}</em>{" from "}<a href="https://crates.io/data-access">{"crates.io"}</a>{". Currently we have something like "}<em>{" 31 729 crates"}</em>{"."}<br/>
+                <br/>{"Have fun using it "}<img draggable="false" class="emoji" alt="⌨️" src="moz-extension://57a82bfe-3134-4c34-bdb1-bc4ada430e6c/data/components/twemoji/svg/2328.svg"/>{" "}<img draggable="false" class="emoji" alt="💨" src="moz-extension://57a82bfe-3134-4c34-bdb1-bc4ada430e6c/data/components/twemoji/svg/1f4a8.svg"/><br/>
+            </p>
+            <form role="search" id="search">
+                // We fire an event each time the value changes so that we can update the results
+                <input placeholder="name, keywords, description" autofocus=true autocapitalize="none" autocorrect=false autocomplete=false tabindex="1" type="search" id="textSearch" oninput=link.callback(|e: yew::html::InputData| Msg::Input(e.value))/>
+                // We display the processing time here
+                <span id="request-time">{processing_time_ms}{" ms"}</span>
+            </form>
+            <nav>
+                <ul>
+                    <li class="active">{"Sorted by relevance"}</li>
+                </ul>
+            </nav>
+        </div>
+    }
+}
+
+// The main() function of wasm
 #[wasm_bindgen(start)]
 pub fn run_app() {
     App::<Model>::new().mount_to_body();
