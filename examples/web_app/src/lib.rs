@@ -23,13 +23,17 @@ struct Model {
     index: Rc<Index<'static>>, // The lifetime of Index is the lifetime of the client
     results: Vec<Crate>,
     processing_time_ms: usize,
+
+    // These two fields are used to avoid rollbacks by giving an ID to each request
+    latest_sent_request_id: usize,
+    displayed_request_id: usize,
 }
 
 enum Msg {
     /// An event sent to update the results with a query
     Input(String),
     /// The event sent to display new results once they are received
-    Update(Vec<Crate>, usize),
+    Update{results: Vec<Crate>, processing_time_ms: usize, request_id: usize},
 }
 
 impl Component for Model {
@@ -45,6 +49,9 @@ impl Component for Model {
             index: Rc::new(CLIENT.assume_index("crates")),
             results: Vec::new(),
             processing_time_ms: 0,
+
+            latest_sent_request_id: 0,
+            displayed_request_id: 0,
         }
     }
 
@@ -54,6 +61,8 @@ impl Component for Model {
             Msg::Input(value) => {
                 let index = Rc::clone(&self.index);
                 let link = Rc::clone(&self.link);
+                self.latest_sent_request_id += 1;
+                let request_id = self.latest_sent_request_id;
 
                 // Spawn a task loading results
                 spawn_local(async move {
@@ -72,19 +81,27 @@ impl Component for Model {
                     }
 
                     // We send a new event with the up-to-date data so that we can update the results and display them.
-                    link.send_message(Msg::Update(
-                        fresh_formatted_results,
-                        fresh_results.processing_time_ms,
-                    ));
+                    link.send_message(Msg::Update{
+                        results: fresh_formatted_results,
+                        processing_time_ms: fresh_results.processing_time_ms,
+                        request_id
+                    });
                 });
                 false
             }
 
             // Sent when new results are received
-            Msg::Update(fresh_results, processing_time_ms) => {
-                self.results = fresh_results;
-                self.processing_time_ms = processing_time_ms;
-                true
+            Msg::Update{results, processing_time_ms, request_id} => {
+                if request_id >= self.latest_sent_request_id {
+                    self.results = results;
+                    self.processing_time_ms = processing_time_ms;
+                    self.displayed_request_id = request_id;
+                    true
+                } else {
+                    // We are already displaying more up-to-date results.
+                    // This request is too late so we cannot display these results to avoid rollbacks.
+                    false
+                }
             }
         }
     }
@@ -150,5 +167,6 @@ fn header_content(processing_time_ms: usize, link: Rc<ComponentLink<Model>>) -> 
 // The main() function of wasm
 #[wasm_bindgen(start)]
 pub fn run_app() {
+    console_error_panic_hook::set_once();
     App::<Model>::new().mount_to_body();
 }
