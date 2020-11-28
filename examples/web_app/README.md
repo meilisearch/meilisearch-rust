@@ -1,7 +1,7 @@
 # Build your front-end page in Rust with WebAssembly
 
-This example is a clone of [crates.meilisearch.com](https://crates.meilisearch.com), but I rewrote the frontend in Rust.\
-This tutorial is using the same MeiliSearch server as the original project, which means you can follow the next steps without running your own MeiliSearch instance.
+This example is a clone of [crates.meilisearch.com](https://crates.meilisearch.com), but the front-end is written in Rust!
+The Rust source files are compiled into WebAssembly and so can be readable by the browsers.
 
 ## Checking
 
@@ -32,3 +32,5 @@ Theoretically, you could just open the `examples/web_app/pkg/index.html` file bu
 ```console
 $ python3 -m http.server 8080
 ```
+
+And then go to the `http://localhost:8080/` URL in your browser.
