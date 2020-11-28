@@ -40,6 +40,9 @@ impl Component for Model {
     type Message = Msg;
     type Properties = ();
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Model {
+        // Load a few popular crates
+        link.send_message(Msg::Input(String::new()));
+
         Self {
             link: Rc::new(link),
 
