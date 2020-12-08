@@ -60,6 +60,12 @@ $ rustup update
 $ rustup component add clippy
 ```
 
+⚠️ Also, if you have installed `clippy` a long time ago, you might need to update it:
+
+```bash
+$ rustup update
+```
+
 ### Update the README
 
 The README is generated. Please do not update manually the `README.md` file.
