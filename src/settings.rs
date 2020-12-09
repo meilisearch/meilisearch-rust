@@ -279,6 +279,8 @@ impl<'a> Index<'a> {
     ///     .with_stop_words(stop_words.clone());
     ///
     /// let progress = movie_index.set_settings(&settings).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn set_settings(&'a self, settings: &Settings) -> Result<Progress<'a>, Error> {
@@ -307,6 +309,8 @@ impl<'a> Index<'a> {
     /// synonyms.insert(String::from("wow"), vec![String::from("world of warcraft")]);
     ///
     /// let progress = movie_index.set_synonyms(&synonyms).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn set_synonyms(&'a self, synonyms: &HashMap<String, Vec<String>>) -> Result<Progress<'a>, Error> {
@@ -331,6 +335,8 @@ impl<'a> Index<'a> {
     ///
     /// let stop_words = &["the", "of", "to"];
     /// let progress = movie_index.set_stop_words(stop_words).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn set_stop_words(&'a self, stop_words: &[&str]) -> Result<Progress<'a>, Error> {
@@ -364,6 +370,8 @@ impl<'a> Index<'a> {
     ///     "desc(rank)",
     /// ];
     /// let progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn set_ranking_rules(&'a self, ranking_rules: &[&str]) -> Result<Progress<'a>, Error> {
@@ -388,6 +396,8 @@ impl<'a> Index<'a> {
     ///
     /// let attributes_for_faceting = &["genre", "director"];
     /// let progress = movie_index.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn set_attributes_for_faceting(&'a self, attributes_for_faceting: &[&str]) -> Result<Progress<'a>, Error> {
@@ -411,6 +421,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.set_distinct_attribute("movie_id").await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn set_distinct_attribute(&'a self, distinct_attribute: &str) -> Result<Progress<'a>, Error> {
@@ -434,6 +446,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"]).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn set_searchable_attributes(&'a self, searchable_attributes: &[&str]) -> Result<Progress<'a>, Error> {
@@ -457,6 +471,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"]).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn set_displayed_attributes(&'a self, displayed_attributes: &[&str]) -> Result<Progress<'a>, Error> {
@@ -481,6 +497,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_settings().await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn reset_settings(&'a self) -> Result<Progress<'a>, Error> {
@@ -504,6 +522,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_synonyms().await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn reset_synonyms(&'a self) -> Result<Progress<'a>, Error> {
@@ -527,6 +547,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_stop_words().await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn reset_stop_words(&'a self) -> Result<Progress<'a>, Error> {
@@ -551,6 +573,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_ranking_rules().await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn reset_ranking_rules(&'a self) -> Result<Progress<'a>, Error> {
@@ -574,6 +598,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_attributes_for_faceting().await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn reset_attributes_for_faceting(&'a self) -> Result<Progress<'a>, Error> {
@@ -597,6 +623,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_distinct_attribute().await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn reset_distinct_attribute(&'a self) -> Result<Progress<'a>, Error> {
@@ -620,6 +648,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_searchable_attributes().await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn reset_searchable_attributes(&'a self) -> Result<Progress<'a>, Error> {
@@ -643,6 +673,8 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_displayed_attributes().await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn reset_displayed_attributes(&'a self) -> Result<Progress<'a>, Error> {
