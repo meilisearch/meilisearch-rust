@@ -285,12 +285,12 @@ impl<'a> Index<'a> {
         if let Some(offset) = offset {
             url.push_str("offset=");
             url.push_str(offset.to_string().as_str());
-            url.push_str("&");
+            url.push('&');
         }
         if let Some(limit) = limit {
             url.push_str("limit=");
             url.push_str(limit.to_string().as_str());
-            url.push_str("&");
+            url.push('&');
         }
         if let Some(attributes_to_retrieve) = attributes_to_retrieve {
             url.push_str("attributesToRetrieve=");

@@ -93,6 +93,7 @@
 //! WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
 
 #![warn(clippy::all)]
+#![allow(clippy::needless_doctest_main)]
 
 /// Module containing the Client struct.
 pub mod client;
