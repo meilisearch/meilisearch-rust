@@ -32,14 +32,13 @@ impl<'a> Client<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
     /// let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
     /// println!("{:?}", indexes);
-    /// # }
+    /// # });
     /// ```
     pub async fn list_all_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
         let json_indexes = request::<(), Vec<JsonIndex>>(
@@ -64,15 +63,14 @@ impl<'a> Client<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     ///
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.create_index("movies", None).await;
     ///
     /// // get the index named "movies"
     /// let movies = client.get_index("movies").await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_index(&'a self, uid: &'a str) -> Result<Index<'a>, Error> {
         Ok(request::<(), JsonIndex>(
@@ -99,8 +97,7 @@ impl<'a> Client<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
@@ -109,7 +106,7 @@ impl<'a> Client<'a> {
     /// # }
     /// // create a new index called movies and access it
     /// let movies = client.create_index("movies", None).await;
-    /// # }
+    /// # });
     /// ```
     pub async fn create_index(
         &'a self,
@@ -160,11 +157,10 @@ impl<'a> Client<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let stats = client.get_stats().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
         request::<serde_json::Value, ClientStats>(
@@ -182,8 +178,7 @@ impl<'a> Client<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, errors::{Error, ErrorCode}};
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
     /// match client.health().await {
@@ -193,7 +188,7 @@ impl<'a> Client<'a> {
     ///     },
     ///     Err(e) => panic!("should never happen: {}", e),
     /// }
-    /// # }
+    /// # });
     /// ```
     pub async fn health(&self) -> Result<(), Error> {
         let r = request::<(), ()>(
@@ -218,11 +213,10 @@ impl<'a> Client<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let version = client.get_version().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_version(&self) -> Result<Version, Error> {
         request::<(), Version>(

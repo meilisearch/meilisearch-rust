@@ -37,6 +37,7 @@
 //! ```
 //! use meilisearch_sdk::{document::*, client::*, search::*};
 //! use serde::{Serialize, Deserialize};
+//! use futures::executor::block_on;
 //!
 //! #[derive(Serialize, Deserialize, Debug)]
 //! struct Book {
@@ -53,8 +54,7 @@
 //!     }
 //! }
 //!
-//! #[tokio::main]
-//! async fn main() {
+//! fn main() { block_on(async move {
 //!     // Create a client (without sending any request so that can't fail)
 //!     let client = Client::new("http://localhost:7700", "masterKey");
 //!
@@ -73,7 +73,7 @@
 //!
 //!     // Query books (note that there is a typo)
 //!     println!("{:?}", books.search().with_query("harry pottre").execute::<Book>().await.unwrap().hits);
-//! }
+//! })}
 //! ```
 //!
 //! Output:

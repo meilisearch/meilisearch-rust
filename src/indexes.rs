@@ -29,15 +29,14 @@ impl JsonIndex {
 ///
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
-/// # #[tokio::main]
-/// # async fn main() {
+/// # futures::executor::block_on(async move {
 /// let client = Client::new("http://localhost:7700", "masterKey");
 ///
 /// // get the index called movies or create it if it does not exist
 /// let movies = client.get_or_create("movies").await.unwrap();
 ///
 /// // do something with the index
-/// # }
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct Index<'a> {
@@ -65,15 +64,14 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.create_index("movies", None).await;
     ///
     /// // get the index named "movies" and delete it
     /// let movies = client.get_index("movies").await.unwrap();
     /// movies.delete().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn delete(self) -> Result<(), Error> {
         Ok(request::<(), ()>(
@@ -106,8 +104,7 @@ impl<'a> Index<'a> {
     ///     }
     /// }
     ///
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
@@ -118,7 +115,7 @@ impl<'a> Index<'a> {
     /// let query = Query::new(&movies).with_query("Interstellar").with_limit(5).build();
     /// let results = movies.execute_query::<Movie>(&query).await.unwrap();
     /// # assert!(results.hits.len()>0);
-    /// # }
+    /// # });
     /// ```
     pub async fn execute_query<T: 'static + DeserializeOwned>(
         &self,
@@ -158,8 +155,7 @@ impl<'a> Index<'a> {
     ///     }
     /// }
     ///
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.delete_index("movies").await;
     /// let mut movies = client.get_or_create("movies").await.unwrap();
@@ -175,7 +171,7 @@ impl<'a> Index<'a> {
     ///     .await
     ///     .unwrap();
     /// # assert!(results.hits.len()>0);
-    /// # }
+    /// # });
     /// ```
     pub fn search(&self) -> Query {
         Query::new(self)
@@ -206,8 +202,7 @@ impl<'a> Index<'a> {
     ///    }
     /// }
     ///
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.create_index("movies", None).await;
     /// let movies = client.get_index("movies").await.unwrap();
@@ -222,7 +217,7 @@ impl<'a> Index<'a> {
     ///     name: String::from("Interstellar"),
     ///     description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
     /// });
-    /// # }
+    /// # });
     /// ```
     pub async fn get_document<T: 'static + Document>(&self, uid: T::UIDType) -> Result<T, Error> {
         Ok(request::<(), T>(
@@ -265,8 +260,7 @@ impl<'a> Index<'a> {
     ///    }
     /// }
     ///
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.create_index("movies", None).await;
     /// let movie_index = client.get_index("movies").await.unwrap();
@@ -279,7 +273,7 @@ impl<'a> Index<'a> {
     /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
     ///
     /// assert!(movies.len() > 0);
-    /// # }
+    /// # });
     /// ```
     pub async fn get_documents<T: 'static + Document>(
         &self,
@@ -340,8 +334,7 @@ impl<'a> Index<'a> {
     ///    }
     /// }
     ///
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
@@ -365,7 +358,7 @@ impl<'a> Index<'a> {
     /// // retrieve movies (you have to put some movies in the index before)
     /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
     /// assert!(movies.len() >= 3);
-    /// # }
+    /// # });
     /// ```
     pub async fn add_or_replace<T: Document>(
         &'a self,
@@ -428,8 +421,7 @@ impl<'a> Index<'a> {
     ///    }
     /// }
     ///
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
@@ -453,7 +445,7 @@ impl<'a> Index<'a> {
     /// // retrieve movies (you have to put some movies in the index before)
     /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
     /// assert!(movies.len() >= 3);
-    /// # }
+    /// # });
     /// ```
     pub async fn add_or_update<T: Document>(
         &'a self,
@@ -496,8 +488,7 @@ impl<'a> Index<'a> {
     /// #    }
     /// # }
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// #
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -507,7 +498,7 @@ impl<'a> Index<'a> {
     /// movie_index.delete_all_documents().await.unwrap();
     /// # let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
     /// # assert_eq!(movies.len(), 0);
-    /// # }
+    /// # });
     /// ```
     pub async fn delete_all_documents(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
@@ -541,8 +532,7 @@ impl<'a> Index<'a> {
     /// #    }
     /// # }
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// #
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movies = client.get_or_create("movies").await.unwrap();
@@ -552,7 +542,7 @@ impl<'a> Index<'a> {
     /// // add a document with id = Interstellar
     ///
     /// movies.delete_document("Interstellar").await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn delete_document<T: Display>(&'a self, uid: T) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
@@ -589,8 +579,7 @@ impl<'a> Index<'a> {
     /// #    }
     /// # }
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// #
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movies = client.get_or_create("movies").await.unwrap();
@@ -601,7 +590,7 @@ impl<'a> Index<'a> {
     ///
     /// // delete some documents
     /// movies.delete_documents(&["Interstellar", "Unknown"]).await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
         &'a self,
@@ -631,13 +620,12 @@ impl<'a> Index<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movies = client.get_or_create("movies").await.unwrap();
     ///
     /// let stats = movies.get_stats().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<IndexStats, Error> {
         request::<serde_json::Value, IndexStats>(
