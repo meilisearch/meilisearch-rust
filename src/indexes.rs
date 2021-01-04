@@ -167,7 +167,7 @@ impl<'a> Index<'a> {
     /// // add some documents
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
-    /// 
+    ///
     /// let results = movies.search()
     ///     .with_query("Interstellar")
     ///     .with_limit(5)
@@ -291,12 +291,12 @@ impl<'a> Index<'a> {
         if let Some(offset) = offset {
             url.push_str("offset=");
             url.push_str(offset.to_string().as_str());
-            url.push_str("&");
+            url.push('&');
         }
         if let Some(limit) = limit {
             url.push_str("limit=");
             url.push_str(limit.to_string().as_str());
-            url.push_str("&");
+            url.push('&');
         }
         if let Some(attributes_to_retrieve) = attributes_to_retrieve {
             url.push_str("attributesToRetrieve=");
