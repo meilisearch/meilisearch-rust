@@ -115,12 +115,11 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let settings = movie_index.get_settings().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_settings(&self) -> Result<Settings, Error> {
         Ok(request::<(), Settings>(
@@ -135,12 +134,11 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let synonyms = movie_index.get_synonyms().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_synonyms(&self) -> Result<HashMap<String, Vec<String>>, Error> {
         Ok(request::<(), HashMap<String, Vec<String>>>(
@@ -155,12 +153,11 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let stop_words = movie_index.get_stop_words().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_stop_words(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
@@ -175,12 +172,11 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let ranking_rules = movie_index.get_ranking_rules().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_ranking_rules(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
@@ -195,12 +191,11 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let attributes_for_faceting = movie_index.get_attributes_for_faceting().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_attributes_for_faceting(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
@@ -215,12 +210,11 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let distinct_attribute = movie_index.get_distinct_attribute().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_distinct_attribute(&self) -> Result<Option<String>, Error> {
         Ok(request::<(), Option<String>>(
@@ -235,12 +229,11 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let searchable_attributes = movie_index.get_searchable_attributes().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_searchable_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
@@ -255,12 +248,11 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movie_index = client.get_or_create("movies").await.unwrap();
     /// let displayed_attributes = movie_index.get_displayed_attributes().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn get_displayed_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
@@ -278,8 +270,7 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
@@ -288,7 +279,7 @@ impl<'a> Index<'a> {
     ///     .with_stop_words(stop_words.clone());
     ///
     /// let progress = movie_index.set_settings(&settings).await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn set_settings(&'a self, settings: &Settings) -> Result<Progress<'a>, Error> {
         Ok(request::<&Settings, ProgressJson>(
@@ -306,8 +297,7 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
@@ -317,7 +307,7 @@ impl<'a> Index<'a> {
     /// synonyms.insert(String::from("wow"), vec![String::from("world of warcraft")]);
     ///
     /// let progress = movie_index.set_synonyms(&synonyms).await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn set_synonyms(&'a self, synonyms: &HashMap<String, Vec<String>>) -> Result<Progress<'a>, Error> {
         Ok(request::<&HashMap<String, Vec<String>>, ProgressJson>(
@@ -335,14 +325,13 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let stop_words = &["the", "of", "to"];
     /// let progress = movie_index.set_stop_words(stop_words).await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn set_stop_words(&'a self, stop_words: &[&str]) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
@@ -360,8 +349,7 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
@@ -376,7 +364,7 @@ impl<'a> Index<'a> {
     ///     "desc(rank)",
     /// ];
     /// let progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn set_ranking_rules(&'a self, ranking_rules: &[&str]) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
@@ -394,14 +382,13 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let attributes_for_faceting = &["genre", "director"];
     /// let progress = movie_index.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn set_attributes_for_faceting(&'a self, attributes_for_faceting: &[&str]) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
@@ -419,13 +406,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.set_distinct_attribute("movie_id").await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn set_distinct_attribute(&'a self, distinct_attribute: &str) -> Result<Progress<'a>, Error> {
         Ok(request::<&str, ProgressJson>(
@@ -443,13 +429,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"]).await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn set_searchable_attributes(&'a self, searchable_attributes: &[&str]) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
@@ -467,13 +452,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"]).await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn set_displayed_attributes(&'a self, displayed_attributes: &[&str]) -> Result<Progress<'a>, Error> {
         Ok(request::<&[&str], ProgressJson>(
@@ -492,13 +476,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_settings().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn reset_settings(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
@@ -516,13 +499,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_synonyms().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn reset_synonyms(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
@@ -540,13 +522,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_stop_words().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn reset_stop_words(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
@@ -565,13 +546,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_ranking_rules().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn reset_ranking_rules(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
@@ -589,13 +569,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_attributes_for_faceting().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn reset_attributes_for_faceting(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
@@ -613,13 +592,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_distinct_attribute().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn reset_distinct_attribute(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
@@ -637,13 +615,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_searchable_attributes().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn reset_searchable_attributes(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(
@@ -661,13 +638,12 @@ impl<'a> Index<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
-    /// # #[tokio::main]
-    /// # async fn main() {
+    /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let progress = movie_index.reset_displayed_attributes().await.unwrap();
-    /// # }
+    /// # });
     /// ```
     pub async fn reset_displayed_attributes(&'a self) -> Result<Progress<'a>, Error> {
         Ok(request::<(), ProgressJson>(

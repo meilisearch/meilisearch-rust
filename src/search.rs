@@ -287,6 +287,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use std::thread::sleep;
     use std::time::Duration;
+    use futures_await_test::async_test;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -326,7 +327,7 @@ mod tests {
         index
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_string() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_string").await;
@@ -338,7 +339,7 @@ mod tests {
         client.delete_index("test_query_string").await.unwrap();
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_limit() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_limit").await;
@@ -350,7 +351,7 @@ mod tests {
         client.delete_index("test_query_limit").await.unwrap();
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_offset() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_offset").await;
@@ -362,7 +363,7 @@ mod tests {
         client.delete_index("test_query_offset").await.unwrap();
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_filters() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_filters").await;
@@ -386,7 +387,7 @@ mod tests {
         client.delete_index("test_query_filters").await.unwrap();
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_facet_filters() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_facet_filters").await;
@@ -412,7 +413,7 @@ mod tests {
             .unwrap();
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_facet_distribution() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_facet_distribution").await;
@@ -463,7 +464,7 @@ mod tests {
             .unwrap();
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_attributes_to_retrieve() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_attributes_to_retrieve").await;
@@ -486,7 +487,7 @@ mod tests {
             .unwrap();
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_attributes_to_crop() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_attributes_to_crop").await;
@@ -520,7 +521,7 @@ mod tests {
             .unwrap();
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_crop_lenght() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_crop_lenght").await;
@@ -553,7 +554,7 @@ mod tests {
         client.delete_index("test_query_crop_lenght").await.unwrap();
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_attributes_to_highlight() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_attributes_to_highlight").await;
@@ -590,7 +591,7 @@ mod tests {
             .unwrap();
     }
 
-    #[tokio::test]
+    #[async_test]
     async fn test_query_matches() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_matches").await;

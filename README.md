@@ -83,6 +83,7 @@ NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 ```rust
 use meilisearch_sdk::{document::*, client::*, search::*};
 use serde::{Serialize, Deserialize};
+use futures::executor::block_on;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Book {
@@ -99,8 +100,7 @@ impl Document for Book {
     }
 }
 
-#[tokio::main]
-async fn main() {
+fn main() { block_on(async move {
     // Create a client (without sending any request so that can't fail)
     let client = Client::new("http://localhost:7700", "masterKey");
 
@@ -119,7 +119,7 @@ async fn main() {
 
     // Query books (note that there is a typo)
     println!("{:?}", books.search().with_query("harry pottre").execute::<Book>().await.unwrap().hits);
-}
+})}
 ```
 
 Output:
