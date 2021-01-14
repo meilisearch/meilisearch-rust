@@ -85,20 +85,15 @@ update_settings_1: |-
     ])
     .with_distinct_attribute("movie_id".to_string())
     .with_searchable_attributes(vec![
-      "uid".to_string(),
-      "movie_id".to_string(),
       "title".to_string(),
       "description".to_string(),
-      "poster".to_string(),
-      "release_date".to_string(),
-      "rank".to_string()
+      "genre".to_string()
     ])
     .with_displayed_attributes(vec![
       "title".to_string(),
       "description".to_string(),
-      "poster".to_string(),
-      "release_date".to_string(),
-      "rank".to_string()
+      "genre".to_string(),
+      "release_date".to_string()
     ])
     .with_stop_words(vec![
       "the".to_string(),
@@ -157,7 +152,7 @@ update_searchable_attributes_1: |-
   let searchable_attributes = &[
     "title",
     "description",
-    "uid"
+    "genre"
   ];
 
   let progress: Progress = movies.set_searchable_attributes(searchable_attributes).await.unwrap();
@@ -180,9 +175,8 @@ update_displayed_attributes_1: |-
   let displayed_attributes = &[
     "title",
     "description",
-    "release_date",
-    "rank",
-    "poster"
+    "genre",
+    "release_date"
   ];
 
   let progress: Progress = movies.set_displayed_attributes(displayed_attributes).await.unwrap();
@@ -202,13 +196,9 @@ distinct_attribute_guide_1: |-
   let progress: Progress = jackets.set_distinct_attribute("product_id").await.unwrap();
 field_properties_guide_searchable_1: |-
   let searchable_attributes = &[
-    "uid",
-    "movie_id",
     "title",
     "description",
-    "poster",
-    "release_date",
-    "rank"
+    "genre"
   ];
 
   let progress: Progress = movies.set_searchable_attributes(searchable_attributes).await.unwrap();
@@ -216,9 +206,8 @@ field_properties_guide_displayed_1: |-
   let displayed_attributes = &[
     "title",
     "description",
-    "poster",
-    "release_date",
-    "rank"
+    "genre",
+    "release_date"
   ];
 
   let progress: Progress = movies.set_displayed_attributes(displayed_attributes).await.unwrap();
@@ -353,13 +342,9 @@ settings_guide_distinct_1: |-
   let progress: Progress = jackets.set_distinct_attribute("product_id").await.unwrap();
 settings_guide_searchable_1: |-
   let searchable_attributes = &[
-    "uid",
-    "movie_id",
     "title",
     "description",
-    "poster",
-    "release_date",
-    "rank"
+    "genre"
   ];
 
   let progress: Progress = movies.set_searchable_attributes(searchable_attributes).await.unwrap();
@@ -367,9 +352,8 @@ settings_guide_displayed_1: |-
   let displayed_attributes = &[
     "title",
     "description",
-    "poster",
-    "release_date",
-    "rank"
+    "genre",
+    "release_date"
   ];
 
   let progress: Progress = movies.set_displayed_attributes(displayed_attributes).await.unwrap();
@@ -407,31 +391,15 @@ search_guide_2: |-
     .execute()
     .await
     .unwrap();
-getting_started_create_index_md: |-
-  ```toml
-  [dependencies]
-  meilisearch-sdk = "0.4"
-  tokio = { version = "0.2", features = ["macros"] }  # required if you are not targeting wasm
-  serde = { version="1.0",   features = ["derive"] }  # required if you are going to use documents
-  serde_json = "1.0"                                  # required in some parts of this guide
-  ```
-
-  ```rust
-  use meilisearch_sdk::{indexes::*, document::*, client::*, search::*, progress::*, settings::*};
-  use serde::{Serialize, Deserialize};
-
-  #[tokio::main]
-  async fn main() {
-    let client = Client::new("http://localhost:7700", "masterKey");
-    // create an index if the index does not exist
-    let movies = client.get_or_create("movies").await.unwrap();
-
-    // some code
-  }
-  ```
-
-  [About this crate](https://github.com/meilisearch/meilisearch-rust)
 getting_started_add_documents_md: |-
+  ```toml
+    [dependencies]
+    meilisearch-sdk = "0.4"
+    tokio = { version = "0.2", features = ["macros"] }  # required if you are not targeting wasm
+    serde = { version="1.0",   features = ["derive"] }  # required if you are going to use documents
+    serde_json = "1.0"                                  # required in some parts of this guide
+  ```
+
   Documents in the Rust library are strongly typed.
   You have to implement the `Document` trait on a struct to be able to use it with Meilisearch.
 
@@ -471,16 +439,27 @@ getting_started_add_documents_md: |-
   Then, add documents into the index:
 
   ```rust
-  // reading and parsing the file
+  use meilisearch_sdk::{indexes::*, document::*, client::*, search::*, progress::*, settings::*};
+  use serde::{Serialize, Deserialize};
   use std::{io::prelude::*, fs::File};
-  let mut file = File::open("movies.json").unwrap();
-  let mut content = String::new();
-  file.read_to_string(&mut content).unwrap();
-  let movies_docs: Vec<Movie> = serde_json::from_str(&content).unwrap();
 
-  // adding documents
-  movies.add_documents(&movies_docs, None).await.unwrap();
+  #[tokio::main]
+  async fn main() {
+    let client = Client::new("http://localhost:7700", "masterKey");
+
+    // reading and parsing the file
+    let mut file = File::open("movies.json").unwrap();
+    let mut content = String::new();
+    file.read_to_string(&mut content).unwrap();
+    let movies_docs: Vec<Movie> = serde_json::from_str(&content).unwrap();
+
+    // adding documents
+    let movies = client.get_or_create_index("movies").await.unwrap();
+    movies.add_documents(&movies_docs, None).await.unwrap();
+  }
   ```
+
+  [About this package](https://github.com/meilisearch/meilisearch-rust/)
 getting_started_search_md: |-
   You can build a Query and execute it later:
   ```rust
@@ -508,6 +487,8 @@ getting_started_search_md: |-
     .await
     .unwrap();
   ```
+
+  [About this package](https://github.com/meilisearch/meilisearch-rust/)
 faceted_search_update_settings_1: |-
   let progress: Progress = movies.set_attributes_for_faceting(&["director", "genres"]).await.unwrap();
 faceted_search_facet_filters_1: |-
