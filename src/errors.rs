@@ -315,6 +315,10 @@ impl From<&serde_json::Value> for Error {
 #[cfg(not(target_arch = "wasm32"))]
 impl From<isahc::Error> for Error {
     fn from(error: isahc::Error) -> Error {
-        Error::HttpError(error)
+        if error.kind() == isahc::error::ErrorKind::ConnectionFailed {
+            Error::UnreachableServer
+        } else {
+            Error::HttpError(error)
+        }
     }
 }
