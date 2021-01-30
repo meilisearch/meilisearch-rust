@@ -10,7 +10,7 @@
 //! The following optional dependencies may also be useful:
 //!
 //! ```toml
-//! tokio = { version = "0.2", features = ["macros"] }
+//! futures = "0.3" # To be able to block on async functions if you are not using an async runtime
 //! serde = { version = "1.0", features = ["derive"] }
 //! ```
 //!
