@@ -14,7 +14,7 @@
 //! serde = { version = "1.0", features = ["derive"] }
 //! ```
 //!
-//! Since this crate is async, you have to run your program in the [tokio](https://crates.io/crates/tokio) runtime. When targetting Wasm, the browser will replace tokio.
+//! This crate is `async` but you can choose to use an async runtime like [tokio](https://crates.io/crates/tokio) or just [block on futures](https://docs.rs/futures/latest/futures/executor/fn.block_on.html).
 //!
 //! Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
 //!
