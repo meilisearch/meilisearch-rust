@@ -1,5 +1,8 @@
 # Build your front-end page in Rust with WebAssembly
 
+> **Note**
+> It is not possible to run MeiliSearch in the browser without a server. This demo uses the Rust SDK in a browser using WASM, and communicate with a MeiliSearch instance that is running on a remote server.
+
 This example is a clone of [crates.meilisearch.com](https://crates.meilisearch.com), but the front-end is written in Rust!
 The Rust source files are compiled into WebAssembly and so can be readable by the browsers.
 
