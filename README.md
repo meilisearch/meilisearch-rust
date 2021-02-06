@@ -56,11 +56,11 @@ meilisearch-sdk = "0.4.0"
 The following optional dependencies may also be useful:
 
 ```toml
-tokio = { version = "0.2", features = ["macros"] }
+futures = "0.3" # To be able to block on async functions if you are not using an async runtime
 serde = { version = "1.0", features = ["derive"] }
 ```
 
-Since this crate is async, you have to run your program in the [tokio](https://crates.io/crates/tokio) runtime. When targetting Wasm, the browser will replace tokio.
+This crate is `async` but you can choose to use an async runtime like [tokio](https://crates.io/crates/tokio) or just [block on futures](https://docs.rs/futures/latest/futures/executor/fn.block_on.html).
 
 Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
 
@@ -83,6 +83,7 @@ NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 ```rust
 use meilisearch_sdk::{document::*, client::*, search::*};
 use serde::{Serialize, Deserialize};
+use futures::executor::block_on;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Book {
@@ -99,8 +100,7 @@ impl Document for Book {
     }
 }
 
-#[tokio::main]
-async fn main() {
+fn main() { block_on(async move {
     // Create a client (without sending any request so that can't fail)
     let client = Client::new("http://localhost:7700", "masterKey");
 
@@ -119,7 +119,7 @@ async fn main() {
 
     // Query books (note that there is a typo)
     println!("{:?}", books.search().with_query("harry pottre").execute::<Book>().await.unwrap().hits);
-}
+})}
 ```
 
 Output:
