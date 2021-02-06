@@ -8,7 +8,7 @@ First of all, thank you for contributing to MeiliSearch! The goal of this docume
 - [How to Contribute](#how-to-contribute)
 - [Development Workflow](#development-workflow)
 - [Git Guidelines](#git-guidelines)
-- [Release Process (for Admin only)](#release-process-for-admin-only)
+- [Release Process (for internal team only)](#release-process-for-internal-team-only)
 
 <!-- /MarkdownTOC -->
 
@@ -16,7 +16,7 @@ First of all, thank you for contributing to MeiliSearch! The goal of this docume
 
 1. **You're familiar with [GitHub](https://github.com) and the [Pull Request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests)(PR) workflow.**
 2. **You've read the MeiliSearch [documentation](https://docs.meilisearch.com) and the [README](/README.md).**
-3. **You know about the [MeiliSearch community](https://docs.meilisearch.com/resources/contact.html). Please use this for help.**
+3. **You know about the [MeiliSearch community](https://docs.meilisearch.com/learn/what_is_meilisearch/contact.html). Please use this for help.**
 
 ## How to Contribute
 
@@ -116,7 +116,7 @@ Some notes on GitHub PRs:
 - All PRs must be reviewed and approved by at least one maintainer.
 - The PR title should be accurate and descriptive of the changes. The title of the PR will be indeed automatically added to the next [release changelogs](https://github.com/meilisearch/meilisearch-rust/releases/).
 
-## Release Process (for Admin only)
+## Release Process (for internal team only)
 
 MeiliSearch tools follow the [Semantic Versioning Convention](https://semver.org/).
 
@@ -131,6 +131,8 @@ This project integrates a tool to create automated changelogs.<br>
 _[Read more about this](https://github.com/meilisearch/integration-guides/blob/master/guides/release-drafter.md)._
 
 ### How to Publish the Release
+
+⚠️ Before doing anything, make sure you got through the guide about [Releasing an Integration Tool](https://github.com/meilisearch/integration-guides/blob/master/guides/integration-tool-release.md).
 
 Make a PR modifying the file [`Cargo.toml`](/Cargo.toml):
 

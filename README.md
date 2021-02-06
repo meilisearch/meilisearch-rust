@@ -42,7 +42,7 @@
 
 ## 📖 Documentation
 
-See our [Documentation](https://docs.meilisearch.com/guides/introduction/quick_start_guide.html) or our [API References](https://docs.meilisearch.com/references/).
+See our [Documentation](https://docs.meilisearch.com/learn/tutorials/getting_started.html) or our [API References](https://docs.meilisearch.com/reference/api/).
 
 ## 🔧 Installation
 
@@ -68,7 +68,7 @@ Using this crate is possible without [serde](https://crates.io/crates/serde), bu
 
 This crate requires a MeiliSearch server to run.
 
-There are many easy ways to [download and run a MeiliSearch instance](https://docs.meilisearch.com/guides/advanced_guides/installation.html#download-and-launch).
+There are many easy ways to [download and run a MeiliSearch instance](https://docs.meilisearch.com/reference/features/installation.html#download-and-launch).
 
 For example, if you use Docker:
 ```bash
@@ -140,7 +140,7 @@ WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extensi
 
 ## 🤖 Compatibility with MeiliSearch
 
-This package only guarantees the compatibility with the [version v0.17.0 of MeiliSearch](https://github.com/meilisearch/MeiliSearch/releases/tag/v0.17.0).
+This package only guarantees the compatibility with the [version v0.18.1 of MeiliSearch](https://github.com/meilisearch/MeiliSearch/releases/tag/v0.18.1).
 
 ## ⚙️ Development Workflow and Contributing
 
