@@ -395,7 +395,7 @@ getting_started_add_documents_md: |-
   ```toml
     [dependencies]
     meilisearch-sdk = "0.4"
-    tokio = { version = "0.2", features = ["macros"] }  # required if you are not targeting wasm
+    futures = "0.3"                                     # because we want to block on futures
     serde = { version="1.0",   features = ["derive"] }  # required if you are going to use documents
     serde_json = "1.0"                                  # required in some parts of this guide
   ```
@@ -442,9 +442,9 @@ getting_started_add_documents_md: |-
   use meilisearch_sdk::{indexes::*, document::*, client::*, search::*, progress::*, settings::*};
   use serde::{Serialize, Deserialize};
   use std::{io::prelude::*, fs::File};
+  use futures::executor::block_on;
 
-  #[tokio::main]
-  async fn main() {
+  fn main() { block_on(async move {
     let client = Client::new("http://localhost:7700", "masterKey");
 
     // reading and parsing the file
@@ -456,7 +456,7 @@ getting_started_add_documents_md: |-
     // adding documents
     let movies = client.get_or_create_index("movies").await.unwrap();
     movies.add_documents(&movies_docs, None).await.unwrap();
-  }
+  })}
   ```
 
   [About this package](https://github.com/meilisearch/meilisearch-rust/)
