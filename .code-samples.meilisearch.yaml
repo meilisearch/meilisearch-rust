@@ -442,7 +442,14 @@ getting_started_add_documents_md: |-
   Then, add documents into the index:
 
   ```rust
-  use meilisearch_sdk::{indexes::*, document::*, client::*, search::*, progress::*, settings::*};
+  use meilisearch_sdk::{
+    indexes::*,
+    document::*,
+    client::*,
+    search::*,
+    progress::*,
+    settings::*
+  };
   use serde::{Serialize, Deserialize};
   use std::{io::prelude::*, fs::File};
   use futures::executor::block_on;
