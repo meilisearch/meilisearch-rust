@@ -64,7 +64,7 @@ get_update_1: |-
 get_all_updates_1: |-
   // unavailable for now
 get_keys_1: |-
-  // unavailable for now
+  let keys: Keys = client.get_keys().await.unwrap();
 get_settings_1: |-
   let settings: Settings = movies.get_settings().await.unwrap();
 update_settings_1: |-
