@@ -206,6 +206,27 @@ impl<'a> Client<'a> {
         }
     }
 
+    /// Get the private and public key.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// # use meilisearch_sdk::{client::*, errors::Error};
+    /// # 
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let keys = client.get_keys().await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_keys(&self) -> Result<Keys, Error> {
+        request::<(), Keys>(
+            &format!("{}/keys", self.host),
+            self.apikey,
+            Method::Get,
+            200,
+        ).await
+    }
+
     /// Get version of the MeiliSearch server.
     ///
     /// # Example
@@ -236,6 +257,13 @@ pub struct ClientStats {
     pub indexes: HashMap<String, IndexStats>,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Keys {
+    pub public: String,
+    pub private: String,
+}
+
 /// Version of a MeiliSearch server.
 /// Example:
 /// ```text
@@ -251,4 +279,18 @@ pub struct Version {
     pub commit_sha: String,
     pub build_date: String,
     pub pkg_version: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{client::*};
+    use futures_await_test::async_test;
+
+    #[async_test]
+    async fn test_get_keys() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+
+        let result = client.get_keys().await;
+        assert_eq!(result.is_err(), false);
+    }
 }
