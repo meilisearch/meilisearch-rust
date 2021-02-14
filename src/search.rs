@@ -8,7 +8,7 @@ pub struct MatchRange {
     length: usize,
 }
 
-/// A single result.  
+/// A single result.
 /// Contains the complete object, optionally the formatted object, and optionally an object that contains information about the matches.
 #[derive(Deserialize, Debug)]
 pub struct SearchResult<T> {
@@ -95,7 +95,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
 /// A struct representing a query.
 /// You can add search parameters using the builder syntax.
-/// See [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#query-q) for the official list and description of all parameters.
+/// See [this page](https://docs.meilisearch.com/reference/features/search_parameters.html#query-q) for the official list and description of all parameters.
 ///
 /// # Examples
 ///
@@ -125,68 +125,68 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 pub struct Query<'a> {
     #[serde(skip_serializing)]
     index: &'a Index<'a>,
-    /// The text that will be searched for among the documents.  
+    /// The text that will be searched for among the documents.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "q")]
     pub query: Option<&'a str>,
-    /// The number of documents to skip.  
-    /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.  
-    /// This is helpful for pagination.  
-    ///   
-    /// Example: If you want to skip the first document, set offset to `1`.  
+    /// The number of documents to skip.
+    /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
+    /// This is helpful for pagination.
+    ///
+    /// Example: If you want to skip the first document, set offset to `1`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<usize>,
-    /// The maximum number of documents returned.  
-    /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.  
-    /// This is helpful for pagination.  
-    ///   
-    /// Example: If you don't want to get more than two documents, set limit to `2`.  
-    /// Default: `20`  
+    /// The maximum number of documents returned.
+    /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.
+    /// This is helpful for pagination.
+    ///
+    /// Example: If you don't want to get more than two documents, set limit to `2`.
+    /// Default: `20`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
-    /// Filters applied to documents.  
-    /// Read the [dedicated guide](https://docs.meilisearch.com/guides/advanced_guides/filtering.html) to learn the syntax.
+    /// Filters applied to documents.
+    /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filters: Option<&'a str>,
-    /// Facet names and values to filter on.  
-    /// Read [this page](https://docs.meilisearch.com/guides/advanced_guides/search_parameters.html#facet-filters) for a complete explanation.
+    /// Facet names and values to filter on.
+    /// Read [this page](https://docs.meilisearch.com/reference/features/search_parameters.html#facet-filters) for a complete explanation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub facet_filters: Option<&'a [&'a [&'a str]]>,
-    /// Facets for which to retrieve the matching count.  
-    ///   
-    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.  
+    /// Facets for which to retrieve the matching count.
+    ///
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     /// Default: all attributes found in the documents.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub facets_distribution: Option<Selectors<&'a [&'a str]>>,
-    /// Attributes to display in the returned documents.  
-    ///   
-    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.  
+    /// Attributes to display in the returned documents.
+    ///
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     /// Default: all attributes found in the documents.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
-    /// Attributes whose values have to be cropped.  
-    /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.  
-    ///   
+    /// Attributes whose values have to be cropped.
+    /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
+    ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
-    /// Number of characters to keep on each side of the start of the matching word.  
-    /// See [attributes_to_crop](#structfield.attributes_to_crop).  
-    ///   
+    /// Number of characters to keep on each side of the start of the matching word.
+    /// See [attributes_to_crop](#structfield.attributes_to_crop).
+    ///
     /// Default: `200`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_length: Option<usize>,
-    /// Attributes whose values will contain **highlighted matching terms**.  
-    ///   
+    /// Attributes whose values will contain **highlighted matching terms**.
+    ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
     /// Defines whether an object that contains information about the matches should be returned or not.
-    ///   
+    ///
     /// Default: `false`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matches: Option<bool>,
