@@ -4,7 +4,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! meilisearch-sdk = "0.5.0"
+//! meilisearch-sdk = "0.5.1"
 //! ```
 //!
 //! The following optional dependencies may also be useful:
@@ -18,7 +18,7 @@
 //!
 //! Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
 //!
-//! ## Run a MeiliSearch Instance
+//! ## Run a MeiliSearch Instance <!-- omit in TOC -->
 //!
 //! This crate requires a MeiliSearch server to run.
 //!
@@ -82,7 +82,7 @@
 //! [Book { book_id: 4, title: "Harry Potter and the Half-Blood Prince" }]
 //! ```
 //!
-//! ## 🌐 Running in the Browser with WASM
+//! ## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 //!
 //! This crate fully supports WASM.
 //!
