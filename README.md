@@ -36,7 +36,6 @@
 - [📖 Documentation](#-documentation)
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
-- [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
 - [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
 
@@ -50,7 +49,7 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.5.0"
+meilisearch-sdk = "0.5.1"
 ```
 
 The following optional dependencies may also be useful:
@@ -64,7 +63,7 @@ This crate is `async` but you can choose to use an async runtime like [tokio](ht
 
 Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
 
-### Run a MeiliSearch Instance
+### Run a MeiliSearch Instance <!-- omit in TOC -->
 
 This crate requires a MeiliSearch server to run.
 
@@ -128,7 +127,7 @@ Output:
 [Book { book_id: 4, title: "Harry Potter and the Half-Blood Prince" }]
 ```
 
-### 🌐 Running in the Browser with WASM
+### 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 
 This crate fully supports WASM.
 
