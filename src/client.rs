@@ -13,7 +13,7 @@ pub struct Client<'a> {
 impl<'a> Client<'a> {
     /// Create a client using the specified server.
     /// Don't put a '/' at the end of the host.
-    /// In production mode, see [the documentation about authentication](https://docs.meilisearch.com/guides/advanced_guides/authentication.html#authentication).
+    /// In production mode, see [the documentation about authentication](https://docs.meilisearch.com/reference/features/authentication.html#authentication).
     /// # Example
     ///
     /// ```
@@ -207,12 +207,12 @@ impl<'a> Client<'a> {
     }
 
     /// Get the private and public key.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use meilisearch_sdk::{client::*, errors::Error};
-    /// # 
+    /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let keys = client.get_keys().await.unwrap();

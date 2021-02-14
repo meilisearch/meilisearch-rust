@@ -35,10 +35,10 @@ pub struct Settings {
     /// List of words ignored by MeiliSearch when present in search queries
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_words: Option<Vec<String>>,
-    /// List of [ranking rules](https://docs.meilisearch.com/guides/main_concepts/relevancy.html#order-of-the-rules) sorted by order of importance
+    /// List of [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#order-of-the-rules) sorted by order of importance
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_rules: Option<Vec<String>>,
-    /// Attributes to use as [facets](https://docs.meilisearch.com/guides/advanced_guides/faceted_search.html)
+    /// Attributes to use as [facets](https://docs.meilisearch.com/reference/features/faceted_search.html)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attributes_for_faceting: Option<Vec<String>>,
     /// Search returns documents with distinct (different) values of the given field
@@ -130,7 +130,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get [synonyms](https://docs.meilisearch.com/guides/advanced_guides/synonyms.html) of the Index.
+    /// Get [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the Index.
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -149,7 +149,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get [stop-words](https://docs.meilisearch.com/guides/advanced_guides/stop_words.html) of the Index.
+    /// Get [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the Index.
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -168,7 +168,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get [ranking rules](https://docs.meilisearch.com/guides/main_concepts/relevancy.html#ranking-rules) of the Index.
+    /// Get [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the Index.
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -187,7 +187,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get [attributes for faceting](https://docs.meilisearch.com/guides/advanced_guides/faceted_search.html) of the Index.
+    /// Get [attributes for faceting](https://docs.meilisearch.com/reference/features/faceted_search.html) of the Index.
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -206,7 +206,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get the [distinct attribute](https://docs.meilisearch.com/guides/advanced_guides/settings.html#distinct-attribute) of the Index.
+    /// Get the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the Index.
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -225,7 +225,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get [searchable attributes](https://docs.meilisearch.com/guides/advanced_guides/field_properties.html#searchable-fields) of the Index.
+    /// Get [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the Index.
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -244,7 +244,7 @@ impl<'a> Index<'a> {
         ).await?)
     }
 
-    /// Get [displayed attributes](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) of the Index.
+    /// Get [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the Index.
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -291,7 +291,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Update [synonyms](https://docs.meilisearch.com/guides/advanced_guides/synonyms.html) of the index.
+    /// Update [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the index.
     ///
     /// # Example
     ///
@@ -319,7 +319,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Update [stop-words](https://docs.meilisearch.com/guides/advanced_guides/stop_words.html) of the index.
+    /// Update [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the index.
     ///
     /// # Example
     ///
@@ -343,7 +343,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Update [ranking rules](https://docs.meilisearch.com/guides/main_concepts/relevancy.html#ranking-rules) of the index.
+    /// Update [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the index.
     ///
     /// # Example
     ///
@@ -376,7 +376,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Update [attributes for faceting](https://docs.meilisearch.com/guides/advanced_guides/faceted_search.html) of the index.
+    /// Update [attributes for faceting](https://docs.meilisearch.com/reference/features/faceted_search.html) of the index.
     ///
     /// # Example
     ///
@@ -400,7 +400,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Update the [distinct attribute](https://docs.meilisearch.com/guides/advanced_guides/settings.html#distinct-attribute) of the index.
+    /// Update the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the index.
     ///
     /// # Example
     ///
@@ -423,7 +423,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Update [searchable attributes](https://docs.meilisearch.com/guides/advanced_guides/field_properties.html#searchable-fields) of the index.
+    /// Update [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the index.
     ///
     /// # Example
     ///
@@ -446,7 +446,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Update [displayed attributes](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) of the index.
+    /// Update [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the index.
     ///
     /// # Example
     ///
@@ -470,7 +470,7 @@ impl<'a> Index<'a> {
     }
 
     /// Reset [settings](../settings/struct.Settings.html) of the index.
-    /// All settings will be reset to their [default value](https://docs.meilisearch.com/references/settings.html#reset-settings).
+    /// All settings will be reset to their [default value](https://docs.meilisearch.com/reference/api/settings.html#reset-settings).
     ///
     /// # Example
     ///
@@ -493,7 +493,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset [synonyms](https://docs.meilisearch.com/guides/advanced_guides/synonyms.html) of the index.
+    /// Reset [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the index.
     ///
     /// # Example
     ///
@@ -516,7 +516,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset [stop-words](https://docs.meilisearch.com/guides/advanced_guides/stop_words.html) of the index.
+    /// Reset [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the index.
     ///
     /// # Example
     ///
@@ -539,7 +539,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset [ranking rules](https://docs.meilisearch.com/guides/main_concepts/relevancy.html#ranking-rules) of the index to default value.
+    /// Reset [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the index to default value.
     /// Default value: ["typo", "words", "proximity", "attribute", "wordsPosition", "exactness"].
     ///
     /// # Example
@@ -563,7 +563,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset [attributes for faceting](https://docs.meilisearch.com/guides/advanced_guides/faceted_search.html) of the index.
+    /// Reset [attributes for faceting](https://docs.meilisearch.com/reference/features/faceted_search.html) of the index.
     ///
     /// # Example
     ///
@@ -586,7 +586,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset the [distinct attribute](https://docs.meilisearch.com/guides/advanced_guides/settings.html#distinct-attribute) of the index.
+    /// Reset the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the index.
     ///
     /// # Example
     ///
@@ -609,7 +609,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset [searchable attributes](https://docs.meilisearch.com/guides/advanced_guides/field_properties.html#searchable-fields) of the index (enable all attributes).
+    /// Reset [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the index (enable all attributes).
     ///
     /// # Example
     ///
@@ -632,7 +632,7 @@ impl<'a> Index<'a> {
         .into_progress(self))
     }
 
-    /// Reset [displayed attributes](https://docs.meilisearch.com/guides/advanced_guides/settings.html#displayed-attributes) of the index (enable all attributes).
+    /// Reset [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the index (enable all attributes).
     ///
     /// # Example
     ///
