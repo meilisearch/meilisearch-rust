@@ -114,9 +114,11 @@ pub struct ProcessedStatus {
     pub update_type: UpdateType,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
-    pub duration: f64,        // in seconds
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duration: Option<f64>,        // in seconds
     pub enqueued_at: String,  // TODO deserialize to datatime
-    pub processed_at: String, // TODO deserialize to datatime
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub processed_at: Option<String>, // TODO deserialize to datatime
 }
 
 #[derive(Debug, Clone, Deserialize)]
