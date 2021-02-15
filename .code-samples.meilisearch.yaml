@@ -62,7 +62,7 @@ search_1: |-
 get_update_1: |-
   let status: Status = progress.get_status().await.unwrap();
 get_all_updates_1: |-
-  // unavailable for now
+  let status: Vec<ProgressStatus> = index.get_all_updates().await.unwrap();
 get_keys_1: |-
   let keys: Keys = client.get_keys().await.unwrap();
 get_settings_1: |-

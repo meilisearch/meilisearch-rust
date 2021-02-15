@@ -157,7 +157,7 @@ impl<'a> Index<'a> {
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// # client.delete_index("movies").await;
+    /// # client.delete_index("movies_search").await;
     /// let mut movies = client.get_or_create("movies").await.unwrap();
     ///
     /// // add some documents
@@ -336,7 +336,7 @@ impl<'a> Index<'a> {
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// let mut movie_index = client.get_or_create("movies_add_or_replace").await.unwrap();
     ///
     /// movie_index.add_or_replace(&[
     ///     Movie{
@@ -423,7 +423,7 @@ impl<'a> Index<'a> {
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// let mut movie_index = client.get_or_create("movies_add_or_update").await.unwrap();
     ///
     /// movie_index.add_or_update(&[
     ///     Movie{
@@ -613,6 +613,65 @@ impl<'a> Index<'a> {
         self.update(primary_key).await
     }
 
+    /// Get the status of all updates in a given index.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// # use meilisearch_sdk::{client::*, document, indexes::*};
+    /// #
+    /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// # struct Document {
+    /// #    id: usize,
+    /// #    value: String,
+    /// #    kind: String,
+    /// # }
+    /// # 
+    /// # impl document::Document for Document {
+    /// #    type UIDType = usize;
+    /// #
+    /// #    fn get_uid(&self) -> &Self::UIDType {
+    /// #        &self.id
+    /// #    }
+    /// # }
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let movies = client.get_or_create("movies_get_all_updates").await.unwrap();
+    /// 
+    /// # movies.add_documents(&[
+    /// #     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
+    /// #     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
+    /// # ], None).await.unwrap();
+    /// # sleep(Duration::from_secs(1));
+    /// 
+    /// # movies.add_documents(&[
+    /// #    Document { id: 0, kind: "title".into(), value: "Harry Potter and the Chamber of Secrets".to_string() },
+    /// #    Document { id: 1, kind: "title".into(), value: "Harry Potter and the Prisoner of Azkaban".to_string() },
+    /// # ], None).await.unwrap();
+    /// # sleep(Duration::from_secs(1));
+    /// 
+    /// let status = movies.get_all_updates().await.unwrap();
+    /// assert_eq!(status.len(), 2);
+    /// # client.delete_index("movies_get_all_updates").await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_all_updates(&self) -> Result<Vec<ProcessedStatus>, Error> {
+        request::<(), Vec<ProcessedStatus>>(
+            &format!(
+                "{}/indexes/{}/updates",
+                self.client.host, self.uid
+            ),
+            self.client.apikey,
+            Method::Get,
+            200,
+        )
+        .await
+    }
+
     /// Get stats of an index.
     ///
     /// # Example
@@ -643,4 +702,23 @@ pub struct IndexStats {
     pub number_of_documents: usize,
     pub is_indexing: bool,
     pub fields_distribution: HashMap<String, usize>,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{client::*};
+    use futures_await_test::async_test;
+
+    #[async_test]
+    async fn test_get_all_updates_no_docs() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let uid = "test_get_all_updates_no_docs";
+
+        let index = client.create_index(uid, None).await.unwrap();
+        let status = index.get_all_updates().await.unwrap();
+
+        assert_eq!(status.len(), 0);
+
+        client.delete_index(uid).await.unwrap();
+    }
 }
