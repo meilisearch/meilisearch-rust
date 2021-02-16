@@ -75,7 +75,6 @@ pub enum UpdateState<T> {
 pub struct SettingsUpdate {
     pub ranking_rules: UpdateState<Vec<RankingRule>>,
     pub distinct_attribute: UpdateState<String>,
-    pub primary_key: UpdateState<String>,
     pub searchable_attributes: UpdateState<Vec<String>>,
     pub displayed_attributes: UpdateState<BTreeSet<String>>,
     pub stop_words: UpdateState<BTreeSet<String>>,
@@ -100,13 +99,9 @@ pub struct ProcessedUpdateResult {
     pub update_id: u64,
     #[serde(rename = "type")]
     pub update_type: UpdateType,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub error_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub error_code: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub error_link: Option<String>,
     pub duration: f64,        // in seconds
     pub enqueued_at: String,  // TODO deserialize to datetime
