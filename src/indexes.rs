@@ -665,8 +665,8 @@ impl<'a> Index<'a> {
     /// # client.delete_index("movies_get_all_updates").await.unwrap();
     /// # });
     /// ```
-    pub async fn get_all_updates(&self) -> Result<Vec<ProcessedStatus>, Error> {
-        request::<(), Vec<ProcessedStatus>>(
+    pub async fn get_all_updates(&self) -> Result<Vec<UpdateStatus>, Error> {
+        request::<(), Vec<UpdateStatus>>(
             &format!(
                 "{}/indexes/{}/updates",
                 self.client.host, self.uid
