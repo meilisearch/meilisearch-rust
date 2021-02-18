@@ -2,8 +2,7 @@
 
 use crate::{errors::Error, indexes::Index, request::*};
 use serde::Deserialize;
-use serde_json::{from_value, Value};
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,8 +38,8 @@ impl<'a> Progress<'a> {
     /// let status = progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn get_status(&self) -> Result<Status, Error> {
-        let value = request::<(), Value>(
+    pub async fn get_status(&self) -> Result<UpdateStatus, Error> {
+        request::<(), UpdateStatus>(
             &format!(
                 "{}/indexes/{}/updates/{}",
                 self.index.client.host, self.index.uid, self.id
@@ -49,17 +48,7 @@ impl<'a> Progress<'a> {
             Method::Get,
             200,
         )
-        .await?;
-
-        if let Ok(status) = from_value::<ProcessedStatus>(value.clone()) {
-            Ok(Status::Processed(status))
-        } else {
-            let result = from_value::<EnqueuedStatus>(value);
-            match result {
-                Ok(status) => Ok(Status::Enqueued(status)),
-                Err(e) => Err(Error::ParseError(e)),
-            }
-        }
+        .await
     }
 }
 
@@ -72,7 +61,7 @@ pub enum RankingRule {
     WordsPosition,
     Exactness,
     Asc(String),
-    Dsc(String),
+    Desc(String),
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -83,53 +72,64 @@ pub enum UpdateState<T> {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct SettingsUpdate {
     pub ranking_rules: UpdateState<Vec<RankingRule>>,
     pub distinct_attribute: UpdateState<String>,
-    pub identifier: UpdateState<String>,
     pub searchable_attributes: UpdateState<Vec<String>>,
-    pub displayed_attributes: UpdateState<HashSet<String>>,
+    pub displayed_attributes: UpdateState<BTreeSet<String>>,
     pub stop_words: UpdateState<BTreeSet<String>>,
     pub synonyms: UpdateState<BTreeMap<String, Vec<String>>>,
+    pub attributes_for_faceting: UpdateState<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "name")]
-#[allow(clippy::large_enum_variant)] // would be great to correct but it's not my code it's from meilisearch/Meilisearch
 pub enum UpdateType {
     ClearAll,
     Customs,
     DocumentsAddition { number: usize },
     DocumentsPartial { number: usize },
     DocumentsDeletion { number: usize },
-    Settings { settings: SettingsUpdate },
+    Settings { settings: Box<SettingsUpdate> },
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ProcessedStatus {
+pub struct ProcessedUpdateResult {
     pub update_id: u64,
     #[serde(rename = "type")]
     pub update_type: UpdateType,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    pub error_type: Option<String>,
+    pub error_code: Option<String>,
+    pub error_link: Option<String>,
     pub duration: f64,        // in seconds
-    pub enqueued_at: String,  // TODO deserialize to datatime
-    pub processed_at: String, // TODO deserialize to datatime
+    pub enqueued_at: String,  // TODO deserialize to datetime
+    pub processed_at: String, // TODO deserialize to datetime
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct EnqueuedStatus {
+pub struct EnqueuedUpdateResult {
     pub update_id: u64,
     #[serde(rename = "type")]
     pub update_type: UpdateType,
-    pub enqueued_at: String, // TODO deserialize to datatime
+    pub enqueued_at: String, // TODO deserialize to datetime
 }
 
-#[derive(Debug)]
-pub enum Status {
-    Processed(ProcessedStatus),
-    Enqueued(EnqueuedStatus),
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "status")]
+pub enum UpdateStatus {
+    Enqueued {
+        #[serde(flatten)]
+        content: EnqueuedUpdateResult,
+    },
+    Failed {
+        #[serde(flatten)]
+        content: ProcessedUpdateResult,
+    },
+    Processed {
+        #[serde(flatten)]
+        content: ProcessedUpdateResult,
+    },
 }

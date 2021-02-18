@@ -338,7 +338,7 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies_add_or_replace").await.unwrap();
     ///
-    /// movie_index.add_or_replace(&[
+    /// let progress = movie_index.add_or_replace(&[
     ///     Movie{
     ///         name: String::from("Interstellar"),
     ///         description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
@@ -354,6 +354,7 @@ impl<'a> Index<'a> {
     ///     },
     /// ], Some("name")).await.unwrap();
     /// sleep(Duration::from_secs(1)); // MeiliSearch may take some time to execute the request
+    /// # progress.get_status().await.unwrap();
     ///
     /// // retrieve movies (you have to put some movies in the index before)
     /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
@@ -425,7 +426,7 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies_add_or_update").await.unwrap();
     ///
-    /// movie_index.add_or_update(&[
+    /// let progress = movie_index.add_or_update(&[
     ///     Movie{
     ///         name: String::from("Interstellar"),
     ///         description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
@@ -441,6 +442,7 @@ impl<'a> Index<'a> {
     ///     },
     /// ], Some("name")).await.unwrap();
     /// sleep(Duration::from_secs(1)); // MeiliSearch may take some time to execute the request
+    /// # progress.get_status().await.unwrap();
     ///
     /// // retrieve movies (you have to put some movies in the index before)
     /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
@@ -495,7 +497,9 @@ impl<'a> Index<'a> {
     ///
     /// // add some documents
     ///
-    /// movie_index.delete_all_documents().await.unwrap();
+    /// let progress = movie_index.delete_all_documents().await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(1));
+    /// # progress.get_status().await.unwrap();
     /// # let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
     /// # assert_eq!(movies.len(), 0);
     /// # });
@@ -541,7 +545,8 @@ impl<'a> Index<'a> {
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// // add a document with id = Interstellar
     ///
-    /// movies.delete_document("Interstellar").await.unwrap();
+    /// let progress = movies.delete_document("Interstellar").await.unwrap();
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn delete_document<T: Display>(&'a self, uid: T) -> Result<Progress<'a>, Error> {
@@ -589,7 +594,8 @@ impl<'a> Index<'a> {
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     ///
     /// // delete some documents
-    /// movies.delete_documents(&["Interstellar", "Unknown"]).await.unwrap();
+    /// let progress = movies.delete_documents(&["Interstellar", "Unknown"]).await.unwrap();
+    /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
@@ -659,8 +665,8 @@ impl<'a> Index<'a> {
     /// # client.delete_index("movies_get_all_updates").await.unwrap();
     /// # });
     /// ```
-    pub async fn get_all_updates(&self) -> Result<Vec<ProcessedStatus>, Error> {
-        request::<(), Vec<ProcessedStatus>>(
+    pub async fn get_all_updates(&self) -> Result<Vec<UpdateStatus>, Error> {
+        request::<(), Vec<UpdateStatus>>(
             &format!(
                 "{}/indexes/{}/updates",
                 self.client.host, self.uid
