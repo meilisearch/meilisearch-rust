@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, convert, hash::Hash};
+use std::collections::HashMap;
 use crate::{indexes::Index, errors::Error, request::{request, Method}, progress::{Progress, ProgressJson}};
 
 /// Struct reprensenting a set of settings.
@@ -9,20 +9,20 @@ use crate::{indexes::Index, errors::Error, request::{request, Method}, progress:
 ///
 /// ```
 /// # use meilisearch_sdk::settings::Settings;
-/// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
-///
 /// let settings = Settings::new()
-///     .with_stop_words(stop_words.clone());
+///     .with_stop_words(&["a", "the", "of"][..]);
 ///
 /// // OR
 ///
+/// let stop_words: Vec<String> = vec!["a".to_string(), "the".to_string(), "of".to_string()];
 /// let mut settings = Settings::new();
-/// settings.stop_words = Some(stop_words.clone());
+/// settings.stop_words = Some(stop_words);
 ///
 /// // OR
 ///
+/// let stop_words: Vec<String> = vec!["a".to_string(), "the".to_string(), "of".to_string()];
 /// let settings = Settings {
-///     stop_words: Some(stop_words.clone()),
+///     stop_words: Some(stop_words),
 ///     ..Settings::new()
 /// };
 /// ```
