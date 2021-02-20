@@ -56,8 +56,8 @@ impl<'a> Progress<'a> {
 
     /// Wait until MeiliSearch processes an update, and get its status.
     /// 
-    /// interval_ms = The frequency at which the server should be polled in milliseconds. Default = 50ms
-    /// timeout_ms = The maximum time to wait for processing to complete in milliseconds. Default = 5000ms
+    /// interval_ms = The frequency at which the server should be polled. Default = 50ms
+    /// timeout_ms = The maximum time to wait for processing to complete. Default = 5000ms
     /// 
     /// # Example
     ///
@@ -97,23 +97,23 @@ impl<'a> Progress<'a> {
     /// ```
     pub async fn wait_for_pending_update(
         &self,
-        interval_ms: Option<u64>,
-        timeout_ms: Option<u64>,
+        interval_ms: Option<Duration>,
+        timeout_ms: Option<Duration>,
     ) -> Result<UpdateStatus, Error> {
-        let interval: u64;
-        let timeout: u64;
+        let interval: Duration;
+        let timeout: Duration;
 
         match interval_ms {
             Some(v) => interval = v,
-            None => interval = 50,
+            None => interval = Duration::from_millis(50),
         }
 
         match timeout_ms {
             Some(v) => timeout = v,
-            None => timeout = 5000,
+            None => timeout = Duration::from_millis(5000),
         }
 
-        let mut elapsed_time = 0;
+        let mut elapsed_time = Duration::new(0, 0);
         let mut status: UpdateStatus;
 
         while timeout > elapsed_time {
@@ -125,7 +125,7 @@ impl<'a> Progress<'a> {
                 },
                 UpdateStatus::Enqueued { .. } => {
                     elapsed_time += interval;
-                    sleep(Duration::from_millis(interval));
+                    sleep(interval);
                 },
             };
         }
@@ -133,13 +133,18 @@ impl<'a> Progress<'a> {
         Err(
             Error::MeiliSearchTimeoutError {
                 message: format!(
-                    "timeout of {}ms has been exceeded when waiting for pending update to resolve.",
-                    timeout
+                    "timeout of {:?}ms has been exceeded when waiting for pending update to resolve.",
+                    timeout,
                 ),
             }
         )
     }
 }
+
+/*#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn async_sleep() {
+
+}*/
 
 #[derive(Debug, Clone, Deserialize)]
 pub enum RankingRule {
@@ -260,7 +265,9 @@ mod test {
                 value: "Harry Potter and the Sorcerer's Stone".to_string(),
             },
         ], None).await.unwrap();
-        let status = progress.wait_for_pending_update(Some(1), Some(6000)).await.unwrap();
+        let status = progress.wait_for_pending_update(
+            Some(Duration::from_millis(1)), Some(Duration::from_millis(6000))
+        ).await.unwrap();
     
         client.delete_index("movies_wait_for_pending_args").await.unwrap();
         assert!(matches!(status, UpdateStatus::Processed { .. }));
