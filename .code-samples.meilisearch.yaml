@@ -69,37 +69,37 @@ get_settings_1: |-
   let settings: Settings = movies.get_settings().await.unwrap();
 update_settings_1: |-
   let mut synonyms = std::collections::HashMap::new();
-  synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
-  synonyms.insert(String::from("logan"), vec![String::from("wolverine")]);
+  synonyms.insert(String::from("wolverine"), vec!["xmen", "logan"]);
+  synonyms.insert(String::from("logan"), vec!["wolverine"]);
 
   let settings = Settings::new()
-    .with_ranking_rules(vec![
-      "typo".to_string(),
-      "words".to_string(),
-      "proximity".to_string(),
-      "attribute".to_string(),
-      "wordsPosition".to_string(),
-      "exactness".to_string(),
-      "desc(release_date)".to_string(),
-      "desc(rank)".to_string()
-    ])
-    .with_distinct_attribute("movie_id".to_string())
-    .with_searchable_attributes(vec![
-      "title".to_string(),
-      "description".to_string(),
-      "genre".to_string()
-    ])
-    .with_displayed_attributes(vec![
-      "title".to_string(),
-      "description".to_string(),
-      "genre".to_string(),
-      "release_date".to_string()
-    ])
-    .with_stop_words(vec![
-      "the".to_string(),
-      "a".to_string(),
-      "an".to_string()
-    ])
+    .with_ranking_rules(&[
+      "typo",
+      "words",
+      "proximity",
+      "attribute",
+      "wordsPosition",
+      "exactness",
+      "desc(release_date)",
+      "desc(rank)"
+    ][..])
+    .with_distinct_attribute("movie_id")
+    .with_searchable_attributes(&[
+      "title",
+      "description",
+      "genre"
+    ][..])
+    .with_displayed_attributes(&[
+      "title",
+      "description",
+      "genre",
+      "release_date"
+    ][..])
+    .with_stop_words(&[
+      "the",
+      "a",
+      "an"
+    ][..])
     .with_synonyms(synonyms);
 
   let progress: Progress = movies.set_settings(&settings).await.unwrap();
