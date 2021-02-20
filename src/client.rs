@@ -289,8 +289,6 @@ mod tests {
     #[async_test]
     async fn test_get_keys() {
         let client = Client::new("http://localhost:7700", "masterKey");
-
-        let result = client.get_keys().await;
-        assert_eq!(result.is_err(), false);
+        client.get_keys().await.unwrap();
     }
 }
