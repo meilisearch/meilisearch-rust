@@ -720,11 +720,10 @@ mod tests {
         let client = Client::new("http://localhost:7700", "masterKey");
         let uid = "test_get_all_updates_no_docs";
 
-        let index = client.create_index(uid, None).await.unwrap();
+        let index = client.get_or_create(uid).await.unwrap();
         let status = index.get_all_updates().await.unwrap();
+        client.delete_index(uid).await.unwrap();
 
         assert_eq!(status.len(), 0);
-
-        client.delete_index(uid).await.unwrap();
     }
 }
