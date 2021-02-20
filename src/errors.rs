@@ -117,6 +117,10 @@ pub enum ErrorCode {
     /// The payload content type is not supported by MeiliSearch. Currently,
     /// MeiliSearch only supports JSON payloads.
     UnsupportedMediaType,
+    /// A dump creation is already in progress and a new one can't be triggered until the previous dump creation is not finished.
+    DumpAlreadyInProgress,
+    /// An error occured during dump creation process, task aborted.
+    DumpProcessFailed,
 
     /// That's unexpected. Please open a GitHub issue after ensuring you are
     /// using the supported version of the MeiliSearch server.
@@ -194,6 +198,9 @@ impl ErrorCode {
             ErrorCode::UnretrievableDocument => "unretrievable_document",
             ErrorCode::SearchError => "search_error",
             ErrorCode::UnsupportedMediaType => "unsupported_media_type",
+            ErrorCode::DumpAlreadyInProgress => "dump_already_in_progress",
+            ErrorCode::DumpProcessFailed => "dump_process_failed
+            ",
             // Other than this variant, all the other `&str`s are 'static
             ErrorCode::Unknown(inner) => &inner.0,
         }
@@ -227,6 +234,8 @@ impl ErrorCode {
             "unretrievable_document" => ErrorCode::UnretrievableDocument,
             "search_error" => ErrorCode::SearchError,
             "unsupported_media_type" => ErrorCode::UnsupportedMediaType,
+            "dump_already_in_progress" => ErrorCode::DumpAlreadyInProgress,
+            "dump_process_failed" => ErrorCode::DumpProcessFailed,
             inner => ErrorCode::Unknown(UnknownErrorCode(inner.to_string())),
         }
     }
