@@ -11,6 +11,29 @@
 //!
 //! Dump imports are [performed at launch](https://docs.meilisearch.com/reference/features/configuration.html#import-dump) using an option.
 //! [Batch size](https://docs.meilisearch.com/reference/features/configuration.html#dump-batch-size) can also be set at this time.
+//!
+//! # Example
+//!
+//! ```no_run
+//! # use meilisearch_sdk::{client::*, errors::*, dumps::*};
+//! # use futures_await_test::async_test;
+//! # use std::{thread::sleep, time::Duration};
+//! # futures::executor::block_on(async move {
+//! #
+//! let client = Client::new("http://localhost:7700", "masterKey");
+//!
+//! // Create a dump
+//! let dump_info = client.create_dump().await.unwrap();
+//! assert!(matches!(dump_info.status, DumpStatus::InProgress));
+//!
+//! // Wait for MeiliSearch to proceed
+//! sleep(Duration::from_secs(5));
+//!
+//! // Check the status of the dump
+//! let dump_info = client.get_dump_status(&dump_info.uid).await.unwrap();
+//! assert!(matches!(dump_info.status, DumpStatus::Done));
+//! # });
+//! ```
 
 use crate::{client::Client, errors::Error, request::*};
 use serde::Deserialize;
@@ -44,6 +67,21 @@ impl<'a> Client<'a> {
     /// Triggers a dump creation process.
     /// Once the process is complete, a dump is created in the [dumps directory](https://docs.meilisearch.com/reference/features/configuration.html#dumps-destination).
     /// If the dumps directory does not exist yet, it will be created.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use meilisearch_sdk::{client::*, errors::*, dumps::*};
+    /// # use futures_await_test::async_test;
+    /// # use std::{thread::sleep, time::Duration};
+    /// # futures::executor::block_on(async move {
+    /// #
+    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// #
+    /// let dump_info = client.create_dump().await.unwrap();
+    /// assert!(matches!(dump_info.status, DumpStatus::InProgress));
+    /// # });
+    /// ```
     pub async fn create_dump(&self) -> Result<DumpInfo, Error> {
         request::<(), DumpInfo>(
             &format!("{}/dumps", self.host),
@@ -55,6 +93,22 @@ impl<'a> Client<'a> {
     }
 
     /// Get the status of a dump creation process using [the uid](DumpInfo::uid) returned after calling the [dump creation method](Client::create_dump).
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use meilisearch_sdk::{client::*, errors::*, dumps::*};
+    /// # use futures_await_test::async_test;
+    /// # use std::{thread::sleep, time::Duration};
+    /// # futures::executor::block_on(async move {
+    /// #
+    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let dump_info = client.create_dump().await.unwrap();
+    /// # sleep(Duration::from_secs(5));
+    /// #
+    /// let dump_info = client.get_dump_status(&dump_info.uid).await.unwrap();
+    /// # });
+    /// ```
     pub async fn get_dump_status(&self, dump_uid: &str) -> Result<DumpInfo, Error> {
         request::<(), DumpInfo>(
             &format!("{}/dumps/{}/status", self.host, dump_uid),
