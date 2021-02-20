@@ -52,7 +52,7 @@ pub struct Settings {
     pub displayed_attributes: Option<Vec<String>>,
 }
 
-pub trait IntoVecString {
+pub trait IntoVecString: Sized {
     fn convert(self) -> Vec<String>;
 }
 
@@ -410,17 +410,17 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let stop_words = &["the", "of", "to"];
-    /// let progress = movie_index.set_stop_words(stop_words).await.unwrap();
+    /// let stop_words = ["the", "of", "to"];
+    /// let progress = movie_index.set_stop_words(&stop_words[..]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_stop_words(&'a self, stop_words: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_stop_words(&'a self, stop_words: impl IntoVecString) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/stop-words", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(stop_words),
+            Method::Post(stop_words.convert()),
             202,
         ).await?
         .into_progress(self))
@@ -436,7 +436,7 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let ranking_rules = &[
+    /// let ranking_rules = [
     ///     "typo",
     ///     "words",
     ///     "proximity",
@@ -446,16 +446,16 @@ impl<'a> Index<'a> {
     ///     "asc(release_date)",
     ///     "desc(rank)",
     /// ];
-    /// let progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
+    /// let progress = movie_index.set_ranking_rules(&ranking_rules[..]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_ranking_rules(&'a self, ranking_rules: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_ranking_rules(&'a self, ranking_rules: impl IntoVecString) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/ranking-rules", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(ranking_rules),
+            Method::Post(ranking_rules.convert()),
             202,
         ).await?
         .into_progress(self))
@@ -471,17 +471,17 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let attributes_for_faceting = &["genre", "director"];
-    /// let progress = movie_index.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
+    /// let attributes_for_faceting = ["genre", "director"];
+    /// let progress = movie_index.set_attributes_for_faceting(&attributes_for_faceting[..]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_attributes_for_faceting(&'a self, attributes_for_faceting: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_attributes_for_faceting(&'a self, attributes_for_faceting: impl IntoVecString) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(attributes_for_faceting),
+            Method::Post(attributes_for_faceting.convert()),
             202,
         ).await?
         .into_progress(self))
@@ -502,11 +502,11 @@ impl<'a> Index<'a> {
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_distinct_attribute(&'a self, distinct_attribute: &str) -> Result<Progress<'a>, Error> {
-        Ok(request::<&str, ProgressJson>(
+    pub async fn set_distinct_attribute(&'a self, distinct_attribute: impl Into<String>) -> Result<Progress<'a>, Error> {
+        Ok(request::<String, ProgressJson>(
             &format!("{}/indexes/{}/settings/distinct-attribute", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(distinct_attribute),
+            Method::Post(distinct_attribute.into()),
             202,
         ).await?
         .into_progress(self))
@@ -522,16 +522,16 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"]).await.unwrap();
+    /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"][..]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_searchable_attributes(&'a self, searchable_attributes: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_searchable_attributes(&'a self, searchable_attributes: impl IntoVecString) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/searchable-attributes", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(searchable_attributes),
+            Method::Post(searchable_attributes.convert()),
             202,
         ).await?
         .into_progress(self))
@@ -547,16 +547,16 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"]).await.unwrap();
+    /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"][..]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_displayed_attributes(&'a self, displayed_attributes: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_displayed_attributes(&'a self, displayed_attributes: impl IntoVecString) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(displayed_attributes),
+            Method::Post(displayed_attributes.convert()),
             202,
         ).await?
         .into_progress(self))
