@@ -260,8 +260,8 @@ pub struct ClientStats {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Keys {
-    pub public: String,
-    pub private: String,
+    pub public: Option<String>,
+    pub private: Option<String>,
 }
 
 /// Version of a MeiliSearch server.
