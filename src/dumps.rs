@@ -136,7 +136,7 @@ pub async fn get_dump_status<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{client::*, errors::*};
+    use crate::client::*;
     use futures_await_test::async_test;
     use std::{thread::sleep, time::Duration};
 
@@ -147,16 +147,6 @@ mod tests {
         // Create a dump
         let dump_info = client.create_dump().await.unwrap();
         assert!(matches!(dump_info.status, DumpStatus::InProgress));
-
-        // Try to create another dump (should fail since the first dump is in progress)
-        let failure = client.create_dump().await.unwrap_err();
-        assert!(matches!(
-            failure,
-            Error::MeiliSearchError {
-                error_code: ErrorCode::DumpAlreadyInProgress,
-                ..
-            }
-        ));
 
         // Wait for Meilisearch to do the dump
         sleep(Duration::from_secs(5));
