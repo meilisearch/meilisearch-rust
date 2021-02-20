@@ -110,3 +110,4 @@ mod request;
 pub mod search;
 /// Module containing settings
 pub mod settings;
+pub mod dumps;
