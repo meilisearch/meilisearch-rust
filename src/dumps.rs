@@ -72,6 +72,43 @@ pub async fn create_dump<'a>(client: &'a Client<'a>) -> Result<DumpInfo, Error> 
 }
 
 /// Alias for [get_dump_status](Client::get_dump_status).
-pub async fn get_dump_status<'a>(client: &'a Client<'a>, dump_uid: &str) -> Result<DumpInfo, Error> {
+pub async fn get_dump_status<'a>(
+    client: &'a Client<'a>,
+    dump_uid: &str,
+) -> Result<DumpInfo, Error> {
     client.get_dump_status(dump_uid).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{client::*, errors::*};
+    use futures_await_test::async_test;
+    use std::{thread::sleep, time::Duration};
+
+    #[async_test]
+    async fn test_dumps() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+
+        // Create a dump
+        let dump_info = client.create_dump().await.unwrap();
+        assert!(matches!(dump_info.status, DumpStatus::InProgress));
+
+        // Try to create another dump (should fail since the first dump is in progress)
+        let failure = client.create_dump().await.unwrap_err();
+        assert!(matches!(
+            failure,
+            Error::MeiliSearchError {
+                error_code: ErrorCode::DumpAlreadyInProgress,
+                ..
+            }
+        ));
+
+        // Wait for Meilisearch to do the dump
+        sleep(Duration::from_secs(5));
+
+        // Assert that the dump was successful
+        let new_dump_info = client.get_dump_status(&dump_info.uid).await.unwrap();
+        assert!(matches!(new_dump_info.status, DumpStatus::Done));
+    }
 }
