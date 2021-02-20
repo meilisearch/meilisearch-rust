@@ -56,6 +56,9 @@ impl<'a> Progress<'a> {
 
     /// Wait until MeiliSearch processes an update, and get its status.
     /// 
+    /// interval_ms = The frequency at which the server should be polled in milliseconds. Default = 50ms
+    /// timeout_ms = The maximum time to wait for processing to complete in milliseconds. Default = 5000ms
+    /// 
     /// # Example
     ///
     /// ```
