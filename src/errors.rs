@@ -199,8 +199,7 @@ impl ErrorCode {
             ErrorCode::SearchError => "search_error",
             ErrorCode::UnsupportedMediaType => "unsupported_media_type",
             ErrorCode::DumpAlreadyInProgress => "dump_already_in_progress",
-            ErrorCode::DumpProcessFailed => "dump_process_failed
-            ",
+            ErrorCode::DumpProcessFailed => "dump_process_failed",
             // Other than this variant, all the other `&str`s are 'static
             ErrorCode::Unknown(inner) => &inner.0,
         }
