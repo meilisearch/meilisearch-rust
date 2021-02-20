@@ -540,3 +540,7 @@ faceted_search_walkthrough_facets_distribution_1: |-
     .await
     .unwrap();
   let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
+post_dump_1: |-
+  client.create_dump().await.unwrap();
+get_dump_status_1: |-
+  client.get_dump_status("20201101-110357260").await.unwrap();
