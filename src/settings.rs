@@ -9,20 +9,20 @@ use crate::{indexes::Index, errors::Error, request::{request, Method}, progress:
 ///
 /// ```
 /// # use meilisearch_sdk::settings::Settings;
-/// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
-///
 /// let settings = Settings::new()
-///     .with_stop_words(stop_words.clone());
+///     .with_stop_words(&["a", "the", "of"][..]);
 ///
 /// // OR
 ///
+/// let stop_words: Vec<String> = vec!["a".to_string(), "the".to_string(), "of".to_string()];
 /// let mut settings = Settings::new();
-/// settings.stop_words = Some(stop_words.clone());
+/// settings.stop_words = Some(stop_words);
 ///
 /// // OR
 ///
+/// let stop_words: Vec<String> = vec!["a".to_string(), "the".to_string(), "of".to_string()];
 /// let settings = Settings {
-///     stop_words: Some(stop_words.clone()),
+///     stop_words: Some(stop_words),
 ///     ..Settings::new()
 /// };
 /// ```
@@ -52,6 +52,75 @@ pub struct Settings {
     pub displayed_attributes: Option<Vec<String>>,
 }
 
+pub trait IntoVecString: Sized {
+    fn convert(self) -> Vec<String>;
+}
+
+impl IntoVecString for &[&str] {
+    #[inline]
+    fn convert(self) -> Vec<String> {
+        let mut vec = Vec::new();
+        for item in self {
+            vec.push((*item).into())
+        }
+        vec
+    }
+}
+
+impl IntoVecString for Vec<&str> {
+    #[inline]
+    fn convert(self) -> Vec<String> {
+        let mut vec = Vec::new();
+        for item in self {
+            vec.push((*item).into())
+        }
+        vec
+    }
+}
+
+impl IntoVecString for Vec<String> {
+    #[inline]
+    fn convert(self) -> Vec<String> {
+        self
+    }
+}
+
+impl IntoVecString for &[String] {
+    #[inline]
+    fn convert(self) -> Vec<String> {
+        let mut vec = Vec::new();
+        for item in self {
+            vec.push(item.clone())
+        }
+        vec
+    }
+}
+
+impl IntoVecString for &[&String] {
+    #[inline]
+    fn convert(self) -> Vec<String> {
+        let mut vec = Vec::new();
+        for item in self {
+            vec.push((*item).clone())
+        }
+        vec
+    }
+}
+
+/*
+TODO: Implement IntoVecString trought const generics as soon as they are stable.
+
+impl<const N: usize> IntoVecString for &[String; N] {
+    fn convert(self) -> Vec<String> {
+        let mut vec = Vec::new();
+        for item in self {
+            vec.push((*item).clone())
+        }
+        vec
+    }
+}
+*/
+
 #[allow(missing_docs)]
 impl Settings {
     /// Create undefined settings
@@ -66,45 +135,53 @@ impl Settings {
             displayed_attributes: None,
         }
     }
-    pub fn with_synonyms(self, synonyms: HashMap<String, Vec<String>>) -> Settings {
+    pub fn with_synonyms<T: Into<String>, U: IntoVecString>(self, synonyms: HashMap<T, U>) -> Settings {
+        let mut converted_synonyms = HashMap::new();
+        for (key, array) in synonyms {
+            let key: String = key.into();
+            let array: Vec<String> = array.convert();
+            converted_synonyms.insert(key, array);
+        }
+
         Settings {
-            synonyms: Some(synonyms),
+            synonyms: Some(converted_synonyms),
             ..self
         }
     }
-    pub fn with_stop_words(self, stop_words: Vec<String>) -> Settings {
+    pub fn with_stop_words(self, stop_words: impl IntoVecString) -> Settings {
         Settings {
-            stop_words: Some(stop_words),
+            stop_words: Some(stop_words.convert()),
             ..self
         }
     }
-    pub fn with_ranking_rules(self, ranking_rules: Vec<String>) -> Settings {
+    pub fn with_ranking_rules<T: IntoVecString>(self, ranking_rules: T) -> Settings
+    {
         Settings {
-            ranking_rules: Some(ranking_rules),
+            ranking_rules: Some(ranking_rules.convert()),
             ..self
         }
     }
-    pub fn with_attributes_for_faceting(self, attributes_for_faceting: Vec<String>) -> Settings {
+    pub fn with_attributes_for_faceting<T: IntoVecString>(self, attributes_for_faceting: T) -> Settings {
         Settings {
-            attributes_for_faceting: Some(attributes_for_faceting),
+            attributes_for_faceting: Some(attributes_for_faceting.convert()),
             ..self
         }
     }
-    pub fn with_distinct_attribute(self, distinct_attribute: String) -> Settings {
+    pub fn with_distinct_attribute<T: Into<String>>(self, distinct_attribute: T) -> Settings {
         Settings {
-            distinct_attribute: Some(distinct_attribute),
+            distinct_attribute: Some(distinct_attribute.into()),
             ..self
         }
     }
-    pub fn with_searchable_attributes(self, searchable_attributes: Vec<String>) -> Settings {
+    pub fn with_searchable_attributes<T: IntoVecString>(self, searchable_attributes: T) -> Settings {
         Settings {
-            searchable_attributes: Some(searchable_attributes),
+            searchable_attributes: Some(searchable_attributes.convert()),
             ..self
         }
     }
-    pub fn with_displayed_attributes(self, displayed_attributes: Vec<String>) -> Settings {
+    pub fn with_displayed_attributes<T: IntoVecString>(self, displayed_attributes: T) -> Settings {
         Settings {
-            displayed_attributes: Some(displayed_attributes),
+            displayed_attributes: Some(displayed_attributes.convert()),
             ..self
         }
     }
@@ -333,17 +410,17 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let stop_words = &["the", "of", "to"];
-    /// let progress = movie_index.set_stop_words(stop_words).await.unwrap();
+    /// let stop_words = ["the", "of", "to"];
+    /// let progress = movie_index.set_stop_words(&stop_words[..]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_stop_words(&'a self, stop_words: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_stop_words(&'a self, stop_words: impl IntoVecString) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/stop-words", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(stop_words),
+            Method::Post(stop_words.convert()),
             202,
         ).await?
         .into_progress(self))
@@ -359,7 +436,7 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let ranking_rules = &[
+    /// let ranking_rules = [
     ///     "typo",
     ///     "words",
     ///     "proximity",
@@ -369,16 +446,16 @@ impl<'a> Index<'a> {
     ///     "asc(release_date)",
     ///     "desc(rank)",
     /// ];
-    /// let progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
+    /// let progress = movie_index.set_ranking_rules(&ranking_rules[..]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_ranking_rules(&'a self, ranking_rules: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_ranking_rules(&'a self, ranking_rules: impl IntoVecString) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/ranking-rules", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(ranking_rules),
+            Method::Post(ranking_rules.convert()),
             202,
         ).await?
         .into_progress(self))
@@ -394,17 +471,17 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let attributes_for_faceting = &["genre", "director"];
-    /// let progress = movie_index.set_attributes_for_faceting(attributes_for_faceting).await.unwrap();
+    /// let attributes_for_faceting = ["genre", "director"];
+    /// let progress = movie_index.set_attributes_for_faceting(&attributes_for_faceting[..]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_attributes_for_faceting(&'a self, attributes_for_faceting: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_attributes_for_faceting(&'a self, attributes_for_faceting: impl IntoVecString) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/attributes-for-faceting", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(attributes_for_faceting),
+            Method::Post(attributes_for_faceting.convert()),
             202,
         ).await?
         .into_progress(self))
@@ -425,11 +502,11 @@ impl<'a> Index<'a> {
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_distinct_attribute(&'a self, distinct_attribute: &str) -> Result<Progress<'a>, Error> {
-        Ok(request::<&str, ProgressJson>(
+    pub async fn set_distinct_attribute(&'a self, distinct_attribute: impl Into<String>) -> Result<Progress<'a>, Error> {
+        Ok(request::<String, ProgressJson>(
             &format!("{}/indexes/{}/settings/distinct-attribute", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(distinct_attribute),
+            Method::Post(distinct_attribute.into()),
             202,
         ).await?
         .into_progress(self))
@@ -445,16 +522,16 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"]).await.unwrap();
+    /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"][..]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_searchable_attributes(&'a self, searchable_attributes: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_searchable_attributes(&'a self, searchable_attributes: impl IntoVecString) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/searchable-attributes", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(searchable_attributes),
+            Method::Post(searchable_attributes.convert()),
             202,
         ).await?
         .into_progress(self))
@@ -470,16 +547,16 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"]).await.unwrap();
+    /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"][..]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_displayed_attributes(&'a self, displayed_attributes: &[&str]) -> Result<Progress<'a>, Error> {
-        Ok(request::<&[&str], ProgressJson>(
+    pub async fn set_displayed_attributes(&'a self, displayed_attributes: impl IntoVecString) -> Result<Progress<'a>, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/displayed-attributes", self.client.host, self.uid),
             self.client.apikey,
-            Method::Post(displayed_attributes),
+            Method::Post(displayed_attributes.convert()),
             202,
         ).await?
         .into_progress(self))
