@@ -3,7 +3,6 @@
 use crate::{errors::Error, indexes::Index, request::*};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
-use std::thread::sleep;
 use std::time::Duration;
 
 #[derive(Deserialize)]
@@ -64,7 +63,7 @@ impl<'a> Progress<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, document, indexes::*, progress::*};
     /// # use serde::{Serialize, Deserialize};
-    /// 
+    /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// # struct Document {
     /// #    id: usize,
@@ -79,7 +78,7 @@ impl<'a> Progress<'a> {
     /// #        &self.id
     /// #    }
     /// # }
-    /// 
+    /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movies = client.create_index("movies_wait_for_pending", None).await.unwrap();
@@ -125,7 +124,7 @@ impl<'a> Progress<'a> {
                 },
                 UpdateStatus::Enqueued { .. } => {
                     elapsed_time += interval;
-                    sleep(interval);
+                    async_sleep(interval).await;
                 },
             };
         }
@@ -141,10 +140,30 @@ impl<'a> Progress<'a> {
     }
 }
 
-/*#[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn async_sleep() {
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn async_sleep(interval: Duration) {
+    let (sender, receiver) = futures::channel::oneshot::channel::<()>();
+    std::thread::spawn(move || {
+        std::thread::sleep(interval);
+        let _ = sender.send(());
+    });
+    let _ = receiver.await;
+}
 
-}*/
+#[cfg(target_arch = "wasm32")]
+pub(crate) async fn async_sleep(interval: Duration) {
+    use wasm_bindgen_futures::JsFuture;
+
+    JsFuture::from(js_sys::Promise::new(&mut |yes, _| {
+        web_sys::window()
+            .unwrap()
+            .set_timeout_with_callback_and_timeout_and_arguments_0(
+                &yes,
+                interval.as_millis() as i32,
+            )
+            .unwrap();
+    })).await.unwrap();
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub enum RankingRule {
@@ -233,6 +252,7 @@ mod test {
     use crate::{client::*, document, progress::*};
     use serde::{Serialize, Deserialize};
     use futures_await_test::async_test;
+    use std::time;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -271,5 +291,15 @@ mod test {
     
         client.delete_index("movies_wait_for_pending_args").await.unwrap();
         assert!(matches!(status, UpdateStatus::Processed { .. }));
+    }
+
+    #[async_test]
+    async fn test_async_sleep() {
+        let sleep_duration = time::Duration::from_millis(10);
+        let now = time::Instant::now();
+
+        async_sleep(sleep_duration).await;
+
+        assert!(now.elapsed() >= sleep_duration);
     }
 }
