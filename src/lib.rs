@@ -99,6 +99,7 @@
 pub mod client;
 /// Module containing the Document trait.
 pub mod document;
+pub mod dumps;
 /// Module containing the Error struct.
 pub mod errors;
 /// Module containing the Index struct.
