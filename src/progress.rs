@@ -58,6 +58,8 @@ impl<'a> Progress<'a> {
     /// interval_ms = The frequency at which the server should be polled. Default = 50ms
     /// timeout_ms = The maximum time to wait for processing to complete. Default = 5000ms
     /// 
+    /// If the time waited excedes timeout_ms then None will be returned.
+    /// 
     /// # Example
     ///
     /// ```
@@ -91,14 +93,14 @@ impl<'a> Progress<'a> {
     /// let status = progress.wait_for_pending_update(None, None).await.unwrap();
     /// 
     /// # client.delete_index("movies_wait_for_pending").await.unwrap();
-    /// assert!(matches!(status, UpdateStatus::Processed { .. }));
+    /// assert!(matches!(status.unwrap(), UpdateStatus::Processed { .. }));
     /// # });
     /// ```
     pub async fn wait_for_pending_update(
         &self,
         interval_ms: Option<Duration>,
         timeout_ms: Option<Duration>,
-    ) -> Result<UpdateStatus, Error> {
+    ) -> Option<Result<UpdateStatus, Error>> {
         let interval: Duration;
         let timeout: Duration;
 
@@ -113,30 +115,28 @@ impl<'a> Progress<'a> {
         }
 
         let mut elapsed_time = Duration::new(0, 0);
-        let mut status: UpdateStatus;
+        let mut status_result: Result<UpdateStatus, Error>;
 
         while timeout > elapsed_time {
-            status = self.get_status().await?;
+            status_result = self.get_status().await;
 
-            match status {
-                UpdateStatus::Failed { .. } | UpdateStatus::Processed { .. } => {
-                    return self.get_status().await;
+            match status_result {
+                Ok (status) => {
+                    match status {
+                        UpdateStatus::Failed { .. } | UpdateStatus::Processed { .. } => {
+                            return Some(self.get_status().await);
+                        },
+                        UpdateStatus::Enqueued { .. } => {
+                            elapsed_time += interval;
+                            async_sleep(interval).await;
+                        },
+                    }
                 },
-                UpdateStatus::Enqueued { .. } => {
-                    elapsed_time += interval;
-                    async_sleep(interval).await;
-                },
+                Err (error) => return Some(Err(error)),
             };
         }
 
-        Err(
-            Error::MeiliSearchTimeoutError {
-                message: format!(
-                    "timeout of {:?}ms has been exceeded when waiting for pending update to resolve.",
-                    timeout,
-                ),
-            }
-        )
+        None
     }
 }
 
@@ -290,7 +290,31 @@ mod test {
         ).await.unwrap();
     
         client.delete_index("movies_wait_for_pending_args").await.unwrap();
-        assert!(matches!(status, UpdateStatus::Processed { .. }));
+        assert!(matches!(status.unwrap(), UpdateStatus::Processed { .. }));
+    }
+
+    #[async_test]
+    async fn test_wait_for_pending_updates_time_out() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let movies = client.create_index("movies_wait_for_pending_timeout", None).await.unwrap();
+        let progress = movies.add_documents(&[
+            Document {
+                id: 0,
+                kind: "title".into(),
+                value: "The Social Network".to_string(),
+            },
+            Document {
+                id: 1,
+                kind: "title".into(),
+                value: "Harry Potter and the Sorcerer's Stone".to_string(),
+            },
+        ], None).await.unwrap();
+        let status = progress.wait_for_pending_update(
+            Some(Duration::from_millis(1)), Some(Duration::from_nanos(1))
+        ).await;
+    
+        client.delete_index("movies_wait_for_pending_timeout").await.unwrap();
+        assert_eq!(status.is_none(), true);
     }
 
     #[async_test]

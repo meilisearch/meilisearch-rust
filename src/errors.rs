@@ -15,8 +15,6 @@ pub enum Error {
         error_link: String,
     },
 
-    /// The MeiliSearch request timed out.
-    MeiliSearchTimeoutError { message: String },
     /// There is no MeiliSearch server listening on the [specified host]
     /// (../client/struct.Client.html#method.new).
     UnreachableServer,
@@ -259,7 +257,6 @@ impl std::fmt::Display for Error {
                 message,
                 error_link,
             ),
-            Error::MeiliSearchTimeoutError { message } => write!(fmt, "MeiliSearch {}", message),
             Error::UnreachableServer => write!(fmt, "The MeiliSearch server can't be reached."),
             Error::InvalidRequest => write!(fmt, "Unable to generate a valid HTTP request. It probably comes from an invalid API key."),
             Error::ParseError(e) => write!(fmt, "Error parsing response JSON: {}", e),
