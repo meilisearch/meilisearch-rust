@@ -55,10 +55,10 @@ impl<'a> Progress<'a> {
 
     /// Wait until MeiliSearch processes an update, and get its status.
     /// 
-    /// interval_ms = The frequency at which the server should be polled. Default = 50ms
-    /// timeout_ms = The maximum time to wait for processing to complete. Default = 5000ms
+    /// `interval` = The frequency at which the server should be polled. Default = 50ms
+    /// `timeout` = The maximum time to wait for processing to complete. Default = 5000ms
     /// 
-    /// If the time waited excedes timeout_ms then None will be returned.
+    /// If the waited time exceeds `timeout` then `None` will be returned.
     /// 
     /// # Example
     ///
@@ -98,21 +98,11 @@ impl<'a> Progress<'a> {
     /// ```
     pub async fn wait_for_pending_update(
         &self,
-        interval_ms: Option<Duration>,
-        timeout_ms: Option<Duration>,
+        interval: Option<Duration>,
+        timeout: Option<Duration>,
     ) -> Option<Result<UpdateStatus, Error>> {
-        let interval: Duration;
-        let timeout: Duration;
-
-        match interval_ms {
-            Some(v) => interval = v,
-            None => interval = Duration::from_millis(50),
-        }
-
-        match timeout_ms {
-            Some(v) => timeout = v,
-            None => timeout = Duration::from_millis(5000),
-        }
+        let interval = interval.unwrap_or_else(|| Duration::from_millis(50));
+        let timeout = timeout.unwrap_or_else(|| Duration::from_millis(5000));
 
         let mut elapsed_time = Duration::new(0, 0);
         let mut status_result: Result<UpdateStatus, Error>;
@@ -159,7 +149,7 @@ pub(crate) async fn async_sleep(interval: Duration) {
             .unwrap()
             .set_timeout_with_callback_and_timeout_and_arguments_0(
                 &yes,
-                interval.as_millis() as i32,
+                interval.as_millis().try_into().unwrap(),
             )
             .unwrap();
     })).await.unwrap();
