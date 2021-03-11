@@ -39,9 +39,9 @@ To run the tests one by one, run:
 
 ```bash
 # Tests
-$ docker pull getmeili/meilisearch:latest # Fetch the latest version of MeiliSearch image from Docker Hub
-$ docker run -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --master-key=masterKey --no-analytics=true
-$ cargo test -- --test-threads=1
+docker pull getmeili/meilisearch:latest # Fetch the latest version of MeiliSearch image from Docker Hub
+docker run -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --master-key=masterKey --no-analytics=true
+cargo test -- --test-threads=1
 ```
 
 Each PR should pass the tests to be accepted.
@@ -51,20 +51,20 @@ Each PR should pass the tests to be accepted.
 Each PR should pass [`clippy`](https://github.com/rust-lang/rust-clippy) (the linter) to be accepted.
 
 ```bash
-$ cargo clippy -- -D warnings
+cargo clippy -- -D warnings
 ```
 
 If you don't have `clippy` installed on your machine yet, run:
 
 ```bash
-$ rustup update
-$ rustup component add clippy
+rustup update
+rustup component add clippy
 ```
 
 ⚠️ Also, if you have installed `clippy` a long time ago, you might need to update it:
 
 ```bash
-$ rustup update
+rustup update
 ```
 
 ### Update the README
@@ -74,7 +74,7 @@ The README is generated. Please do not update manually the `README.md` file.
 Instead, update the `README.tpl` and `src/lib.rs` files, and run:
 
 ```sh
-$ sh scripts/update-readme.sh
+sh scripts/update-readme.sh
 ```
 
 Then, add the generated `README.md` file to your git commit.
@@ -82,9 +82,9 @@ Then, add the generated `README.md` file to your git commit.
 You can check the current `README.md` is up-to-date by running:
 
 ```sh
-$ sh scripts/check-readme.sh
+sh scripts/check-readme.sh
 # To see the diff
-$ sh scripts/check-readme.sh --diff
+sh scripts/check-readme.sh --diff
 ```
 
 If it's not, the CI will fail on your PR.
@@ -151,7 +151,7 @@ with the right version.
 You should run the following command after the changes applied to `lib.rs`:
 
 ```bash
-$ sh scripts/update-readme.sh
+sh scripts/update-readme.sh
 ```
 
 Also, you might need to change the [code-samples file](/.code-samples.meilisearch.yaml) if the minor has been upgraded:
