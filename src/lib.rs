@@ -26,8 +26,8 @@
 //!
 //! For example, if you use Docker:
 //! ```bash
-//! $ docker pull getmeili/meilisearch:latest # Fetch the latest version of MeiliSearch image from Docker Hub
-//! $ docker run -it --rm -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --master-key=masterKey
+//! docker pull getmeili/meilisearch:latest # Fetch the latest version of MeiliSearch image from Docker Hub
+//! docker run -it --rm -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --master-key=masterKey
 //! ```
 //!
 //! NB: you can also download MeiliSearch from **Homebrew** or **APT**.
