@@ -469,7 +469,7 @@ getting_started_add_documents_md: |-
   })}
   ```
 
-  [About this package](https://github.com/meilisearch/meilisearch-rust/)
+  [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 getting_started_search_md: |-
   You can build a Query and execute it later:
   ```rust
@@ -498,7 +498,7 @@ getting_started_search_md: |-
     .unwrap();
   ```
 
-  [About this package](https://github.com/meilisearch/meilisearch-rust/)
+  [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 faceted_search_update_settings_1: |-
   let progress: Progress = movies.set_attributes_for_faceting(&["director", "genres"][..]).await.unwrap();
 faceted_search_facet_filters_1: |-
