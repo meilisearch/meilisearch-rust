@@ -23,12 +23,6 @@ pub enum Error {
     /// This Meilisearch sdk generated an invalid request (which was not sent).
     /// It probably comes from an invalid API key resulting in an invalid HTTP header.
     InvalidRequest,
-    /// An erroring status code, but no body
-    // This is a hack to make Client::health work, since the request module
-    // treats anything other than the expected status as an error.  Since 204 is
-    // specified, a successful status of 200 is treated as an error with an
-    // empty body.
-    Empty,
 
     /// The http client encountered an error.
     #[cfg(not(target_arch = "wasm32"))]
@@ -268,8 +262,7 @@ impl std::fmt::Display for Error {
             Error::UnreachableServer => write!(fmt, "The MeiliSearch server can't be reached."),
             Error::InvalidRequest => write!(fmt, "Unable to generate a valid HTTP request. It probably comes from an invalid API key."),
             Error::ParseError(e) => write!(fmt, "Error parsing response JSON: {}", e),
-            Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e),
-            Error::Empty => write!(fmt, "An error occured without a message"),
+            Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e)
         }
     }
 }
@@ -278,9 +271,6 @@ impl std::error::Error for Error {}
 
 impl From<&serde_json::Value> for Error {
     fn from(json: &serde_json::Value) -> Error {
-        if json.is_null() {
-            return Error::Empty;
-        }
 
         let message = json
             .get("message")

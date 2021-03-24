@@ -180,30 +180,17 @@ impl<'a> Client<'a> {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    ///
-    /// match client.health().await {
-    ///     Ok(()) => println!("server is operational"),
-    ///     Err(Error::MeiliSearchError { error_code: ErrorCode::Maintenance, .. }) => {
-    ///         eprintln!("server is in maintenance")
-    ///     },
-    ///     Err(e) => panic!("should never happen: {}", e),
-    /// }
+    /// let health = client.health().await.unwrap();
     /// # });
     /// ```
-    pub async fn health(&self) -> Result<(), Error> {
-        let r = request::<(), ()>(
+    pub async fn health(&self) -> Result<Health, Error> {
+        request::<serde_json::Value, Health>(
             &format!("{}/health", self.host),
             self.apikey,
             Method::Get,
-            204,
+            200,
         )
-        .await;
-        match r {
-            // This shouldn't be an error; The status code is 200, but the request
-            // function only supports one successful error code for some reason
-            Err(Error::Empty) => Ok(()),
-            e => e,
-        }
+        .await
     }
 
     /// Get the private and public key.
@@ -257,6 +244,23 @@ pub struct ClientStats {
     pub indexes: HashMap<String, IndexStats>,
 }
 
+/// Health of the MeiliSearch server.
+///
+/// Example:
+///
+/// ```
+/// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
+/// # futures::executor::block_on(async move {
+/// Health {
+///    status: "available".to_string(),
+/// }
+/// # });
+/// ```
+#[derive(Deserialize)]
+pub struct Health {
+    pub status: String,
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Keys {
@@ -265,13 +269,18 @@ pub struct Keys {
 }
 
 /// Version of a MeiliSearch server.
+///
 /// Example:
-/// ```text
+///
+/// ```
+/// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
+/// # futures::executor::block_on(async move {
 /// Version {
 ///    commit_sha: "b46889b5f0f2f8b91438a08a358ba8f05fc09fc1".to_string(),
 ///    build_date: "2019-11-15T09:51:54.278247+00:00".to_string(),
 ///    pkg_version: "0.1.1".to_string(),
 /// }
+/// # });
 /// ```
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
