@@ -73,7 +73,7 @@ update_settings_1: |-
   synonyms.insert(String::from("logan"), vec!["wolverine"]);
 
   let settings = Settings::new()
-    .with_ranking_rules(&[
+    .with_ranking_rules([
       "typo",
       "words",
       "proximity",
@@ -82,24 +82,24 @@ update_settings_1: |-
       "exactness",
       "desc(release_date)",
       "desc(rank)"
-    ][..])
+    ])
     .with_distinct_attribute("movie_id")
-    .with_searchable_attributes(&[
+    .with_searchable_attributes([
       "title",
       "description",
       "genre"
-    ][..])
-    .with_displayed_attributes(&[
+    ])
+    .with_displayed_attributes([
       "title",
       "description",
       "genre",
       "release_date"
-    ][..])
-    .with_stop_words(&[
+    ])
+    .with_stop_words([
       "the",
       "a",
       "an"
-    ][..])
+    ])
     .with_synonyms(synonyms);
 
   let progress: Progress = movies.set_settings(&settings).await.unwrap();
@@ -120,7 +120,7 @@ get_stop_words_1: |-
   let stop_words: Vec<String> = movies.get_stop_words().await.unwrap();
 update_stop_words_1: |-
   let stop_words = ["of", "the", "to"];
-  let progress: Progress = movies.set_stop_words(&stop_words[..]).await.unwrap();
+  let progress: Progress = movies.set_stop_words(&stop_words).await.unwrap();
 reset_stop_words_1: |-
   let progress: Progress = movies.reset_stop_words().await.unwrap();
 get_ranking_rules_1: |-
@@ -137,7 +137,7 @@ update_ranking_rules_1: |-
     "desc(rank)",
   ];
 
-  let progress: Progress = movies.set_ranking_rules(&ranking_rules[..]).await.unwrap();
+  let progress: Progress = movies.set_ranking_rules(&ranking_rules).await.unwrap();
 reset_ranking_rules_1: |-
   let progress: Progress = movies.reset_ranking_rules().await.unwrap();
 get_distinct_attribute_1: |-
@@ -155,7 +155,7 @@ update_searchable_attributes_1: |-
     "genre"
   ];
 
-  let progress: Progress = movies.set_searchable_attributes(&searchable_attributes[..]).await.unwrap();
+  let progress: Progress = movies.set_searchable_attributes(&searchable_attributes).await.unwrap();
 reset_searchable_attributes_1: |-
   let progress: Progress = movies.reset_searchable_attributes().await.unwrap();
 get_attributes_for_faceting_1: |-
@@ -166,7 +166,7 @@ update_attributes_for_faceting_1: |-
     "director"
   ];
 
-  let progress: Progress = movies.set_attributes_for_faceting(&attributes_for_faceting[..]).await.unwrap();
+  let progress: Progress = movies.set_attributes_for_faceting(&attributes_for_faceting).await.unwrap();
 reset_attributes_for_faceting_1: |-
   let progress: Progress = movies.reset_attributes_for_faceting().await.unwrap();
 get_displayed_attributes_1: |-
@@ -179,7 +179,7 @@ update_displayed_attributes_1: |-
     "release_date"
   ];
 
-  let progress: Progress = movies.set_displayed_attributes(&displayed_attributes[..]).await.unwrap();
+  let progress: Progress = movies.set_displayed_attributes(&displayed_attributes).await.unwrap();
 reset_displayed_attributes_1: |-
   let progress: Progress = movies.reset_displayed_attributes().await.unwrap();
 get_index_stats_1: |-
@@ -201,7 +201,7 @@ field_properties_guide_searchable_1: |-
     "genre"
   ];
 
-  let progress: Progress = movies.set_searchable_attributes(&searchable_attributes[..]).await.unwrap();
+  let progress: Progress = movies.set_searchable_attributes(&searchable_attributes).await.unwrap();
 field_properties_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
@@ -210,7 +210,7 @@ field_properties_guide_displayed_1: |-
     "release_date"
   ];
 
-  let progress: Progress = movies.set_displayed_attributes(&displayed_attributes[..]).await.unwrap();
+  let progress: Progress = movies.set_displayed_attributes(&displayed_attributes).await.unwrap();
 filtering_guide_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("Avengers")
@@ -321,9 +321,9 @@ settings_guide_synonyms_1: |-
   let tops: Index = client.get_index("tops").await.unwrap();
   let progress: Progress = tops.set_synonyms(&synonyms).await.unwrap();
 settings_guide_stop_words_1: |-
-  let progress: Progress = movies.set_stop_words(&["the", "a", "an"][..]).await.unwrap();
+  let progress: Progress = movies.set_stop_words(["the", "a", "an"]).await.unwrap();
 settings_guide_attributes_for_faceting_1: |-
-  let progress: Progress = movies.set_attributes_for_faceting(&["director", "genres"][..]).await.unwrap();
+  let progress: Progress = movies.set_attributes_for_faceting(["director", "genres"]).await.unwrap();
 settings_guide_ranking_rules_1: |-
   let ranking_rules = [
     "typo",
@@ -336,7 +336,7 @@ settings_guide_ranking_rules_1: |-
     "desc(rank)",
   ];
 
-  let progress: Progress = movies.set_ranking_rules(&ranking_rules[..]).await.unwrap();
+  let progress: Progress = movies.set_ranking_rules(&ranking_rules).await.unwrap();
 settings_guide_distinct_1: |-
   let jackets: Index = client.get_index("jackets").await.unwrap();
   let progress: Progress = jackets.set_distinct_attribute("product_id").await.unwrap();
@@ -347,7 +347,7 @@ settings_guide_searchable_1: |-
     "genre"
   ];
 
-  let progress: Progress = movies.set_searchable_attributes(&searchable_attributes[..]).await.unwrap();
+  let progress: Progress = movies.set_searchable_attributes(&searchable_attributes).await.unwrap();
 settings_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
@@ -356,7 +356,7 @@ settings_guide_displayed_1: |-
     "release_date"
   ];
 
-  let progress: Progress = movies.set_displayed_attributes(&displayed_attributes[..]).await.unwrap();
+  let progress: Progress = movies.set_displayed_attributes(&displayed_attributes).await.unwrap();
 documents_guide_add_movie_1: |-
   // Define the type of our documents
   #[derive(Serialize, Deserialize, Debug)]
@@ -500,7 +500,7 @@ getting_started_search_md: |-
 
   [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 faceted_search_update_settings_1: |-
-  let progress: Progress = movies.set_attributes_for_faceting(&["director", "genres"][..]).await.unwrap();
+  let progress: Progress = movies.set_attributes_for_faceting(["director", "genres"]).await.unwrap();
 faceted_search_facet_filters_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")
@@ -524,7 +524,7 @@ faceted_search_walkthrough_attributes_for_faceting_1: |-
     "production_companies"
   ];
 
-  let progress: Progress = movies.set_attributes_for_faceting(&attributes_for_faceting[..]).await.unwrap();
+  let progress: Progress = movies.set_attributes_for_faceting(&attributes_for_faceting).await.unwrap();
 faceted_search_walkthrough_facet_filters_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")

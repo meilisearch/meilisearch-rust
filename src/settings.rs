@@ -10,7 +10,7 @@ use crate::{indexes::Index, errors::Error, request::{request, Method}, progress:
 /// ```
 /// # use meilisearch_sdk::settings::Settings;
 /// let settings = Settings::new()
-///     .with_stop_words(&["a", "the", "of"][..]);
+///     .with_stop_words(["a", "the", "of"]);
 ///
 /// // OR
 ///
@@ -107,9 +107,6 @@ impl IntoVecString for &[&String] {
     }
 }
 
-/*
-TODO: Implement IntoVecString trought const generics as soon as they are stable.
-
 impl<const N: usize> IntoVecString for &[String; N] {
     fn convert(self) -> Vec<String> {
         let mut vec = Vec::new();
@@ -119,7 +116,36 @@ impl<const N: usize> IntoVecString for &[String; N] {
         vec
     }
 }
-*/
+
+impl<const N: usize> IntoVecString for &[&str; N] {
+    fn convert(self) -> Vec<String> {
+        let mut vec = Vec::new();
+        for item in self {
+            vec.push((*item).to_string())
+        }
+        vec
+    }
+}
+
+impl<const N: usize> IntoVecString for [String; N] {
+    fn convert(self) -> Vec<String> {
+        let mut vec = Vec::new();
+        for item in self.iter() {
+            vec.push((*item).clone())
+        }
+        vec
+    }
+}
+
+impl<const N: usize> IntoVecString for [&str; N] {
+    fn convert(self) -> Vec<String> {
+        let mut vec = Vec::new();
+        for item in self.iter() {
+            vec.push((*item).to_string())
+        }
+        vec
+    }
+}
 
 #[allow(missing_docs)]
 impl Settings {
@@ -411,7 +437,7 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let stop_words = ["the", "of", "to"];
-    /// let progress = movie_index.set_stop_words(&stop_words[..]).await.unwrap();
+    /// let progress = movie_index.set_stop_words(&stop_words).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
@@ -446,7 +472,7 @@ impl<'a> Index<'a> {
     ///     "asc(release_date)",
     ///     "desc(rank)",
     /// ];
-    /// let progress = movie_index.set_ranking_rules(&ranking_rules[..]).await.unwrap();
+    /// let progress = movie_index.set_ranking_rules(&ranking_rule).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
@@ -472,7 +498,7 @@ impl<'a> Index<'a> {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let attributes_for_faceting = ["genre", "director"];
-    /// let progress = movie_index.set_attributes_for_faceting(&attributes_for_faceting[..]).await.unwrap();
+    /// let progress = movie_index.set_attributes_for_faceting(&attributes_for_faceting).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
@@ -522,7 +548,7 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let progress = movie_index.set_searchable_attributes(&["title", "description", "uid"][..]).await.unwrap();
+    /// let progress = movie_index.set_searchable_attributes(["title", "description", "uid"]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
@@ -547,7 +573,7 @@ impl<'a> Index<'a> {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
-    /// let progress = movie_index.set_displayed_attributes(&["title", "description", "release_date", "rank", "poster"][..]).await.unwrap();
+    /// let progress = movie_index.set_displayed_attributes(["title", "description", "release_date", "rank", "poster"]).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
