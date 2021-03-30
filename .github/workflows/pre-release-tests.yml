@@ -17,10 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: rustup update
-      run: rustup update
-    - name: cargo version
-      run: cargo --version
     - name: Build
       run: cargo build --verbose
     - name: Get the latest MeiliSearch RC
