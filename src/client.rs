@@ -250,11 +250,9 @@ pub struct ClientStats {
 ///
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
-/// # futures::executor::block_on(async move {
 /// Health {
 ///    status: "available".to_string(),
 /// }
-/// # });
 /// ```
 #[derive(Deserialize)]
 pub struct Health {
