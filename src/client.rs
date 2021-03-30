@@ -252,7 +252,7 @@ pub struct ClientStats {
 /// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
 /// Health {
 ///    status: "available".to_string(),
-/// }
+/// };
 /// ```
 #[derive(Deserialize)]
 pub struct Health {
@@ -276,7 +276,7 @@ pub struct Keys {
 ///    commit_sha: "b46889b5f0f2f8b91438a08a358ba8f05fc09fc1".to_string(),
 ///    build_date: "2019-11-15T09:51:54.278247+00:00".to_string(),
 ///    pkg_version: "0.1.1".to_string(),
-/// }
+/// };
 /// ```
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
