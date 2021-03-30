@@ -18,7 +18,7 @@ jobs:
     # Will still run for each push to bump-meilisearch-v*
     if: github.event_name != 'pull_request' || !startsWith(github.base_ref, 'bump-meilisearch-v')
     name: integration-tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
     - name: Build
