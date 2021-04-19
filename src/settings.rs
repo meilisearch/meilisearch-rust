@@ -472,7 +472,7 @@ impl<'a> Index<'a> {
     ///     "asc(release_date)",
     ///     "desc(rank)",
     /// ];
-    /// let progress = movie_index.set_ranking_rules(&ranking_rule).await.unwrap();
+    /// let progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
     /// # progress.get_status().await.unwrap();
     /// # });
