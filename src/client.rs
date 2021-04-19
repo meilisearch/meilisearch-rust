@@ -203,6 +203,7 @@ impl<'a> Client<'a> {
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let health = client.is_healthy().await;
+    /// assert_eq!(health, true);
     /// # });
     /// ```
     pub async fn is_healthy(&self) -> bool {
