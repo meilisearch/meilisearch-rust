@@ -207,7 +207,11 @@ impl<'a> Client<'a> {
     /// # });
     /// ```
     pub async fn is_healthy(&self) -> bool {
-        self.health().await.is_ok()
+        if let Some(health) = self.health().await {
+            health.status.as_str() == "available"
+        } else {
+            false
+        }
     }
 
     /// Get the private and public key.
