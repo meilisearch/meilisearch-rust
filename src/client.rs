@@ -198,7 +198,7 @@ impl<'a> Client<'a> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*};
+    /// # use meilisearch_sdk::client::*;
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
