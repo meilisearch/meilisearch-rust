@@ -661,7 +661,7 @@ impl<'a> Index<'a> {
     /// # sleep(Duration::from_secs(1));
     /// 
     /// let status = movies.get_all_updates().await.unwrap();
-    /// assert_eq!(status.len(), 2);
+    /// assert!(status.len() >= 2);
     /// # client.delete_index("movies_get_all_updates").await.unwrap();
     /// # });
     /// ```
