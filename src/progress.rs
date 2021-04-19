@@ -262,7 +262,7 @@ mod test {
     #[async_test]
     async fn test_wait_for_pending_updates_with_args() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        let movies = client.create_index("movies_wait_for_pending_args", None).await.unwrap();
+        let movies = client.get_or_create("movies_wait_for_pending_args").await.unwrap();
         let progress = movies.add_documents(&[
             Document {
                 id: 0,
@@ -286,7 +286,7 @@ mod test {
     #[async_test]
     async fn test_wait_for_pending_updates_time_out() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        let movies = client.create_index("movies_wait_for_pending_timeout", None).await.unwrap();
+        let movies = client.get_or_create("movies_wait_for_pending_timeout").await.unwrap();
         let progress = movies.add_documents(&[
             Document {
                 id: 0,
