@@ -207,7 +207,7 @@ impl<'a> Client<'a> {
     /// # });
     /// ```
     pub async fn is_healthy(&self) -> bool {
-        if let Some(health) = self.health().await {
+        if let Ok(health) = self.health().await {
             health.status.as_str() == "available"
         } else {
             false
