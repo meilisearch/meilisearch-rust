@@ -176,7 +176,7 @@ impl<'a> Client<'a> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::{Error, ErrorCode}};
+    /// # use meilisearch_sdk::{client::*, errors::{Error, ErrorCode}};
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -191,6 +191,22 @@ impl<'a> Client<'a> {
             200,
         )
         .await
+    }
+
+    /// Get health of MeiliSearch server, return true or false.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*};
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let health = client.is_healthy().await;
+    /// # });
+    /// ```
+    pub async fn is_healthy(&self) -> bool {
+        self.health().await.is_ok()
     }
 
     /// Get the private and public key.
