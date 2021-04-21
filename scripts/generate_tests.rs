@@ -7,6 +7,7 @@ const PRELUDE: &str = r#"
 //! Some parts of this file are also contained in `scripts/generate_tests.rs`.
 //! Run `cargo test code_sample -- --test-threads=1` to run all code sample tests.
 #![allow(unused_variables)]
+#![allow(unreachable_code)]
 
 use futures_await_test::async_test;
 use meilisearch_sdk::{indexes::*, client::*, progress::*, document::*, search::*, settings::*};
@@ -15,22 +16,21 @@ use std::collections::HashMap;
 
 #[allow(unused_must_use)]
 async fn setup_test_index<'a>(client: &'a Client<'a>, name: &'a str) -> Index<'a> {
-    // try to delete
-    client.delete_index(name).await;
-
     let index = client.create_index(name, None).await.unwrap();
 
-    // We could add data if we wanted to
-    /*index.add_documents(&[
+    index.add_documents(&[
         Movie {
-            id: "".to_string(),
-            title: "".to_string(),
-            poster: "".to_string(),
-            overview: "".to_string(),
-            release_date: 0,
+            id: "25684".to_string(),
+            title: "American Ninja 5".to_string(),
+            director: "Bobby Jean Leonard".to_string(),
+            poster: "https://image.tmdb.org/t/p/w1280/iuAQVI4mvjI83wnirpD8GVNRVuY.jpg".to_string(),
+            overview: "When a scientists daughter is kidnapped, American Ninja, attempts to find her, but this time he teams up with a youngster he has trained in the ways of the ninja.".to_string(),
+            release_date: 725846400 ,
+            rating: 2.0,
             genres: vec![],
         }
-    ], None).await.unwrap();*/
+    ], None).await.unwrap();
+    index.set_attributes_for_faceting(["genres", "director"]).await.unwrap();
 
     std::thread::sleep(std::time::Duration::from_millis(500));
     index
@@ -40,9 +40,11 @@ async fn setup_test_index<'a>(client: &'a Client<'a>, name: &'a str) -> Index<'a
 struct Movie {
     id: String,
     title: String,
+    director: String,
     poster: String,
     overview: String,
     release_date: i64,
+    rating: f32,
     genres: Vec<String>
 }
 impl Document for Movie {
@@ -50,16 +52,37 @@ impl Document for Movie {
     fn get_uid(&self) -> &Self::UIDType { &self.id }
 }
 
+impl Default for Movie {
+    fn default() -> Movie {
+        Movie {
+            id: String::new(),
+            title: String::new(),
+            director: String::new(),
+            poster: String::new(),
+            overview: String::new(),
+            release_date: 0 ,
+            rating: 0.0,
+            genres: vec![],
+        }
+    }
+}
+
 "#;
 
 const TEST: &str = r#"
 #[async_test]
 async fn code_sample_[NAME]() {
+    // Setup
     let client = Client::new("http://localhost:7700", "masterKey");
+    [CLEANUP_CODE]
     let movies = setup_test_index(&client, "[NAME]").await;
     [ADDITIONAL_CONFIG]
 
+    // Code sample
     [CODE]
+
+    // Cleanup
+    [CLEANUP_CODE]
 }
 "#;
 
@@ -93,6 +116,7 @@ fn main() {
         // Add custom test workarrounds
         let additionnal_config = match name {
             "get_update_1" => "    let progress = movies.delete_all_documents().await.unwrap();\n",
+            "get_dump_status_1" => "    return; // Would fail because this dump does not exist\n",
             _ => "",
         };
         if !additionnal_config.is_empty() {
@@ -102,6 +126,34 @@ fn main() {
         } else {
             generated_test = generated_test.replace("[ADDITIONAL_CONFIG]\n", "");
         }
+
+        // Add some error handling
+        generated_test = generated_test.replace("client.get_index(", "client.get_or_create(");
+
+        // Detect created indexes
+        let mut created_indexes = Vec::new();
+        let mut remaining_code = generated_test.as_str();
+        while let Some(idx) = remaining_code.find("create_index(\"") {
+            let (_before, after) = remaining_code.split_at(idx+14);
+            remaining_code = after;
+            let end = after.find('"').unwrap();
+            created_indexes.push(after[..end].to_string());
+        }
+        let mut remaining_code = generated_test.as_str();
+        while let Some(idx) = remaining_code.find("get_or_create(\"") {
+            let (_before, after) = remaining_code.split_at(idx+15);
+            remaining_code = after;
+            let end = after.find('"').unwrap();
+            created_indexes.push(after[..end].to_string());
+        }
+
+        // Add code to remove created indexes
+        let mut cleanup_code = String::new();
+        cleanup_code.push_str(&format!("    let _ = client.delete_index(\"{}\").await;\n", name));
+        for created_index in created_indexes {
+            cleanup_code.push_str(&format!("    let _ = client.delete_index(\"{}\").await;\n", created_index))
+        }
+        generated_test = generated_test.replace("    [CLEANUP_CODE]\n", &cleanup_code);
 
         // Append test to file content
         if !name.ends_with("_md") {
@@ -113,5 +165,3 @@ fn main() {
     let mut output_file = File::create("tests/generated_from_code_samples.rs").expect("Failed to open output file");
     output_file.write_all(generated_file_content.as_bytes()).expect("Failed to write to output file");
 }
-
-
