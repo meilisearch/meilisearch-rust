@@ -5,6 +5,7 @@ const PRELUDE: &str = r#"
 //! This file was generated automatically from the code samples (path: `.code-samples.meilisearch.yaml`).
 //! It is not possible to edit this file directly.
 //! Some parts of this file are also contained in `scripts/generate_tests.rs`.
+//! Run `cargo test code_sample -- --test-threads=1` to run all code sample tests.
 #![allow(unused_variables)]
 
 use futures_await_test::async_test;
@@ -53,7 +54,7 @@ impl Document for Movie {
 
 const TEST: &str = r#"
 #[async_test]
-async fn [NAME]() {
+async fn code_sample_[NAME]() {
     let client = Client::new("http://localhost:7700", "masterKey");
     let movies = setup_test_index(&client, "[NAME]").await;
     [ADDITIONAL_CONFIG]
