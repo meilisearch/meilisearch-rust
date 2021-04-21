@@ -21,11 +21,12 @@ get_documents_1: |-
 add_or_replace_documents_1: |-
   let progress: Progress = movies.add_or_replace(&[
     Movie {
-      id: 287947,
+      id: "287947".to_string(),
       title: "Shazam".to_string(),
       poster: "https://image.tmdb.org/t/p/w1280/xnopI5Xtky18MPhK40cZAGAOVeV.jpg".to_string(),
       overview: "A boy is given the ability to become an adult superhero in times of need with a single magic word.".to_string(),
-      release_date: "2019-03-23".to_string(),
+      release_date: 1553323329, // 2019-03-23
+      genres: vec![],
     }
   ], None).await.unwrap();
 add_or_update_documents_1: |-
@@ -60,9 +61,9 @@ search_1: |-
     .await
     .unwrap();
 get_update_1: |-
-  let status: Status = progress.get_status().await.unwrap();
+  let status: UpdateStatus = progress.get_status().await.unwrap();
 get_all_updates_1: |-
-  let status: Vec<ProgressStatus> = index.get_all_updates().await.unwrap();
+  let status: Vec<UpdateStatus> = movies.get_all_updates().await.unwrap();
 get_keys_1: |-
   let keys: Keys = client.get_keys().await.unwrap();
 get_settings_1: |-
