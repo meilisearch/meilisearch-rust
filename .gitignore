@@ -2,3 +2,4 @@
 Cargo.lock
 examples/web_app/target/*
 .vscode
+tests/generated_from_code_samples.rs
