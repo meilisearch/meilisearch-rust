@@ -162,6 +162,11 @@ fn main() {
     }
 
     // Create or update the generated test file
+    match std::fs::create_dir("tests") {
+        Ok(()) => (),
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => (),
+        Err(e) => panic!("Failed to create `tests` directory: {}", e),
+    }
     let mut output_file = File::create("tests/generated_from_code_samples.rs").expect("Failed to open output file");
     output_file.write_all(generated_file_content.as_bytes()).expect("Failed to write to output file");
 }
