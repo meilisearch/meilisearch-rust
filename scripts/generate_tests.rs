@@ -1,11 +1,15 @@
 use yaml_rust::YamlLoader;
 use std::{fs::File, io::Write};
 
+// The begining of the generated file
 const PRELUDE: &str = r#"
 //! This file was generated automatically from the code samples (path: `.code-samples.meilisearch.yaml`).
+//! Its goal is to check that all code samples have a valid syntax and run correctly.
+//! 
 //! It is not possible to edit this file directly.
 //! Some parts of this file are also contained in `scripts/generate_tests.rs`.
-//! Run `cargo test code_sample -- --test-threads=1` to run all code sample tests.
+//! Run `cargo test code_sample -- --test-threads=1` to run all code samples.
+//! Please note that markdown code samples are not supported.
 #![allow(unused_variables)]
 #![allow(unreachable_code)]
 
@@ -69,7 +73,8 @@ impl Default for Movie {
 
 "#;
 
-const TEST: &str = r#"
+// The structure of each test
+const TEST_STRUCTURE: &str = r#"
 #[async_test]
 async fn code_sample_[NAME]() {
     // Setup
@@ -87,6 +92,7 @@ async fn code_sample_[NAME]() {
 "#;
 
 fn main() {
+    // Tell cargo when to rerun this script
     println!("cargo:rerun-if-changed=.code-samples.meilisearch.yaml");
     println!("cargo:rerun-if-changed=build.rs");
 
@@ -95,25 +101,30 @@ fn main() {
     let code_samples = YamlLoader::load_from_str(&raw_code_samples).expect("Invalid code samples");
     let code_samples = &code_samples[0].as_hash().expect("Code samples must be a Hash");
 
-    // Initialize the code
+    // Initialize the generated code
     let mut generated_file_content = String::new();
     generated_file_content.push_str(PRELUDE);
 
-    // Append each code sample as a test function
+    // Append each code sample to the generated code
     for (name, code) in code_samples.into_iter() {
         let name = name.as_str().expect("The key of a code sample must be a String");
         let code = code.as_str().expect("The content of a code sample must be a String");
 
-        // Formatting
+        // Ignore markdown code samples since they are not supported
+        if name.ends_with("_md") {
+            continue;
+        }
+
+        // Format the code
         let code = code.replace("\n", "\n  ");
         let code = code.replace("  ", "    ");
 
-        // Test generation
-        let mut generated_test = TEST.to_string();
+        // Generate the test function
+        let mut generated_test = TEST_STRUCTURE.to_string();
         generated_test = generated_test.replace("[NAME]", name);
         generated_test = generated_test.replace("[CODE]", &code);
 
-        // Add custom test workarrounds
+        // Add custom test workarrounds (some tests would fail without these specific tricks)
         let additionnal_config = match name {
             "get_update_1" => "    let progress = movies.delete_all_documents().await.unwrap();\n",
             "get_dump_status_1" => "    return; // Would fail because this dump does not exist\n",
@@ -127,10 +138,10 @@ fn main() {
             generated_test = generated_test.replace("[ADDITIONAL_CONFIG]\n", "");
         }
 
-        // Add some error handling
+        // Avoid avoidable panics
         generated_test = generated_test.replace("client.get_index(", "client.get_or_create(");
 
-        // Detect created indexes
+        // Find all indexes created by the test
         let mut created_indexes = Vec::new();
         let mut remaining_code = generated_test.as_str();
         while let Some(idx) = remaining_code.find("create_index(\"") {
@@ -147,7 +158,7 @@ fn main() {
             created_indexes.push(after[..end].to_string());
         }
 
-        // Add code to remove created indexes
+        // Add cleanup code to remove created indexes
         let mut cleanup_code = String::new();
         cleanup_code.push_str(&format!("    let _ = client.delete_index(\"{}\").await;\n", name));
         for created_index in created_indexes {
@@ -156,9 +167,7 @@ fn main() {
         generated_test = generated_test.replace("    [CLEANUP_CODE]\n", &cleanup_code);
 
         // Append test to file content
-        if !name.ends_with("_md") {
-            generated_file_content.push_str(&generated_test)
-        }
+        generated_file_content.push_str(&generated_test);
     }
 
     // Create or update the generated test file
