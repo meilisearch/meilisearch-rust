@@ -31,6 +31,7 @@ isahc-static-curl = ["isahc/static-curl"]
 env_logger = "0.8"
 futures-await-test = "0.3"
 futures = "0.3"
+once_cell = "1.7.2"
 
 # The following dependencies are required for examples
 wasm-bindgen = "0.2"

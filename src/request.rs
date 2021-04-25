@@ -14,7 +14,7 @@ pub(crate) enum Method<T: Serialize> {
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static + DeserializeOwned>(
     url: &str,
-    apikey: &str,
+    api_key: &str,
     method: Method<Input>,
     expected_status_code: u16
 ) -> Result<Output, Error> {
@@ -24,23 +24,23 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
 
     let mut response = match &method {
         Method::Get => Request::get(url)
-            .header("X-Meili-API-Key", apikey)
+            .header("X-Meili-API-Key", api_key)
             .body(())
             .map_err(|_| crate::errors::Error::InvalidRequest)?
             .send_async().await?,
         Method::Delete => Request::delete(url)
-            .header("X-Meili-API-Key", apikey)
+            .header("X-Meili-API-Key", api_key)
             .body(())
             .map_err(|_| crate::errors::Error::InvalidRequest)?
             .send_async().await?,
         Method::Post(body) => Request::post(url)
-            .header("X-Meili-API-Key", apikey)
+            .header("X-Meili-API-Key", api_key)
             .header("Content-Type", "application/json")
             .body(to_string(&body).unwrap())
             .map_err(|_| crate::errors::Error::InvalidRequest)?
             .send_async().await?,
         Method::Put(body) => Request::put(url)
-            .header("X-Meili-API-Key", apikey)
+            .header("X-Meili-API-Key", api_key)
             .header("Content-Type", "application/json")
             .body(to_string(&body).unwrap())
             .map_err(|_| crate::errors::Error::InvalidRequest)?
@@ -59,7 +59,7 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
 #[cfg(target_arch = "wasm32")]
 pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static + DeserializeOwned>(
     url: &str,
-    apikey: &str,
+    api_key: &str,
     method: Method<Input>,
     expected_status_code: u16
 ) -> Result<Output, Error> {
@@ -72,7 +72,7 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
     // The 2 following unwraps should not be able to fail
 
     let headers = Headers::new().unwrap();
-    headers.append("X-Meili-API-Key", apikey).unwrap();
+    headers.append("X-Meili-API-Key", api_key).unwrap();
 
     let mut request: RequestInit = RequestInit::new();
     request.headers(&headers);

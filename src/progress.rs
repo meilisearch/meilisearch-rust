@@ -12,21 +12,21 @@ pub(crate) struct ProgressJson {
 }
 
 impl ProgressJson {
-    pub(crate) fn into_progress<'a>(self, index: &'a Index) -> Progress<'a> {
+    pub(crate) fn into_progress(self, index: &Index) -> Progress {
         Progress {
-            id: self.update_id,
-            index,
+            id: self.update_id.clone(),
+            index: index.clone().to_owned(),
         }
     }
 }
 
 /// A struct used to track the progress of some async operations.
-pub struct Progress<'a> {
+pub struct Progress {
     id: usize,
-    index: &'a Index<'a>,
+    index: Index,
 }
 
-impl<'a> Progress<'a> {
+impl Progress {
     ///
     /// # Example
     ///
@@ -44,9 +44,9 @@ impl<'a> Progress<'a> {
         request::<(), UpdateStatus>(
             &format!(
                 "{}/indexes/{}/updates/{}",
-                self.index.client.host, self.index.uid, self.id
+                self.index.config.host, self.index.uid, self.id
             ),
-            self.index.client.apikey,
+            &self.index.config.api_key,
             Method::Get,
             200,
         )

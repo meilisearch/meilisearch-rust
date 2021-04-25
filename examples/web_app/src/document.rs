@@ -23,6 +23,7 @@ impl Document for Crate {
 }
 
 impl Crate {
+    
     pub fn get_readable_download_count(&self) -> String {
         if let Some(downloads) = self.downloads {
             if downloads < 1000 {

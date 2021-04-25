@@ -94,9 +94,11 @@
 
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
+#![feature(min_const_generics)]
 
 /// Module containing the Client struct.
 pub mod client;
+pub mod config;
 /// Module containing the Document trait.
 pub mod document;
 pub mod dumps;
