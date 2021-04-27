@@ -1,6 +1,6 @@
 [package]
 name = "meilisearch-sdk"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Mubelotix <mubelotix@gmail.com>"]
 edition = "2018"
 description = "Rust wrapper for the MeiliSearch API. MeiliSearch is a powerful, fast, open-source, easy to use and deploy search engine."
