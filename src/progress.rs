@@ -1,9 +1,8 @@
 #![allow(missing_docs)]
 
-use crate::{errors::Error, indexes::Index, request::*};
+use crate::{errors::Error, indexes::Index, request::*, Rc};
 use serde::Deserialize;
-use std::collections::{BTreeMap, BTreeSet};
-use std::time::Duration;
+use std::{collections::{BTreeMap, BTreeSet}, time::Duration};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -12,23 +11,25 @@ pub(crate) struct ProgressJson {
 }
 
 impl ProgressJson {
-    pub(crate) fn into_progress<'a>(self, index: &'a Index) -> Progress<'a> {
+    pub(crate) fn into_progress(self, index: &Index) -> Progress {
         Progress {
             id: self.update_id,
-            index,
+            index_uid: Rc::clone(&index.uid),
+            host: Rc::clone(&index.host),
+            api_key: Rc::clone(&index.api_key)
         }
     }
 }
 
 /// A struct used to track the progress of some async operations.
-pub struct Progress<'a> {
+pub struct Progress {
     id: usize,
-    index: &'a Index<'a>,
+    index_uid: Rc<String>,
+    host: Rc<String>,
+    api_key: Rc<String>
 }
 
-impl<'a> Progress<'a> {
-
-    /// # Example
+impl<'a> Progress {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -60,9 +61,9 @@ impl<'a> Progress<'a> {
         request::<(), UpdateStatus>(
             &format!(
                 "{}/indexes/{}/updates/{}",
-                self.index.client.host, self.index.uid, self.id
+                self.host, self.index_uid, self.id
             ),
-            self.index.client.apikey,
+            &self.api_key,
             Method::Get,
             200,
         )

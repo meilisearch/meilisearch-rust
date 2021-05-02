@@ -14,7 +14,8 @@
 //! serde = { version = "1.0", features = ["derive"] }
 //! ```
 //!
-//! This crate is `async` but you can choose to use an async runtime like [tokio](https://crates.io/crates/tokio) or just [block on futures](https://docs.rs/futures/latest/futures/executor/fn.block_on.html).
+//! This crate is `async` but you can choose to use an async runtime like [tokio](https://crates.io/crates/tokio) or just [block on futures](https://docs.rs/futures/latest/futures/executor/fn.block_on.html).  
+//! You can enable the `sync` feature to make most structs `Sync`. It may be a bit slower.
 //!
 //! Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
 //!
@@ -111,3 +112,8 @@ mod request;
 pub mod search;
 /// Module containing settings
 pub mod settings;
+
+#[cfg(feature = "sync")]
+pub(crate) type Rc<T> = std::sync::Arc<T>;
+#[cfg(not(feature = "sync"))]
+pub(crate) type Rc<T> = std::rc::Rc<T>;

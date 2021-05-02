@@ -1,16 +1,16 @@
-use crate::{errors::*, indexes::*, request::*};
+use crate::{errors::*, indexes::*, request::*, Rc};
 use serde_json::{json, Value};
 use serde::{Deserialize};
 use std::collections::HashMap;
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug)]
-pub struct Client<'a> {
-    pub(crate) host: &'a str,
-    pub(crate) apikey: &'a str,
+pub struct Client {
+    pub(crate) host: Rc<String>,
+    pub(crate) api_key: Rc<String>,
 }
 
-impl<'a> Client<'a> {
+impl Client {
     /// Create a client using the specified server.
     /// Don't put a '/' at the end of the host.
     /// In production mode, see [the documentation about authentication](https://docs.meilisearch.com/reference/features/authentication.html#authentication).
@@ -22,8 +22,11 @@ impl<'a> Client<'a> {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// ```
-    pub const fn new(host: &'a str, apikey: &'a str) -> Client<'a> {
-        Client { host, apikey }
+    pub fn new(host: impl Into<String>, api_key: impl Into<String>) -> Client {
+        Client {
+            host: Rc::new(host.into()),
+            api_key: Rc::new(api_key.into())
+        }
     }
 
     /// List all [indexes](../indexes/struct.Index.html).
@@ -40,10 +43,10 @@ impl<'a> Client<'a> {
     /// println!("{:?}", indexes);
     /// # });
     /// ```
-    pub async fn list_all_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
+    pub async fn list_all_indexes(&self) -> Result<Vec<Index>, Error> {
         let json_indexes = request::<(), Vec<JsonIndex>>(
             &format!("{}/indexes", self.host),
-            self.apikey,
+            &self.api_key,
             Method::Get,
             200,
         ).await?;
@@ -72,10 +75,10 @@ impl<'a> Client<'a> {
     /// let movies = client.get_index("movies").await.unwrap();
     /// # });
     /// ```
-    pub async fn get_index(&'a self, uid: &'a str) -> Result<Index<'a>, Error> {
+    pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
         Ok(request::<(), JsonIndex>(
-            &format!("{}/indexes/{}", self.host, uid),
-            self.apikey,
+            &format!("{}/indexes/{}", self.host, uid.as_ref()),
+            &self.api_key,
             Method::Get,
             200,
         ).await?
@@ -83,10 +86,11 @@ impl<'a> Client<'a> {
     }
 
     /// Assume that an [index](../indexes/struct.Index.html) exist and create a corresponding object without any check.
-    pub fn assume_index(&'a self, uid: &'a str) -> Index<'a> {
+    pub fn assume_index(&self, uid: impl Into<String>) -> Index {
         Index {
-            client: &self,
-            uid: uid.to_string()
+            uid: Rc::new(uid.into()),
+            host: Rc::clone(&self.host),
+            api_key: Rc::clone(&self.api_key)
         }
     }
 
@@ -109,15 +113,15 @@ impl<'a> Client<'a> {
     /// # });
     /// ```
     pub async fn create_index(
-        &'a self,
-        uid: &'a str,
+        &self,
+        uid: impl AsRef<str>,
         primary_key: Option<&str>,
-    ) -> Result<Index<'a>, Error> {
+    ) -> Result<Index, Error> {
         Ok(request::<Value, JsonIndex>(
             &format!("{}/indexes", self.host),
-            self.apikey,
+            &self.api_key,
             Method::Post(json!({
-                "uid": uid,
+                "uid": uid.as_ref(),
                 "primaryKey": primary_key,
             })),
             201,
@@ -142,18 +146,18 @@ impl<'a> Client<'a> {
 
     /// Delete an index from its UID.
     /// To delete an index from the [index object](../indexes/struct.Index.html), use [the delete method](../indexes/struct.Index.html#method.delete).
-    pub async fn delete_index(&self, uid: &str) -> Result<(), Error> {
+    pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<(), Error> {
         Ok(request::<(), ()>(
-            &format!("{}/indexes/{}", self.host, uid),
-            self.apikey,
+            &format!("{}/indexes/{}", self.host, uid.as_ref()),
+            &self.api_key,
             Method::Delete,
             204,
         ).await?)
     }
 
     /// This will try to get an index and create the index if it does not exist.
-    pub async fn get_or_create(&'a self, uid: &'a str) -> Result<Index<'a>, Error> {
-        if let Ok(index) = self.get_index(uid).await {
+    pub async fn get_or_create(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
+        if let Ok(index) = self.get_index(uid.as_ref()).await {
             Ok(index)
         } else {
             self.create_index(uid, None).await
@@ -161,7 +165,7 @@ impl<'a> Client<'a> {
     }
 
     /// Alias for [list_all_indexes](#method.list_all_indexes).
-    pub async fn get_indexes(&'a self) -> Result<Vec<Index<'a>>, Error> {
+    pub async fn get_indexes(&self) -> Result<Vec<Index>, Error> {
         self.list_all_indexes().await
     }
 
@@ -180,7 +184,7 @@ impl<'a> Client<'a> {
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
         request::<serde_json::Value, ClientStats>(
             &format!("{}/stats", self.host),
-            self.apikey,
+            &self.api_key,
             Method::Get,
             200,
         ).await
@@ -201,7 +205,7 @@ impl<'a> Client<'a> {
     pub async fn health(&self) -> Result<Health, Error> {
         request::<serde_json::Value, Health>(
             &format!("{}/health", self.host),
-            self.apikey,
+            &self.api_key,
             Method::Get,
             200,
         )
@@ -244,7 +248,7 @@ impl<'a> Client<'a> {
     pub async fn get_keys(&self) -> Result<Keys, Error> {
         request::<(), Keys>(
             &format!("{}/keys", self.host),
-            self.apikey,
+            &self.api_key,
             Method::Get,
             200,
         ).await
@@ -265,7 +269,7 @@ impl<'a> Client<'a> {
     pub async fn get_version(&self) -> Result<Version, Error> {
         request::<(), Version>(
             &format!("{}/version", self.host),
-            self.apikey,
+            &self.api_key,
             Method::Get,
             200,
         ).await
