@@ -27,6 +27,24 @@ pub struct Progress<'a> {
 }
 
 impl<'a> Progress<'a> {
+
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let mut movies_index = client.get_or_create("movies").await.unwrap();
+    /// let progress = movies_index.delete_all_documents().await.unwrap();
+    /// let update_id = progress.get_update_id();
+    /// # client.delete_index("movies").await.unwrap();
+    /// # });
+    /// ```
+    pub fn get_update_id(&self) -> u64 {
+        self.id as u64
+    }
+
     ///
     /// # Example
     ///

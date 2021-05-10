@@ -619,6 +619,66 @@ impl<'a> Index<'a> {
         self.update(primary_key).await
     }
 
+    /// Get the status of a given updates in a given index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// # use meilisearch_sdk::{client::*, document, indexes::*, progress::UpdateStatus};
+    /// #
+    /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// # struct Document {
+    /// #    id: usize,
+    /// #    value: String,
+    /// #    kind: String,
+    /// # }
+    /// #
+    /// # impl document::Document for Document {
+    /// #    type UIDType = usize;
+    /// #
+    /// #    fn get_uid(&self) -> &Self::UIDType {
+    /// #        &self.id
+    /// #    }
+    /// # }
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let movies = client.get_or_create("movies_get_one_update").await.unwrap();
+    ///
+    /// let progress = movies.add_documents(&[
+    ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
+    ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
+    /// ], None).await.unwrap();
+    ///
+    /// let update_id = progress.get_update_id();
+    /// let status = movies.get_update(update_id).await.unwrap();
+    ///
+    /// let content_update_id = match status {
+    ///    UpdateStatus::Enqueued{content} => content.update_id,
+    ///    UpdateStatus::Failed{content} => content.update_id,
+    ///    UpdateStatus::Processed{content} => content.update_id,
+    /// };
+    ///
+    /// assert_eq!(content_update_id, update_id);
+    /// # client.delete_index("movies_get_one_update").await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_update(&self, update_id: u64) -> Result<UpdateStatus, Error> {
+        request::<(), UpdateStatus>(
+            &format!(
+                "{}/indexes/{}/updates/{}",
+                self.client.host, self.uid, update_id
+            ),
+            self.client.apikey,
+            Method::Get,
+            200,
+        )
+        .await
+    }
+
     /// Get the status of all updates in a given index.
     /// 
     /// # Example
@@ -712,8 +772,22 @@ pub struct IndexStats {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*};
+    use crate::{client::*, document::Document, progress::UpdateStatus};
+    use serde::{Deserialize, Serialize};
     use futures_await_test::async_test;
+
+    #[derive(Deserialize,Debug, Serialize)]
+    struct Movie {
+        name: String,
+        description: String,
+    }
+
+    impl Document for Movie {
+      type UIDType = String;
+      fn get_uid(&self) -> &Self::UIDType {
+          &self.name
+        }
+    }
 
     #[async_test]
     async fn test_get_all_updates_no_docs() {
@@ -725,5 +799,35 @@ mod tests {
         client.delete_index(uid).await.unwrap();
 
         assert_eq!(status.len(), 0);
+    }
+
+    #[async_test]
+    async fn test_get_one_update() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let uid = "test_get_one_update";
+
+        let index = client.get_or_create(uid).await.unwrap();
+
+        let progress = index
+        .add_or_replace(
+            &[Movie {
+                name: "test".to_string(),
+                description: "no desc".to_string(),
+            }],
+            Some("name"),
+        )
+        .await
+        .unwrap();
+
+        let update_id = progress.get_update_id();
+        let status = index.get_update(update_id).await.unwrap();
+
+        client.delete_index(uid).await.unwrap();
+
+        match status {
+            UpdateStatus::Enqueued{content} => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Failed{content} => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Processed{content} => assert_eq!(content.update_id, update_id),
+        }
     }
 }
