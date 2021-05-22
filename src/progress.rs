@@ -28,7 +28,6 @@ pub struct Progress<'a> {
 
 impl<'a> Progress<'a> {
 
-    ///
     /// # Example
     ///
     /// ```

@@ -619,7 +619,20 @@ impl<'a> Index<'a> {
         self.update(primary_key).await
     }
 
-    /// Get the status of a given updates in a given index.
+    /// Get the status of an update on the index.
+    /// 
+    /// After executing an update, a `Progress` object is returned,
+    /// you can use this object to check on the status of the update.
+    /// 
+    /// In some cases, you might not need the status of the update directly,
+    /// or would rather not wait for it to resolve.
+    /// 
+    /// For these cases, you can get the `update_id` from the `Progress` 
+    /// object and use it to query the index later on.
+    /// 
+    /// For example, if a clients updates an entry over an HTTP request,
+    /// you can respond with the `update_id` and have the client check
+    /// on the update status later on.
     ///
     /// # Example
     ///
@@ -649,20 +662,29 @@ impl<'a> Index<'a> {
     /// let movies = client.get_or_create("movies_get_one_update").await.unwrap();
     ///
     /// let progress = movies.add_documents(&[
-    ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
-    ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
+    ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() }
     /// ], None).await.unwrap();
     ///
+    /// // Get update status directly on the progress object
+    /// let status = progress.get_status().await.unwrap();
+    /// let from_progress = match status {
+    ///    UpdateStatus::Enqueued{content} => content.update_id,
+    ///    UpdateStatus::Failed{content} => content.update_id,
+    ///    UpdateStatus::Processed{content} => content.update_id,
+    /// };
+    /// 
     /// let update_id = progress.get_update_id();
+    /// // Get update status from the index, using `update_id`
     /// let status = movies.get_update(update_id).await.unwrap();
     ///
-    /// let content_update_id = match status {
+    /// let from_index = match status {
     ///    UpdateStatus::Enqueued{content} => content.update_id,
     ///    UpdateStatus::Failed{content} => content.update_id,
     ///    UpdateStatus::Processed{content} => content.update_id,
     /// };
     ///
-    /// assert_eq!(content_update_id, update_id);
+    /// assert_eq!(from_progress, from_index);
+    /// assert_eq!(from_progress, update_id);
     /// # client.delete_index("movies_get_one_update").await.unwrap();
     /// # });
     /// ```
@@ -772,22 +794,8 @@ pub struct IndexStats {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*, document::Document, progress::UpdateStatus};
-    use serde::{Deserialize, Serialize};
+    use crate::{client::*, progress::UpdateStatus};
     use futures_await_test::async_test;
-
-    #[derive(Deserialize,Debug, Serialize)]
-    struct Movie {
-        name: String,
-        description: String,
-    }
-
-    impl Document for Movie {
-      type UIDType = String;
-      fn get_uid(&self) -> &Self::UIDType {
-          &self.name
-        }
-    }
 
     #[async_test]
     async fn test_get_all_updates_no_docs() {
@@ -807,17 +815,7 @@ mod tests {
         let uid = "test_get_one_update";
 
         let index = client.get_or_create(uid).await.unwrap();
-
-        let progress = index
-        .add_or_replace(
-            &[Movie {
-                name: "test".to_string(),
-                description: "no desc".to_string(),
-            }],
-            Some("name"),
-        )
-        .await
-        .unwrap();
+        let progress = index.delete_all_documents().await.unwrap();
 
         let update_id = progress.get_update_id();
         let status = index.get_update(update_id).await.unwrap();
