@@ -621,14 +621,14 @@ impl<'a> Index<'a> {
 
     /// Get the status of an update on the index.
     /// 
-    /// After executing an update, a `Progress` object is returned,
-    /// you can use this object to check on the status of the update.
+    /// After executing an update, a `Progress` struct is returned,
+    /// you can use this struct to check on the status of the update.
     /// 
     /// In some cases, you might not need the status of the update directly,
     /// or would rather not wait for it to resolve.
     /// 
     /// For these cases, you can get the `update_id` from the `Progress` 
-    /// object and use it to query the index later on.
+    /// struct and use it to query the index later on.
     /// 
     /// For example, if a clients updates an entry over an HTTP request,
     /// you can respond with the `update_id` and have the client check
