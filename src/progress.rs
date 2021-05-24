@@ -44,7 +44,6 @@ impl<'a> Progress<'a> {
         self.id as u64
     }
 
-    ///
     /// # Example
     ///
     /// ```
@@ -160,6 +159,7 @@ pub(crate) async fn async_sleep(interval: Duration) {
 #[cfg(target_arch = "wasm32")]
 pub(crate) async fn async_sleep(interval: Duration) {
     use wasm_bindgen_futures::JsFuture;
+    use std::convert::TryInto;
 
     JsFuture::from(js_sys::Promise::new(&mut |yes, _| {
         web_sys::window()
