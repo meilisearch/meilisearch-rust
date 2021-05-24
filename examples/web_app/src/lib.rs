@@ -154,7 +154,7 @@ fn header_content(processing_time_ms: usize, link: Rc<ComponentLink<Model>>) -> 
             </p>
             <form role="search" id="search">
                 // We fire an event each time the value changes so that we can update the results
-                <input placeholder="name, keywords, description" autofocus=true autocapitalize="none" autocorrect=false autocomplete=false tabindex="1" type="search" id="textSearch" oninput=link.callback(|e: yew::html::InputData| Msg::Input(e.value))/>
+                <input placeholder="name, keywords, description" autofocus=true autocapitalize="none" autocorrect="off" autocomplete="off" tabindex="1" type="search" id="textSearch" oninput=link.callback(|e: yew::html::InputData| Msg::Input(e.value))/>
                 // We display the processing time here
                 <span id="request-time">{processing_time_ms}{" ms"}</span>
             </form>
