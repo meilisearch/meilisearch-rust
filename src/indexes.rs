@@ -619,6 +619,88 @@ impl<'a> Index<'a> {
         self.update(primary_key).await
     }
 
+    /// Get the status of an update on the index.
+    /// 
+    /// After executing an update, a `Progress` struct is returned,
+    /// you can use this struct to check on the status of the update.
+    /// 
+    /// In some cases, you might not need the status of the update directly,
+    /// or would rather not wait for it to resolve.
+    /// 
+    /// For these cases, you can get the `update_id` from the `Progress` 
+    /// struct and use it to query the index later on.
+    /// 
+    /// For example, if a clients updates an entry over an HTTP request,
+    /// you can respond with the `update_id` and have the client check
+    /// on the update status later on.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// # use meilisearch_sdk::{client::*, document, indexes::*, progress::UpdateStatus};
+    /// #
+    /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// # struct Document {
+    /// #    id: usize,
+    /// #    value: String,
+    /// #    kind: String,
+    /// # }
+    /// #
+    /// # impl document::Document for Document {
+    /// #    type UIDType = usize;
+    /// #
+    /// #    fn get_uid(&self) -> &Self::UIDType {
+    /// #        &self.id
+    /// #    }
+    /// # }
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let movies = client.get_or_create("movies_get_one_update").await.unwrap();
+    ///
+    /// let progress = movies.add_documents(&[
+    ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() }
+    /// ], None).await.unwrap();
+    ///
+    /// // Get update status directly on the progress object
+    /// let status = progress.get_status().await.unwrap();
+    /// let from_progress = match status {
+    ///    UpdateStatus::Enqueued{content} => content.update_id,
+    ///    UpdateStatus::Failed{content} => content.update_id,
+    ///    UpdateStatus::Processed{content} => content.update_id,
+    /// };
+    /// 
+    /// let update_id = progress.get_update_id();
+    /// // Get update status from the index, using `update_id`
+    /// let status = movies.get_update(update_id).await.unwrap();
+    ///
+    /// let from_index = match status {
+    ///    UpdateStatus::Enqueued{content} => content.update_id,
+    ///    UpdateStatus::Failed{content} => content.update_id,
+    ///    UpdateStatus::Processed{content} => content.update_id,
+    /// };
+    ///
+    /// assert_eq!(from_progress, from_index);
+    /// assert_eq!(from_progress, update_id);
+    /// # client.delete_index("movies_get_one_update").await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_update(&self, update_id: u64) -> Result<UpdateStatus, Error> {
+        request::<(), UpdateStatus>(
+            &format!(
+                "{}/indexes/{}/updates/{}",
+                self.client.host, self.uid, update_id
+            ),
+            self.client.apikey,
+            Method::Get,
+            200,
+        )
+        .await
+    }
+
     /// Get the status of all updates in a given index.
     /// 
     /// # Example
@@ -712,7 +794,7 @@ pub struct IndexStats {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*};
+    use crate::{client::*, progress::UpdateStatus};
     use futures_await_test::async_test;
 
     #[async_test]
@@ -725,5 +807,25 @@ mod tests {
         client.delete_index(uid).await.unwrap();
 
         assert_eq!(status.len(), 0);
+    }
+
+    #[async_test]
+    async fn test_get_one_update() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let uid = "test_get_one_update";
+
+        let index = client.get_or_create(uid).await.unwrap();
+        let progress = index.delete_all_documents().await.unwrap();
+
+        let update_id = progress.get_update_id();
+        let status = index.get_update(update_id).await.unwrap();
+
+        client.delete_index(uid).await.unwrap();
+
+        match status {
+            UpdateStatus::Enqueued{content} => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Failed{content} => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Processed{content} => assert_eq!(content.update_id, update_id),
+        }
     }
 }

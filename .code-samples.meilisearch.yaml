@@ -60,7 +60,11 @@ search_1: |-
     .await
     .unwrap();
 get_update_1: |-
+  // You can get the status of a `Progress` object:
   let status: Status = progress.get_status().await.unwrap();
+
+  // Or you can use index to get an update status using its `update_id`:
+  let status: Status = index.get_update(1).await.unwrap();
 get_all_updates_1: |-
   let status: Vec<ProgressStatus> = index.get_all_updates().await.unwrap();
 get_keys_1: |-
