@@ -52,7 +52,7 @@ delete_one_document_1: |-
   let progress: Progress = movies.delete_document(25684).await.unwrap();
 delete_documents_1: |-
   let progress: Progress = movies.delete_documents(&[23488, 153738, 437035, 363869]).await.unwrap();
-search_1: |-
+search_post_1: |-
   let results: SearchResults<Movie> = movies
     .search()
     .with_query("American ninja")
