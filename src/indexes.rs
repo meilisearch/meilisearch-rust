@@ -1,5 +1,5 @@
 use crate::{
-    client::Client, document::*, errors::Error, progress::*, request::*, search::*,
+    client::Client, document::*, errors::Error, errors::ErrorCode, progress::*, request::*, search::*,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
@@ -80,6 +80,46 @@ impl<'a> Index<'a> {
             Method::Delete,
             204,
         ).await?)
+    }
+
+    /// Delete the index if it exists.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// # client.create_index("movies", None).await;
+    ///
+    /// // get the index named "movies" and delete it
+    /// let movies = client.assume_index("movies");
+    /// let mut deleted = movies.delete_if_exists().await.unwrap();
+    /// assert_eq!(deleted, true);
+    /// let index = client.get_index("movies").await;
+    /// assert!(index.is_err());
+    ///
+    /// // get an index that doesn't exist and try to delete it
+    /// let no_index = client.assume_index("no_index");
+    /// deleted = no_index.delete_if_exists().await.unwrap();
+    /// assert_eq!(deleted, false);
+    /// # });
+    /// ```
+    pub async fn delete_if_exists(self) -> Result<bool, Error> {
+        match self.delete().await {
+            Ok (_) => return Ok(true),
+            Err (error) => {
+                match error {
+                    Error::MeiliSearchError {
+                        message: _,
+                        error_code: ErrorCode::IndexNotFound,
+                        error_type: _,
+                        error_link: _,
+                    } => return Ok(false),
+                    _ => return Err(error),
+                };
+            },
+        };
     }
 
     /// Search for documents matching a specific query in the index.\
@@ -620,16 +660,16 @@ impl<'a> Index<'a> {
     }
 
     /// Get the status of an update on the index.
-    /// 
+    ///
     /// After executing an update, a `Progress` struct is returned,
     /// you can use this struct to check on the status of the update.
-    /// 
+    ///
     /// In some cases, you might not need the status of the update directly,
     /// or would rather not wait for it to resolve.
-    /// 
-    /// For these cases, you can get the `update_id` from the `Progress` 
+    ///
+    /// For these cases, you can get the `update_id` from the `Progress`
     /// struct and use it to query the index later on.
-    /// 
+    ///
     /// For example, if a clients updates an entry over an HTTP request,
     /// you can respond with the `update_id` and have the client check
     /// on the update status later on.
@@ -672,7 +712,7 @@ impl<'a> Index<'a> {
     ///    UpdateStatus::Failed{content} => content.update_id,
     ///    UpdateStatus::Processed{content} => content.update_id,
     /// };
-    /// 
+    ///
     /// let update_id = progress.get_update_id();
     /// // Get update status from the index, using `update_id`
     /// let status = movies.get_update(update_id).await.unwrap();
@@ -702,9 +742,9 @@ impl<'a> Index<'a> {
     }
 
     /// Get the status of all updates in a given index.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
     /// # use std::thread::sleep;
@@ -717,7 +757,7 @@ impl<'a> Index<'a> {
     /// #    value: String,
     /// #    kind: String,
     /// # }
-    /// # 
+    /// #
     /// # impl document::Document for Document {
     /// #    type UIDType = usize;
     /// #
@@ -729,19 +769,19 @@ impl<'a> Index<'a> {
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movies = client.get_or_create("movies_get_all_updates").await.unwrap();
-    /// 
+    ///
     /// # movies.add_documents(&[
     /// #     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     /// #     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
     /// # ], None).await.unwrap();
     /// # sleep(Duration::from_secs(1));
-    /// 
+    ///
     /// # movies.add_documents(&[
     /// #    Document { id: 0, kind: "title".into(), value: "Harry Potter and the Chamber of Secrets".to_string() },
     /// #    Document { id: 1, kind: "title".into(), value: "Harry Potter and the Prisoner of Azkaban".to_string() },
     /// # ], None).await.unwrap();
     /// # sleep(Duration::from_secs(1));
-    /// 
+    ///
     /// let status = movies.get_all_updates().await.unwrap();
     /// assert!(status.len() >= 2);
     /// # client.delete_index("movies_get_all_updates").await.unwrap();

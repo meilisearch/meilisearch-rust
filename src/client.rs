@@ -125,6 +125,26 @@ impl<'a> Client<'a> {
         .into_index(self))
     }
 
+    /// Delete an index from its UID if it exists.
+    /// To delete an index if it exists from the [index object](../indexes/struct.Index.html), use
+    /// [the delete_if_exists method](../indexes/struct.Index.html#method.delete_if_exists).
+    pub async fn delete_index_if_exists(&self, uid: &str) -> Result<bool, Error> {
+        match self.delete_index(uid).await {
+            Ok (_) => return Ok(true),
+            Err (error) => {
+                match error {
+                    Error::MeiliSearchError {
+                        message: _,
+                        error_code: ErrorCode::IndexNotFound,
+                        error_type: _,
+                        error_link: _,
+                    } => return Ok(false),
+                    _ => return Err(error),
+                };
+            },
+        };
+    }
+
     /// Delete an index from its UID.
     /// To delete an index from the [index object](../indexes/struct.Index.html), use [the delete method](../indexes/struct.Index.html#method.delete).
     pub async fn delete_index(&self, uid: &str) -> Result<(), Error> {
@@ -316,5 +336,25 @@ mod tests {
     async fn test_get_keys() {
         let client = Client::new("http://localhost:7700", "masterKey");
         client.get_keys().await.unwrap();
+    }
+
+    #[async_test]
+    async fn test_delete_if_exits() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index_name = "movies_delete_if_exists";
+        client.create_index(index_name, None).await.unwrap();
+        let mut index = client.get_index(index_name).await;
+        assert!(index.is_ok());
+        let deleted = client.delete_index_if_exists(index_name).await.unwrap();
+        assert_eq!(deleted, true);
+        index = client.get_index(index_name).await;
+        assert!(index.is_err());
+    }
+
+    #[async_test]
+    async fn test_delete_if_exits_none() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let deleted = client.delete_index_if_exists("bad").await.unwrap();
+        assert_eq!(deleted, false);
     }
 }
