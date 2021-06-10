@@ -90,7 +90,7 @@ impl<'a> Index<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// # client.create_index("movies", None).await;
+    /// client.create_index("movies", None).await;
     ///
     /// // get the index named "movies" and delete it
     /// let movies = client.assume_index("movies");
@@ -108,17 +108,13 @@ impl<'a> Index<'a> {
     pub async fn delete_if_exists(self) -> Result<bool, Error> {
         match self.delete().await {
             Ok (_) => return Ok(true),
-            Err (error) => {
-                match error {
-                    Error::MeiliSearchError {
-                        message: _,
-                        error_code: ErrorCode::IndexNotFound,
-                        error_type: _,
-                        error_link: _,
-                    } => return Ok(false),
-                    _ => return Err(error),
-                };
-            },
+            Err (Error::MeiliSearchError {
+                message: _,
+                error_code: ErrorCode::IndexNotFound,
+                error_type: _,
+                error_link: _,
+            }) => return Ok(false),
+            Err(error) => return Err(error),
         };
     }
 

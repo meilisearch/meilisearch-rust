@@ -126,22 +126,17 @@ impl<'a> Client<'a> {
     }
 
     /// Delete an index from its UID if it exists.
-    /// To delete an index if it exists from the [index object](../indexes/struct.Index.html), use
-    /// [the delete_if_exists method](../indexes/struct.Index.html#method.delete_if_exists).
+    /// To delete an index if it exists from the [`Index`] object, use the [Index::delete_if_exists] method.
     pub async fn delete_index_if_exists(&self, uid: &str) -> Result<bool, Error> {
         match self.delete_index(uid).await {
             Ok (_) => return Ok(true),
-            Err (error) => {
-                match error {
-                    Error::MeiliSearchError {
-                        message: _,
-                        error_code: ErrorCode::IndexNotFound,
-                        error_type: _,
-                        error_link: _,
-                    } => return Ok(false),
-                    _ => return Err(error),
-                };
-            },
+            Err (Error::MeiliSearchError {
+                message: _,
+                error_code: ErrorCode::IndexNotFound,
+                error_type: _,
+                error_link: _,
+            }) => return Ok(false),
+            Err(error) => return Err(error),
         };
     }
 
