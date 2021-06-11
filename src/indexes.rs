@@ -107,15 +107,15 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn delete_if_exists(self) -> Result<bool, Error> {
         match self.delete().await {
-            Ok (_) => return Ok(true),
+            Ok (_) => Ok(true),
             Err (Error::MeiliSearchError {
                 message: _,
                 error_code: ErrorCode::IndexNotFound,
                 error_type: _,
                 error_link: _,
-            }) => return Ok(false),
-            Err(error) => return Err(error),
-        };
+            }) => Ok(false),
+            Err(error) => Err(error),
+        }
     }
 
     /// Search for documents matching a specific query in the index.\
