@@ -1,8 +1,6 @@
-# Contributing
+# Contributing <!-- omit in toc -->
 
 First of all, thank you for contributing to MeiliSearch! The goal of this document is to provide everything you need to know in order to contribute to MeiliSearch and its different integrations.
-
-<!-- MarkdownTOC autolink="true" style="ordered" indent="   " -->
 
 - [Assumptions](#assumptions)
 - [How to Contribute](#how-to-contribute)
@@ -10,7 +8,6 @@ First of all, thank you for contributing to MeiliSearch! The goal of this docume
 - [Git Guidelines](#git-guidelines)
 - [Release Process (for internal team only)](#release-process-for-internal-team-only)
 
-<!-- /MarkdownTOC -->
 
 ## Assumptions
 
@@ -30,7 +27,7 @@ First of all, thank you for contributing to MeiliSearch! The goal of this docume
 
 ## Development Workflow
 
-### Tests
+### Tests <!-- omit in toc -->
 
 All the tests are documentation tests.<br>
 Since they are all making operations on the MeiliSearch server, running all the tests simultaneously would cause panics.
@@ -44,9 +41,16 @@ docker run -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --master-key=m
 cargo test -- --test-threads=1
 ```
 
+Also, the WASM example compilation should be checked:
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo check --example web_app --target wasm32-unknown-unknown
+```
+
 Each PR should pass the tests to be accepted.
 
-### Clippy
+### Clippy <!-- omit in toc -->
 
 Each PR should pass [`clippy`](https://github.com/rust-lang/rust-clippy) (the linter) to be accepted.
 
@@ -67,7 +71,7 @@ rustup component add clippy
 rustup update
 ```
 
-### Update the README
+### Update the README <!-- omit in toc -->
 
 The README is generated. Please do not update manually the `README.md` file.
 
@@ -91,12 +95,12 @@ If it's not, the CI will fail on your PR.
 
 ## Git Guidelines
 
-### Git Branches
+### Git Branches <!-- omit in toc -->
 
 All changes must be made in a branch and submitted as PR.
 We do not enforce any branch naming style, but please use something descriptive of your changes.
 
-### Git Commits
+### Git Commits <!-- omit in toc -->
 
 As minimal requirements, your commit message should:
 - be capitalized
@@ -106,7 +110,7 @@ As minimal requirements, your commit message should:
 
 We don't follow any other convention, but if you want to use one, we recommend [this one](https://chris.beams.io/posts/git-commit/).
 
-### GitHub Pull Requests
+### GitHub Pull Requests <!-- omit in toc -->
 
 Some notes on GitHub PRs:
 
@@ -120,17 +124,17 @@ Some notes on GitHub PRs:
 
 MeiliSearch tools follow the [Semantic Versioning Convention](https://semver.org/).
 
-### Automation to Rebase and Merge the PRs
+### Automation to Rebase and Merge the PRs <!-- omit in toc -->
 
 This project integrates a bot that helps us manage pull requests merging.<br>
 _[Read more about this](https://github.com/meilisearch/integration-guides/blob/main/guides/bors.md)._
 
-### Automated Changelogs
+### Automated Changelogs <!-- omit in toc -->
 
 This project integrates a tool to create automated changelogs.<br>
 _[Read more about this](https://github.com/meilisearch/integration-guides/blob/main/guides/release-drafter.md)._
 
-### How to Publish the Release
+### How to Publish the Release <!-- omit in toc -->
 
 ⚠️ Before doing anything, make sure you got through the guide about [Releasing an Integration](https://github.com/meilisearch/integration-guides/blob/main/guides/integration-release.md).
 
