@@ -63,7 +63,7 @@ pub struct DumpInfo {
 
 /// Dump related methods.\
 /// See the [dumps](crate::dumps) module.
-impl<'a> Client<'a> {
+impl Client {
     /// Triggers a dump creation process.
     /// Once the process is complete, a dump is created in the [dumps directory](https://docs.meilisearch.com/reference/features/configuration.html#dumps-destination).
     /// If the dumps directory does not exist yet, it will be created.
@@ -85,7 +85,7 @@ impl<'a> Client<'a> {
     pub async fn create_dump(&self) -> Result<DumpInfo, Error> {
         request::<(), DumpInfo>(
             &format!("{}/dumps", self.host),
-            self.apikey,
+            &self.api_key,
             Method::Post(()),
             202,
         )
@@ -109,10 +109,10 @@ impl<'a> Client<'a> {
     /// let dump_info = client.get_dump_status(&dump_info.uid).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_dump_status(&self, dump_uid: &str) -> Result<DumpInfo, Error> {
+    pub async fn get_dump_status(&self, dump_uid: impl AsRef<str>) -> Result<DumpInfo, Error> {
         request::<(), DumpInfo>(
-            &format!("{}/dumps/{}/status", self.host, dump_uid),
-            self.apikey,
+            &format!("{}/dumps/{}/status", self.host, dump_uid.as_ref()),
+            &self.api_key,
             Method::Get,
             200,
         )
@@ -121,14 +121,14 @@ impl<'a> Client<'a> {
 }
 
 /// Alias for [create_dump](Client::create_dump).
-pub async fn create_dump<'a>(client: &'a Client<'a>) -> Result<DumpInfo, Error> {
+pub async fn create_dump(client: &Client) -> Result<DumpInfo, Error> {
     client.create_dump().await
 }
 
 /// Alias for [get_dump_status](Client::get_dump_status).
-pub async fn get_dump_status<'a>(
-    client: &'a Client<'a>,
-    dump_uid: &str,
+pub async fn get_dump_status(
+    client: &Client,
+    dump_uid: impl AsRef<str>,
 ) -> Result<DumpInfo, Error> {
     client.get_dump_status(dump_uid).await
 }
