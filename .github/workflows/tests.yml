@@ -46,3 +46,13 @@ jobs:
     - uses: actions/checkout@v2
     - name: Check the README.md file is up-to-date
       run: sh scripts/check-readme.sh
+
+  wasm_build:
+    name: wasm-build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run:  |
+        rustup target add wasm32-unknown-unknown
+        cargo check --example web_app --target wasm32-unknown-unknown --features=sync

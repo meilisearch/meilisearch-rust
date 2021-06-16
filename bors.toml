@@ -1,3 +1,8 @@
-status = ['integration-tests', 'clippy-check', 'readme-check']
+status = [
+    'integration-tests',
+    'clippy-check',
+    'readme-check',
+    'wasm-build'
+]
 # 1 hour timeout
 timeout-sec = 3600

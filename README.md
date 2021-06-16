@@ -49,7 +49,7 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.8.0"
+meilisearch-sdk = "0.8.1"
 ```
 
 The following optional dependencies may also be useful:
@@ -60,6 +60,7 @@ serde = { version = "1.0", features = ["derive"] }
 ```
 
 This crate is `async` but you can choose to use an async runtime like [tokio](https://crates.io/crates/tokio) or just [block on futures](https://docs.rs/futures/latest/futures/executor/fn.block_on.html).
+You can enable the `sync` feature to make most structs `Sync`. It may be a bit slower.
 
 Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
 

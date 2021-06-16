@@ -8,19 +8,21 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
+use lazy_static::lazy_static;
 
 mod document;
 use crate::document::Crate;
 
-// We need a static client because yew's component trait does not allow lifetimes shorter than static
-pub static CLIENT: Client = Client::new(
-    "https://finding-demos.meilisearch.com",
-    "2b902cce4f868214987a9f3c7af51a69fa660d74a785bed258178b96e3480bb3",
-);
+lazy_static! {
+    static ref CLIENT: Client = Client::new(
+        "https://finding-demos.meilisearch.com",
+        "2b902cce4f868214987a9f3c7af51a69fa660d74a785bed258178b96e3480bb3",
+    );
+}
 
 struct Model {
     link: Rc<ComponentLink<Self>>,
-    index: Rc<Index<'static>>, // The lifetime of Index is the lifetime of the client
+    index: Rc<Index>,
     results: Vec<Crate>,
     processing_time_ms: usize,
 

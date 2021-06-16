@@ -124,7 +124,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 #[serde(rename_all = "camelCase")]
 pub struct Query<'a> {
     #[serde(skip_serializing)]
-    index: &'a Index<'a>,
+    index: &'a Index,
     /// The text that will be searched for among the documents.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "q")]
@@ -194,7 +194,7 @@ pub struct Query<'a> {
 
 #[allow(missing_docs)]
 impl<'a> Query<'a> {
-    pub fn new(index: &'a Index<'a>) -> Query<'a> {
+    pub fn new(index: &'a Index) -> Query<'a> {
         Query {
             index,
             query: None,
@@ -305,7 +305,7 @@ mod tests {
     }
 
     #[allow(unused_must_use)]
-    async fn setup_test_index<'a>(client: &'a Client<'a>, name: &'a str) -> Index<'a> {
+    async fn setup_test_index<'a>(client: &'a Client, name: &'a str) -> Index {
         // try to delete
         client.delete_index(name).await;
 

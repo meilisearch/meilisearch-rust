@@ -1,5 +1,5 @@
 use crate::{
-    client::Client, document::*, errors::Error, progress::*, request::*, search::*,
+    client::Client, document::*, errors::Error, errors::ErrorCode, progress::*, request::*, search::*, Rc,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
@@ -15,10 +15,11 @@ pub(crate) struct JsonIndex {
 }
 
 impl JsonIndex {
-    pub(crate) fn into_index<'a>(self, client: &'a Client) -> Index<'a> {
+    pub(crate) fn into_index(self, client: &Client) -> Index {
         Index {
-            uid: self.uid,
-            client,
+            uid: Rc::new(self.uid),
+            host: Rc::clone(&client.host),
+            api_key: Rc::clone(&client.api_key)
         }
     }
 }
@@ -38,21 +39,22 @@ impl JsonIndex {
 /// // do something with the index
 /// # });
 /// ```
-#[derive(Debug)]
-pub struct Index<'a> {
-    pub(crate) uid: String,
-    pub(crate) client: &'a Client<'a>,
+#[derive(Debug, Clone)]
+pub struct Index {
+    pub(crate) uid: Rc<String>,
+    pub(crate) host: Rc<String>,
+    pub(crate) api_key: Rc<String>,
 }
 
-impl<'a> Index<'a> {
+impl Index {
     /// Set the primary key of the index.
     ///
     /// If you prefer, you can use the method [set_primary_key](#method.set_primary_key), which is an alias.
-    pub async fn update(&self, primary_key: &str) -> Result<(), Error> {
+    pub async fn update(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
         request::<serde_json::Value, JsonIndex>(
-            &format!("{}/indexes/{}", self.client.host, self.uid),
-            self.client.apikey,
-            Method::Put(json!({ "primaryKey": primary_key })),
+            &format!("{}/indexes/{}", self.host, self.uid),
+            &self.api_key,
+            Method::Put(json!({ "primaryKey": primary_key.as_ref() })),
             200,
         ).await?;
         Ok(())
@@ -75,11 +77,47 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn delete(self) -> Result<(), Error> {
         Ok(request::<(), ()>(
-            &format!("{}/indexes/{}", self.client.host, self.uid),
-            self.client.apikey,
+            &format!("{}/indexes/{}", self.host, self.uid),
+            &self.api_key,
             Method::Delete,
             204,
         ).await?)
+    }
+
+    /// Delete the index if it exists.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// client.create_index("movies", None).await;
+    ///
+    /// // get the index named "movies" and delete it
+    /// let movies = client.assume_index("movies");
+    /// let mut deleted = movies.delete_if_exists().await.unwrap();
+    /// assert_eq!(deleted, true);
+    /// let index = client.get_index("movies").await;
+    /// assert!(index.is_err());
+    ///
+    /// // get an index that doesn't exist and try to delete it
+    /// let no_index = client.assume_index("no_index");
+    /// deleted = no_index.delete_if_exists().await.unwrap();
+    /// assert_eq!(deleted, false);
+    /// # });
+    /// ```
+    pub async fn delete_if_exists(self) -> Result<bool, Error> {
+        match self.delete().await {
+            Ok (_) => Ok(true),
+            Err (Error::MeiliSearchError {
+                message: _,
+                error_code: ErrorCode::IndexNotFound,
+                error_type: _,
+                error_link: _,
+            }) => Ok(false),
+            Err(error) => Err(error),
+        }
     }
 
     /// Search for documents matching a specific query in the index.\
@@ -124,10 +162,10 @@ impl<'a> Index<'a> {
         Ok(request::<&Query, SearchResults<T>>(
             &format!(
                 "{}/indexes/{}/search",
-                self.client.host,
+                self.host,
                 self.uid
             ),
-            self.client.apikey,
+            &self.api_key,
             Method::Post(query),
             200,
         ).await?)
@@ -223,9 +261,9 @@ impl<'a> Index<'a> {
         Ok(request::<(), T>(
             &format!(
                 "{}/indexes/{}/documents/{}",
-                self.client.host, self.uid, uid
+                self.host, self.uid, uid
             ),
-            self.client.apikey,
+            &self.api_key,
             Method::Get,
             200,
         ).await?)
@@ -281,7 +319,7 @@ impl<'a> Index<'a> {
         limit: Option<usize>,
         attributes_to_retrieve: Option<&str>,
     ) -> Result<Vec<T>, Error> {
-        let mut url = format!("{}/indexes/{}/documents?", self.client.host, self.uid);
+        let mut url = format!("{}/indexes/{}/documents?", self.host, self.uid);
         if let Some(offset) = offset {
             url.push_str("offset=");
             url.push_str(offset.to_string().as_str());
@@ -294,11 +332,11 @@ impl<'a> Index<'a> {
         }
         if let Some(attributes_to_retrieve) = attributes_to_retrieve {
             url.push_str("attributesToRetrieve=");
-            url.push_str(attributes_to_retrieve.to_string().as_str());
+            url.push_str(attributes_to_retrieve);
         }
         Ok(request::<(), Vec<T>>(
             &url,
-            self.client.apikey,
+            &self.api_key,
             Method::Get,
             200,
         ).await?)
@@ -362,22 +400,22 @@ impl<'a> Index<'a> {
     /// # });
     /// ```
     pub async fn add_or_replace<T: Document>(
-        &'a self,
+        &self,
         documents: &[T],
         primary_key: Option<&str>,
-    ) -> Result<Progress<'a>, Error> {
+    ) -> Result<Progress, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
+                self.host, self.uid, primary_key
             )
         } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
+            format!("{}/indexes/{}/documents", self.host, self.uid)
         };
         Ok(
             request::<&[T], ProgressJson>(
                 &url,
-                self.client.apikey,
+                &self.api_key,
                 Method::Post(documents),
                 202,
             ).await?
@@ -387,10 +425,10 @@ impl<'a> Index<'a> {
 
     /// Alias for [add_or_replace](#method.add_or_replace).
     pub async fn add_documents<T: Document>(
-        &'a self,
+        &self,
         documents: &[T],
         primary_key: Option<&str>,
-    ) -> Result<Progress<'a>, Error> {
+    ) -> Result<Progress, Error> {
         self.add_or_replace(documents, primary_key).await
     }
 
@@ -450,20 +488,20 @@ impl<'a> Index<'a> {
     /// # });
     /// ```
     pub async fn add_or_update<T: Document>(
-        &'a self,
+        &self,
         documents: &[T],
-        primary_key: Option<&str>,
-    ) -> Result<Progress<'a>, Error> {
+        primary_key: Option<impl AsRef<str>>,
+    ) -> Result<Progress, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
+                self.host, self.uid, primary_key.as_ref()
             )
         } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
+            format!("{}/indexes/{}/documents", self.host, self.uid)
         };
         Ok(
-            request::<&[T], ProgressJson>(&url, self.client.apikey, Method::Put(documents), 202).await?
+            request::<&[T], ProgressJson>(&url, &self.api_key, Method::Put(documents), 202).await?
                 .into_progress(self),
         )
     }
@@ -504,10 +542,10 @@ impl<'a> Index<'a> {
     /// # assert_eq!(movies.len(), 0);
     /// # });
     /// ```
-    pub async fn delete_all_documents(&'a self) -> Result<Progress<'a>, Error> {
+    pub async fn delete_all_documents(&self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/documents", self.client.host, self.uid),
-            self.client.apikey,
+            &format!("{}/indexes/{}/documents", self.host, self.uid),
+            &self.api_key,
             Method::Delete,
             202,
         ).await?
@@ -549,13 +587,13 @@ impl<'a> Index<'a> {
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_document<T: Display>(&'a self, uid: T) -> Result<Progress<'a>, Error> {
+    pub async fn delete_document<T: Display>(&self, uid: T) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
             &format!(
                 "{}/indexes/{}/documents/{}",
-                self.client.host, self.uid, uid
+                self.host, self.uid, uid
             ),
-            self.client.apikey,
+            &self.api_key,
             Method::Delete,
             202,
         ).await?
@@ -599,15 +637,15 @@ impl<'a> Index<'a> {
     /// # });
     /// ```
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
-        &'a self,
+        &self,
         uids: &[T],
-    ) -> Result<Progress<'a>, Error> {
+    ) -> Result<Progress, Error> {
         Ok(request::<&[T], ProgressJson>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
-                self.client.host, self.uid
+                self.host, self.uid
             ),
-            self.client.apikey,
+            &self.api_key,
             Method::Post(uids),
             202,
         ).await?
@@ -615,14 +653,96 @@ impl<'a> Index<'a> {
     }
 
     /// Alias for the [update method](#method.update).
-    pub async fn set_primary_key(&self, primary_key: &str) -> Result<(), Error> {
+    pub async fn set_primary_key(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
         self.update(primary_key).await
     }
 
-    /// Get the status of all updates in a given index.
-    /// 
+    /// Get the status of an update on the index.
+    ///
+    /// After executing an update, a `Progress` struct is returned,
+    /// you can use this struct to check on the status of the update.
+    ///
+    /// In some cases, you might not need the status of the update directly,
+    /// or would rather not wait for it to resolve.
+    ///
+    /// For these cases, you can get the `update_id` from the `Progress`
+    /// struct and use it to query the index later on.
+    ///
+    /// For example, if a clients updates an entry over an HTTP request,
+    /// you can respond with the `update_id` and have the client check
+    /// on the update status later on.
+    ///
     /// # Example
-    /// 
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// # use meilisearch_sdk::{client::*, document, indexes::*, progress::UpdateStatus};
+    /// #
+    /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// # struct Document {
+    /// #    id: usize,
+    /// #    value: String,
+    /// #    kind: String,
+    /// # }
+    /// #
+    /// # impl document::Document for Document {
+    /// #    type UIDType = usize;
+    /// #
+    /// #    fn get_uid(&self) -> &Self::UIDType {
+    /// #        &self.id
+    /// #    }
+    /// # }
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let movies = client.get_or_create("movies_get_one_update").await.unwrap();
+    ///
+    /// let progress = movies.add_documents(&[
+    ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() }
+    /// ], None).await.unwrap();
+    ///
+    /// // Get update status directly on the progress object
+    /// let status = progress.get_status().await.unwrap();
+    /// let from_progress = match status {
+    ///    UpdateStatus::Enqueued{content} => content.update_id,
+    ///    UpdateStatus::Failed{content} => content.update_id,
+    ///    UpdateStatus::Processed{content} => content.update_id,
+    /// };
+    ///
+    /// let update_id = progress.get_update_id();
+    /// // Get update status from the index, using `update_id`
+    /// let status = movies.get_update(update_id).await.unwrap();
+    ///
+    /// let from_index = match status {
+    ///    UpdateStatus::Enqueued{content} => content.update_id,
+    ///    UpdateStatus::Failed{content} => content.update_id,
+    ///    UpdateStatus::Processed{content} => content.update_id,
+    /// };
+    ///
+    /// assert_eq!(from_progress, from_index);
+    /// assert_eq!(from_progress, update_id);
+    /// # client.delete_index("movies_get_one_update").await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_update(&self, update_id: u64) -> Result<UpdateStatus, Error> {
+        request::<(), UpdateStatus>(
+            &format!(
+                "{}/indexes/{}/updates/{}",
+                self.host, self.uid, update_id
+            ),
+            &self.api_key,
+            Method::Get,
+            200,
+        )
+        .await
+    }
+
+    /// Get the status of all updates in a given index.
+    ///
+    /// # Example
+    ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
     /// # use std::thread::sleep;
@@ -635,7 +755,7 @@ impl<'a> Index<'a> {
     /// #    value: String,
     /// #    kind: String,
     /// # }
-    /// # 
+    /// #
     /// # impl document::Document for Document {
     /// #    type UIDType = usize;
     /// #
@@ -647,19 +767,19 @@ impl<'a> Index<'a> {
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movies = client.get_or_create("movies_get_all_updates").await.unwrap();
-    /// 
+    ///
     /// # movies.add_documents(&[
     /// #     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     /// #     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
     /// # ], None).await.unwrap();
     /// # sleep(Duration::from_secs(1));
-    /// 
+    ///
     /// # movies.add_documents(&[
     /// #    Document { id: 0, kind: "title".into(), value: "Harry Potter and the Chamber of Secrets".to_string() },
     /// #    Document { id: 1, kind: "title".into(), value: "Harry Potter and the Prisoner of Azkaban".to_string() },
     /// # ], None).await.unwrap();
     /// # sleep(Duration::from_secs(1));
-    /// 
+    ///
     /// let status = movies.get_all_updates().await.unwrap();
     /// assert!(status.len() >= 2);
     /// # client.delete_index("movies_get_all_updates").await.unwrap();
@@ -669,9 +789,9 @@ impl<'a> Index<'a> {
         request::<(), Vec<UpdateStatus>>(
             &format!(
                 "{}/indexes/{}/updates",
-                self.client.host, self.uid
+                self.host, self.uid
             ),
-            self.client.apikey,
+            &self.api_key,
             Method::Get,
             200,
         )
@@ -694,8 +814,8 @@ impl<'a> Index<'a> {
     /// ```
     pub async fn get_stats(&self) -> Result<IndexStats, Error> {
         request::<serde_json::Value, IndexStats>(
-            &format!("{}/indexes/{}/stats", self.client.host, self.uid),
-            self.client.apikey,
+            &format!("{}/indexes/{}/stats", self.host, self.uid),
+            &self.api_key,
             Method::Get,
             200,
         ).await
@@ -712,7 +832,7 @@ pub struct IndexStats {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*};
+    use crate::{client::*, progress::UpdateStatus};
     use futures_await_test::async_test;
 
     #[async_test]
@@ -725,5 +845,25 @@ mod tests {
         client.delete_index(uid).await.unwrap();
 
         assert_eq!(status.len(), 0);
+    }
+
+    #[async_test]
+    async fn test_get_one_update() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let uid = "test_get_one_update";
+
+        let index = client.get_or_create(uid).await.unwrap();
+        let progress = index.delete_all_documents().await.unwrap();
+
+        let update_id = progress.get_update_id();
+        let status = index.get_update(update_id).await.unwrap();
+
+        client.delete_index(uid).await.unwrap();
+
+        match status {
+            UpdateStatus::Enqueued{content} => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Failed{content} => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Processed{content} => assert_eq!(content.update_id, update_id),
+        }
     }
 }
