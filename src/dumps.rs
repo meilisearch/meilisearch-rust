@@ -15,7 +15,7 @@
 //! # Example
 //!
 //! ```no_run
-//! # use meilisearch_sdk::{client::*, errors::*, dumps::*};
+//! # use meilisearch_sdk::prelude::*;
 //! # use futures_await_test::async_test;
 //! # use std::{thread::sleep, time::Duration};
 //! # futures::executor::block_on(async move {
@@ -35,7 +35,7 @@
 //! # });
 //! ```
 
-use crate::{client::Client, errors::Error, request::*};
+use crate::prelude::*;
 use serde::Deserialize;
 
 /// The status of a dump.\
@@ -71,7 +71,7 @@ impl Client {
     /// # Example
     ///
     /// ```no_run
-    /// # use meilisearch_sdk::{client::*, errors::*, dumps::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// # use futures_await_test::async_test;
     /// # use std::{thread::sleep, time::Duration};
     /// # futures::executor::block_on(async move {
@@ -97,7 +97,7 @@ impl Client {
     /// # Example
     ///
     /// ```no_run
-    /// # use meilisearch_sdk::{client::*, errors::*, dumps::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// # use futures_await_test::async_test;
     /// # use std::{thread::sleep, time::Duration};
     /// # futures::executor::block_on(async move {

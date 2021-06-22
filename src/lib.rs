@@ -112,6 +112,7 @@ mod request;
 pub mod search;
 /// Module containing settings
 pub mod settings;
+pub mod prelude;
 
 #[cfg(feature = "sync")]
 pub(crate) type Rc<T> = std::sync::Arc<T>;

@@ -1,4 +1,4 @@
-use crate::{errors::*, indexes::*, request::*, Rc};
+use crate::{prelude::*, indexes::{JsonIndex, IndexStats}};
 use serde_json::{json, Value};
 use serde::{Deserialize};
 use std::collections::HashMap;
@@ -17,7 +17,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -34,7 +34,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -64,7 +64,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::prelude::*;
     ///
     /// # futures::executor::block_on(async move {
     /// // create the client
@@ -99,7 +99,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
@@ -174,7 +174,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -195,7 +195,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, errors::{Error, ErrorCode}};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -217,7 +217,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::client::*;
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -238,7 +238,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, errors::Error};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -259,7 +259,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -289,7 +289,7 @@ pub struct ClientStats {
 /// Example:
 ///
 /// ```
-/// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
+/// # use meilisearch_sdk::prelude::*;
 /// Health {
 ///    status: "available".to_string(),
 /// };
@@ -311,7 +311,7 @@ pub struct Keys {
 /// Example:
 ///
 /// ```
-/// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
+/// # use meilisearch_sdk::{prelude::*, client::Version};
 /// Version {
 ///    commit_sha: "b46889b5f0f2f8b91438a08a358ba8f05fc09fc1".to_string(),
 ///    build_date: "2019-11-15T09:51:54.278247+00:00".to_string(),

@@ -1,6 +1,4 @@
-use crate::{
-    client::Client, document::*, errors::Error, errors::ErrorCode, progress::*, request::*, search::*, Rc,
-};
+use crate::prelude::*;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::{fmt::Display, collections::HashMap};
@@ -29,7 +27,7 @@ impl JsonIndex {
 /// # Example
 ///
 /// ```
-/// # use meilisearch_sdk::{client::*, indexes::*};
+/// # use meilisearch_sdk::prelude::*;
 /// # futures::executor::block_on(async move {
 /// let client = Client::new("http://localhost:7700", "masterKey");
 ///
@@ -65,7 +63,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.create_index("movies", None).await;
@@ -89,7 +87,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// client.create_index("movies", None).await;
@@ -127,7 +125,7 @@ impl Index {
     ///
     /// ```
     /// use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, search::*};
+    /// # use meilisearch_sdk::prelude::*;
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
@@ -178,7 +176,7 @@ impl Index {
     ///
     /// ```
     /// use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, search::*};
+    /// # use meilisearch_sdk::prelude::*;
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
@@ -223,7 +221,7 @@ impl Index {
     /// ```
     /// use serde::{Serialize, Deserialize};
     ///
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::prelude::*;
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
@@ -280,8 +278,7 @@ impl Index {
     ///
     /// ```
     /// use serde::{Serialize, Deserialize};
-    ///
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::prelude::*;
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
@@ -355,10 +352,10 @@ impl Index {
     ///
     /// ```
     /// use serde::{Serialize, Deserialize};
-    ///
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
+    /// 
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///    name: String,
@@ -443,10 +440,10 @@ impl Index {
     ///
     /// ```
     /// use serde::{Serialize, Deserialize};
-    ///
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
+    /// 
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///    name: String,
@@ -512,7 +509,7 @@ impl Index {
     ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
@@ -558,7 +555,7 @@ impl Index {
     ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
@@ -606,7 +603,7 @@ impl Index {
     ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
@@ -678,7 +675,7 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
-    /// # use meilisearch_sdk::{client::*, document, indexes::*, progress::UpdateStatus};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// # struct Document {
@@ -687,7 +684,7 @@ impl Index {
     /// #    kind: String,
     /// # }
     /// #
-    /// # impl document::Document for Document {
+    /// # impl meilisearch_sdk::document::Document for Document {
     /// #    type UIDType = usize;
     /// #
     /// #    fn get_uid(&self) -> &Self::UIDType {
@@ -747,7 +744,7 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
-    /// # use meilisearch_sdk::{client::*, document, indexes::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// # struct Document {
@@ -756,7 +753,7 @@ impl Index {
     /// #    kind: String,
     /// # }
     /// #
-    /// # impl document::Document for Document {
+    /// # impl meilisearch_sdk::document::Document for Document {
     /// #    type UIDType = usize;
     /// #
     /// #    fn get_uid(&self) -> &Self::UIDType {
@@ -803,7 +800,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -832,7 +829,7 @@ pub struct IndexStats {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*, progress::UpdateStatus};
+    use crate::prelude::*;
     use futures_await_test::async_test;
 
     #[async_test]

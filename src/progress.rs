@@ -1,6 +1,6 @@
 #![allow(missing_docs)]
 
-use crate::{errors::Error, indexes::Index, request::*, Rc};
+use crate::prelude::*;
 use serde::Deserialize;
 use std::{collections::{BTreeMap, BTreeSet}, time::Duration};
 
@@ -32,7 +32,7 @@ pub struct Progress {
 impl<'a> Progress {
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movies_index = client.get_or_create("movies").await.unwrap();
@@ -48,7 +48,7 @@ impl<'a> Progress {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movies_index = client.get_or_create("movies").await.unwrap();
@@ -80,7 +80,7 @@ impl<'a> Progress {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, document, indexes::*, progress::*};
+    /// # use meilisearch_sdk::prelude::*;
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -90,7 +90,7 @@ impl<'a> Progress {
     /// #    kind: String,
     /// # }
     /// # 
-    /// # impl document::Document for Document {
+    /// # impl meilisearch_sdk::document::Document for Document {
     /// #    type UIDType = usize;
     /// #
     /// #    fn get_uid(&self) -> &Self::UIDType {

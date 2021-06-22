@@ -1,11 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::{
-    indexes::Index,
-    errors::Error,
-    request::{request, Method},
-    progress::{Progress, ProgressJson}
-};
+use crate::prelude::*;
 
 /// Struct reprensenting a set of settings.
 /// You can build this struct using the builder syntax.
@@ -377,7 +372,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -406,7 +401,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -436,7 +431,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -462,7 +457,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -497,7 +492,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -523,7 +518,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -548,7 +543,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -573,7 +568,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -599,7 +594,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -624,7 +619,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -649,7 +644,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -675,7 +670,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -700,7 +695,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -725,7 +720,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -750,7 +745,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
@@ -775,7 +770,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # use meilisearch_sdk::prelude::*;
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
