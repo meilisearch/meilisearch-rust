@@ -345,7 +345,7 @@ mod tests {
         let mut index = client.get_index(index_name).await;
         assert!(index.is_ok());
         let deleted = client.delete_index_if_exists(index_name).await.unwrap();
-        assert_eq!(deleted, true);
+        assert!(deleted);
         index = client.get_index(index_name).await;
         assert!(index.is_err());
     }
@@ -354,6 +354,6 @@ mod tests {
     async fn test_delete_if_exits_none() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let deleted = client.delete_index_if_exists("bad").await.unwrap();
-        assert_eq!(deleted, false);
+        assert!(deleted);
     }
 }

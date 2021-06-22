@@ -322,7 +322,7 @@ mod test {
         ).await;
     
         client.delete_index("movies_wait_for_pending_timeout").await.unwrap();
-        assert_eq!(status.is_none(), true);
+        assert!(status.is_none());
     }
 
     #[async_test]
