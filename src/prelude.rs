@@ -1,7 +1,7 @@
 //! Commonly used objects
 
 pub use crate::client::{Client, Health};
-pub use crate::document::Document;
+pub use crate::document::{Document, UnknownDocument};
 pub use crate::indexes::Index;
 pub use crate::progress::{Progress, UpdateStatus};
 pub use crate::search::{Query, SearchResult, SearchResults};

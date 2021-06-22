@@ -213,7 +213,7 @@ impl Settings {
     }
 }
 
-impl Index {
+impl<Document: crate::document::Document> Index<Document> {
     /// Get [settings](../settings/struct.Settings.html) of the Index.
     ///
     /// ```

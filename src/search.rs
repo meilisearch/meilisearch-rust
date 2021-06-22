@@ -122,9 +122,9 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Query<'a> {
+pub struct Query<'a, Document: crate::document::Document> {
     #[serde(skip_serializing)]
-    index: &'a Index,
+    index: &'a Index<Document>,
     /// The text that will be searched for among the documents.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "q")]
@@ -193,8 +193,8 @@ pub struct Query<'a> {
 }
 
 #[allow(missing_docs)]
-impl<'a> Query<'a> {
-    pub fn new(index: &'a Index) -> Query<'a> {
+impl<'a, Document: 'static +  crate::document::Document> Query<'a, Document> {
+    pub fn new(index: &'a Index<Document>) -> Query<'a, Document> {
         Query {
             index,
             query: None,
@@ -210,74 +210,94 @@ impl<'a> Query<'a> {
             matches: None,
         }
     }
-    pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut Query<'a> {
+    pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut Query<'a, Document> {
         self.query = Some(query);
         self
     }
-    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut Query<'a> {
+    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut Query<'a, Document> {
         self.offset = Some(offset);
         self
     }
-    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut Query<'a> {
+    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut Query<'a, Document> {
         self.limit = Some(limit);
         self
     }
-    pub fn with_filters<'b>(&'b mut self, filters: &'a str) -> &'b mut Query<'a> {
+    pub fn with_filters<'b>(&'b mut self, filters: &'a str) -> &'b mut Query<'a, Document> {
         self.filters = Some(filters);
         self
     }
     pub fn with_facet_filters<'b>(
         &'b mut self,
         facet_filters: &'a [&'a [&'a str]],
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut Query<'a, Document> {
         self.facet_filters = Some(facet_filters);
         self
     }
     pub fn with_facets_distribution<'b>(
         &'b mut self,
         facets_distribution: Selectors<&'a [&'a str]>,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut Query<'a, Document> {
         self.facets_distribution = Some(facets_distribution);
         self
     }
     pub fn with_attributes_to_retrieve<'b>(
         &'b mut self,
         attributes_to_retrieve: Selectors<&'a [&'a str]>,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut Query<'a, Document> {
         self.attributes_to_retrieve = Some(attributes_to_retrieve);
         self
     }
     pub fn with_attributes_to_crop<'b>(
         &'b mut self,
         attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut Query<'a, Document> {
         self.attributes_to_crop = Some(attributes_to_crop);
         self
     }
     pub fn with_attributes_to_highlight<'b>(
         &'b mut self,
         attributes_to_highlight: Selectors<&'a [&'a str]>,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut Query<'a, Document> {
         self.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
-    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut Query<'a> {
+    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut Query<'a, Document> {
         self.crop_length = Some(crop_length);
         self
     }
-    pub fn with_matches<'b>(&'b mut self, matches: bool) -> &'b mut Query<'a> {
+    pub fn with_matches<'b>(&'b mut self, matches: bool) -> &'b mut Query<'a, Document> {
         self.matches = Some(matches);
         self
     }
-    pub fn build(&mut self) -> Query<'a> {
-        self.clone()
+    pub fn build(&mut self) -> Query<'a, Document> {
+        Query {
+            index: self.index,
+            query: self.query.clone(),
+            offset: self.offset.clone(),
+            limit: self.limit.clone(),
+            filters: self.filters.clone(),
+            facet_filters: self.facet_filters.clone(),
+            facets_distribution: self.facets_distribution.clone(),
+            attributes_to_retrieve: self.attributes_to_retrieve.clone(),
+            attributes_to_crop: self.attributes_to_crop.clone(),
+            crop_length: self.crop_length.clone(),
+            attributes_to_highlight: self.attributes_to_highlight.clone(),
+            matches: self.matches.clone(),
+        }
     }
 
     /// Execute the query and fetch the results.
-    pub async fn execute<T: 'static + DeserializeOwned>(
+    pub async fn execute(
+        &'a self,
+    ) -> Result<SearchResults<Document>, Error> {
+        self.index.execute_query_with_document_type::<Document>(&self).await
+    }
+
+    /// Execute the query and fetch the results.
+    pub async fn execute_with_document_type<T: 'static + DeserializeOwned>(
         &'a self,
     ) -> Result<SearchResults<T>, Error> {
-        self.index.execute_query::<T>(&self).await
+        self.index.execute_query_with_document_type::<T>(&self).await
     }
 }
 
@@ -305,11 +325,11 @@ mod tests {
     }
 
     #[allow(unused_must_use)]
-    async fn setup_test_index<'a>(client: &'a Client, name: &'a str) -> Index {
+    async fn setup_test_index<'a>(client: &'a Client, name: &'a str) -> Index<Document> {
         // try to delete
         client.delete_index(name).await;
 
-        let index = client.create_index(name, None).await.unwrap();
+        let index = client.create_index::<Document>(name, None).await.unwrap();
         index.add_documents(&[
             Document { id: 0, kind: "text".into(), value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string() },
             Document { id: 1, kind: "text".into(), value: "dolor sit amet, consectetur adipiscing elit".to_string() },
@@ -479,7 +499,7 @@ mod tests {
 
         let mut query = Query::new(&index);
         query.with_attributes_to_retrieve(Selectors::Some(&["kind", "id"])); // omit the "value" field
-        assert!(index.execute_query::<Document>(&query).await.is_err()); // error: missing "value" field
+        assert!(index.execute_query(&query).await.is_err()); // error: missing "value" field
 
         client
             .delete_index("test_query_attributes_to_retrieve")

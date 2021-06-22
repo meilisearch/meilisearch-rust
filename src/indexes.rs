@@ -13,11 +13,12 @@ pub(crate) struct JsonIndex {
 }
 
 impl JsonIndex {
-    pub(crate) fn into_index(self, client: &Client) -> Index {
+    pub(crate) fn into_index<Document: crate::document::Document>(self, client: &Client) -> Index<Document> {
         Index {
             uid: Rc::new(self.uid),
             host: Rc::clone(&client.host),
-            api_key: Rc::clone(&client.api_key)
+            api_key: Rc::clone(&client.api_key),
+            _phantom_document: std::marker::PhantomData,
         }
     }
 }
@@ -38,13 +39,14 @@ impl JsonIndex {
 /// # });
 /// ```
 #[derive(Debug, Clone)]
-pub struct Index {
+pub struct Index<Document: crate::document::Document> {
     pub(crate) uid: Rc<String>,
     pub(crate) host: Rc<String>,
     pub(crate) api_key: Rc<String>,
+    pub(crate) _phantom_document: std::marker::PhantomData<Document>,
 }
 
-impl Index {
+impl<Document: 'static + crate::document::Document> Index<Document> {
     /// Set the primary key of the index.
     ///
     /// If you prefer, you can use the method [set_primary_key](#method.set_primary_key), which is an alias.
@@ -153,11 +155,62 @@ impl Index {
     /// # assert!(results.hits.len()>0);
     /// # });
     /// ```
-    pub async fn execute_query<T: 'static + DeserializeOwned>(
+    pub async fn execute_query_with_document_type<T: 'static + DeserializeOwned>(
         &self,
-        query: &Query<'_>,
+        query: &Query<'_, Document>,
     ) -> Result<SearchResults<T>, Error> {
-        Ok(request::<&Query, SearchResults<T>>(
+        Ok(request::<&Query<Document>, SearchResults<T>>(
+            &format!(
+                "{}/indexes/{}/search",
+                self.host,
+                self.uid
+            ),
+            &self.api_key,
+            Method::Post(query),
+            200,
+        ).await?)
+    }
+
+    /// Search for documents matching a specific query in the index.\
+    /// See also the [search method](#method.search).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::prelude::*;
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    /// // that trait is used by the sdk when the primary key is needed
+    /// impl Document for Movie {
+    ///     type UIDType = String;
+    ///     fn get_uid(&self) -> &Self::UIDType {
+    ///         &self.name
+    ///     }
+    /// }
+    ///
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let mut movies = client.get_or_create("movies").await.unwrap();
+    ///
+    /// // add some documents
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(1));
+    ///
+    /// let query = Query::new(&movies).with_query("Interstellar").with_limit(5).build();
+    /// let results = movies.execute_query::<Movie>(&query).await.unwrap();
+    /// # assert!(results.hits.len()>0);
+    /// # });
+    /// ```
+    pub async fn execute_query(
+        &self,
+        query: &Query<'_, Document>,
+    ) -> Result<SearchResults<Document>, Error> {
+        Ok(request::<&Query<Document>, SearchResults<Document>>(
             &format!(
                 "{}/indexes/{}/search",
                 self.host,
@@ -209,7 +262,7 @@ impl Index {
     /// # assert!(results.hits.len()>0);
     /// # });
     /// ```
-    pub fn search(&self) -> Query {
+    pub fn search(&self) -> Query<Document> {
         Query::new(self)
     }
 
@@ -247,7 +300,7 @@ impl Index {
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// #
     /// // retrieve a document (you have to put the document in the index before)
-    /// let interstellar = movies.get_document::<Movie>(String::from("Interstellar")).await.unwrap();
+    /// let interstellar = movies.get_document_with_document_type::<Movie>(String::from("Interstellar")).await.unwrap();
     ///
     /// assert_eq!(interstellar, Movie{
     ///     name: String::from("Interstellar"),
@@ -255,8 +308,62 @@ impl Index {
     /// });
     /// # });
     /// ```
-    pub async fn get_document<T: 'static + Document>(&self, uid: T::UIDType) -> Result<T, Error> {
+    pub async fn get_document_with_document_type<T: 'static + crate::document::Document>(&self, uid: T::UIDType) -> Result<T, Error> {
         Ok(request::<(), T>(
+            &format!(
+                "{}/indexes/{}/documents/{}",
+                self.host, self.uid, uid
+            ),
+            &self.api_key,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
+    /// Get one [document](../document/trait.Document.html) using its unique id.
+    /// Serde is needed. Add `serde = {version="1.0", features=["derive"]}` in the dependencies section of your Cargo.toml.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// # use meilisearch_sdk::prelude::*;
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// # #[derive(PartialEq)]
+    /// struct Movie {
+    ///    name: String,
+    ///    description: String,
+    /// }
+    ///
+    /// // that trait is used by the sdk when the primary key is needed
+    /// impl Document for Movie {
+    ///    type UIDType = String;
+    ///    fn get_uid(&self) -> &Self::UIDType {
+    ///        &self.name
+    ///    }
+    /// }
+    ///
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// # client.create_index("movies", None).await;
+    /// let movies = client.get_index("movies").await.unwrap();
+    /// # let mut movies = client.get_index("movies").await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(1));
+    /// #
+    /// // retrieve a document (you have to put the document in the index before)
+    /// let interstellar = movies.get_document(String::from("Interstellar")).await.unwrap();
+    ///
+    /// assert_eq!(interstellar, Movie{
+    ///     name: String::from("Interstellar"),
+    ///     description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
+    /// });
+    /// # });
+    /// ```
+    pub async fn get_document(&self, uid: Document::UIDType) -> Result<Document, Error> {
+        Ok(request::<(), Document>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.host, self.uid, uid
@@ -305,12 +412,12 @@ impl Index {
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// #
     /// // retrieve movies (you have to put some movies in the index before)
-    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
+    /// let movies = movie_index.get_documents_with_document_type::<Movie>(None, None, None).await.unwrap();
     ///
     /// assert!(movies.len() > 0);
     /// # });
     /// ```
-    pub async fn get_documents<T: 'static + Document>(
+    pub async fn get_documents_with_document_type<T: 'static + crate::document::Document>(
         &self,
         offset: Option<usize>,
         limit: Option<usize>,
@@ -332,6 +439,78 @@ impl Index {
             url.push_str(attributes_to_retrieve);
         }
         Ok(request::<(), Vec<T>>(
+            &url,
+            &self.api_key,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
+    /// Get [documents](../document/trait.Document.html) by batch.
+    ///
+    /// Using the optional parameters offset and limit, you can browse through all your documents.
+    /// If None, offset will be set to 0, limit to 20, and all attributes will be retrieved.
+    ///
+    /// *Note: Documents are ordered by MeiliSearch depending on the hash of their id.*
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::prelude::*;
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// # #[derive(PartialEq)]
+    /// struct Movie {
+    ///    name: String,
+    ///    description: String,
+    /// }
+    ///
+    /// // that trait is used by the sdk when the primary key is needed
+    /// impl Document for Movie {
+    ///    type UIDType = String;
+    ///    fn get_uid(&self) -> &Self::UIDType {
+    ///        &self.name
+    ///    }
+    /// }
+    ///
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// # client.create_index("movies", None).await;
+    /// let movie_index = client.get_index("movies").await.unwrap();
+    /// # let mut movie_index = client.get_index("movies").await.unwrap();
+    ///
+    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(1));
+    /// #
+    /// // retrieve movies (you have to put some movies in the index before)
+    /// let movies = movie_index.get_documents(None, None, None).await.unwrap();
+    ///
+    /// assert!(movies.len() > 0);
+    /// # });
+    /// ```
+    pub async fn get_documents(
+        &self,
+        offset: Option<usize>,
+        limit: Option<usize>,
+        attributes_to_retrieve: Option<&str>,
+    ) -> Result<Vec<Document>, Error> {
+        let mut url = format!("{}/indexes/{}/documents?", self.host, self.uid);
+        if let Some(offset) = offset {
+            url.push_str("offset=");
+            url.push_str(offset.to_string().as_str());
+            url.push('&');
+        }
+        if let Some(limit) = limit {
+            url.push_str("limit=");
+            url.push_str(limit.to_string().as_str());
+            url.push('&');
+        }
+        if let Some(attributes_to_retrieve) = attributes_to_retrieve {
+            url.push_str("attributesToRetrieve=");
+            url.push_str(attributes_to_retrieve);
+        }
+        Ok(request::<(), Vec<Document>>(
             &url,
             &self.api_key,
             Method::Get,
@@ -396,7 +575,7 @@ impl Index {
     /// assert!(movies.len() >= 3);
     /// # });
     /// ```
-    pub async fn add_or_replace<T: Document>(
+    pub async fn add_or_replace<T: crate::document::Document>(
         &self,
         documents: &[T],
         primary_key: Option<&str>,
@@ -421,7 +600,7 @@ impl Index {
     }
 
     /// Alias for [add_or_replace](#method.add_or_replace).
-    pub async fn add_documents<T: Document>(
+    pub async fn add_documents<T: crate::document::Document>(
         &self,
         documents: &[T],
         primary_key: Option<&str>,
@@ -484,7 +663,7 @@ impl Index {
     /// assert!(movies.len() >= 3);
     /// # });
     /// ```
-    pub async fn add_or_update<T: Document>(
+    pub async fn add_or_update<T: crate::document::Document>(
         &self,
         documents: &[T],
         primary_key: Option<impl AsRef<str>>,
@@ -837,7 +1016,7 @@ mod tests {
         let client = Client::new("http://localhost:7700", "masterKey");
         let uid = "test_get_all_updates_no_docs";
 
-        let index = client.get_or_create(uid).await.unwrap();
+        let index: Index<UnknownDocument> = client.get_or_create(uid).await.unwrap();
         let status = index.get_all_updates().await.unwrap();
         client.delete_index(uid).await.unwrap();
 
@@ -849,7 +1028,7 @@ mod tests {
         let client = Client::new("http://localhost:7700", "masterKey");
         let uid = "test_get_one_update";
 
-        let index = client.get_or_create(uid).await.unwrap();
+        let index: Index<UnknownDocument> = client.get_or_create(uid).await.unwrap();
         let progress = index.delete_all_documents().await.unwrap();
 
         let update_id = progress.get_update_id();

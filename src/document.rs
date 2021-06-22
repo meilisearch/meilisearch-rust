@@ -1,4 +1,4 @@
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{de::DeserializeOwned, Serialize, Deserialize};
 use std::fmt::Display;
 
 /// Documents are not a predefined structure.
@@ -39,4 +39,18 @@ pub trait Document: DeserializeOwned + std::fmt::Debug + Serialize {
     /// **WARNING**! This method **MUST** only return an object that displays himself only using alphanumeric characters, '/' and '-'.
     /// Otherwise, the MeiliSearch server will reject your document.
     fn get_uid(&self) -> &Self::UIDType;
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UnknownDocument {
+    #[serde(flatten)]
+    pub value: serde_json::Value,
+}
+
+impl Document for UnknownDocument {
+    type UIDType = &'static str;
+
+    fn get_uid(&self) -> &Self::UIDType {
+        &"unknown_id"
+    }
 }

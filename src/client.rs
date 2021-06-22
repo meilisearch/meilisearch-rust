@@ -29,6 +29,9 @@ impl Client {
         }
     }
 
+    /*
+    TODO: restore this method
+
     /// List all [indexes](../indexes/struct.Index.html).
     ///
     /// # Example
@@ -58,6 +61,7 @@ impl Client {
 
         Ok(indexes)
     }
+    */
 
     /// Get an [index](../indexes/struct.Index.html).
     ///
@@ -75,9 +79,9 @@ impl Client {
     /// let movies = client.get_index("movies").await.unwrap();
     /// # });
     /// ```
-    pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
+    pub async fn get_index<Document: crate::document::Document>(&self, uid: &str) -> Result<Index<Document>, Error> {
         Ok(request::<(), JsonIndex>(
-            &format!("{}/indexes/{}", self.host, uid.as_ref()),
+            &format!("{}/indexes/{}", self.host, uid),
             &self.api_key,
             Method::Get,
             200,
@@ -86,11 +90,12 @@ impl Client {
     }
 
     /// Assume that an [index](../indexes/struct.Index.html) exist and create a corresponding object without any check.
-    pub fn assume_index(&self, uid: impl Into<String>) -> Index {
+    pub fn assume_index<Document: crate::document::Document>(&self, uid: impl Into<String>) -> Index<Document> {
         Index {
             uid: Rc::new(uid.into()),
             host: Rc::clone(&self.host),
-            api_key: Rc::clone(&self.api_key)
+            api_key: Rc::clone(&self.api_key),
+            _phantom_document: std::marker::PhantomData,
         }
     }
 
@@ -112,16 +117,16 @@ impl Client {
     /// let movies = client.create_index("movies", None).await;
     /// # });
     /// ```
-    pub async fn create_index(
+    pub async fn create_index<Document: crate::document::Document>(
         &self,
-        uid: impl AsRef<str>,
+        uid: &str,
         primary_key: Option<&str>,
-    ) -> Result<Index, Error> {
+    ) -> Result<Index<Document>, Error> {
         Ok(request::<Value, JsonIndex>(
             &format!("{}/indexes", self.host),
             &self.api_key,
             Method::Post(json!({
-                "uid": uid.as_ref(),
+                "uid": uid,
                 "primaryKey": primary_key,
             })),
             201,
@@ -146,9 +151,9 @@ impl Client {
 
     /// Delete an index from its UID.
     /// To delete an index from the [index object](../indexes/struct.Index.html), use [the delete method](../indexes/struct.Index.html#method.delete).
-    pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<(), Error> {
+    pub async fn delete_index(&self, uid: &str) -> Result<(), Error> {
         Ok(request::<(), ()>(
-            &format!("{}/indexes/{}", self.host, uid.as_ref()),
+            &format!("{}/indexes/{}", self.host, uid),
             &self.api_key,
             Method::Delete,
             204,
@@ -156,18 +161,22 @@ impl Client {
     }
 
     /// This will try to get an index and create the index if it does not exist.
-    pub async fn get_or_create(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
-        if let Ok(index) = self.get_index(uid.as_ref()).await {
+    pub async fn get_or_create<Document: crate::document::Document>(&self, uid: &str) -> Result<Index<Document>, Error> {
+        if let Ok(index) = self.get_index(uid).await {
             Ok(index)
         } else {
             self.create_index(uid, None).await
         }
     }
 
+    /*
+    TODO: restore function
+
     /// Alias for [list_all_indexes](#method.list_all_indexes).
     pub async fn get_indexes(&self) -> Result<Vec<Index>, Error> {
         self.list_all_indexes().await
     }
+    */
 
     /// Get stats of all indexes.
     ///
@@ -328,7 +337,7 @@ pub struct Version {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*};
+    use crate::prelude::*;
     use futures_await_test::async_test;
 
     #[async_test]
@@ -341,8 +350,8 @@ mod tests {
     async fn test_delete_if_exits() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index_name = "movies_delete_if_exists";
-        client.create_index(index_name, None).await.unwrap();
-        let mut index = client.get_index(index_name).await;
+        client.create_index::<UnknownDocument>(index_name, None).await.unwrap();
+        let mut index = client.get_index::<UnknownDocument>(index_name).await;
         assert!(index.is_ok());
         let deleted = client.delete_index_if_exists(index_name).await.unwrap();
         assert!(deleted);
