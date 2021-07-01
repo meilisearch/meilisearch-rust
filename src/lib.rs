@@ -4,7 +4,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! meilisearch-sdk = "0.8.1"
+//! meilisearch-sdk = "0.9.0"
 //! ```
 //!
 //! The following optional dependencies may also be useful:

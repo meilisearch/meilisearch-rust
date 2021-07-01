@@ -45,7 +45,7 @@ Also, the WASM example compilation should be checked:
 
 ```bash
 rustup target add wasm32-unknown-unknown
-cargo check --example web_app --target wasm32-unknown-unknown
+cargo check --example web_app --target wasm32-unknown-unknown --features=sync
 ```
 
 Each PR should pass the tests to be accepted.
