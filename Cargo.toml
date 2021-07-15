@@ -29,7 +29,7 @@ isahc-static-curl = ["isahc/static-curl"]
 sync = []
 
 [dev-dependencies]
-env_logger = "0.8"
+env_logger = "0.9"
 futures-await-test = "0.3"
 futures = "0.3"
 
