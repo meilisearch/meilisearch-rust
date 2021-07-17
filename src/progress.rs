@@ -200,7 +200,7 @@ pub struct SettingsUpdate {
     pub displayed_attributes: UpdateState<BTreeSet<String>>,
     pub stop_words: UpdateState<BTreeSet<String>>,
     pub synonyms: UpdateState<BTreeMap<String, Vec<String>>>,
-    pub attributes_for_faceting: UpdateState<Vec<String>>,
+    pub filterable_attributes: UpdateState<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

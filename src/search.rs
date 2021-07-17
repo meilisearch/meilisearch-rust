@@ -322,7 +322,7 @@ mod tests {
             Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string() },
             Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
         ], None).await.unwrap();
-        index.set_attributes_for_faceting(["kind"]).await.unwrap();
+        index.set_filterable_attributes(["kind"]).await.unwrap();
         sleep(Duration::from_secs(1));
         index
     }
