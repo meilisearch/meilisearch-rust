@@ -827,7 +827,7 @@ impl Index {
 pub struct IndexStats {
     pub number_of_documents: usize,
     pub is_indexing: bool,
-    pub fields_distribution: HashMap<String, usize>,
+    pub field_distribution: HashMap<String, usize>,
 }
 
 #[cfg(test)]
