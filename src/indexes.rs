@@ -862,6 +862,7 @@ mod tests {
 
         match status {
             UpdateStatus::Enqueued{content} => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Processing{content} => assert_eq!(content.update_id, update_id),
             UpdateStatus::Failed{content} => assert_eq!(content.update_id, update_id),
             UpdateStatus::Processed{content} => assert_eq!(content.update_id, update_id),
         }
