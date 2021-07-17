@@ -218,28 +218,28 @@ field_properties_guide_displayed_1: |-
 filtering_guide_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("Avengers")
-    .with_filters("release_date > 795484800")
+    .with_filter("release_date > 795484800")
     .execute()
     .await
     .unwrap();
 filtering_guide_2: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("Batman")
-    .with_filters(r#"release_date > 795484800 AND (director = "Tim Burton" OR director = "Christopher Nolan")"#)
+    .with_filter(r#"release_date > 795484800 AND (director = "Tim Burton" OR director = "Christopher Nolan")"#)
     .execute()
     .await
     .unwrap();
 filtering_guide_3: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("horror")
-    .with_filters(r#"director = "Jordan Peele""#)
+    .with_filter(r#"director = "Jordan Peele""#)
     .execute()
     .await
     .unwrap();
 filtering_guide_4: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("Planet of the Apes")
-    .with_filters(r#"rating >= 3 AND (NOT director = "Tim Burton")"#)
+    .with_filter(r#"rating >= 3 AND (NOT director = "Tim Burton")"#)
     .execute()
     .await
     .unwrap();
@@ -294,21 +294,21 @@ search_parameter_guide_highlight_1: |-
 search_parameter_guide_filter_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("n")
-    .with_filters("title = Nightshift")
+    .with_filter("title = Nightshift")
     .execute()
     .await
     .unwrap();
 search_parameter_guide_filter_2: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("n")
-    .with_filters(r#"title = "Kung Fu Panda""#)
+    .with_filter(r#"title = "Kung Fu Panda""#)
     .execute()
     .await
     .unwrap();
 search_parameter_guide_matches_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("n")
-    .with_filters(r#"title="Kung Fu Panda""#)
+    .with_filter(r#"title="Kung Fu Panda""#)
     .with_attributes_to_highlight(Selectors::Some(&["overview"]))
     .with_matches(true)
     .execute()
@@ -391,7 +391,7 @@ search_guide_1: |-
 search_guide_2: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("Avengers")
-    .with_filters("release_date > 795484800")
+    .with_filter("release_date > 795484800")
     .execute()
     .await
     .unwrap();
