@@ -322,7 +322,7 @@ pub struct Keys {
 #[serde(rename_all = "camelCase")]
 pub struct Version {
     pub commit_sha: String,
-    pub build_date: String,
+    pub commit_date: String,
     pub pkg_version: String,
 }
 
