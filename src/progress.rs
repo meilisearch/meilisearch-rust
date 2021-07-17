@@ -208,10 +208,21 @@ pub struct SettingsUpdate {
 pub enum UpdateType {
     ClearAll,
     Customs,
-    DocumentsAddition { number: usize },
-    DocumentsPartial { number: usize },
-    DocumentsDeletion { number: usize },
-    Settings { settings: Box<SettingsUpdate> },
+    DocumentsAddition {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        number: Option<usize>,
+    },
+    DocumentsPartial {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        number: Option<usize>,
+    },
+    DocumentsDeletion {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        number: Option<usize>,
+    },
+    Settings {
+        settings: SettingsUpdate,
+    },
 }
 
 #[derive(Deserialize, Debug, Clone)]
