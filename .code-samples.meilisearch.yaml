@@ -505,7 +505,7 @@ getting_started_search_md: |-
   [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 faceted_search_update_settings_1: |-
   let progress: Progress = movies.set_filterable_attributes(["director", "genres"]).await.unwrap();
-faceted_search_facet_filters_1: |-
+faceted_search_filter_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")
     .with_facet_filters(&[&["genres:Horror", "genres:Mystery"], &["director:Jordan Peele"]])
@@ -529,7 +529,7 @@ faceted_search_walkthrough_filterable_attributes_1: |-
   ];
 
   let progress: Progress = movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
-faceted_search_walkthrough_facet_filters_1: |-
+faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")
     .with_facet_filters(&[&["genres:Horror", "genres:Mystery"], &["director:Jordan Peele"]])
