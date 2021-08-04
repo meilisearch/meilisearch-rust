@@ -175,11 +175,10 @@ pub(crate) async fn async_sleep(interval: Duration) {
 
 #[derive(Debug, Clone, Deserialize)]
 pub enum RankingRule {
-    Typo,
     Words,
+    Typo,
     Proximity,
     Attribute,
-    WordsPosition,
     Exactness,
     Asc(String),
     Desc(String),
