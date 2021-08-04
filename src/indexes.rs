@@ -827,7 +827,7 @@ impl Index {
 pub struct IndexStats {
     pub number_of_documents: usize,
     pub is_indexing: bool,
-    pub fields_distribution: HashMap<String, usize>,
+    pub field_distribution: HashMap<String, usize>,
 }
 
 #[cfg(test)]
@@ -862,6 +862,7 @@ mod tests {
 
         match status {
             UpdateStatus::Enqueued{content} => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Processing{content} => assert_eq!(content.update_id, update_id),
             UpdateStatus::Failed{content} => assert_eq!(content.update_id, update_id),
             UpdateStatus::Processed{content} => assert_eq!(content.update_id, update_id),
         }

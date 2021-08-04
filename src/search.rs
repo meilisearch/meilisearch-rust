@@ -144,14 +144,10 @@ pub struct Query<'a> {
     /// Default: `20`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
-    /// Filters applied to documents.
+    /// Filter applied to documents.
     /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub filters: Option<&'a str>,
-    /// Facet names and values to filter on.
-    /// Read [this page](https://docs.meilisearch.com/reference/features/search_parameters.html#facet-filters) for a complete explanation.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub facet_filters: Option<&'a [&'a [&'a str]]>,
+    pub filter: Option<&'a str>,
     /// Facets for which to retrieve the matching count.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -200,8 +196,7 @@ impl<'a> Query<'a> {
             query: None,
             offset: None,
             limit: None,
-            filters: None,
-            facet_filters: None,
+            filter: None,
             facets_distribution: None,
             attributes_to_retrieve: None,
             attributes_to_crop: None,
@@ -222,15 +217,8 @@ impl<'a> Query<'a> {
         self.limit = Some(limit);
         self
     }
-    pub fn with_filters<'b>(&'b mut self, filters: &'a str) -> &'b mut Query<'a> {
-        self.filters = Some(filters);
-        self
-    }
-    pub fn with_facet_filters<'b>(
-        &'b mut self,
-        facet_filters: &'a [&'a [&'a str]],
-    ) -> &'b mut Query<'a> {
-        self.facet_filters = Some(facet_filters);
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut Query<'a> {
+        self.filter = Some(filter);
         self
     }
     pub fn with_facets_distribution<'b>(
@@ -322,7 +310,7 @@ mod tests {
             Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string() },
             Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
         ], None).await.unwrap();
-        index.set_attributes_for_faceting(["kind"]).await.unwrap();
+        index.set_filterable_attributes(["kind"]).await.unwrap();
         sleep(Duration::from_secs(1));
         index
     }
@@ -364,13 +352,13 @@ mod tests {
     }
 
     #[async_test]
-    async fn test_query_filters() {
+    async fn test_query_filter() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_filters").await;
+        let index = setup_test_index(&client, "test_query_filter").await;
 
         let results: SearchResults<Document> = index
             .search()
-            .with_filters("value = \"The Social Network\"")
+            .with_filter("value = \"The Social Network\"")
             .execute()
             .await
             .unwrap();
@@ -378,39 +366,13 @@ mod tests {
 
         let results: SearchResults<Document> = index
             .search()
-            .with_filters("NOT value = \"The Social Network\"")
+            .with_filter("NOT value = \"The Social Network\"")
             .execute()
             .await
             .unwrap();
         assert_eq!(results.hits.len(), 9);
 
-        client.delete_index("test_query_filters").await.unwrap();
-    }
-
-    #[async_test]
-    async fn test_query_facet_filters() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_facet_filters").await;
-
-        let mut query = Query::new(&index);
-        query.with_facet_filters(&[&["kind:title"]]);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits.len(), 8);
-
-        let mut query = Query::new(&index);
-        query.with_facet_filters(&[&["kind:text"]]);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits.len(), 2);
-
-        let mut query = Query::new(&index);
-        query.with_facet_filters(&[&["kind:text", "kind:title"]]);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits.len(), 10);
-
-        client
-            .delete_index("test_query_facet_filters")
-            .await
-            .unwrap();
+        client.delete_index("test_query_filter").await.unwrap();
     }
 
     #[async_test]
@@ -434,7 +396,7 @@ mod tests {
 
         let mut query = Query::new(&index);
         query.with_facets_distribution(Selectors::Some(&["kind"]));
-        query.with_facet_filters(&[&["kind:text"]]);
+        //query.with_facet_filters(&[&["kind:text"]]);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
         assert_eq!(
             results
