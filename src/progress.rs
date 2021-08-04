@@ -203,6 +203,7 @@ pub struct SettingsUpdate {
     pub filterable_attributes: UpdateState<Vec<String>>,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "name")]
 pub enum UpdateType {

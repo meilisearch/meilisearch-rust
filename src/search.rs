@@ -265,7 +265,7 @@ impl<'a> Query<'a> {
     pub async fn execute<T: 'static + DeserializeOwned>(
         &'a self,
     ) -> Result<SearchResults<T>, Error> {
-        self.index.execute_query::<T>(&self).await
+        self.index.execute_query::<T>(self).await
     }
 }
 
