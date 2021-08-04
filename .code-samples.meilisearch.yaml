@@ -305,9 +305,7 @@ search_parameter_guide_filter_2: |-
     .unwrap();
 search_parameter_guide_matches_1: |-
   let results: SearchResults<Movie> = movies.search()
-    .with_query("n")
-    .with_filter(r#"title="Kung Fu Panda""#)
-    .with_attributes_to_highlight(Selectors::Some(&["overview"]))
+    .with_query("winter feast")
     .with_matches(true)
     .execute()
     .await
