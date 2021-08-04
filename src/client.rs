@@ -362,7 +362,6 @@ mod tests {
     #[async_test]
     async fn test_delete_if_exits_none() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        let deleted = client.delete_index_if_exists("bad").await.unwrap();
-        assert!(deleted);
+        assert!(!client.delete_index_if_exists("bad").await.unwrap());
     }
 }
