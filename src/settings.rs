@@ -670,7 +670,7 @@ impl Index {
     }
 
     /// Reset [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the index to default value.
-    /// Default value: ["typo", "words", "proximity", "attribute", "wordsPosition", "exactness"].
+    /// Default value: ["words", "typo", "proximity", "attribute", "exactness"].
     ///
     /// # Example
     ///

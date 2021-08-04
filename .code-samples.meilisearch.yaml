@@ -78,11 +78,10 @@ update_settings_1: |-
 
   let settings = Settings::new()
     .with_ranking_rules([
-      "typo",
       "words",
+      "typo",
       "proximity",
       "attribute",
-      "wordsPosition",
       "exactness",
       "desc(release_date)",
       "desc(rank)"
@@ -131,11 +130,10 @@ get_ranking_rules_1: |-
   let ranking_rules: Vec<String> = movies.get_ranking_rules().await.unwrap();
 update_ranking_rules_1: |-
   let ranking_rules = [
-    "typo",
     "words",
+    "typo",
     "proximity",
     "attribute",
-    "wordsPosition",
     "exactness",
     "asc(release_date)",
     "desc(rank)",
@@ -283,7 +281,7 @@ search_parameter_guide_crop_1: |-
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
 search_parameter_guide_highlight_1: |-
   let results: SearchResults<Movie> = movies.search()
-    .with_query("shifu")
+    .with_query("winter feast")
     .with_attributes_to_highlight(Selectors::Some(&["overview"]))
     .execute()
     .await
@@ -300,7 +298,7 @@ search_parameter_guide_filter_1: |-
     .unwrap();
 search_parameter_guide_filter_2: |-
   let results: SearchResults<Movie> = movies.search()
-    .with_query("n")
+    .with_query("shifu")
     .with_filter(r#"title = "Kung Fu Panda""#)
     .execute()
     .await
@@ -330,11 +328,10 @@ settings_guide_filterable_attributes_1: |-
   let progress: Progress = movies.set_filterable_attributes(["director", "genres"]).await.unwrap();
 settings_guide_ranking_rules_1: |-
   let ranking_rules = [
-    "typo",
     "words",
+    "typo",
     "proximity",
     "attribute",
-    "wordsPosition",
     "exactness",
     "asc(release_date)",
     "desc(rank)",
@@ -361,6 +358,32 @@ settings_guide_displayed_1: |-
   ];
 
   let progress: Progress = movies.set_displayed_attributes(&displayed_attributes).await.unwrap();
+add_movies_json_1: |-
+  use meilisearch_sdk::{
+    indexes::*,
+    document::*,
+    client::*,
+    search::*,
+    progress::*,
+    settings::*
+  };
+  use serde::{Serialize, Deserialize};
+  use std::{io::prelude::*, fs::File};
+  use futures::executor::block_on;
+
+  fn main() { block_on(async move {
+    let client = Client::new("http://localhost:7700", "masterKey");
+
+    // reading and parsing the file
+    let mut file = File::open("movies.json").unwrap();
+    let mut content = String::new();
+    file.read_to_string(&mut content).unwrap();
+    let movies_docs: Vec<Movie> = serde_json::from_str(&content).unwrap();
+
+    // adding documents
+    let movies = client.get_or_create_index("movies").await.unwrap();
+    movies.add_documents(&movies_docs, None).await.unwrap();
+  })}
 documents_guide_add_movie_1: |-
   // Define the type of our documents
   #[derive(Serialize, Deserialize, Debug)]
@@ -475,7 +498,7 @@ getting_started_add_documents_md: |-
 
   [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 getting_started_search_md: |-
-  You can build a Query and execute it later:
+  You can build a `Query` and execute it later:
   ```rust
   let query: Query = Query::new(&movies)
     .with_query("botman")
@@ -484,7 +507,7 @@ getting_started_search_md: |-
   let results: SearchResults<Movie> = movies.execute_query(&query).await.unwrap();
   ```
 
-  You can build a Query and execute it directly:
+  You can build a `Query` and execute it directly:
   ```rust
   let results: SearchResults<Movie> = Query::new(&movies)
     .with_query("botman")
@@ -493,7 +516,7 @@ getting_started_search_md: |-
     .unwrap();
   ```
 
-  You can search in an Index directly:
+  You can search in an index directly:
   ```rust
   let results: SearchResults<Movie> = movies.search()
     .with_query("botman")
@@ -508,7 +531,7 @@ faceted_search_update_settings_1: |-
 faceted_search_filter_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")
-    .with_facet_filters(&[&["genres:Horror", "genres:Mystery"], &["director:Jordan Peele"]])
+    .with_filter(&[&["genres = Horror", "genres = Mystery"], &["director = \"Jordan Peele\""]])
     .execute()
     .await
     .unwrap();
@@ -532,7 +555,7 @@ faceted_search_walkthrough_filterable_attributes_1: |-
 faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")
-    .with_facet_filters(&[&["genres:Horror", "genres:Mystery"], &["director:Jordan Peele"]])
+    .with_filter(&[&["genres = Horror", "genres = Mystery"], &["director = \"Jordan Peele\""]])
     .execute()
     .await
     .unwrap();
@@ -548,3 +571,10 @@ post_dump_1: |-
   client.create_dump().await.unwrap();
 get_dump_status_1: |-
   client.get_dump_status("20201101-110357260").await.unwrap();
+phrase_search_1: |-
+  let results: SearchResults<Movie> = movies
+    .search()
+    .with_query("\"african american\" horror")
+    .execute()
+    .await
+    .unwrap();
