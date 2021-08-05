@@ -310,7 +310,7 @@ mod tests {
             Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string() },
             Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
         ], None).await.unwrap();
-        index.set_filterable_attributes(["kind"]).await.unwrap();
+        index.set_filterable_attributes(["kind", "value"]).await.unwrap();
         sleep(Duration::from_secs(1));
         index
     }
@@ -396,7 +396,6 @@ mod tests {
 
         let mut query = Query::new(&index);
         query.with_facets_distribution(Selectors::Some(&["kind"]));
-        //query.with_facet_filters(&[&["kind:text"]]);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
         assert_eq!(
             results
@@ -407,7 +406,7 @@ mod tests {
                 .unwrap()
                 .get("title")
                 .unwrap(),
-            &0
+            &8
         );
         assert_eq!(
             results
@@ -472,7 +471,7 @@ mod tests {
             results.hits[0].formatted_result.as_ref().unwrap(),
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet, consectetur adipiscing".to_string(),
+                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
                 kind: "text".to_string()
             }
         );
@@ -508,7 +507,7 @@ mod tests {
             results.hits[0].formatted_result.as_ref().unwrap(),
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet, consectetur adipiscing".to_string(),
+                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
                 kind: "text".to_string()
             }
         );

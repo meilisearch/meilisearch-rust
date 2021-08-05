@@ -307,7 +307,7 @@ impl Index {
     /// ```
     pub async fn get_filterable_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/attributes-for-faceting", self.host, self.uid),
+            &format!("{}/indexes/{}/settings/filterable-attributes", self.host, self.uid),
             &self.api_key,
             Method::Get,
             200,
@@ -510,7 +510,7 @@ impl Index {
     /// ```
     pub async fn set_filterable_attributes(&self, filterable_attributes: impl IntoVecString) -> Result<Progress, Error> {
         Ok(request::<Vec<String>, ProgressJson>(
-            &format!("{}/indexes/{}/settings/attributes-for-faceting", self.host, self.uid),
+            &format!("{}/indexes/{}/settings/filterable-attributes", self.host, self.uid),
             &self.api_key,
             Method::Post(filterable_attributes.convert()),
             202,
@@ -712,7 +712,7 @@ impl Index {
     /// ```
     pub async fn reset_filterable_attributes(&self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/attributes-for-faceting", self.host, self.uid),
+            &format!("{}/indexes/{}/settings/filterable-attributes", self.host, self.uid),
             &self.api_key,
             Method::Delete,
             202,
