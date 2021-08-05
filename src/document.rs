@@ -51,6 +51,6 @@ impl Document for UnknownDocument {
     type UIDType = &'static str;
 
     fn get_uid(&self) -> &Self::UIDType {
-        &"unknown_id"
+        panic!("UID cannot be inferred on unknown documents")
     }
 }

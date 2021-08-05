@@ -32,24 +32,18 @@ impl Client {
         }
     }
 
-    /*
-    TODO: restore this method
-
-    /// List all [indexes](../indexes/struct.Index.html).
+    /// List all [indexes](Index).
     ///
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::prelude::*;
-    /// # futures::executor::block_on(async move {
-    /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
-    ///
-    /// let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
-    /// println!("{:?}", indexes);
+    /// # use meilisearch_sdk::doc_tests::*;
+    /// # doc_test(async {
+    /// # let (client, index) = init_doc_test("get_stats_doc_test").await;
+    /// let indexes = client.list_all_indexes().await.unwrap();
     /// # });
     /// ```
-    pub async fn list_all_indexes(&self) -> Result<Vec<Index>, Error> {
+    pub async fn list_all_indexes(&self) -> Result<Vec<Index<UnknownDocument>>, Error> {
         let json_indexes = request::<(), Vec<JsonIndex>>(
             &format!("{}/indexes", self.host),
             &self.api_key,
@@ -64,7 +58,6 @@ impl Client {
 
         Ok(indexes)
     }
-    */
 
     /// Get an [`Index`].
     ///
@@ -183,14 +176,10 @@ impl Client {
         }
     }
 
-    /*
-    TODO: restore function
-
-    /// Alias for [list_all_indexes](#method.list_all_indexes).
-    pub async fn get_indexes(&self) -> Result<Vec<Index>, Error> {
+    /// Alias for [Index::list_all_indexes].
+    pub async fn get_indexes(&self) -> Result<Vec<Index<UnknownDocument>>, Error> {
         self.list_all_indexes().await
     }
-    */
 
     /// Get stats of all indexes.
     ///
