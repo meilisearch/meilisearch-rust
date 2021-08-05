@@ -105,6 +105,7 @@ pub mod dumps;
 pub mod errors;
 /// Module containing the Index struct.
 pub mod indexes;
+pub mod prelude;
 /// Module containing objects useful for tracking the progress of async operations.
 pub mod progress;
 mod request;
@@ -112,9 +113,91 @@ mod request;
 pub mod search;
 /// Module containing settings
 pub mod settings;
-pub mod prelude;
 
 #[cfg(feature = "sync")]
 pub(crate) type Rc<T> = std::sync::Arc<T>;
 #[cfg(not(feature = "sync"))]
 pub(crate) type Rc<T> = std::rc::Rc<T>;
+
+pub mod doc_tests {
+    use std::ops::DerefMut;
+
+    pub use crate::prelude::*;
+    use futures::Future;
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    pub struct Movie {
+        uid: usize,
+        name: String,
+        description: String,
+    }
+
+    impl Document for Movie {
+        type UIDType = usize;
+
+        fn get_uid(&self) -> &Self::UIDType {
+            &self.uid
+        }
+    }
+
+    pub struct Index<T: Document> {
+        test_name: &'static str,
+        client: Client,
+        index: crate::indexes::Index<T>,
+    }
+
+    impl<T: Document> std::ops::Deref for Index<T> {
+        type Target = crate::indexes::Index<T>;
+
+        fn deref(&self) -> &Self::Target {
+            &self.index
+        }
+    }
+
+    impl<T: Document> DerefMut for Index<T> {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.index
+        }
+    }
+
+    impl<T: Document> Drop for Index<T> {
+        fn drop(&mut self) {
+            let client = self.client.clone();
+            let test_name = self.test_name;
+
+            // We are not allowed to call block_on on the main thread since we already called it once, so we create another thread
+            let handle = std::thread::spawn(move || {
+                futures::executor::block_on(async move {
+                    client
+                        .delete_index_if_exists(test_name)
+                        .await
+                        .unwrap();
+                });
+            });
+            handle.join().unwrap();
+        }
+    }
+
+    pub async fn init_doc_test(test_name: &'static str) -> (Client, Index<Movie>) {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        client.delete_index_if_exists(test_name).await.unwrap();
+        let index = client.create_index::<Movie>(test_name, None).await.unwrap();
+
+        (
+            client.clone(),
+            Index {
+                test_name,
+                client,
+                index,
+            },
+        )
+    }
+
+    pub fn doc_test<F>(f: F)
+    where
+        F: Future,
+    {
+        futures::executor::block_on(f);
+    }
+}
