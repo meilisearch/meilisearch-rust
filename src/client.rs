@@ -137,8 +137,28 @@ impl Client {
         .into_index(self))
     }
 
-    /// Delete an index from its UID if it exists.
+    /// Delete an index from its UID if it exists.  
+    /// 
     /// To delete an index if it exists from the [`Index`] object, use the [Index::delete_if_exists] method.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// # use meilisearch_sdk::doc_tests::*;
+    /// # doc_test(async {
+    /// # let (client, index) = init_doc_test("delete_index_if_exists_doc_test").await;
+    /// // Ensure that the index exists
+    /// client.get_or_create::<Movie>("movies").await.unwrap();
+    /// 
+    /// // Delete the index
+    /// let was_deleted = client.delete_index_if_exists("movies").await.unwrap();
+    /// assert_eq!(was_deleted, true);
+    /// 
+    /// // Try to delete the index again
+    /// let was_deleted = client.delete_index_if_exists("movies").await.unwrap();
+    /// assert_eq!(was_deleted, false); // It was already deleted so it returns false
+    /// # });
+    /// ```
     pub async fn delete_index_if_exists(&self, uid: &str) -> Result<bool, Error> {
         match self.delete_index(uid).await {
             Ok(_) => Ok(true),
@@ -336,38 +356,4 @@ pub struct Version {
     pub commit_sha: String,
     pub build_date: String,
     pub pkg_version: String,
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::prelude::*;
-    use futures_await_test::async_test;
-
-    #[async_test]
-    async fn test_get_keys() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        client.get_keys().await.unwrap();
-    }
-
-    #[async_test]
-    async fn test_delete_if_exits() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index_name = "movies_delete_if_exists";
-        client
-            .create_index::<UnknownDocument>(index_name, None)
-            .await
-            .unwrap();
-        let mut index = client.get_index::<UnknownDocument>(index_name).await;
-        assert!(index.is_ok());
-        let deleted = client.delete_index_if_exists(index_name).await.unwrap();
-        assert!(deleted);
-        index = client.get_index(index_name).await;
-        assert!(index.is_err());
-    }
-
-    #[async_test]
-    async fn test_delete_if_exits_none() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        assert!(!client.delete_index_if_exists("bad").await.unwrap());
-    }
 }

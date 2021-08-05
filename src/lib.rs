@@ -172,7 +172,6 @@ pub mod doc_tests {
                     client
                         .delete_index_if_exists(test_name)
                         .await
-                        .unwrap();
                 });
             });
             handle.join().unwrap();
