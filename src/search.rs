@@ -577,4 +577,17 @@ mod tests {
 
         client.delete_index("test_query_matches").await.unwrap();
     }
+
+    #[async_test]
+    async fn test_phrase_search() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_phrase_search").await;
+
+        let mut query = Query::new(&index);
+        query.with_query("harry \"of Fire\"");
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 1);
+
+        client.delete_index("test_phrase_search").await.unwrap();
+    }
 }
