@@ -707,6 +707,7 @@ impl Index {
     /// let status = progress.get_status().await.unwrap();
     /// let from_progress = match status {
     ///    UpdateStatus::Enqueued{content} => content.update_id,
+    ///    UpdateStatus::Processing{content} => content.update_id,
     ///    UpdateStatus::Failed{content} => content.update_id,
     ///    UpdateStatus::Processed{content} => content.update_id,
     /// };
@@ -717,6 +718,7 @@ impl Index {
     ///
     /// let from_index = match status {
     ///    UpdateStatus::Enqueued{content} => content.update_id,
+    ///    UpdateStatus::Processing{content} => content.update_id,
     ///    UpdateStatus::Failed{content} => content.update_id,
     ///    UpdateStatus::Processed{content} => content.update_id,
     /// };
