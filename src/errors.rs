@@ -20,7 +20,7 @@ pub enum Error {
     UnreachableServer,
     /// The MeiliSearch server returned invalid JSON for a request.
     ParseError(serde_json::Error),
-    /// This Meilisearch sdk generated an invalid request (which was not sent).
+    /// This MeiliSearch SDK generated an invalid request (which was not sent).
     /// It probably comes from an invalid API key resulting in an invalid HTTP header.
     InvalidRequest,
 
@@ -245,7 +245,7 @@ impl std::fmt::Display for Error {
             Error::UnreachableServer => write!(fmt, "The MeiliSearch server can't be reached."),
             Error::InvalidRequest => write!(fmt, "Unable to generate a valid HTTP request. It probably comes from an invalid API key."),
             Error::ParseError(e) => write!(fmt, "Error parsing response JSON: {}", e),
-            Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e)
+            Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e),
         }
     }
 }
