@@ -468,11 +468,10 @@ impl Index {
     /// let mut movie_index = client.get_or_create("movies").await.unwrap();
     ///
     /// let ranking_rules = [
-    ///     "typo",
     ///     "words",
+    ///     "typo",
     ///     "proximity",
     ///     "attribute",
-    ///     "wordsPosition",
     ///     "exactness",
     ///     "asc(release_date)",
     ///     "desc(rank)",

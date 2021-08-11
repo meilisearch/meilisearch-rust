@@ -174,32 +174,22 @@ pub(crate) async fn async_sleep(interval: Duration) {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub enum RankingRule {
-    Words,
-    Typo,
-    Proximity,
-    Attribute,
-    Exactness,
-    Asc(String),
-    Desc(String),
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub enum UpdateState<T> {
-    Update(T),
-    Clear,
-    Nothing,
-}
-
-#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SettingsUpdate {
-    pub ranking_rules: UpdateState<Vec<RankingRule>>,
-    pub distinct_attribute: UpdateState<String>,
-    pub searchable_attributes: UpdateState<Vec<String>>,
-    pub displayed_attributes: UpdateState<BTreeSet<String>>,
-    pub stop_words: UpdateState<BTreeSet<String>>,
-    pub synonyms: UpdateState<BTreeMap<String, Vec<String>>>,
-    pub filterable_attributes: UpdateState<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ranking_rules: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distinct_attribute: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_none")]
+    pub searchable_attributes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "BTreeSet::is_not_set")]
+    pub displayed_attributes: Option<BTreeSet<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stop_words: Option<BTreeSet<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub synonyms: Option<BTreeMap<String, Vec<String>>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filterable_attributes: Option<Vec<String>>,
 }
 
 #[allow(clippy::large_enum_variant)]
