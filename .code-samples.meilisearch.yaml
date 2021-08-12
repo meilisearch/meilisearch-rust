@@ -529,7 +529,7 @@ faceted_search_update_settings_1: |-
 faceted_search_filter_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")
-    .with_filter(&[&["genres = Horror", "genres = Mystery"], &["director = \"Jordan Peele\""]])
+    .with_filter("(genres = Horror AND genres = Mystery) OR director = \"Jordan Peele\"")
     .execute()
     .await
     .unwrap();
@@ -553,7 +553,7 @@ faceted_search_walkthrough_filterable_attributes_1: |-
 faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")
-    .with_filter(&[&["genres = Horror", "genres = Mystery"], &["director = \"Jordan Peele\""]])
+    .with_filter("(genres = Horror AND genres = Mystery) OR director = \"Jordan Peele\"")
     .execute()
     .await
     .unwrap();
