@@ -71,12 +71,12 @@ impl<'a> Progress {
     }
 
     /// Wait until MeiliSearch processes an update, and get its status.
-    /// 
+    ///
     /// `interval` = The frequency at which the server should be polled. Default = 50ms
     /// `timeout` = The maximum time to wait for processing to complete. Default = 5000ms
-    /// 
+    ///
     /// If the waited time exceeds `timeout` then `None` will be returned.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -89,7 +89,7 @@ impl<'a> Progress {
     /// #    value: String,
     /// #    kind: String,
     /// # }
-    /// # 
+    /// #
     /// # impl document::Document for Document {
     /// #    type UIDType = usize;
     /// #
@@ -101,14 +101,14 @@ impl<'a> Progress {
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let movies = client.create_index("movies_wait_for_pending", None).await.unwrap();
-    /// 
+    ///
     /// let progress = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
     /// ], None).await.unwrap();
-    /// 
+    ///
     /// let status = progress.wait_for_pending_update(None, None).await.unwrap();
-    /// 
+    ///
     /// # client.delete_index("movies_wait_for_pending").await.unwrap();
     /// assert!(matches!(status.unwrap(), UpdateStatus::Processed { .. }));
     /// # });
@@ -133,7 +133,7 @@ impl<'a> Progress {
                         UpdateStatus::Failed { .. } | UpdateStatus::Processed { .. } => {
                             return Some(self.get_status().await);
                         },
-                        UpdateStatus::Enqueued { .. } => {
+                        UpdateStatus::Enqueued { .. } | UpdateStatus::Processing { .. } => {
                             elapsed_time += interval;
                             async_sleep(interval).await;
                         },
@@ -174,44 +174,45 @@ pub(crate) async fn async_sleep(interval: Duration) {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub enum RankingRule {
-    Typo,
-    Words,
-    Proximity,
-    Attribute,
-    WordsPosition,
-    Exactness,
-    Asc(String),
-    Desc(String),
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub enum UpdateState<T> {
-    Update(T),
-    Clear,
-    Nothing,
-}
-
-#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SettingsUpdate {
-    pub ranking_rules: UpdateState<Vec<RankingRule>>,
-    pub distinct_attribute: UpdateState<String>,
-    pub searchable_attributes: UpdateState<Vec<String>>,
-    pub displayed_attributes: UpdateState<BTreeSet<String>>,
-    pub stop_words: UpdateState<BTreeSet<String>>,
-    pub synonyms: UpdateState<BTreeMap<String, Vec<String>>>,
-    pub attributes_for_faceting: UpdateState<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ranking_rules: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distinct_attribute: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_none")]
+    pub searchable_attributes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "BTreeSet::is_not_set")]
+    pub displayed_attributes: Option<BTreeSet<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stop_words: Option<BTreeSet<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub synonyms: Option<BTreeMap<String, Vec<String>>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filterable_attributes: Option<Vec<String>>,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "name")]
 pub enum UpdateType {
     ClearAll,
     Customs,
-    DocumentsAddition { number: usize },
-    DocumentsPartial { number: usize },
-    DocumentsDeletion { number: usize },
-    Settings { settings: Box<SettingsUpdate> },
+    DocumentsAddition {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        number: Option<usize>,
+    },
+    DocumentsPartial {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        number: Option<usize>,
+    },
+    DocumentsDeletion {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        number: Option<usize>,
+    },
+    Settings {
+        settings: SettingsUpdate,
+    },
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -245,6 +246,10 @@ pub enum UpdateStatus {
         #[serde(flatten)]
         content: EnqueuedUpdateResult,
     },
+    Processing {
+        #[serde(flatten)]
+        content: EnqueuedUpdateResult,
+    },
     Failed {
         #[serde(flatten)]
         content: ProcessedUpdateResult,
@@ -268,10 +273,10 @@ mod test {
        value: String,
        kind: String,
     }
-    
+
     impl document::Document for Document {
        type UIDType = usize;
-    
+
        fn get_uid(&self) -> &Self::UIDType {
            &self.id
        }
@@ -296,7 +301,7 @@ mod test {
         let status = progress.wait_for_pending_update(
             Some(Duration::from_millis(1)), Some(Duration::from_millis(6000))
         ).await.unwrap();
-    
+
         client.delete_index("movies_wait_for_pending_args").await.unwrap();
         assert!(matches!(status.unwrap(), UpdateStatus::Processed { .. }));
     }
@@ -320,7 +325,7 @@ mod test {
         let status = progress.wait_for_pending_update(
             Some(Duration::from_millis(1)), Some(Duration::from_nanos(1))
         ).await;
-    
+
         client.delete_index("movies_wait_for_pending_timeout").await.unwrap();
         assert_eq!(status.is_none(), true);
     }

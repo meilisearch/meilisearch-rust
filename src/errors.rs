@@ -20,7 +20,7 @@ pub enum Error {
     UnreachableServer,
     /// The MeiliSearch server returned invalid JSON for a request.
     ParseError(serde_json::Error),
-    /// This Meilisearch sdk generated an invalid request (which was not sent).
+    /// This MeiliSearch SDK generated an invalid request (which was not sent).
     /// It probably comes from an invalid API key resulting in an invalid HTTP header.
     InvalidRequest,
 
@@ -76,14 +76,9 @@ pub enum ErrorCode {
     /// A document is missing its primary key.
     MissingDocumentId,
 
-    /// The facet provided with the search was invalid.
-    InvalidFacet,
     /// The filter provided with the search was invalid.
     InvalidFilter,
 
-    /// The request contains invalid parameters, check the error message for
-    /// more information.
-    BadParameter,
     /// The request is invalid, check the error message for more information.
     BadRequest,
     /// The requested document can't be retrieved. Either it doesn't exist, or
@@ -106,8 +101,6 @@ pub enum ErrorCode {
     /// The document exists in store, but there was an error retrieving it. This
     /// is likely caused by an inconsistent state in the database.
     UnretrievableDocument,
-    /// There was an error in the search.
-    SearchError,
     /// The payload content type is not supported by MeiliSearch. Currently,
     /// MeiliSearch only supports JSON payloads.
     UnsupportedMediaType,
@@ -166,8 +159,6 @@ impl ErrorCode {
         match self {
             ErrorCode::IndexCreationFailed => "index_creation_failed",
             ErrorCode::IndexAlreadyExists => "index_already_exists",
-            // `index_not_found` doesn't appear on the official docs, but is
-            // used in the code. (https://docs.meilisearch.com/errors/)
             ErrorCode::IndexNotFound => "index_not_found",
             ErrorCode::InvalidIndexUid => "invalid_index_uid",
             ErrorCode::IndexNotAccessible => "index_not_accessible",
@@ -176,21 +167,16 @@ impl ErrorCode {
             ErrorCode::PrimaryKeyAlreadyPresent => "primary_key_already_present",
             ErrorCode::MaxFieldsLimitExceeded => "max_field_limit_exceeded",
             ErrorCode::MissingDocumentId => "missing_document_id",
-            ErrorCode::InvalidFacet => "invalid_facet",
             ErrorCode::InvalidFilter => "invalid_filter",
-            ErrorCode::BadParameter => "bad_parameter",
             ErrorCode::BadRequest => "bad_request",
             ErrorCode::DocumentNotFound => "document_not_found",
             ErrorCode::InternalError => "internal",
             ErrorCode::InvalidToken => "invalid_token",
             ErrorCode::Maintenance => "maintenance",
             ErrorCode::MissingAuthorizationHeader => "missing_authorization_header",
-            // The documentation also has a `missing_header` error, but
-            // that doesn't currently exist in MeiliSearch.
             ErrorCode::NotFound => "not_found",
             ErrorCode::PayloadTooLarge => "payload_too_large",
             ErrorCode::UnretrievableDocument => "unretrievable_document",
-            ErrorCode::SearchError => "search_error",
             ErrorCode::UnsupportedMediaType => "unsupported_media_type",
             ErrorCode::DumpAlreadyInProgress => "dump_already_in_progress",
             ErrorCode::DumpProcessFailed => "dump_process_failed",
@@ -213,9 +199,7 @@ impl ErrorCode {
             "primary_key_already_present" => ErrorCode::PrimaryKeyAlreadyPresent,
             "max_field_limit_exceeded" => ErrorCode::MaxFieldsLimitExceeded,
             "missing_document_id" => ErrorCode::MissingDocumentId,
-            "invalid_facet" => ErrorCode::InvalidFacet,
             "invalid_filter" => ErrorCode::InvalidFilter,
-            "bad_parameter" => ErrorCode::BadParameter,
             "bad_request" => ErrorCode::BadRequest,
             "document_not_found" => ErrorCode::DocumentNotFound,
             "internal" => ErrorCode::InternalError,
@@ -225,7 +209,6 @@ impl ErrorCode {
             "not_found" => ErrorCode::NotFound,
             "payload_too_large" => ErrorCode::PayloadTooLarge,
             "unretrievable_document" => ErrorCode::UnretrievableDocument,
-            "search_error" => ErrorCode::SearchError,
             "unsupported_media_type" => ErrorCode::UnsupportedMediaType,
             "dump_already_in_progress" => ErrorCode::DumpAlreadyInProgress,
             "dump_process_failed" => ErrorCode::DumpProcessFailed,
@@ -262,7 +245,7 @@ impl std::fmt::Display for Error {
             Error::UnreachableServer => write!(fmt, "The MeiliSearch server can't be reached."),
             Error::InvalidRequest => write!(fmt, "Unable to generate a valid HTTP request. It probably comes from an invalid API key."),
             Error::ParseError(e) => write!(fmt, "Error parsing response JSON: {}", e),
-            Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e)
+            Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e),
         }
     }
 }

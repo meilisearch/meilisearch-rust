@@ -78,11 +78,10 @@ update_settings_1: |-
 
   let settings = Settings::new()
     .with_ranking_rules([
-      "typo",
       "words",
+      "typo",
       "proximity",
       "attribute",
-      "wordsPosition",
       "exactness",
       "desc(release_date)",
       "desc(rank)"
@@ -131,11 +130,10 @@ get_ranking_rules_1: |-
   let ranking_rules: Vec<String> = movies.get_ranking_rules().await.unwrap();
 update_ranking_rules_1: |-
   let ranking_rules = [
-    "typo",
     "words",
+    "typo",
     "proximity",
     "attribute",
-    "wordsPosition",
     "exactness",
     "asc(release_date)",
     "desc(rank)",
@@ -162,17 +160,17 @@ update_searchable_attributes_1: |-
   let progress: Progress = movies.set_searchable_attributes(&searchable_attributes).await.unwrap();
 reset_searchable_attributes_1: |-
   let progress: Progress = movies.reset_searchable_attributes().await.unwrap();
-get_attributes_for_faceting_1: |-
-  let attributes_for_faceting: Vec<String> = movies.get_attributes_for_faceting().await.unwrap();
-update_attributes_for_faceting_1: |-
-  let attributes_for_faceting = [
+get_filterable_attributes_1: |-
+  let filterable_attributes: Vec<String> = movies.get_filterable_attributes().await.unwrap();
+update_filterable_attributes_1: |-
+  let filterable_attributes = [
     "genres",
     "director"
   ];
 
-  let progress: Progress = movies.set_attributes_for_faceting(&attributes_for_faceting).await.unwrap();
-reset_attributes_for_faceting_1: |-
-  let progress: Progress = movies.reset_attributes_for_faceting().await.unwrap();
+  let progress: Progress = movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
+reset_filterable_attributes_1: |-
+  let progress: Progress = movies.reset_filterable_attributes().await.unwrap();
 get_displayed_attributes_1: |-
   let displayed_attributes: Vec<String> = movies.get_displayed_attributes().await.unwrap();
 update_displayed_attributes_1: |-
@@ -218,28 +216,28 @@ field_properties_guide_displayed_1: |-
 filtering_guide_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("Avengers")
-    .with_filters("release_date > 795484800")
+    .with_filter("release_date > 795484800")
     .execute()
     .await
     .unwrap();
 filtering_guide_2: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("Batman")
-    .with_filters(r#"release_date > 795484800 AND (director = "Tim Burton" OR director = "Christopher Nolan")"#)
+    .with_filter(r#"release_date > 795484800 AND (director = "Tim Burton" OR director = "Christopher Nolan")"#)
     .execute()
     .await
     .unwrap();
 filtering_guide_3: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("horror")
-    .with_filters(r#"director = "Jordan Peele""#)
+    .with_filter(r#"director = "Jordan Peele""#)
     .execute()
     .await
     .unwrap();
 filtering_guide_4: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("Planet of the Apes")
-    .with_filters(r#"rating >= 3 AND (NOT director = "Tim Burton")"#)
+    .with_filter(r#"rating >= 3 AND (NOT director = "Tim Burton")"#)
     .execute()
     .await
     .unwrap();
@@ -283,7 +281,7 @@ search_parameter_guide_crop_1: |-
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
 search_parameter_guide_highlight_1: |-
   let results: SearchResults<Movie> = movies.search()
-    .with_query("shifu")
+    .with_query("winter feast")
     .with_attributes_to_highlight(Selectors::Some(&["overview"]))
     .execute()
     .await
@@ -294,22 +292,20 @@ search_parameter_guide_highlight_1: |-
 search_parameter_guide_filter_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("n")
-    .with_filters("title = Nightshift")
+    .with_filter("title = Nightshift")
     .execute()
     .await
     .unwrap();
 search_parameter_guide_filter_2: |-
   let results: SearchResults<Movie> = movies.search()
-    .with_query("n")
-    .with_filters(r#"title = "Kung Fu Panda""#)
+    .with_query("shifu")
+    .with_filter(r#"title = "Kung Fu Panda""#)
     .execute()
     .await
     .unwrap();
 search_parameter_guide_matches_1: |-
   let results: SearchResults<Movie> = movies.search()
-    .with_query("n")
-    .with_filters(r#"title="Kung Fu Panda""#)
-    .with_attributes_to_highlight(Selectors::Some(&["overview"]))
+    .with_query("winter feast")
     .with_matches(true)
     .execute()
     .await
@@ -326,15 +322,14 @@ settings_guide_synonyms_1: |-
   let progress: Progress = tops.set_synonyms(&synonyms).await.unwrap();
 settings_guide_stop_words_1: |-
   let progress: Progress = movies.set_stop_words(["the", "a", "an"]).await.unwrap();
-settings_guide_attributes_for_faceting_1: |-
-  let progress: Progress = movies.set_attributes_for_faceting(["director", "genres"]).await.unwrap();
+settings_guide_filterable_attributes_1: |-
+  let progress: Progress = movies.set_filterable_attributes(["director", "genres"]).await.unwrap();
 settings_guide_ranking_rules_1: |-
   let ranking_rules = [
-    "typo",
     "words",
+    "typo",
     "proximity",
     "attribute",
-    "wordsPosition",
     "exactness",
     "asc(release_date)",
     "desc(rank)",
@@ -361,6 +356,32 @@ settings_guide_displayed_1: |-
   ];
 
   let progress: Progress = movies.set_displayed_attributes(&displayed_attributes).await.unwrap();
+add_movies_json_1: |-
+  use meilisearch_sdk::{
+    indexes::*,
+    document::*,
+    client::*,
+    search::*,
+    progress::*,
+    settings::*
+  };
+  use serde::{Serialize, Deserialize};
+  use std::{io::prelude::*, fs::File};
+  use futures::executor::block_on;
+
+  fn main() { block_on(async move {
+    let client = Client::new("http://localhost:7700", "masterKey");
+
+    // reading and parsing the file
+    let mut file = File::open("movies.json").unwrap();
+    let mut content = String::new();
+    file.read_to_string(&mut content).unwrap();
+    let movies_docs: Vec<Movie> = serde_json::from_str(&content).unwrap();
+
+    // adding documents
+    let movies = client.get_or_create_index("movies").await.unwrap();
+    movies.add_documents(&movies_docs, None).await.unwrap();
+  })}
 documents_guide_add_movie_1: |-
   // Define the type of our documents
   #[derive(Serialize, Deserialize, Debug)]
@@ -391,7 +412,7 @@ search_guide_1: |-
 search_guide_2: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("Avengers")
-    .with_filters("release_date > 795484800")
+    .with_filter("release_date > 795484800")
     .execute()
     .await
     .unwrap();
@@ -475,7 +496,7 @@ getting_started_add_documents_md: |-
 
   [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 getting_started_search_md: |-
-  You can build a Query and execute it later:
+  You can build a `Query` and execute it later:
   ```rust
   let query: Query = Query::new(&movies)
     .with_query("botman")
@@ -484,7 +505,7 @@ getting_started_search_md: |-
   let results: SearchResults<Movie> = movies.execute_query(&query).await.unwrap();
   ```
 
-  You can build a Query and execute it directly:
+  You can build a `Query` and execute it directly:
   ```rust
   let results: SearchResults<Movie> = Query::new(&movies)
     .with_query("botman")
@@ -493,7 +514,7 @@ getting_started_search_md: |-
     .unwrap();
   ```
 
-  You can search in an Index directly:
+  You can search in an index directly:
   ```rust
   let results: SearchResults<Movie> = movies.search()
     .with_query("botman")
@@ -504,11 +525,11 @@ getting_started_search_md: |-
 
   [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 faceted_search_update_settings_1: |-
-  let progress: Progress = movies.set_attributes_for_faceting(["director", "genres"]).await.unwrap();
-faceted_search_facet_filters_1: |-
+  let progress: Progress = movies.set_filterable_attributes(["director", "genres"]).await.unwrap();
+faceted_search_filter_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")
-    .with_facet_filters(&[&["genres:Horror", "genres:Mystery"], &["director:Jordan Peele"]])
+    .with_filter("(genres = Horror AND genres = Mystery) OR director = \"Jordan Peele\"")
     .execute()
     .await
     .unwrap();
@@ -520,19 +541,19 @@ faceted_search_facets_distribution_1: |-
     .await
     .unwrap();
   let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
-faceted_search_walkthrough_attributes_for_faceting_1: |-
-  let attributes_for_faceting = [
+faceted_search_walkthrough_filterable_attributes_1: |-
+  let filterable_attributes = [
     "director",
     "producer",
     "genres",
     "production_companies"
   ];
 
-  let progress: Progress = movies.set_attributes_for_faceting(&attributes_for_faceting).await.unwrap();
-faceted_search_walkthrough_facet_filters_1: |-
+  let progress: Progress = movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
+faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = movies.search()
     .with_query("thriller")
-    .with_facet_filters(&[&["genres:Horror", "genres:Mystery"], &["director:Jordan Peele"]])
+    .with_filter("(genres = Horror AND genres = Mystery) OR director = \"Jordan Peele\"")
     .execute()
     .await
     .unwrap();
@@ -548,3 +569,10 @@ post_dump_1: |-
   client.create_dump().await.unwrap();
 get_dump_status_1: |-
   client.get_dump_status("20201101-110357260").await.unwrap();
+phrase_search_1: |-
+  let results: SearchResults<Movie> = movies
+    .search()
+    .with_query("\"african american\" horror")
+    .execute()
+    .await
+    .unwrap();

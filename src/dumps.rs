@@ -59,6 +59,9 @@ pub struct DumpInfo {
     pub uid: String,
     pub status: DumpStatus,
     pub error: Option<serde_json::Value>,
+    pub started_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub finished_at: Option<String>
 }
 
 /// Dump related methods.\
@@ -154,5 +157,7 @@ mod tests {
         // Assert that the dump was successful
         let new_dump_info = client.get_dump_status(&dump_info.uid).await.unwrap();
         assert!(matches!(new_dump_info.status, DumpStatus::Done));
+        assert!(new_dump_info.finished_at.is_some());
+        assert!(new_dump_info.started_at.is_some());
     }
 }
