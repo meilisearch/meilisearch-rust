@@ -4,8 +4,8 @@ use std::collections::HashMap;
 
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct MatchRange {
-    start: usize,
-    length: usize,
+    pub start: usize,
+    pub length: usize,
 }
 
 /// A single result.
