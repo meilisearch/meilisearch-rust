@@ -43,9 +43,12 @@ pub struct Settings {
     /// List of [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#order-of-the-rules) sorted by order of importance
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_rules: Option<Vec<String>>,
-    /// Attributes to use as [facets](https://docs.meilisearch.com/reference/features/faceted_search.html)
+    /// Attributes to use for [filtering and faceted search](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filterable_attributes: Option<Vec<String>>,
+    /// Attributes to sort
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sortable_attributes: Option<Vec<String>>,
     /// Search returns documents with distinct (different) values of the given field
     #[serde(skip_serializing_if = "Option::is_none")]
     pub distinct_attribute: Option<String>,
@@ -161,6 +164,7 @@ impl Settings {
             stop_words: None,
             ranking_rules: None,
             filterable_attributes: None,
+            sortable_attributes: None,
             distinct_attribute: None,
             searchable_attributes: None,
             displayed_attributes: None,
@@ -195,6 +199,12 @@ impl Settings {
     pub fn with_filterable_attributes<T: IntoVecString>(self, filterable_attributes: T) -> Settings {
         Settings {
             filterable_attributes: Some(filterable_attributes.convert()),
+            ..self
+        }
+    }
+    pub fn with_sortable_attributes<T: IntoVecString>(self, sortable_attributes: T) -> Settings {
+        Settings {
+            sortable_attributes: Some(sortable_attributes.convert()),
             ..self
         }
     }
@@ -295,7 +305,7 @@ impl Index {
         ).await?)
     }
 
-    /// Get [attributes for faceting](https://docs.meilisearch.com/reference/features/faceted_search.html) of the Index.
+    /// Get [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the Index.
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
@@ -308,6 +318,25 @@ impl Index {
     pub async fn get_filterable_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
             &format!("{}/indexes/{}/settings/filterable-attributes", self.host, self.uid),
+            &self.api_key,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
+    /// Get [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the Index.
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let movie_index = client.get_or_create("movies").await.unwrap();
+    /// let sortable_attributes = movie_index.get_sortable_attributes().await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_sortable_attributes(&self) -> Result<Vec<String>, Error> {
+        Ok(request::<(), Vec<String>>(
+            &format!("{}/indexes/{}/settings/sortable-attributes", self.host, self.uid),
             &self.api_key,
             Method::Get,
             200,
@@ -492,7 +521,7 @@ impl Index {
         .into_progress(self))
     }
 
-    /// Update [attributes for faceting](https://docs.meilisearch.com/reference/features/faceted_search.html) of the index.
+    /// Update [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the index.
     ///
     /// # Example
     ///
@@ -513,6 +542,32 @@ impl Index {
             &format!("{}/indexes/{}/settings/filterable-attributes", self.host, self.uid),
             &self.api_key,
             Method::Post(filterable_attributes.convert()),
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
+    /// Update [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let sortable_attributes = ["genre", "director"];
+    /// let progress = movie_index.set_sortable_attributes(&sortable_attributes).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_sortable_attributes(&self, sortable_attributes: impl IntoVecString) -> Result<Progress, Error> {
+        Ok(request::<Vec<String>, ProgressJson>(
+            &format!("{}/indexes/{}/settings/sortable-attributes", self.host, self.uid),
+            &self.api_key,
+            Method::Post(sortable_attributes.convert()),
             202,
         ).await?
         .into_progress(self))
@@ -695,7 +750,7 @@ impl Index {
         .into_progress(self))
     }
 
-    /// Reset [attributes for faceting](https://docs.meilisearch.com/reference/features/faceted_search.html) of the index.
+    /// Reset [filterable attributes]https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the index.
     ///
     /// # Example
     ///
@@ -713,6 +768,31 @@ impl Index {
     pub async fn reset_filterable_attributes(&self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
             &format!("{}/indexes/{}/settings/filterable-attributes", self.host, self.uid),
+            &self.api_key,
+            Method::Delete,
+            202,
+        ).await?
+        .into_progress(self))
+    }
+
+    /// Reset [sortable attributes]https://docs.meilisearch.com/reference/features/sorting.html) of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    ///
+    /// let progress = movie_index.reset_sortable_attributes().await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(2));
+    /// # progress.get_status().await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_sortable_attributes(&self) -> Result<Progress, Error> {
+        Ok(request::<(), ProgressJson>(
+            &format!("{}/indexes/{}/settings/sortable-attributes", self.host, self.uid),
             &self.api_key,
             Method::Delete,
             202,
