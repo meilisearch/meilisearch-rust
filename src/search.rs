@@ -311,6 +311,7 @@ mod tests {
             Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
         ], None).await.unwrap();
         index.set_filterable_attributes(["kind", "value"]).await.unwrap();
+        index.set_sortable_attributes(["title"]).await.unwrap();
         sleep(Duration::from_secs(1));
         index
     }

@@ -190,6 +190,8 @@ pub struct SettingsUpdate {
     pub synonyms: Option<BTreeMap<String, Vec<String>>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filterable_attributes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sortable_attributes: Option<Vec<String>>,
 }
 
 #[allow(clippy::large_enum_variant)]
