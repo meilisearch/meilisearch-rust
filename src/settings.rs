@@ -472,9 +472,10 @@ impl Index {
     ///     "typo",
     ///     "proximity",
     ///     "attribute",
+    ///     "sort",
     ///     "exactness",
-    ///     "asc(release_date)",
-    ///     "desc(rank)",
+    ///     "release_date:asc",
+    ///     "rank:desc",
     /// ];
     /// let progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(2));
@@ -669,7 +670,7 @@ impl Index {
     }
 
     /// Reset [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the index to default value.
-    /// Default value: ["words", "typo", "proximity", "attribute", "exactness"].
+    /// Default value: ["words", "typo", "proximity", "attribute", "sort", "exactness"].
     ///
     /// # Example
     ///
