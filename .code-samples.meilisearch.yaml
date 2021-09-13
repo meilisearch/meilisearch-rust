@@ -618,7 +618,7 @@ sorting_guide_sort_parameter_2: |-
 get_sortable_attributes_1: |-
   let sortable_attributes: Vec<String> = books.get_sortable_attributes().await.unwrap();
 update_sortable_attributes_1: |-
-  let filterable_attributes = [
+  let sortable_attributes = [
     "price",
     "author"
   ];
