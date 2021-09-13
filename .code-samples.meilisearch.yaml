@@ -82,9 +82,10 @@ update_settings_1: |-
       "typo",
       "proximity",
       "attribute",
+      "sort",
       "exactness",
-      "desc(release_date)",
-      "desc(rank)"
+      "release_date:desc",
+      "rank:desc"
     ])
     .with_distinct_attribute("movie_id")
     .with_searchable_attributes([
@@ -102,6 +103,10 @@ update_settings_1: |-
       "the",
       "a",
       "an"
+    ])
+    .with_sortable_attributes([
+      "title",
+      "release_date"
     ])
     .with_synonyms(synonyms);
 
@@ -134,9 +139,10 @@ update_ranking_rules_1: |-
     "typo",
     "proximity",
     "attribute",
+    "sort",
     "exactness",
-    "asc(release_date)",
-    "desc(rank)",
+    "release_date:asc",
+    "rank:desc",
   ];
 
   let progress: Progress = movies.set_ranking_rules(&ranking_rules).await.unwrap();
@@ -330,9 +336,10 @@ settings_guide_ranking_rules_1: |-
     "typo",
     "proximity",
     "attribute",
+    "sort",
     "exactness",
-    "asc(release_date)",
-    "desc(rank)",
+    "release_date:asc",
+    "rank:desc",
   ];
 
   let progress: Progress = movies.set_ranking_rules(&ranking_rules).await.unwrap();
@@ -573,6 +580,56 @@ phrase_search_1: |-
   let results: SearchResults<Movie> = movies
     .search()
     .with_query("\"african american\" horror")
+    .execute()
+    .await
+    .unwrap();
+sorting_guide_update_sortable_attributes_1: |-
+  let sortable_attributes = [
+    "author",
+    "price"
+  ];
+
+  let progress: Progress = books.set_sortable_attributes(&sortable_attributes).await.unwrap();
+sorting_guide_update_ranking_rules_1: |-
+  let ranking_rules = [
+    "words",
+    "sort",
+    "typo",
+    "proximity",
+    "attribute",
+    "exactness"
+  ];
+
+  let progress: Progress = books.set_ranking_rules(&ranking_rules).await.unwrap();
+sorting_guide_sort_parameter_1: |-
+  let results: SearchResults<Books> = books.search()
+    .with_query("science fiction")
+    .with_sort(&["price:asc"])
+    .execute()
+    .await
+    .unwrap();
+sorting_guide_sort_parameter_2: |-
+  let results: SearchResults<Books> = books.search()
+    .with_query("butler")
+    .with_sort(&["author:desc"])
+    .execute()
+    .await
+    .unwrap();
+get_sortable_attributes_1: |-
+  let sortable_attributes: Vec<String> = books.get_sortable_attributes().await.unwrap();
+update_sortable_attributes_1: |-
+  let sortable_attributes = [
+    "price",
+    "author"
+  ];
+
+  let progress: Progress = books.set_sortable_attributes(&sortable_attributes).await.unwrap();
+reset_sortable_attributes_1: |-
+  let progress: Progress = books.reset_sortable_attributes().await.unwrap();
+search_parameter_guide_sort_1: |-
+  let results: SearchResults<Books> = books.search()
+    .with_query("science fiction")
+    .with_sort(&["price:asc"])
     .execute()
     .await
     .unwrap();

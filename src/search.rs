@@ -155,6 +155,9 @@ pub struct Query<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub facets_distribution: Option<Selectors<&'a [&'a str]>>,
+    /// Attributes to sort.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sort: Option<&'a [&'a str]>,
     /// Attributes to display in the returned documents.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -197,6 +200,7 @@ impl<'a> Query<'a> {
             offset: None,
             limit: None,
             filter: None,
+            sort: None,
             facets_distribution: None,
             attributes_to_retrieve: None,
             attributes_to_crop: None,
@@ -226,6 +230,13 @@ impl<'a> Query<'a> {
         facets_distribution: Selectors<&'a [&'a str]>,
     ) -> &'b mut Query<'a> {
         self.facets_distribution = Some(facets_distribution);
+        self
+    }
+    pub fn with_sort<'b>(
+        &'b mut self,
+        sort: &'a [&'a str],
+    ) -> &'b mut Query<'a> {
+        self.sort = Some(sort);
         self
     }
     pub fn with_attributes_to_retrieve<'b>(
@@ -311,6 +322,7 @@ mod tests {
             Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
         ], None).await.unwrap();
         index.set_filterable_attributes(["kind", "value"]).await.unwrap();
+        index.set_sortable_attributes(["title"]).await.unwrap();
         sleep(Duration::from_secs(1));
         index
     }
@@ -444,6 +456,23 @@ mod tests {
 
         client
             .delete_index("test_query_attributes_to_retrieve")
+            .await
+            .unwrap();
+    }
+
+    #[async_test]
+    async fn test_query_sort() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, "test_query_sort").await;
+
+        let mut query = Query::new(&index);
+        query.with_query("harry potter");
+        query.with_sort(&["title:desc"]);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 7);
+
+        client
+            .delete_index("test_query_sort")
             .await
             .unwrap();
     }
