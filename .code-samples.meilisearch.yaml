@@ -584,7 +584,7 @@ phrase_search_1: |-
     .await
     .unwrap();
 sorting_guide_update_sortable_attributes_1: |-
-  let filterable_attributes = [
+  let sortable_attributes = [
     "author",
     "price"
   ];
