@@ -1,6 +1,6 @@
 [package]
 name = "meilisearch-sdk"
-version = "0.9.0"
+version = "0.10.1"
 authors = ["Mubelotix <mubelotix@gmail.com>"]
 edition = "2018"
 description = "Rust wrapper for the MeiliSearch API. MeiliSearch is a powerful, fast, open-source, easy to use and deploy search engine."
@@ -29,7 +29,7 @@ isahc-static-curl = ["isahc/static-curl"]
 sync = []
 
 [dev-dependencies]
-env_logger = "0.8"
+env_logger = "0.9"
 futures-await-test = "0.3"
 futures = "0.3"
 

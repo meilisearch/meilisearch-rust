@@ -707,6 +707,7 @@ impl Index {
     /// let status = progress.get_status().await.unwrap();
     /// let from_progress = match status {
     ///    UpdateStatus::Enqueued{content} => content.update_id,
+    ///    UpdateStatus::Processing{content} => content.update_id,
     ///    UpdateStatus::Failed{content} => content.update_id,
     ///    UpdateStatus::Processed{content} => content.update_id,
     /// };
@@ -717,6 +718,7 @@ impl Index {
     ///
     /// let from_index = match status {
     ///    UpdateStatus::Enqueued{content} => content.update_id,
+    ///    UpdateStatus::Processing{content} => content.update_id,
     ///    UpdateStatus::Failed{content} => content.update_id,
     ///    UpdateStatus::Processed{content} => content.update_id,
     /// };
@@ -827,7 +829,7 @@ impl Index {
 pub struct IndexStats {
     pub number_of_documents: usize,
     pub is_indexing: bool,
-    pub fields_distribution: HashMap<String, usize>,
+    pub field_distribution: HashMap<String, usize>,
 }
 
 #[cfg(test)]
@@ -862,6 +864,7 @@ mod tests {
 
         match status {
             UpdateStatus::Enqueued{content} => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Processing{content} => assert_eq!(content.update_id, update_id),
             UpdateStatus::Failed{content} => assert_eq!(content.update_id, update_id),
             UpdateStatus::Processed{content} => assert_eq!(content.update_id, update_id),
         }

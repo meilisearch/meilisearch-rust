@@ -49,7 +49,7 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.9.0"
+meilisearch-sdk = "0.10.1"
 ```
 
 The following optional dependencies may also be useful:
@@ -140,7 +140,7 @@ WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extensi
 
 ## 🤖 Compatibility with MeiliSearch
 
-This package only guarantees the compatibility with the [version v0.20.0 of MeiliSearch](https://github.com/meilisearch/MeiliSearch/releases/tag/v0.20.0).
+This package only guarantees the compatibility with the [version v0.22.0 of MeiliSearch](https://github.com/meilisearch/MeiliSearch/releases/tag/v0.22.0).
 
 ## ⚙️ Development Workflow and Contributing
 

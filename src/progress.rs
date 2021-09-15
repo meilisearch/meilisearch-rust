@@ -133,7 +133,7 @@ impl<'a> Progress {
                         UpdateStatus::Failed { .. } | UpdateStatus::Processed { .. } => {
                             return Some(self.get_status().await);
                         },
-                        UpdateStatus::Enqueued { .. } => {
+                        UpdateStatus::Enqueued { .. } | UpdateStatus::Processing { .. } => {
                             elapsed_time += interval;
                             async_sleep(interval).await;
                         },
@@ -174,44 +174,47 @@ pub(crate) async fn async_sleep(interval: Duration) {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub enum RankingRule {
-    Typo,
-    Words,
-    Proximity,
-    Attribute,
-    WordsPosition,
-    Exactness,
-    Asc(String),
-    Desc(String),
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub enum UpdateState<T> {
-    Update(T),
-    Clear,
-    Nothing,
-}
-
-#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SettingsUpdate {
-    pub ranking_rules: UpdateState<Vec<RankingRule>>,
-    pub distinct_attribute: UpdateState<String>,
-    pub searchable_attributes: UpdateState<Vec<String>>,
-    pub displayed_attributes: UpdateState<BTreeSet<String>>,
-    pub stop_words: UpdateState<BTreeSet<String>>,
-    pub synonyms: UpdateState<BTreeMap<String, Vec<String>>>,
-    pub attributes_for_faceting: UpdateState<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ranking_rules: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distinct_attribute: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_none")]
+    pub searchable_attributes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "BTreeSet::is_not_set")]
+    pub displayed_attributes: Option<BTreeSet<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stop_words: Option<BTreeSet<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub synonyms: Option<BTreeMap<String, Vec<String>>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filterable_attributes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sortable_attributes: Option<Vec<String>>,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "name")]
 pub enum UpdateType {
     ClearAll,
     Customs,
-    DocumentsAddition { number: usize },
-    DocumentsPartial { number: usize },
-    DocumentsDeletion { number: usize },
-    Settings { settings: Box<SettingsUpdate> },
+    DocumentsAddition {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        number: Option<usize>,
+    },
+    DocumentsPartial {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        number: Option<usize>,
+    },
+    DocumentsDeletion {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        number: Option<usize>,
+    },
+    Settings {
+        settings: SettingsUpdate,
+    },
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -242,6 +245,10 @@ pub struct EnqueuedUpdateResult {
 #[serde(rename_all = "camelCase", tag = "status")]
 pub enum UpdateStatus {
     Enqueued {
+        #[serde(flatten)]
+        content: EnqueuedUpdateResult,
+    },
+    Processing {
         #[serde(flatten)]
         content: EnqueuedUpdateResult,
     },
