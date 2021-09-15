@@ -324,9 +324,19 @@ mod test {
                 value: "Harry Potter and the Sorcerer's Stone".to_string(),
             },
         ], None).await.unwrap();
-        let status = progress.wait_for_pending_update(
+
+        let status =  progress.wait_for_pending_update(
             Some(Duration::from_millis(1)), Some(Duration::from_nanos(1))
         ).await;
+
+        /*
+         * TODO: This if let is here to try to log more information to resolve https://github.com/meilisearch/meilisearch-rust/issues/144.
+         * Once this issue is resolved this should be removed.
+         */
+        if let Some(Err(err)) = &status {
+            println!("{:?}", err);
+            client.delete_index("movies_wait_for_pending_timeout").await.unwrap();
+        };
 
         client.delete_index("movies_wait_for_pending_timeout").await.unwrap();
         assert_eq!(status.is_none(), true);
