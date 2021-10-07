@@ -29,7 +29,7 @@ impl Client {
         }
     }
 
-    /// List all [indexes](../indexes/struct.Index.html).
+    /// List all [indexes] and returns values as instances of Index(../indexes/struct.Index.html).
     ///
     /// # Example
     ///
@@ -44,6 +44,33 @@ impl Client {
     /// # });
     /// ```
     pub async fn list_all_indexes(&self) -> Result<Vec<Index>, Error> {
+        match self.list_all_indexes_raw().await{
+            Ok (json_indexes) => Ok({
+                let mut indexes = Vec::new();
+                for json_index in json_indexes {
+                    indexes.push(json_index.into_index(self))
+                }
+                indexes
+            }),
+            Err(error) => Err(error),
+        }
+    }
+
+    /// List all [indexes] and returns as Json (../indexes/struct.Index.html).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # futures::executor::block_on(async move {
+    /// // create the client
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    ///
+    /// let json_indexes: Vec<JsonIndex> = client.list_all_indexes_raw().await.unwrap();
+    /// println!("{:?}", json_indexes);
+    /// # });
+    /// ```
+    pub async fn list_all_indexes_raw(&self) -> Result<Vec<JsonIndex>, Error> {
         let json_indexes = request::<(), Vec<JsonIndex>>(
             &format!("{}/indexes", self.host),
             &self.api_key,
@@ -51,12 +78,7 @@ impl Client {
             200,
         ).await?;
 
-        let mut indexes = Vec::new();
-        for json_index in json_indexes {
-            indexes.push(json_index.into_index(self))
-        }
-
-        Ok(indexes)
+        Ok(json_indexes)
     }
 
     /// Get an [index](../indexes/struct.Index.html).
@@ -167,6 +189,11 @@ impl Client {
     /// Alias for [list_all_indexes](#method.list_all_indexes).
     pub async fn get_indexes(&self) -> Result<Vec<Index>, Error> {
         self.list_all_indexes().await
+    }
+
+    /// Alias for [list_all_indexes_raw](#method.list_all_indexes_raw).
+    pub async fn get_indexes_raw(&self) -> Result<Vec<JsonIndex>, Error> {
+        self.list_all_indexes_raw().await
     }
 
     /// Get stats of all indexes.
@@ -348,6 +375,32 @@ mod tests {
         assert_eq!(deleted, true);
         index = client.get_index(index_name).await;
         assert!(index.is_err());
+    }
+
+    #[async_test]
+    async fn test_list_all_indexes() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index_name = "list_all_indexes";
+        client.create_index(index_name, None).await.unwrap();
+        let index = client.get_index(index_name).await;
+        assert!(index.is_ok());
+        let all_indexes = client.list_all_indexes().await.unwrap();
+        assert!(all_indexes.len() > 0);
+        let deleted = client.delete_index_if_exists(index_name).await.unwrap();
+        assert_eq!(deleted, true);
+    }
+
+    #[async_test]
+    async fn test_list_all_indexes_raw() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index_name = "list_all_indexes_raw";
+        client.create_index(index_name, None).await.unwrap();
+        let index = client.get_index(index_name).await;
+        assert!(index.is_ok());
+        let all_indexes_raw = client.list_all_indexes_raw().await.unwrap();
+        assert!(all_indexes_raw.len() > 0);
+        let deleted = client.delete_index_if_exists(index_name).await.unwrap();
+        assert_eq!(deleted, true);
     }
 
     #[async_test]
