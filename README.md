@@ -119,7 +119,7 @@ fn main() { block_on(async move {
     ], Some("id")).await.unwrap();
 
     // Query movies (note that there is a typo)
-    println!("{:?}", movies.search().with_query("Carol").execute::<Movie>().await.unwrap().hits);
+    println!("{:?}", movies.search().with_query("carlo").execute::<Movie>().await.unwrap().hits);
 })}
 ```
 
