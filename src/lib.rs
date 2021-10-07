@@ -56,33 +56,33 @@
 //!     }
 //! }
 //!
-// !fn main() { block_on(async move {
-// !    // Create a client (without sending any request so that can't fail)
-// !    let client = Client::new("http://localhost:7700", "masterKey");
-// !
-// !    // Get the index called "movies"
-// !    let movies = client.get_or_create("movies").await.unwrap();
-// !
-// !    // Add some movies in the index
-// !    movies.add_documents(&[
-// !        Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]},
-// !        Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action", "Adventure"]},
-// !        Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure", "Drama"]},
-// !        Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure", "Science Fiction"]},
-// !        Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy", "Action"]},
-// !        Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama"]},
-// !    ], Some("id")).await.unwrap();
-// !
-// !    // Query movies (note that there is a typo)
-// !    println!("{:?}", movies.search().with_query("Carol").execute::<Movie>().await.unwrap().hits);
-// !})}
-// !```
-// !
-// !Output:
-// !
-// !```
-// ![Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
-// !```
+//! fn main() { block_on(async move {
+//!     // Create a client (without sending any request so that can't fail)
+//!     let client = Client::new("http://localhost:7700", "masterKey");
+//!
+//!     // Get the index called "movies"
+//!     let movies = client.get_or_create("movies").await.unwrap();
+//!
+//!     // Add some movies in the index
+//!     movies.add_documents(&[
+//!         Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]},
+//!         Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action", "Adventure"]},
+//!         Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure", "Drama"]},
+//!         Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure", "Science Fiction"]},
+//!         Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy", "Action"]},
+//!         Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama"]},
+//!     ], Some("id")).await.unwrap();
+//!
+//!     // Query movies (note that there is a typo)
+//!     println!("{:?}", movies.search().with_query("carol").execute::<Movie>().await.unwrap().hits);
+//! })}
+//! ```
+//!
+//! Output:
+//!
+//! ```text
+//! [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
+//! ```
 //!
 //! ## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 //!
