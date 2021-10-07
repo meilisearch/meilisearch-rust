@@ -118,7 +118,8 @@ fn main() { block_on(async move {
         Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama"]},
     ], Some("id")).await.unwrap();
 
-    // Query movies (note that there is a typo)
+    // Search in "movies"
+    // MeiliSearch is typo-tolerant:
     println!("{:?}", movies.search().with_query("carlo").execute::<Movie>().await.unwrap().hits);
 })}
 ```
