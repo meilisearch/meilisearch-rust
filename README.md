@@ -102,7 +102,6 @@ impl Document for Movie {
 }
 
 fn main() { block_on(async move {
-    // Create a client (without sending any request so that can't fail)
     let client = Client::new("http://localhost:7700", "masterKey");
 
     // An index is where the documents are stored.
