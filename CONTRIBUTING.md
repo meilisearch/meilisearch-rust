@@ -92,7 +92,7 @@ Instead, update the `README.tpl` and `src/lib.rs` files, and run:
 sh scripts/update-readme.sh
 ```
 
-Then, add the generated `README.md` file to your git commit.
+Then, push the changed files.
 
 You can check the current `README.md` is up-to-date by running:
 
