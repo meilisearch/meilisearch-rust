@@ -633,3 +633,31 @@ search_parameter_guide_sort_1: |-
     .execute()
     .await
     .unwrap();
+geosearch_guide_filter_settings_1: |-
+  let progress: Progress = restaurants.set_filterable_attributes(&["_geo"]).await.unwrap();
+geosearch_guide_filter_usage_1: |-
+  let results: SearchResults<Restaurant> = restaurants.search()
+    .with_filter("_geoRadius(45.4628328, 9.1076931, 2000)")
+    .execute()
+    .await
+    .unwrap();
+geosearch_guide_filter_usage_2: |-
+  let results: SearchResults<Restaurant> = restaurants.search()
+    .with_filter("_geoRadius(45.4628328, 9.1076931, 2000) AND type = pizza")
+    .execute()
+    .await
+    .unwrap();
+geosearch_guide_sort_settings_1: |-
+  let progress: Progress = restaurants.set_sortable_attributes(&["_geo"]).await.unwrap();
+geosearch_guide_sort_usage_1: |-
+  let results: SearchResults<Restaurant> = restaurants.search()
+    .with_sort(&["_geoPoint(48.8583701,2.2922926):asc"])
+    .execute()
+    .await
+    .unwrap();
+geosearch_guide_sort_usage_2: |-
+  let results: SearchResults<Restaurant> = restaurants.search()
+    .with_sort(&["_geoPoint(48.8583701,2.2922926):asc", "rating:desc"])
+    .execute()
+    .await
+    .unwrap();
