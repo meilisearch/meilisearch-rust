@@ -41,17 +41,18 @@
 //! use futures::executor::block_on;
 //!
 //! #[derive(Serialize, Deserialize, Debug)]
-//! struct Book {
-//!     book_id: usize,
+//! struct Movie {
+//!     id: usize,
 //!     title: String,
+//!     genres: Vec<String>,
 //! }
 //!
 //! // That trait is required to make a struct usable by an index
-//! impl Document for Book {
+//! impl Document for Movie {
 //!     type UIDType = usize;
 //!
 //!     fn get_uid(&self) -> &Self::UIDType {
-//!         &self.book_id
+//!         &self.id
 //!     }
 //! }
 //!
@@ -59,28 +60,28 @@
 //!     // Create a client (without sending any request so that can't fail)
 //!     let client = Client::new("http://localhost:7700", "masterKey");
 //!
-//!     // Get the index called "books"
-//!     let books = client.get_or_create("books").await.unwrap();
+//!     // Get the index called "movies"
+//!     let movies = client.get_or_create("movies").await.unwrap();
 //!
-//!     // Add some books in the index
-//!     books.add_documents(&[
-//!         Book{book_id: 123,  title: String::from("Pride and Prejudice")},
-//!         Book{book_id: 456,  title: String::from("Le Petit Prince")},
-//!         Book{book_id: 1,    title: String::from("Alice In Wonderland")},
-//!         Book{book_id: 1344, title: String::from("The Hobbit")},
-//!         Book{book_id: 4,    title: String::from("Harry Potter and the Half-Blood Prince")},
-//!         Book{book_id: 42,   title: String::from("The Hitchhiker's Guide to the Galaxy")},
-//!     ], Some("book_id")).await.unwrap();
+//!     // Add some movies in the index
+//!     movies.add_documents(&[
+//!         Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
+//!         Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
+//!         Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()]},
+//!         Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()]},
+//!         Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()]},
+//!         Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()]},
+//!     ], Some("id")).await.unwrap();
 //!
-//!     // Query books (note that there is a typo)
-//!     println!("{:?}", books.search().with_query("harry pottre").execute::<Book>().await.unwrap().hits);
+//!     // Query movies (note that there is a typo)
+//!     println!("{:?}", movies.search().with_query("carol").execute::<Movie>().await.unwrap().hits);
 //! })}
 //! ```
 //!
 //! Output:
 //!
 //! ```text
-//! [Book { book_id: 4, title: "Harry Potter and the Half-Blood Prince" }]
+//! [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
 //! ```
 //!
 //! ## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
