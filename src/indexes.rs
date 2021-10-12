@@ -7,7 +7,7 @@ use std::{fmt::Display, collections::HashMap};
 
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
-pub(crate) struct JsonIndex {
+pub struct JsonIndex {
     uid: String,
     primaryKey: Option<String>,
     createdAt: String,
