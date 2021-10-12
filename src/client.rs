@@ -98,13 +98,35 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
+        match self.get_raw_index(uid).await {
+            Ok (raw_idx) => Ok(raw_idx.into_index(self)),
+            Err(error) => Err(error),
+        }
+    }
+
+    /// Get a raw JSON [index](../indexes/struct.Index.html).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    ///
+    /// # futures::executor::block_on(async move {
+    /// // create the client
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// # client.create_index("movies", None).await;
+    ///
+    /// // get the index named "movies"
+    /// let movies = client.get_raw_index("movies").await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<JsonIndex, Error> {
         Ok(request::<(), JsonIndex>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
             &self.api_key,
             Method::Get,
             200,
-        ).await?
-        .into_index(self))
+        ).await?)
     }
 
     /// Assume that an [index](../indexes/struct.Index.html) exist and create a corresponding object without any check.
