@@ -65,12 +65,12 @@
 //!
 //!     // Add some movies in the index
 //!     movies.add_documents(&[
-//!         Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]},
-//!         Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action", "Adventure"]},
-//!         Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure", "Drama"]},
-//!         Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure", "Science Fiction"]},
-//!         Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy", "Action"]},
-//!         Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama"]},
+//!         Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
+//!         Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
+//!         Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()]},
+//!         Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()]},
+//!         Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()]},
+//!         Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()]},
 //!     ], Some("id")).await.unwrap();
 //!
 //!     // Query movies (note that there is a typo)
