@@ -90,7 +90,11 @@
 //! index setting.
 //!
 //! ```
-//! movies.set_filterable_attributes(["id", "genres"]).await.unwrap();
+//! let filterable_attributes = [
+//!     "id",
+//!     "genres"
+//! ];
+//! movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
 //! ```
 //!
 //! You only need to perform this operation once.
