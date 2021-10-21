@@ -512,7 +512,7 @@ mod tests {
     }
 
     #[async_test]
-    async fn test_query_crop_lenght() {
+    async fn test_query_crop_length() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index = setup_test_index(&client, "test_query_crop_lenght").await;
 
