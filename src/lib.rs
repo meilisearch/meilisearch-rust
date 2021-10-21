@@ -159,10 +159,6 @@
 //! # fn main() { block_on(async move {
 //! # // Create a client (without sending any request so that can't fail)
 //! # let client = Client::new("http://localhost:7700", "masterKey");
-//! # let filterable_attributes = [
-//! #     "id",
-//! #     "genres"
-//! # ];
 //! #   // Get the index called "movies"
 //! # let movies = client.get_or_create("movies").await.unwrap();
 //! # let filterable_attributes = [
@@ -184,7 +180,7 @@
 //! # })}
 //! ```
 //!
-//! ```text
+//! ```json
 //! {
 //!   "hits": [
 //!     {
