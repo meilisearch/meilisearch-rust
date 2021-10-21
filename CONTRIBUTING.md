@@ -49,6 +49,7 @@ To run the tests one by one, run:
 # Tests
 curl -L https://install.meilisearch.com | sh # download MeiliSearch
 ./meilisearch --master-key=masterKey --no-analytics=true # run MeiliSearch
+cargo test -- --test-threads=1
 ```
 
 Also, the WASM example compilation should be checked:
