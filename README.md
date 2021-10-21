@@ -156,7 +156,7 @@ println!("{:?}", movies.search().with_query("wonder").with_filter("id > 1 AND ge
 .execute::<Movie>().await.unwrap().hits);
 ```
 
-```
+```json
 {
   "hits": [
     {
