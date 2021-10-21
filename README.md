@@ -74,6 +74,7 @@ For example, if you use Docker:
 ```bash
 # Install MeiliSearch
 curl -L https://install.meilisearch.com | sh
+
 # Launch MeiliSearch
 ./meilisearch --master-key=masterKey
 ```
