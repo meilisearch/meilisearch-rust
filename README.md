@@ -70,7 +70,8 @@ This crate requires a MeiliSearch server to run.
 
 There are many easy ways to [download and run a MeiliSearch instance](https://docs.meilisearch.com/reference/features/installation.html#download-and-launch).
 
-For example, if you use Docker:
+For example,using the `curl` command in [your Terminal](https://itconnect.uw.edu/learn/workshops/online-tutorials/web-publishing/what-is-a-terminal/):
+
 ```bash
 # Install MeiliSearch
 curl -L https://install.meilisearch.com | sh
