@@ -149,11 +149,11 @@ update_ranking_rules_1: |-
 reset_ranking_rules_1: |-
   let progress: Progress = movies.reset_ranking_rules().await.unwrap();
 get_distinct_attribute_1: |-
-  let distinct_attribute: Option<String> = movies.get_distinct_attribute().await.unwrap();
+  let distinct_attribute: Option<String> = shoes.get_distinct_attribute().await.unwrap();
 update_distinct_attribute_1: |-
-  let progress: Progress = movies.set_distinct_attribute("movie_id").await.unwrap();
+  let progress: Progress = shoes.set_distinct_attribute("skuid").await.unwrap();
 reset_distinct_attribute_1: |-
-  let progress: Progress = movies.reset_distinct_attribute().await.unwrap();
+  let progress: Progress = shoes.reset_distinct_attribute().await.unwrap();
 get_searchable_attributes_1: |-
   let searchable_attributes: Vec<String> = movies.get_searchable_attributes().await.unwrap();
 update_searchable_attributes_1: |-
