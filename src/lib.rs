@@ -1,42 +1,3 @@
-//! # 🔧 Installation
-//!
-//! To use `meilisearch-sdk`, add this to your `Cargo.toml`:
-//!
-//! ```toml
-//! [dependencies]
-//! meilisearch-sdk = "0.11.0"
-//! ```
-//!
-//! The following optional dependencies may also be useful:
-//!
-//! ```toml
-//! futures = "0.3" # To be able to block on async functions if you are not using an async runtime
-//! serde = { version = "1.0", features = ["derive"] }
-//! ```
-//!
-//! This crate is `async` but you can choose to use an async runtime like [tokio](https://crates.io/crates/tokio) or just [block on futures](https://docs.rs/futures/latest/futures/executor/fn.block_on.html).
-//! You can enable the `sync` feature to make most structs `Sync`. It may be a bit slower.
-//!
-//! Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
-//!
-//! ## Run a MeiliSearch Instance <!-- omit in TOC -->
-//!
-//! This crate requires a MeiliSearch server to run.
-//!
-//! There are many easy ways to [download and run a MeiliSearch instance](https://docs.meilisearch.com/reference/features/installation.html#download-and-launch).
-//!
-//! For example,using the `curl` command in [your Terminal](https://itconnect.uw.edu/learn/workshops/online-tutorials/web-publishing/what-is-a-terminal/):
-//!
-//! ```bash
-//! # Install MeiliSearch
-//! curl -L https://install.meilisearch.com | sh
-//!
-//! # Launch MeiliSearch
-//! ./meilisearch --master-key=masterKey
-//! ```
-//!
-//! NB: you can also download MeiliSearch from **Homebrew** or **APT**.
-//!
 //! # 🚀 Getting Started
 //!
 //! ```rust
@@ -200,16 +161,6 @@
 //!   "query": "wonder"
 //! }
 //! ```
-//!
-//! ## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
-//!
-//! This crate fully supports WASM.
-//!
-//! The only difference between the WASM and the native version is that the native version has one more variant (`Error::Http`) in the Error enum. That should not matter so much but we could add this variant in WASM too.
-//!
-//! However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using MeiliSearch, see the [our demo](./examples/web_app).
-//!
-//! WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
 
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
