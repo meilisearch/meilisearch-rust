@@ -84,7 +84,7 @@
 //!
 //! Output:
 //!
-//! ```rust
+//! ```
 //! [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
 //! ```
 //!
