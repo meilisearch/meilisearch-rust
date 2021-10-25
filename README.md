@@ -82,7 +82,7 @@ curl -L https://install.meilisearch.com | sh
 
 NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 
-## 🚀 Getting Started
+### 🚀 Getting Started
 
 ```rust
 use meilisearch_sdk::{document::*, client::*, search::*};
@@ -129,7 +129,7 @@ fn main() { block_on(async move {
 
 Output:
 
-```
+```rust
 [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
 ```
 

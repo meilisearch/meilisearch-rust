@@ -26,19 +26,20 @@
 //! There are many easy ways to [download and run a MeiliSearch instance](https://docs.meilisearch.com/reference/features/installation.html#download-and-launch).
 //!
 //! For example,using the `curl` command in [your Terminal](https://itconnect.uw.edu/learn/workshops/online-tutorials/web-publishing/what-is-a-terminal/):
+//!
 //! ```bash
 //! # Install MeiliSearch
-//!  curl -L https://install.meilisearch.com | sh
+//! curl -L https://install.meilisearch.com | sh
 //!
-//!# Launch MeiliSearch
-//!./meilisearch --master-key=masterKey
-//!  ```
+//! # Launch MeiliSearch
+//! ./meilisearch --master-key=masterKey
+//! ```
 //!
 //! NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 //!
-//! # 🚀 Getting Started
+//! ## 🚀 Getting Started
 //!
-//! ```
+//! ```rust
 //! use meilisearch_sdk::{document::*, client::*, search::*};
 //! use serde::{Serialize, Deserialize};
 //! use futures::executor::block_on;
@@ -83,7 +84,7 @@
 //!
 //! Output:
 //!
-//! ```text
+//! ```rust
 //! [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
 //! ```
 //!
