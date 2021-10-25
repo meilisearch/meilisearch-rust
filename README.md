@@ -36,6 +36,7 @@
 - [📖 Documentation](#-documentation)
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
+- [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
 - [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
 
@@ -82,7 +83,7 @@ curl -L https://install.meilisearch.com | sh
 
 NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 
-### 🚀 Getting Started
+## 🚀 Getting Started
 
 ```rust
 use meilisearch_sdk::{document::*, client::*, search::*};
@@ -133,7 +134,7 @@ Output:
 [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
 ```
 
-### 🌐 Running in the Browser with WASM <!-- omit in TOC -->
+## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 
 This crate fully supports WASM.
 
