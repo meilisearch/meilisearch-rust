@@ -47,8 +47,8 @@ To run the tests one by one, run:
 
 ```bash
 # Tests
-docker pull getmeili/meilisearch:latest # Fetch the latest version of MeiliSearch image from Docker Hub
-docker run -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --master-key=masterKey --no-analytics=true
+curl -L https://install.meilisearch.com | sh # download MeiliSearch
+./meilisearch --master-key=masterKey --no-analytics=true # run MeiliSearch
 cargo test -- --test-threads=1
 ```
 

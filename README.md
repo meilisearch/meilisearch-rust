@@ -36,6 +36,7 @@
 - [📖 Documentation](#-documentation)
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
+- [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
 - [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
 
@@ -70,10 +71,14 @@ This crate requires a MeiliSearch server to run.
 
 There are many easy ways to [download and run a MeiliSearch instance](https://docs.meilisearch.com/reference/features/installation.html#download-and-launch).
 
-For example, if you use Docker:
+For example,using the `curl` command in [your Terminal](https://itconnect.uw.edu/learn/workshops/online-tutorials/web-publishing/what-is-a-terminal/):
+
 ```bash
-docker pull getmeili/meilisearch:latest # Fetch the latest version of MeiliSearch image from Docker Hub
-docker run -it --rm -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --master-key=masterKey
+# Install MeiliSearch
+curl -L https://install.meilisearch.com | sh
+
+# Launch MeiliSearch
+./meilisearch --master-key=masterKey
 ```
 
 NB: you can also download MeiliSearch from **Homebrew** or **APT**.
@@ -173,7 +178,7 @@ println!("{:?}", movies.search().with_query("wonder").with_filter("id > 1 AND ge
 }
 ```
 
-### 🌐 Running in the Browser with WASM <!-- omit in TOC -->
+## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 
 This crate fully supports WASM.
 
@@ -196,3 +201,4 @@ If you want to know more about the development workflow or want to contribute, p
 <hr>
 
 **MeiliSearch** provides and maintains many **SDKs and Integration tools** like this one. We want to provide everyone with an **amazing search experience for any kind of project**. If you want to contribute, make suggestions, or just know what's going on right now, visit us in the [integration-guides](https://github.com/meilisearch/integration-guides) repository.
+
