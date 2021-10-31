@@ -178,7 +178,7 @@ println!("{:?}", movies.search().with_query("wonder").with_filter("id > 1 AND ge
 }
 ```
 
-## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
+### 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 
 This crate fully supports WASM.
 
@@ -201,4 +201,3 @@ If you want to know more about the development workflow or want to contribute, p
 <hr>
 
 **MeiliSearch** provides and maintains many **SDKs and Integration tools** like this one. We want to provide everyone with an **amazing search experience for any kind of project**. If you want to contribute, make suggestions, or just know what's going on right now, visit us in the [integration-guides](https://github.com/meilisearch/integration-guides) repository.
-
