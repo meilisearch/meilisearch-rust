@@ -134,7 +134,51 @@ Output:
 [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
 ```
 
-## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
+##### Custom Search With Filters <!-- omit in TOC -->
+
+If you want to enable filtering, you must add your attributes to the `filterableAttributes`
+index setting.
+
+```rust
+let filterable_attributes = [
+    "id",
+    "genres"
+];
+movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
+```
+
+You only need to perform this operation once.
+
+Note that MeiliSearch will rebuild your index whenever you update `filterableAttributes`.
+Depending on the size of your dataset, this might take time. You can track the whole process
+using the [update
+status](https://docs.meilisearch.com/reference/api/updates.html#get-an-update-status).
+
+Then, you can perform the search:
+
+```rust
+println!("{:?}", movies.search().with_query("wonder").with_filter("id > 1 AND genres = Action")
+.execute::<Movie>().await.unwrap().hits);
+```
+
+```json
+{
+  "hits": [
+    {
+      "id": 2,
+      "title": "Wonder Woman",
+      "genres": ["Action", "Adventure"]
+    }
+  ],
+  "offset": 0,
+  "limit": 20,
+  "nbHits": 1,
+  "processingTimeMs": 0,
+  "query": "wonder"
+}
+```
+
+### 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 
 This crate fully supports WASM.
 
