@@ -55,43 +55,17 @@
 //! index setting.
 //!
 //! ```
-//! # use meilisearch_sdk::{document::*, client::*, search::*};
+//! # use meilisearch_sdk::{client::*};
 //! # use serde::{Serialize, Deserialize};
 //! # use futures::executor::block_on;
-//! # #[derive(Serialize, Deserialize, Debug)]
-//! # struct Movie {
-//! #     id: usize,
-//! #     title: String,
-//! #     genres: Vec<String>,
-//! # }
-//! # // That trait is required to make a struct usable by an index
-//! # impl Document for Movie {
-//! #     type UIDType = usize;
-//! #    fn get_uid(&self) -> &Self::UIDType {
-//! #        &self.id
-//! #   }
-//! # }
 //! # fn main() { block_on(async move {
-//! #    // Create a client (without sending any request so that can't fail)
 //! #    let client = Client::new("http://localhost:7700", "masterKey");
-//! #     // Get the index called "movies"
 //! #    let movies = client.get_or_create("movies").await.unwrap();
 //! let filterable_attributes = [
 //!     "id",
 //!     "genres"
 //! ];
 //! movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
-//! #    // Add some movies in the index
-//! #    movies.add_documents(&[
-//! #        Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
-//! #        Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
-//! #        Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()]},
-//! #        Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()]},
-//! #        Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()]},
-//! #        Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()]},
-//! #    ], Some("id")).await.unwrap();
-//! #    // Query movies (note that there is a typo)
-//! #    println!("{:?}", movies.search().with_query("carol").execute::<Movie>().await.unwrap().hits);
 //! # })}
 //! ```
 //!
@@ -114,7 +88,6 @@
 //! #    title: String,
 //! #    genres: Vec<String>,
 //! # }
-//! # // That trait is required to make a struct usable by an index
 //! # impl Document for Movie {
 //! #    type UIDType = usize;
 //! #    fn get_uid(&self) -> &Self::UIDType {
@@ -122,24 +95,21 @@
 //! #    }
 //! # }
 //! # fn main() { block_on(async move {
-//! # // Create a client (without sending any request so that can't fail)
 //! # let client = Client::new("http://localhost:7700", "masterKey");
-//! #   // Get the index called "movies"
 //! # let movies = client.get_or_create("movies").await.unwrap();
 //! # let filterable_attributes = [
 //! #     "id",
 //! #    "genres"
 //! # ];
 //! # movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
-//! #   // Add some movies in the index
-//! #   movies.add_documents(&[
-//! #       Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
-//! #       Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
-//! #       Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()]},
-//! #       Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()]},
-//! #       Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()]},
-//! #       Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()]},
-//! #   ], Some("id")).await.unwrap();
+//! # movies.add_documents(&[
+//! #     Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
+//! #     Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
+//! #     Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()]},
+//! #     Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()]},
+//! #     Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()]},
+//! #     Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()]},
+//! # ], Some("id")).await.unwrap();
 //! println!("{:?}", movies.search().with_query("wonder").with_filter("id > 1 AND genres = Action")
 //! .execute::<Movie>().await.unwrap().hits);
 //! # })}
