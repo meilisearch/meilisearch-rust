@@ -178,7 +178,7 @@ println!("{:?}", movies.search().with_query("wonder").with_filter("id > 1 AND ge
 }
 ```
 
-### 🌐 Running in the Browser with WASM <!-- omit in TOC -->
+## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 
 This crate fully supports WASM.
 
