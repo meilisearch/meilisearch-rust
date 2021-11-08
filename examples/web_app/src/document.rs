@@ -1,5 +1,6 @@
 use meilisearch_sdk::document::Document;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use yew::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -22,58 +23,56 @@ impl Document for Crate {
     }
 }
 
-impl Crate {
-    
-    pub fn get_readable_download_count(&self) -> String {
-        if let Some(downloads) = self.downloads {
-            if downloads < 1000 {
-                downloads.to_string()
-            } else if downloads < 1000000 {
-                format!("{:.1}k", downloads as f64 / 1000.0)
-            } else {
-                format!("{:.1}M", downloads as f64 / 1000000.0)
-            }
+
+fn get_readable_download_count(this: &Map<String, Value>) -> String {
+    if let Some(downloads) = this["downloads"].as_f64() {
+        if downloads < 1000.0 {
+            downloads.to_string()
+        } else if downloads < 1000000.0 {
+            format!("{:.1}k", downloads / 1000.0)
         } else {
-            String::from("?")
+            format!("{:.1}M", downloads / 1000000.0)
         }
+    } else {
+        String::from("?")
     }
+}
 
-    pub fn display(&self) -> Html {
-        let mut url = format!("https://lib.rs/crates/{}", self.name);
-        url = url.replace("<em>", "");
-        url = url.replace("</em>", "");
+pub fn display(this: &Map<String, Value>) -> Html {
+    let mut url = format!("https://lib.rs/crates/{}", this["name"].as_str().unwrap_or_default());
+    url = url.replace("<em>", "");
+    url = url.replace("</em>", "");
 
-        html! {
-            <li><a href=url>
-                <div class="h">
-                    <h4>
-                        {
-                            // This field is formatted so we don't want Yew to escape the HTML tags
-                            unescaped_html(&self.name)
-                        }
-                    </h4>
-                    <p class="desc">{unescaped_html(&self.description)}</p>
-                </div>
-                <div class="meta">
-                    <span class="version stable">
-                        <span>{"v"}</span>
-                        {&self.version}
-                    </span>
-                    <span class="downloads" title=format!("{} recent downloads", self.downloads.unwrap_or(0))>
-                        {self.get_readable_download_count()}
-                    </span>
-                    {for self.keywords.iter().map(|keyword|
-                        html! {
-                            <span class="k">
-                                <span>{"#"}</span>
-                                {keyword}
-                            </span>
-                        }
-                    )}
-                </div>
+    html! {
+        <li><a href=url>
+            <div class="h">
+                <h4>
+                    {
+                        // This field is formatted so we don't want Yew to escape the HTML tags
+                        unescaped_html(&this["name"].as_str().unwrap_or_default())
+                    }
+                </h4>
+                <p class="desc">{unescaped_html(&this["description"].as_str().unwrap_or_default())}</p>
+            </div>
+            <div class="meta">
+                <span class="version stable">
+                    <span>{"v"}</span>
+                    {&this["version"].as_str().unwrap_or_default()}
+                </span>
+                <span class="downloads" title=format!("{} recent downloads", this["downloads"].as_f64().unwrap_or(0.0))>
+                    {get_readable_download_count(this)}
+                </span>
+                {for this["keywords"].as_array().unwrap().iter().map(|keyword|
+                    html! {
+                        <span class="k">
+                            <span>{"#"}</span>
+                            {keyword.as_str().unwrap_or_default()}
+                        </span>
+                    }
+                )}
+            </div>
 
-            </a></li>
-        }
+        </a></li>
     }
 }
 
