@@ -143,7 +143,7 @@ fn parse_response<Output: DeserializeOwned>(
                 return Ok(output);
             }
             Err(e) => {
-                error!("Request succeed but failed to parse response");
+                error!("Request succeeded but failed to parse response");
                 return Err(Error::ParseError(e));
             }
         };
