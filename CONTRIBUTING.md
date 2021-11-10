@@ -116,7 +116,7 @@ Some notes on GitHub PRs:
 
 - [Convert your PR as a draft](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/changing-the-stage-of-a-pull-request) if your changes are a work in progress: no one will review it until you pass your PR as ready for review.<br>
   The draft PR can be very useful if you want to show that you are working on something and make your work visible.
-- The branch related to the PR must be **up-to-date with `main`** before merging. Fortunately, this project [integrates a bot](https://github.com/meilisearch/integration-guides/blob/main/guides/bors.md) to automatically enforce this requirement without the PR author having to do it manually.
+- The branch related to the PR must be **up-to-date with `main`** before merging. Fortunately, this project [integrates a bot](https://github.com/meilisearch/integration-guides/blob/main/resources/bors.md) to automatically enforce this requirement without the PR author having to do it manually.
 - All PRs must be reviewed and approved by at least one maintainer.
 - The PR title should be accurate and descriptive of the changes. The title of the PR will be indeed automatically added to the next [release changelogs](https://github.com/meilisearch/meilisearch-rust/releases/).
 
@@ -127,16 +127,16 @@ MeiliSearch tools follow the [Semantic Versioning Convention](https://semver.org
 ### Automation to Rebase and Merge the PRs <!-- omit in toc -->
 
 This project integrates a bot that helps us manage pull requests merging.<br>
-_[Read more about this](https://github.com/meilisearch/integration-guides/blob/main/guides/bors.md)._
+_[Read more about this](https://github.com/meilisearch/integration-guides/blob/main/resources/bors.md)._
 
 ### Automated Changelogs <!-- omit in toc -->
 
 This project integrates a tool to create automated changelogs.<br>
-_[Read more about this](https://github.com/meilisearch/integration-guides/blob/main/guides/release-drafter.md)._
+_[Read more about this](https://github.com/meilisearch/integration-guides/blob/main/resources/release-drafter.md)._
 
 ### How to Publish the Release <!-- omit in toc -->
 
-⚠️ Before doing anything, make sure you got through the guide about [Releasing an Integration](https://github.com/meilisearch/integration-guides/blob/main/guides/integration-release.md).
+⚠️ Before doing anything, make sure you got through the guide about [Releasing an Integration](https://github.com/meilisearch/integration-guides/blob/main/resources/integration-release.md).
 
 Make a PR modifying the file [`Cargo.toml`](/Cargo.toml):
 
@@ -164,7 +164,7 @@ Also, you might need to change the [code-samples file](/.code-samples.meilisearc
   meilisearch-sdk = "X.X"
 ```
 
-Once the changes are merged on `main`, you can publish the current draft release via the [GitHub interface](https://github.com/meilisearch/meilisearch-rust/releases).
+Once the changes are merged on `main`, you can publish the current draft release via the [GitHub interface](https://github.com/meilisearch/meilisearch-rust/releases): on this page, click on `Edit` (related to the draft release) > update the description (be sure you apply [these recommandations](https://github.com/meilisearch/integration-guides/blob/main/resources/integration-release.md#writting-the-release-description)) > when you are ready, click on `Publish release`.
 
 GitHub Actions will be triggered and push the package to [crates.io](https://crates.io/crates/meilisearch-sdk).
 
