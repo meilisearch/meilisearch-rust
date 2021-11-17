@@ -217,16 +217,26 @@ pub enum UpdateType {
     },
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FailedUpdateResult {
+    #[serde(rename = "message")]
+    pub error_message: String,
+    #[serde(rename = "code")]
+    pub error_code: String,
+    #[serde(rename = "type")]
+    pub error_type: String,
+    #[serde(rename = "link")]
+    pub error_link: String
+}
+
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessedUpdateResult {
     pub update_id: u64,
     #[serde(rename = "type")]
     pub update_type: UpdateType,
-    pub error: Option<String>,
-    pub error_type: Option<String>,
-    pub error_code: Option<String>,
-    pub error_link: Option<String>,
+    pub error: Option<FailedUpdateResult>,
     pub duration: f64,        // in seconds
     pub enqueued_at: String,  // TODO deserialize to datetime
     pub processed_at: String, // TODO deserialize to datetime
@@ -350,5 +360,16 @@ mod test {
         async_sleep(sleep_duration).await;
 
         assert!(now.elapsed() >= sleep_duration);
+    }
+
+    #[async_test]
+    async fn test_failing_update() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let movies = client.get_or_create("movies_wait_for_pending_timeout").await.unwrap();
+        let progress = movies.set_ranking_rules(["wrong_ranking_rule"]).await.unwrap();
+        let status = progress.wait_for_pending_update(
+            Some(Duration::from_millis(1)), Some(Duration::from_nanos(1))
+        ).await.unwrap();
+        assert!(matches!(status.unwrap(), UpdateStatus::Failed { .. }));
     }
 }
