@@ -4,6 +4,7 @@ use meilisearch_sdk::{
     indexes::Index,
     search::{SearchResults, Selectors::All},
 };
+use serde_json::{Map, Value};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
@@ -11,7 +12,7 @@ use yew::prelude::*;
 use lazy_static::lazy_static;
 
 mod document;
-use crate::document::Crate;
+use crate::document::{Crate, display};
 
 lazy_static! {
     static ref CLIENT: Client = Client::new(
@@ -23,7 +24,7 @@ lazy_static! {
 struct Model {
     link: Rc<ComponentLink<Self>>,
     index: Rc<Index>,
-    results: Vec<Crate>,
+    results: Vec<Map<String, Value>>,
     processing_time_ms: usize,
 
     // These two fields are used to avoid rollbacks by giving an ID to each request
@@ -35,7 +36,7 @@ enum Msg {
     /// An event sent to update the results with a query
     Input(String),
     /// The event sent to display new results once they are received
-    Update{results: Vec<Crate>, processing_time_ms: usize, request_id: usize},
+    Update{results: Vec<Map<String, Value>>, processing_time_ms: usize, request_id: usize},
 }
 
 impl Component for Model {
@@ -126,7 +127,7 @@ impl Component for Model {
                     <ol id="handlebars-list">
                         {
                             // Display the results
-                            for self.results.iter().map(|r| r.display())
+                            for self.results.iter().map(|r| display(r))
                         }
                     </ol>
                 </div>
