@@ -1,5 +1,6 @@
 use crate::{errors::Error, indexes::Index};
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
+use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -17,7 +18,7 @@ pub struct SearchResult<T> {
     pub result: T,
     /// The formatted result.
     #[serde(rename = "_formatted")]
-    pub formatted_result: Option<T>,
+    pub formatted_result: Option<Map<String, Value>>,
     /// The object that contains information about the matches.
     #[serde(rename = "_matchesInfo")]
     pub matches_info: Option<HashMap<String, Vec<MatchRange>>>,
@@ -284,6 +285,7 @@ impl<'a> Query<'a> {
 mod tests {
     use crate::{client::*, document, search::*};
     use serde::{Deserialize, Serialize};
+    use serde_json::{Map, Value};
     use std::thread::sleep;
     use std::time::Duration;
     use futures_await_test::async_test;
@@ -300,6 +302,14 @@ mod tests {
 
         fn get_uid(&self) -> &Self::UIDType {
             &self.id
+        }
+    }
+
+    impl PartialEq<Map<String, Value>> for Document {
+        fn eq(&self, rhs: &Map<String, Value>) -> bool {
+            self.id.to_string() == rhs["id"]
+            && self.value == rhs["value"]
+            && self.kind == rhs["kind"]
         }
     }
 
@@ -486,23 +496,23 @@ mod tests {
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
+        assert_eq!(&Document {
             id: 0,
             value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
             kind: "text".to_string()
-        });
+        }, results.hits[0].formatted_result.as_ref().unwrap());
 
         let mut query = Query::new(&index);
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::Some(&[("value", Some(50)), ("kind", None)]));
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
         assert_eq!(
-            results.hits[0].formatted_result.as_ref().unwrap(),
             &Document {
                 id: 0,
                 value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
                 kind: "text".to_string()
-            }
+            },
+            results.hits[0].formatted_result.as_ref().unwrap()
         );
 
         client
@@ -521,11 +531,12 @@ mod tests {
         query.with_attributes_to_crop(Selectors::All);
         query.with_crop_length(200);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits[0].formatted_result.as_ref().unwrap(), &Document {
+        assert_eq!(&Document {
             id: 0,
             value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
-            kind: "text".to_string()
-        });
+            kind: "text".to_string(),
+        },
+        results.hits[0].formatted_result.as_ref().unwrap());
 
         let mut query = Query::new(&index);
         query.with_query("lorem ipsum");
@@ -533,12 +544,12 @@ mod tests {
         query.with_crop_length(50);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
         assert_eq!(
-            results.hits[0].formatted_result.as_ref().unwrap(),
             &Document {
                 id: 0,
                 value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
                 kind: "text".to_string()
-            }
+            },
+            results.hits[0].formatted_result.as_ref().unwrap()
         );
 
         client.delete_index("test_query_crop_lenght").await.unwrap();
@@ -554,12 +565,12 @@ mod tests {
         query.with_attributes_to_highlight(Selectors::All);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
         assert_eq!(
-            results.hits[0].formatted_result.as_ref().unwrap(),
             &Document {
                 id: 1,
                 value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
                 kind: "<em>text</em>".to_string()
-            }
+            },
+            results.hits[0].formatted_result.as_ref().unwrap(),
         );
 
         let mut query = Query::new(&index);
@@ -567,12 +578,12 @@ mod tests {
         query.with_attributes_to_highlight(Selectors::Some(&["value"]));
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
         assert_eq!(
-            results.hits[0].formatted_result.as_ref().unwrap(),
             &Document {
                 id: 1,
                 value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
                 kind: "text".to_string()
-            }
+            },
+            results.hits[0].formatted_result.as_ref().unwrap()
         );
 
         client

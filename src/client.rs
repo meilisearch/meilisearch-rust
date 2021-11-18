@@ -179,7 +179,7 @@ impl Client {
         match self.delete_index(uid).await {
             Ok (_) => Ok(true),
             Err (Error::MeiliSearchError {
-                message: _,
+                error_message: _,
                 error_code: ErrorCode::IndexNotFound,
                 error_type: _,
                 error_link: _,
