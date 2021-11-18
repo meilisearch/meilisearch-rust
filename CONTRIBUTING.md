@@ -144,7 +144,7 @@ Make a PR modifying the file [`Cargo.toml`](/Cargo.toml):
 version = "X.X.X"
 ```
 
-and the [`src/lib.rs`](/src/lib.rs):
+and the [`README.tpl`](/README.tpl):
 
 ```rust
 //! meilisearch-sdk = "X.X.X"
