@@ -36,6 +36,12 @@ impl JsonIndex {
 /// // get the index called movies or create it if it does not exist
 /// let movies = client.get_or_create("movies").await.unwrap();
 ///
+/// // use the implicit index creation if the index already exist or
+/// // MeiliSearch would be able to create the index if it does not exist during:
+/// // - the documents addition (add and update routes)
+/// // - the settings update
+/// let movies = client.index("movies");
+/// 
 /// // do something with the index
 /// # });
 /// ```
@@ -71,7 +77,7 @@ impl Index {
     /// # client.create_index("movies", None).await;
     ///
     /// // get the index named "movies" and delete it
-    /// let movies = client.get_index("movies").await.unwrap();
+    /// let movies = client.index("movies");
     /// movies.delete().await.unwrap();
     /// # });
     /// ```
@@ -89,20 +95,20 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::{client::*, document::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// client.create_index("movies", None).await;
     ///
     /// // get the index named "movies" and delete it
-    /// let movies = client.assume_index("movies");
+    /// let movies = client.index("movies");
     /// let mut deleted = movies.delete_if_exists().await.unwrap();
     /// assert_eq!(deleted, true);
     /// let index = client.get_index("movies").await;
     /// assert!(index.is_err());
     ///
     /// // get an index that doesn't exist and try to delete it
-    /// let no_index = client.assume_index("no_index");
+    /// let no_index = client.index("no_index");
     /// deleted = no_index.delete_if_exists().await.unwrap();
     /// assert_eq!(deleted, false);
     /// # });
@@ -144,7 +150,7 @@ impl Index {
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movies = client.get_or_create("movies").await.unwrap();
+    /// let movies = client.index("movies");
     ///
     /// // add some documents
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
@@ -196,7 +202,7 @@ impl Index {
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// # client.delete_index("movies_search").await;
-    /// let mut movies = client.get_or_create("movies").await.unwrap();
+    /// let mut movies = client.index("movies");
     ///
     /// // add some documents
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
@@ -242,9 +248,7 @@ impl Index {
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// # client.create_index("movies", None).await;
-    /// let movies = client.get_index("movies").await.unwrap();
-    /// # let mut movies = client.get_index("movies").await.unwrap();
+    /// let movies = client.index("movies");
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// #
@@ -300,9 +304,7 @@ impl Index {
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// # client.create_index("movies", None).await;
-    /// let movie_index = client.get_index("movies").await.unwrap();
-    /// # let mut movie_index = client.get_index("movies").await.unwrap();
+    /// let movie_index = client.index("movies");
     ///
     /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
@@ -374,7 +376,7 @@ impl Index {
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies_add_or_replace").await.unwrap();
+    /// let movie_index = client.index("movies_add_or_replace");
     ///
     /// let progress = movie_index.add_or_replace(&[
     ///     Movie{
@@ -444,7 +446,7 @@ impl Index {
     /// ```
     /// use serde::{Serialize, Deserialize};
     ///
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::{client::*, document::*};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
     /// #[derive(Serialize, Deserialize, Debug)]
@@ -462,7 +464,7 @@ impl Index {
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies_add_or_update").await.unwrap();
+    /// let movie_index = client.index("movies_add_or_update");
     ///
     /// let progress = movie_index.add_or_update(&[
     ///     Movie{
@@ -531,8 +533,10 @@ impl Index {
     /// # futures::executor::block_on(async move {
     /// #
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// let movie_index = client.index("movies");
     ///
+    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
+    /// # std::thread::sleep(std::time::Duration::from_secs(1));
     /// // add some documents
     ///
     /// let progress = movie_index.delete_all_documents().await.unwrap();
@@ -558,7 +562,7 @@ impl Index {
     ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::{client::*, document::*};
     /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
@@ -577,7 +581,7 @@ impl Index {
     /// # futures::executor::block_on(async move {
     /// #
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movies = client.get_or_create("movies").await.unwrap();
+    /// let mut movies = client.index("movies");
     ///
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap();
     /// # std::thread::sleep(std::time::Duration::from_secs(1));
@@ -606,7 +610,7 @@ impl Index {
     ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::{client::*, document::*};
     /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
@@ -625,7 +629,7 @@ impl Index {
     /// # futures::executor::block_on(async move {
     /// #
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movies = client.get_or_create("movies").await.unwrap();
+    /// let movies = client.index("movies");
     ///
     /// // add some documents
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap();
@@ -655,6 +659,53 @@ impl Index {
     /// Alias for the [update method](#method.update).
     pub async fn set_primary_key(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
         self.update(primary_key).await
+    }
+
+    /// Fetch the information of the index as a raw JSON [index](../indexes/struct.Index.html), this index should already exist.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    ///
+    /// # futures::executor::block_on(async move {
+    /// // create the client
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// # client.create_index("movies", None).await;
+    ///
+    /// // get the information of the index named "movies"
+    /// let movies = client.index("movies").fetch_info().await.unwrap();
+    /// # });
+    /// ```
+    /// If you use it directly from the client, you can use the method [get_raw_index](#method.get_raw_index), which is the equivalent method from the client.
+    pub async fn fetch_info(&self) -> Result<JsonIndex, Error> {
+        Ok(request::<(), JsonIndex>(
+            &format!("{}/indexes/{}", self.host, self.uid),
+            &self.api_key,
+            Method::Get,
+            200,
+        ).await?)
+    }
+
+    /// Fetch the primary key of the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    ///
+    /// # futures::executor::block_on(async move {
+    /// // create the client
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// # client.create_index("movies", None).await;
+    ///
+    /// // get the primary key of the index named "movies"
+    /// let movies = client.index("movies").get_primary_key().await;
+    /// # });
+    /// ```
+    pub async fn get_primary_key(&self) -> Result<Option<String>, Error> {
+        Ok(self.fetch_info()
+        .await?.primaryKey)
     }
 
     /// Get the status of an update on the index.
@@ -697,7 +748,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movies = client.get_or_create("movies_get_one_update").await.unwrap();
+    /// let movies = client.index("movies_get_one_update");
     ///
     /// let progress = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() }
@@ -768,7 +819,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movies = client.get_or_create("movies_get_all_updates").await.unwrap();
+    /// let movies = client.index("movies_get_all_updates");
     ///
     /// # movies.add_documents(&[
     /// #     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },

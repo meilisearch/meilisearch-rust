@@ -49,10 +49,10 @@ impl Component for Model {
         Self {
             link: Rc::new(link),
 
-            // The assume_index method avoids checking the existence of the index.
+            // The index method avoids checking the existence of the index.
             // It won't make any HTTP request so the function is not async so it's easier to use.
             // Use only if you are sure that the index exists.
-            index: Rc::new(CLIENT.assume_index("crates")),
+            index: Rc::new(CLIENT.index("crates")),
             results: Vec::new(),
             processing_time_ms: 0,
 

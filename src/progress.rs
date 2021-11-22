@@ -100,7 +100,7 @@ impl<'a> Progress {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movies = client.create_index("movies_wait_for_pending", None).await.unwrap();
+    /// let movies = client.index("movies_wait_for_pending");
     ///
     /// let progress = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
@@ -297,7 +297,7 @@ mod test {
     #[async_test]
     async fn test_wait_for_pending_updates_with_args() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        let movies = client.get_or_create("movies_wait_for_pending_args").await.unwrap();
+        let movies = client.index("movies_wait_for_pending_args");
         let progress = movies.add_documents(&[
             Document {
                 id: 0,
@@ -321,7 +321,7 @@ mod test {
     #[async_test]
     async fn test_wait_for_pending_updates_time_out() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        let movies = client.get_or_create("movies_wait_for_pending_timeout").await.unwrap();
+        let movies = client.index("movies_wait_for_pending_timeout");
         let progress = movies.add_documents(&[
             Document {
                 id: 0,
@@ -365,7 +365,7 @@ mod test {
     #[async_test]
     async fn test_failing_update() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        let movies = client.get_or_create("movies_wait_for_pending_timeout").await.unwrap();
+        let movies = client.index("movies_wait_for_pending_timeout");
         let progress = movies.set_ranking_rules(["wrong_ranking_rule"]).await.unwrap();
         let status = progress.wait_for_pending_update(
             Some(Duration::from_millis(1)), Some(Duration::from_nanos(1))

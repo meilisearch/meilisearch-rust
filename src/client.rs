@@ -81,7 +81,7 @@ impl Client {
         Ok(json_indexes)
     }
 
-    /// Get an [index](../indexes/struct.Index.html).
+    /// Get an [index](../indexes/struct.Index.html), this index should already exist.
     ///
     /// # Example
     ///
@@ -104,7 +104,7 @@ impl Client {
         }
     }
 
-    /// Get a raw JSON [index](../indexes/struct.Index.html).
+    /// Get a raw JSON [index](../indexes/struct.Index.html), this index should already exist.
     ///
     /// # Example
     ///
@@ -120,17 +120,13 @@ impl Client {
     /// let movies = client.get_raw_index("movies").await.unwrap();
     /// # });
     /// ```
+    /// If you use it directly from an index, you can use the method [fetch_info](#method.fetch_info), which is the equivalent method from an index.
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<JsonIndex, Error> {
-        Ok(request::<(), JsonIndex>(
-            &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            &self.api_key,
-            Method::Get,
-            200,
-        ).await?)
+        Index::fetch_info(&self.index(uid.as_ref())).await
     }
 
-    /// Assume that an [index](../indexes/struct.Index.html) exist and create a corresponding object without any check.
-    pub fn assume_index(&self, uid: impl Into<String>) -> Index {
+    /// Create a corresponding object of an [index](../indexes/struct.Index.html) without any check or doing an HTTP call.
+    pub fn index(&self, uid: impl Into<String>) -> Index {
         Index {
             uid: Rc::new(uid.into()),
             host: Rc::clone(&self.host),
@@ -383,7 +379,18 @@ mod tests {
     #[async_test]
     async fn test_get_keys() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        client.get_keys().await.unwrap();
+        let keys = client.get_keys().await.unwrap();
+        assert!(keys.private.is_some());
+        assert!(keys.public.is_some());
+    }
+
+    #[async_test]
+    async fn test_get_index() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index_name = "get_index";
+        client.create_index(index_name, None).await.unwrap();
+        let index = client.get_index(index_name).await.unwrap();
+        assert_eq!(index.uid.to_string(), index_name);
     }
 
     #[async_test]
@@ -430,5 +437,34 @@ mod tests {
         let client = Client::new("http://localhost:7700", "masterKey");
         let deleted = client.delete_index_if_exists("bad").await.unwrap();
         assert_eq!(deleted, false);
+    }
+
+    #[async_test]
+    async fn test_fetch_info() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index_name = "fetch_info";
+        client.create_index(index_name, None).await.unwrap();
+        let index = client.index(index_name).fetch_info().await;
+        assert!(index.is_ok());
+    }
+
+    #[async_test]
+    async fn test_get_primary_key_is_none() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index_name = "get_primary_key_is_none";
+        client.create_index(index_name, None).await.unwrap();
+        let primary_key = client.index(index_name).get_primary_key().await;
+        assert!(primary_key.is_ok());
+        assert!(primary_key.unwrap().is_none());
+    }
+
+    #[async_test]
+    async fn test_get_primary_key() {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index_name = "get_primary_key";
+        client.create_index(index_name, Some("primary_key")).await.unwrap();
+        let primary_key = client.index(index_name).get_primary_key().await;
+        assert!(primary_key.is_ok());
+        assert_eq!(primary_key.unwrap().unwrap(), "primary_key");
     }
 }
