@@ -322,43 +322,77 @@ settings_guide_synonyms_1: |-
   synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
   synonyms.insert(String::from("jumper"), vec![String::from("sweater")]);
 
-  let progress: Progress = client.index("tops").set_synonyms(&synonyms).await.unwrap();
+  let settings = Settings::new()
+    .with_synonyms(synonyms);
+
+  let progress = client.index("tops").set_settings(&settings).await.unwrap();
 settings_guide_stop_words_1: |-
-  let progress: Progress = client.index("movies").set_stop_words(["the", "a", "an"]).await.unwrap();
+  let settings = Settings::new()
+    .with_stop_words([
+      "the",
+      "a",
+      "an"
+    ]);
+
+  let progress = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_filterable_attributes_1: |-
-  let progress: Progress = client.index("movies").set_filterable_attributes(["director", "genres"]).await.unwrap();
+  let settings = Settings::new()
+    .with_filterable_attributes([
+      "director",
+      "genres"
+    ]);
+
+  let progress: Progress = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_ranking_rules_1: |-
-  let ranking_rules = [
-    "words",
-    "typo",
-    "proximity",
-    "attribute",
-    "sort",
-    "exactness",
-    "release_date:asc",
-    "rank:desc",
-  ];
+  let settings = Settings::new()
+    .with_ranking_rules([
+      "words",
+      "typo",
+      "proximity",
+      "attribute",
+      "sort",
+      "exactness",
+      "release_date:asc",
+      "rank:desc",
+    ]);
 
-  let progress: Progress = client.index("movies").set_ranking_rules(&ranking_rules).await.unwrap();
+  let progress = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_distinct_1: |-
-  let progress: Progress = client.index("jackets").set_distinct_attribute("product_id").await.unwrap();
+  let settings = Settings::new()
+    .with_distinct_attribute("product_id");
+
+  let progress: Progress = client.index("jackets").set_settings(&settings).await.unwrap();
 settings_guide_searchable_1: |-
-  let searchable_attributes = [
-    "title",
-    "description",
-    "genre"
-  ];
+  let settings = Settings::new()
+    .with_searchable_attributes([
+      "title",
+      "description",
+      "genre"
+    ]);
 
-  let progress: Progress = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
+  let progress: Progress = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_displayed_1: |-
-  let displayed_attributes = [
-    "title",
-    "description",
-    "genre",
-    "release_date"
-  ];
+  let settings = Settings::new()
+    .with_displayed_attributes([
+      "title",
+      "description",
+      "genre",
+      "release_date"
+    ]);
 
-  let progress: Progress = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
+  let progress: Progress = client.index("movies").set_settings(&settings).await.unwrap();
+settings_guide_sortable_1: |-
+  let mut synonyms = std::collections::HashMap::new();
+  synonyms.insert(String::from("wolverine"), vec!["xmen", "logan"]);
+  synonyms.insert(String::from("logan"), vec!["wolverine"]);
+
+  let settings = Settings::new()
+    .with_sortable_attributes([
+      "title",
+      "release_date"
+    ]);
+
+  let progress: Progress = movies.set_settings(&settings).await.unwrap();
 add_movies_json_1: |-
   use meilisearch_sdk::{
     indexes::*,
