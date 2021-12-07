@@ -85,8 +85,10 @@ NB: you can also download MeiliSearch from **Homebrew** or **APT**.
 
 ## 🚀 Getting Started
 
+#### Add Documents <!-- omit in TOC -->
+
 ```rust
-use meilisearch_sdk::{document::*, client::*, search::*};
+use meilisearch_sdk::{document::*, client::*};
 use serde::{Serialize, Deserialize};
 use futures::executor::block_on;
 
@@ -110,10 +112,10 @@ fn main() { block_on(async move {
     // Create a client (without sending any request so that can't fail)
     let client = Client::new("http://localhost:7700", "masterKey");
 
-    // Get the index called "movies"
-    let movies = client.get_or_create("movies").await.unwrap();
+    // An index is where the documents are stored.
+    let movies = client.index("movies");
 
-    // Add some movies in the index
+    // Add some movies in the index. If the index 'movies' does not exist, MeiliSearch creates it when you first add the documents.
     movies.add_documents(&[
         Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
         Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
@@ -122,19 +124,64 @@ fn main() { block_on(async move {
         Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()]},
         Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()]},
     ], Some("id")).await.unwrap();
-
-    // Query movies (note that there is a typo)
-    println!("{:?}", movies.search().with_query("carol").execute::<Movie>().await.unwrap().hits);
 })}
 ```
 
-Output:
+#### Basic Search <!-- omit in TOC -->
 
+```rust
+// MeiliSearch is typo-tolerant:
+println!("{:?}", client.index("movies").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
+```
+
+Output:
 ```
 [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
 ```
 
-##### Custom Search With Filters <!-- omit in TOC -->
+Json output:
+```json
+{
+  "hits": [{
+    "id": 1,
+    "title": "Carol",
+    "genres": ["Romance", "Drama"]
+  }],
+  "offset": 0,
+  "limit": 10,
+  "processingTimeMs": 1,
+  "query": "caorl"
+}
+```
+
+#### Custom Search <!-- omit in toc -->
+
+```rust
+println!("{:?}", client.index("movies").search().with_query("phil").with_attributes_to_highlight(Selectors::Some(&["*"])).execute::<Movie>().await.unwrap().hits);
+```
+
+Json output:
+```json
+{
+    "hits": [
+        {
+            "id": 6,
+            "title": "Philadelphia",
+            "_formatted": {
+                "id": 6,
+                "title": "<em>Phil</em>adelphia",
+                "genre": ["Drama"]
+            }
+        }
+    ],
+    "offset": 0,
+    "limit": 20,
+    "processingTimeMs": 0,
+    "query": "phil"
+}
+```
+
+#### Custom Search With Filters <!-- omit in TOC -->
 
 If you want to enable filtering, you must add your attributes to the `filterableAttributes`
 index setting.
@@ -144,7 +191,7 @@ let filterable_attributes = [
     "id",
     "genres"
 ];
-movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
+client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
 ```
 
 You only need to perform this operation once.
@@ -157,10 +204,11 @@ status](https://docs.meilisearch.com/reference/api/updates.html#get-an-update-st
 Then, you can perform the search:
 
 ```rust
-println!("{:?}", movies.search().with_query("wonder").with_filter("id > 1 AND genres = Action")
+println!("{:?}", client.index("movies").search().with_query("wonder").with_filter("id > 1 AND genres = Action")
 .execute::<Movie>().await.unwrap().hits);
 ```
 
+Json output:
 ```json
 {
   "hits": [

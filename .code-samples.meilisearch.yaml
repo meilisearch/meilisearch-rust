@@ -10,16 +10,15 @@ list_all_indexes_1: |-
 create_an_index_1: |-
   let movies: Index = client.create_index("movies", Some("movie_id")).await.unwrap();
 update_an_index_1: |-
-  let movie_review: Index = client.get_index("movie_review").await.unwrap();
-  movie_review.update("movie_review_id").await.unwrap();
+  client.index("movies").update("movie_review_id").await.unwrap();
 delete_an_index_1: |-
-  movies.delete().await.unwrap();
+  client.index("movies").delete().await.unwrap();
 get_one_document_1: |-
-  let movie: Movie = movies.get_document(String::from("25684")).await.unwrap();
+  let movie: Movie = client.index("movies").get_document(String::from("25684")).await.unwrap();
 get_documents_1: |-
-  let documents: Vec<Movie> = movies.get_documents(None, Some(2), None).await.unwrap();
+  let documents: Vec<Movie> = client.index("movies").get_documents(None, Some(2), None).await.unwrap();
 add_or_replace_documents_1: |-
-  let progress: Progress = movies.add_or_replace(&[
+  let progress: Progress = client.index("movies").add_or_replace(&[
     Movie {
       id: 287947,
       title: "Shazam".to_string(),
@@ -40,20 +39,20 @@ add_or_update_documents_1: |-
     fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
-  let progress: Progress = movies.add_or_update(&[
+  let progress: Progress = client.index("movies").add_or_update(&[
     IncompleteMovie {
       id: 287947,
       title: "Shazam ⚡️".to_string()
     }
   ], None).await.unwrap();
 delete_all_documents_1: |-
-  let progress: Progress = movies.delete_all_documents().await.unwrap();
+  let progress: Progress = client.index("movies").delete_all_documents().await.unwrap();
 delete_one_document_1: |-
-  let progress: Progress = movies.delete_document(25684).await.unwrap();
+  let progress: Progress = client.index("movies").delete_document(25684).await.unwrap();
 delete_documents_1: |-
-  let progress: Progress = movies.delete_documents(&[23488, 153738, 437035, 363869]).await.unwrap();
+  let progress: Progress = client.index("movies").delete_documents(&[23488, 153738, 437035, 363869]).await.unwrap();
 search_post_1: |-
-  let results: SearchResults<Movie> = movies
+  let results: SearchResults<Movie> = client.index("movies")
     .search()
     .with_query("American ninja")
     .execute()
@@ -64,13 +63,13 @@ get_update_1: |-
   let status: Status = progress.get_status().await.unwrap();
 
   // Or you can use index to get an update status using its `update_id`:
-  let status: Status = index.get_update(1).await.unwrap();
+  let status: Status = client.index("movies").get_update(1).await.unwrap();
 get_all_updates_1: |-
-  let status: Vec<ProgressStatus> = index.get_all_updates().await.unwrap();
+  let status: Vec<ProgressStatus> = client.index("movies").get_all_updates().await.unwrap();
 get_keys_1: |-
   let keys: Keys = client.get_keys().await.unwrap();
 get_settings_1: |-
-  let settings: Settings = movies.get_settings().await.unwrap();
+  let settings: Settings = client.index("movies").get_settings().await.unwrap();
 update_settings_1: |-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("wolverine"), vec!["xmen", "logan"]);
@@ -110,29 +109,29 @@ update_settings_1: |-
     ])
     .with_synonyms(synonyms);
 
-  let progress: Progress = movies.set_settings(&settings).await.unwrap();
+  let progress: Progress = client.index("movies").set_settings(&settings).await.unwrap();
 reset_settings_1: |-
-  let progress: Progress = movies.reset_settings().await.unwrap();
+  let progress: Progress = client.index("movies").reset_settings().await.unwrap();
 get_synonyms_1: |-
-  let synonyms: HashMap<String, Vec<String>> = movies.get_synonyms().await.unwrap();
+  let synonyms: HashMap<String, Vec<String>> = client.index("movies").get_synonyms().await.unwrap();
 update_synonyms_1: |-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
   synonyms.insert(String::from("logan"), vec![String::from("xmen"), String::from("wolverine")]);
   synonyms.insert(String::from("wow"), vec![String::from("world of warcraft")]);
 
-  let progress: Progress = movies.set_synonyms(&synonyms).await.unwrap();
+  let progress: Progress = client.index("movies").set_synonyms(&synonyms).await.unwrap();
 reset_synonyms_1: |-
-  movies.reset_synonyms().await.unwrap();
+  let progress: Progress = client.index("movies").reset_synonyms().await.unwrap();
 get_stop_words_1: |-
-  let stop_words: Vec<String> = movies.get_stop_words().await.unwrap();
+  let stop_words: Vec<String> = client.index("movies").get_stop_words().await.unwrap();
 update_stop_words_1: |-
   let stop_words = ["of", "the", "to"];
-  let progress: Progress = movies.set_stop_words(&stop_words).await.unwrap();
+  let progress: Progress = client.index("movies").set_stop_words(&stop_words).await.unwrap();
 reset_stop_words_1: |-
-  let progress: Progress = movies.reset_stop_words().await.unwrap();
+  let progress: Progress = client.index("movies").reset_stop_words().await.unwrap();
 get_ranking_rules_1: |-
-  let ranking_rules: Vec<String> = movies.get_ranking_rules().await.unwrap();
+  let ranking_rules: Vec<String> = client.index("movies").get_ranking_rules().await.unwrap();
 update_ranking_rules_1: |-
   let ranking_rules = [
     "words",
@@ -145,17 +144,17 @@ update_ranking_rules_1: |-
     "rank:desc",
   ];
 
-  let progress: Progress = movies.set_ranking_rules(&ranking_rules).await.unwrap();
+  let progress: Progress = client.index("movies").set_ranking_rules(&ranking_rules).await.unwrap();
 reset_ranking_rules_1: |-
-  let progress: Progress = movies.reset_ranking_rules().await.unwrap();
+  let progress: Progress = client.index("movies").reset_ranking_rules().await.unwrap();
 get_distinct_attribute_1: |-
-  let distinct_attribute: Option<String> = shoes.get_distinct_attribute().await.unwrap();
+  let distinct_attribute: Option<String> = client.index("shoes").get_distinct_attribute().await.unwrap();
 update_distinct_attribute_1: |-
-  let progress: Progress = shoes.set_distinct_attribute("skuid").await.unwrap();
+  let progress: Progress = client.index("shoes").set_distinct_attribute("skuid").await.unwrap();
 reset_distinct_attribute_1: |-
-  let progress: Progress = shoes.reset_distinct_attribute().await.unwrap();
+  let progress: Progress = client.index("shoes").reset_distinct_attribute().await.unwrap();
 get_searchable_attributes_1: |-
-  let searchable_attributes: Vec<String> = movies.get_searchable_attributes().await.unwrap();
+  let searchable_attributes: Vec<String> = client.index("movies").get_searchable_attributes().await.unwrap();
 update_searchable_attributes_1: |-
   let searchable_attributes = [
     "title",
@@ -163,22 +162,22 @@ update_searchable_attributes_1: |-
     "genre"
   ];
 
-  let progress: Progress = movies.set_searchable_attributes(&searchable_attributes).await.unwrap();
+  let progress: Progress = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
 reset_searchable_attributes_1: |-
-  let progress: Progress = movies.reset_searchable_attributes().await.unwrap();
+  let progress: Progress = client.index("movies").reset_searchable_attributes().await.unwrap();
 get_filterable_attributes_1: |-
-  let filterable_attributes: Vec<String> = movies.get_filterable_attributes().await.unwrap();
+  let filterable_attributes: Vec<String> = client.index("movies").get_filterable_attributes().await.unwrap();
 update_filterable_attributes_1: |-
   let filterable_attributes = [
     "genres",
     "director"
   ];
 
-  let progress: Progress = movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
+  let progress: Progress = client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
 reset_filterable_attributes_1: |-
-  let progress: Progress = movies.reset_filterable_attributes().await.unwrap();
+  let progress: Progress = client.index("movies").reset_filterable_attributes().await.unwrap();
 get_displayed_attributes_1: |-
-  let displayed_attributes: Vec<String> = movies.get_displayed_attributes().await.unwrap();
+  let displayed_attributes: Vec<String> = client.index("movies").get_displayed_attributes().await.unwrap();
 update_displayed_attributes_1: |-
   let displayed_attributes = [
     "title",
@@ -187,11 +186,11 @@ update_displayed_attributes_1: |-
     "release_date"
   ];
 
-  let progress: Progress = movies.set_displayed_attributes(&displayed_attributes).await.unwrap();
+  let progress: Progress = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
 reset_displayed_attributes_1: |-
-  let progress: Progress = movies.reset_displayed_attributes().await.unwrap();
+  let progress: Progress = client.index("movies").reset_displayed_attributes().await.unwrap();
 get_index_stats_1: |-
-  let stats: IndexStats = movies.get_stats().await.unwrap();
+  let stats: IndexStats = client.index("movies").get_stats().await.unwrap();
 get_indexes_stats_1: |-
   let stats: ClientStats = client.get_stats().await.unwrap();
 get_health_1: |-
@@ -200,8 +199,7 @@ get_health_1: |-
 get_version_1: |-
   let version: Version = client.get_version().await.unwrap();
 distinct_attribute_guide_1: |-
-  let jackets: Index = client.get_index("jackets").await.unwrap();
-  let progress: Progress = jackets.set_distinct_attribute("product_id").await.unwrap();
+  let progress: Progress = client.index("jackets").set_distinct_attribute("product_id").await.unwrap();
 field_properties_guide_searchable_1: |-
   let searchable_attributes = [
     "title",
@@ -209,7 +207,7 @@ field_properties_guide_searchable_1: |-
     "genre"
   ];
 
-  let progress: Progress = movies.set_searchable_attributes(&searchable_attributes).await.unwrap();
+  let progress: Progress = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
 field_properties_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
@@ -218,64 +216,64 @@ field_properties_guide_displayed_1: |-
     "release_date"
   ];
 
-  let progress: Progress = movies.set_displayed_attributes(&displayed_attributes).await.unwrap();
+  let progress: Progress = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
 filtering_guide_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Avengers")
     .with_filter("release_date > 795484800")
     .execute()
     .await
     .unwrap();
 filtering_guide_2: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Batman")
     .with_filter(r#"release_date > 795484800 AND (director = "Tim Burton" OR director = "Christopher Nolan")"#)
     .execute()
     .await
     .unwrap();
 filtering_guide_3: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("horror")
     .with_filter(r#"director = "Jordan Peele""#)
     .execute()
     .await
     .unwrap();
 filtering_guide_4: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Planet of the Apes")
     .with_filter(r#"rating >= 3 AND (NOT director = "Tim Burton")"#)
     .execute()
     .await
     .unwrap();
 search_parameter_guide_query_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("shifu")
     .execute()
     .await
     .unwrap();
 search_parameter_guide_offset_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("shifu")
     .with_offset(1)
     .execute()
     .await
     .unwrap();
 search_parameter_guide_limit_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("shifu")
     .with_limit(2)
     .execute()
     .await
     .unwrap();
 search_parameter_guide_retrieve_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("shifu")
     .with_attributes_to_retrieve(Selectors::Some(&["overview", "title"]))
     .execute()
     .await
     .unwrap();
 search_parameter_guide_crop_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("shifu")
     .with_attributes_to_crop(Selectors::Some(&[("overview", None)]))
     .with_crop_length(10)
@@ -286,7 +284,7 @@ search_parameter_guide_crop_1: |-
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
 search_parameter_guide_highlight_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("winter feast")
     .with_attributes_to_highlight(Selectors::Some(&["overview"]))
     .execute()
@@ -296,21 +294,21 @@ search_parameter_guide_highlight_1: |-
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
 search_parameter_guide_filter_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("n")
     .with_filter("title = Nightshift")
     .execute()
     .await
     .unwrap();
 search_parameter_guide_filter_2: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("shifu")
     .with_filter(r#"title = "Kung Fu Panda""#)
     .execute()
     .await
     .unwrap();
 search_parameter_guide_matches_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("winter feast")
     .with_matches(true)
     .execute()
@@ -324,12 +322,11 @@ settings_guide_synonyms_1: |-
   synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
   synonyms.insert(String::from("jumper"), vec![String::from("sweater")]);
 
-  let tops: Index = client.get_index("tops").await.unwrap();
-  let progress: Progress = tops.set_synonyms(&synonyms).await.unwrap();
+  let progress: Progress = client.index("tops").set_synonyms(&synonyms).await.unwrap();
 settings_guide_stop_words_1: |-
-  let progress: Progress = movies.set_stop_words(["the", "a", "an"]).await.unwrap();
+  let progress: Progress = client.index("movies").set_stop_words(["the", "a", "an"]).await.unwrap();
 settings_guide_filterable_attributes_1: |-
-  let progress: Progress = movies.set_filterable_attributes(["director", "genres"]).await.unwrap();
+  let progress: Progress = client.index("movies").set_filterable_attributes(["director", "genres"]).await.unwrap();
 settings_guide_ranking_rules_1: |-
   let ranking_rules = [
     "words",
@@ -342,10 +339,9 @@ settings_guide_ranking_rules_1: |-
     "rank:desc",
   ];
 
-  let progress: Progress = movies.set_ranking_rules(&ranking_rules).await.unwrap();
+  let progress: Progress = client.index("movies").set_ranking_rules(&ranking_rules).await.unwrap();
 settings_guide_distinct_1: |-
-  let jackets: Index = client.get_index("jackets").await.unwrap();
-  let progress: Progress = jackets.set_distinct_attribute("product_id").await.unwrap();
+  let progress: Progress = client.index("jackets").set_distinct_attribute("product_id").await.unwrap();
 settings_guide_searchable_1: |-
   let searchable_attributes = [
     "title",
@@ -353,7 +349,7 @@ settings_guide_searchable_1: |-
     "genre"
   ];
 
-  let progress: Progress = movies.set_searchable_attributes(&searchable_attributes).await.unwrap();
+  let progress: Progress = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
 settings_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
@@ -362,7 +358,7 @@ settings_guide_displayed_1: |-
     "release_date"
   ];
 
-  let progress: Progress = movies.set_displayed_attributes(&displayed_attributes).await.unwrap();
+  let progress: Progress = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
 add_movies_json_1: |-
   use meilisearch_sdk::{
     indexes::*,
@@ -386,8 +382,7 @@ add_movies_json_1: |-
     let movies_docs: Vec<Movie> = serde_json::from_str(&content).unwrap();
 
     // adding documents
-    let movies = client.get_or_create_index("movies").await.unwrap();
-    movies.add_documents(&movies_docs, None).await.unwrap();
+    client.index("movies").add_documents(&movies_docs, None).await.unwrap();
   })}
 documents_guide_add_movie_1: |-
   // Define the type of our documents
@@ -402,14 +397,14 @@ documents_guide_add_movie_1: |-
   }
 
   // Add a document to our index
-  let progress: Progress = movies.add_documents(&[
+  let progress: Progress = client.index("movies").add_documents(&[
     IncompleteMovie {
       id: "123sq178".to_string(),
       title: "Amélie Poulain".to_string(),
     }
   ], None).await.unwrap();
 search_guide_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("shifu")
     .with_limit(5)
     .with_offset(10)
@@ -417,7 +412,7 @@ search_guide_1: |-
     .await
     .unwrap();
 search_guide_2: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Avengers")
     .with_filter("release_date > 795484800")
     .execute()
@@ -496,8 +491,7 @@ getting_started_add_documents_md: |-
     let movies_docs: Vec<Movie> = serde_json::from_str(&content).unwrap();
 
     // adding documents
-    let movies = client.get_or_create_index("movies").await.unwrap();
-    movies.add_documents(&movies_docs, None).await.unwrap();
+    client.index("movies").add_documents(&movies_docs, None).await.unwrap();
   })}
   ```
 
@@ -509,7 +503,7 @@ getting_started_search_md: |-
     .with_query("botman")
     .build();
 
-  let results: SearchResults<Movie> = movies.execute_query(&query).await.unwrap();
+  let results: SearchResults<Movie> = client.index("movies").execute_query(&query).await.unwrap();
   ```
 
   You can build a `Query` and execute it directly:
@@ -523,7 +517,7 @@ getting_started_search_md: |-
 
   You can search in an index directly:
   ```rust
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("botman")
     .execute()
     .await
@@ -532,16 +526,16 @@ getting_started_search_md: |-
 
   [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 faceted_search_update_settings_1: |-
-  let progress: Progress = movies.set_filterable_attributes(["director", "genres"]).await.unwrap();
+  let progress: Progress = client.index("movies").set_filterable_attributes(["director", "genres"]).await.unwrap();
 faceted_search_filter_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("thriller")
     .with_filter("(genres = Horror AND genres = Mystery) OR director = \"Jordan Peele\"")
     .execute()
     .await
     .unwrap();
 faceted_search_facets_distribution_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Batman")
     .with_facets_distribution(Selectors::Some(&["genres"]))
     .execute()
@@ -556,16 +550,16 @@ faceted_search_walkthrough_filterable_attributes_1: |-
     "production_companies"
   ];
 
-  let progress: Progress = movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
+  let progress: Progress = client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
 faceted_search_walkthrough_filter_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("thriller")
     .with_filter("(genres = Horror AND genres = Mystery) OR director = \"Jordan Peele\"")
     .execute()
     .await
     .unwrap();
 faceted_search_walkthrough_facets_distribution_1: |-
-  let results: SearchResults<Movie> = movies.search()
+  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Batman")
     .with_facets_distribution(Selectors::Some(&["genres"]))
     .execute()
@@ -577,7 +571,7 @@ post_dump_1: |-
 get_dump_status_1: |-
   client.get_dump_status("20201101-110357260").await.unwrap();
 phrase_search_1: |-
-  let results: SearchResults<Movie> = movies
+  let results: SearchResults<Movie> = client.index("movies")
     .search()
     .with_query("\"african american\" horror")
     .execute()
@@ -589,7 +583,7 @@ sorting_guide_update_sortable_attributes_1: |-
     "price"
   ];
 
-  let progress: Progress = books.set_sortable_attributes(&sortable_attributes).await.unwrap();
+  let progress: Progress = client.index("books").set_sortable_attributes(&sortable_attributes).await.unwrap();
 sorting_guide_update_ranking_rules_1: |-
   let ranking_rules = [
     "words",
@@ -600,63 +594,63 @@ sorting_guide_update_ranking_rules_1: |-
     "exactness"
   ];
 
-  let progress: Progress = books.set_ranking_rules(&ranking_rules).await.unwrap();
+  let progress: Progress = client.index("books").set_ranking_rules(&ranking_rules).await.unwrap();
 sorting_guide_sort_parameter_1: |-
-  let results: SearchResults<Books> = books.search()
+  let results: SearchResults<Books> = client.index("books").search()
     .with_query("science fiction")
     .with_sort(&["price:asc"])
     .execute()
     .await
     .unwrap();
 sorting_guide_sort_parameter_2: |-
-  let results: SearchResults<Books> = books.search()
+  let results: SearchResults<Books> = client.index("books").search()
     .with_query("butler")
     .with_sort(&["author:desc"])
     .execute()
     .await
     .unwrap();
 get_sortable_attributes_1: |-
-  let sortable_attributes: Vec<String> = books.get_sortable_attributes().await.unwrap();
+  let sortable_attributes: Vec<String> = client.index("books").get_sortable_attributes().await.unwrap();
 update_sortable_attributes_1: |-
   let sortable_attributes = [
     "price",
     "author"
   ];
 
-  let progress: Progress = books.set_sortable_attributes(&sortable_attributes).await.unwrap();
+  let progress: Progress = client.index("books").set_sortable_attributes(&sortable_attributes).await.unwrap();
 reset_sortable_attributes_1: |-
-  let progress: Progress = books.reset_sortable_attributes().await.unwrap();
+  let progress: Progress = client.index("books").reset_sortable_attributes().await.unwrap();
 search_parameter_guide_sort_1: |-
-  let results: SearchResults<Books> = books.search()
+  let results: SearchResults<Books> = client.index("books").search()
     .with_query("science fiction")
     .with_sort(&["price:asc"])
     .execute()
     .await
     .unwrap();
 geosearch_guide_filter_settings_1: |-
-  let progress: Progress = restaurants.set_filterable_attributes(&["_geo"]).await.unwrap();
+  let progress: Progress = client.index("restaurants").set_filterable_attributes(&["_geo"]).await.unwrap();
 geosearch_guide_filter_usage_1: |-
-  let results: SearchResults<Restaurant> = restaurants.search()
+  let results: SearchResults<Restaurant> = client.index("restaurants").search()
     .with_filter("_geoRadius(45.4628328, 9.1076931, 2000)")
     .execute()
     .await
     .unwrap();
 geosearch_guide_filter_usage_2: |-
-  let results: SearchResults<Restaurant> = restaurants.search()
+  let results: SearchResults<Restaurant> = client.index("restaurants").search()
     .with_filter("_geoRadius(45.4628328, 9.1076931, 2000) AND type = pizza")
     .execute()
     .await
     .unwrap();
 geosearch_guide_sort_settings_1: |-
-  let progress: Progress = restaurants.set_sortable_attributes(&["_geo"]).await.unwrap();
+  let progress: Progress = client.index("restaurants").set_sortable_attributes(&["_geo"]).await.unwrap();
 geosearch_guide_sort_usage_1: |-
-  let results: SearchResults<Restaurant> = restaurants.search()
+  let results: SearchResults<Restaurant> = client.index("restaurants").search()
     .with_sort(&["_geoPoint(48.8583701,2.2922926):asc"])
     .execute()
     .await
     .unwrap();
 geosearch_guide_sort_usage_2: |-
-  let results: SearchResults<Restaurant> = restaurants.search()
+  let results: SearchResults<Restaurant> = client.index("restaurants").search()
     .with_sort(&["_geoPoint(48.8583701,2.2922926):asc", "rating:desc"])
     .execute()
     .await
