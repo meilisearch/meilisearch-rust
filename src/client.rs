@@ -1,6 +1,6 @@
 use crate::{errors::*, indexes::*, request::*, Rc};
+use serde::Deserialize;
 use serde_json::{json, Value};
-use serde::{Deserialize};
 use std::collections::HashMap;
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
@@ -25,7 +25,7 @@ impl Client {
     pub fn new(host: impl Into<String>, api_key: impl Into<String>) -> Client {
         Client {
             host: Rc::new(host.into()),
-            api_key: Rc::new(api_key.into())
+            api_key: Rc::new(api_key.into()),
         }
     }
 
@@ -44,8 +44,8 @@ impl Client {
     /// # });
     /// ```
     pub async fn list_all_indexes(&self) -> Result<Vec<Index>, Error> {
-        match self.list_all_indexes_raw().await{
-            Ok (json_indexes) => Ok({
+        match self.list_all_indexes_raw().await {
+            Ok(json_indexes) => Ok({
                 let mut indexes = Vec::new();
                 for json_index in json_indexes {
                     indexes.push(json_index.into_index(self))
@@ -76,7 +76,8 @@ impl Client {
             &self.api_key,
             Method::Get,
             200,
-        ).await?;
+        )
+        .await?;
 
         Ok(json_indexes)
     }
@@ -99,7 +100,7 @@ impl Client {
     /// ```
     pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
         match self.get_raw_index(uid).await {
-            Ok (raw_idx) => Ok(raw_idx.into_index(self)),
+            Ok(raw_idx) => Ok(raw_idx.into_index(self)),
             Err(error) => Err(error),
         }
     }
@@ -130,7 +131,7 @@ impl Client {
         Index {
             uid: Rc::new(uid.into()),
             host: Rc::clone(&self.host),
-            api_key: Rc::clone(&self.api_key)
+            api_key: Rc::clone(&self.api_key),
         }
     }
 
@@ -165,7 +166,8 @@ impl Client {
                 "primaryKey": primary_key,
             })),
             201,
-        ).await?
+        )
+        .await?
         .into_index(self))
     }
 
@@ -173,8 +175,8 @@ impl Client {
     /// To delete an index if it exists from the [`Index`] object, use the [Index::delete_if_exists] method.
     pub async fn delete_index_if_exists(&self, uid: &str) -> Result<bool, Error> {
         match self.delete_index(uid).await {
-            Ok (_) => Ok(true),
-            Err (Error::MeiliSearchError {
+            Ok(_) => Ok(true),
+            Err(Error::MeiliSearchError {
                 error_message: _,
                 error_code: ErrorCode::IndexNotFound,
                 error_type: _,
@@ -192,7 +194,8 @@ impl Client {
             &self.api_key,
             Method::Delete,
             204,
-        ).await?)
+        )
+        .await?)
     }
 
     /// This will try to get an index and create the index if it does not exist.
@@ -232,7 +235,8 @@ impl Client {
             &self.api_key,
             Method::Get,
             200,
-        ).await
+        )
+        .await
     }
 
     /// Get health of MeiliSearch server.
@@ -296,7 +300,8 @@ impl Client {
             &self.api_key,
             Method::Get,
             200,
-        ).await
+        )
+        .await
     }
 
     /// Get version of the MeiliSearch server.
@@ -317,7 +322,8 @@ impl Client {
             &self.api_key,
             Method::Get,
             200,
-        ).await
+        )
+        .await
     }
 }
 
@@ -373,7 +379,7 @@ pub struct Version {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*};
+    use crate::client::*;
     use futures_await_test::async_test;
 
     #[async_test]
@@ -462,7 +468,10 @@ mod tests {
     async fn test_get_primary_key() {
         let client = Client::new("http://localhost:7700", "masterKey");
         let index_name = "get_primary_key";
-        client.create_index(index_name, Some("primary_key")).await.unwrap();
+        client
+            .create_index(index_name, Some("primary_key"))
+            .await
+            .unwrap();
         let primary_key = client.index(index_name).get_primary_key().await;
         assert!(primary_key.is_ok());
         assert_eq!(primary_key.unwrap().unwrap(), "primary_key");

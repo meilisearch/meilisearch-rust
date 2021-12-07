@@ -1,9 +1,10 @@
 use crate::{
-    client::Client, document::*, errors::Error, errors::ErrorCode, progress::*, request::*, search::*, Rc,
+    client::Client, document::*, errors::Error, errors::ErrorCode, progress::*, request::*,
+    search::*, Rc,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
-use std::{fmt::Display, collections::HashMap};
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
@@ -19,7 +20,7 @@ impl JsonIndex {
         Index {
             uid: Rc::new(self.uid),
             host: Rc::clone(&client.host),
-            api_key: Rc::clone(&client.api_key)
+            api_key: Rc::clone(&client.api_key),
         }
     }
 }
@@ -41,7 +42,7 @@ impl JsonIndex {
 /// // - the documents addition (add and update routes)
 /// // - the settings update
 /// let movies = client.index("movies");
-/// 
+///
 /// // do something with the index
 /// # });
 /// ```
@@ -62,7 +63,8 @@ impl Index {
             &self.api_key,
             Method::Put(json!({ "primaryKey": primary_key.as_ref() })),
             200,
-        ).await?;
+        )
+        .await?;
         Ok(())
     }
 
@@ -87,7 +89,8 @@ impl Index {
             &self.api_key,
             Method::Delete,
             204,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Delete the index if it exists.
@@ -115,8 +118,8 @@ impl Index {
     /// ```
     pub async fn delete_if_exists(self) -> Result<bool, Error> {
         match self.delete().await {
-            Ok (_) => Ok(true),
-            Err (Error::MeiliSearchError {
+            Ok(_) => Ok(true),
+            Err(Error::MeiliSearchError {
                 error_message: _,
                 error_code: ErrorCode::IndexNotFound,
                 error_type: _,
@@ -166,15 +169,12 @@ impl Index {
         query: &Query<'_>,
     ) -> Result<SearchResults<T>, Error> {
         Ok(request::<&Query, SearchResults<T>>(
-            &format!(
-                "{}/indexes/{}/search",
-                self.host,
-                self.uid
-            ),
+            &format!("{}/indexes/{}/search", self.host, self.uid),
             &self.api_key,
             Method::Post(query),
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Search for documents matching a specific query in the index.\
@@ -263,14 +263,12 @@ impl Index {
     /// ```
     pub async fn get_document<T: 'static + Document>(&self, uid: T::UIDType) -> Result<T, Error> {
         Ok(request::<(), T>(
-            &format!(
-                "{}/indexes/{}/documents/{}",
-                self.host, self.uid, uid
-            ),
+            &format!("{}/indexes/{}/documents/{}", self.host, self.uid, uid),
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [documents](../document/trait.Document.html) by batch.
@@ -336,12 +334,7 @@ impl Index {
             url.push_str("attributesToRetrieve=");
             url.push_str(attributes_to_retrieve);
         }
-        Ok(request::<(), Vec<T>>(
-            &url,
-            &self.api_key,
-            Method::Get,
-            200,
-        ).await?)
+        Ok(request::<(), Vec<T>>(&url, &self.api_key, Method::Get, 200).await?)
     }
 
     /// Add a list of [documents](../document/trait.Document.html) or replace them if they already exist.
@@ -415,13 +408,9 @@ impl Index {
             format!("{}/indexes/{}/documents", self.host, self.uid)
         };
         Ok(
-            request::<&[T], ProgressJson>(
-                &url,
-                &self.api_key,
-                Method::Post(documents),
-                202,
-            ).await?
-            .into_progress(self),
+            request::<&[T], ProgressJson>(&url, &self.api_key, Method::Post(documents), 202)
+                .await?
+                .into_progress(self),
         )
     }
 
@@ -497,13 +486,16 @@ impl Index {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
-                self.host, self.uid, primary_key.as_ref()
+                self.host,
+                self.uid,
+                primary_key.as_ref()
             )
         } else {
             format!("{}/indexes/{}/documents", self.host, self.uid)
         };
         Ok(
-            request::<&[T], ProgressJson>(&url, &self.api_key, Method::Put(documents), 202).await?
+            request::<&[T], ProgressJson>(&url, &self.api_key, Method::Put(documents), 202)
+                .await?
                 .into_progress(self),
         )
     }
@@ -552,7 +544,8 @@ impl Index {
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -593,14 +586,12 @@ impl Index {
     /// ```
     pub async fn delete_document<T: Display>(&self, uid: T) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!(
-                "{}/indexes/{}/documents/{}",
-                self.host, self.uid, uid
-            ),
+            &format!("{}/indexes/{}/documents/{}", self.host, self.uid, uid),
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -645,14 +636,12 @@ impl Index {
         uids: &[T],
     ) -> Result<Progress, Error> {
         Ok(request::<&[T], ProgressJson>(
-            &format!(
-                "{}/indexes/{}/documents/delete-batch",
-                self.host, self.uid
-            ),
+            &format!("{}/indexes/{}/documents/delete-batch", self.host, self.uid),
             &self.api_key,
             Method::Post(uids),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -684,7 +673,8 @@ impl Index {
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Fetch the primary key of the index.
@@ -704,8 +694,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_primary_key(&self) -> Result<Option<String>, Error> {
-        Ok(self.fetch_info()
-        .await?.primaryKey)
+        Ok(self.fetch_info().await?.primaryKey)
     }
 
     /// Get the status of an update on the index.
@@ -781,10 +770,7 @@ impl Index {
     /// ```
     pub async fn get_update(&self, update_id: u64) -> Result<UpdateStatus, Error> {
         request::<(), UpdateStatus>(
-            &format!(
-                "{}/indexes/{}/updates/{}",
-                self.host, self.uid, update_id
-            ),
+            &format!("{}/indexes/{}/updates/{}", self.host, self.uid, update_id),
             &self.api_key,
             Method::Get,
             200,
@@ -840,10 +826,7 @@ impl Index {
     /// ```
     pub async fn get_all_updates(&self) -> Result<Vec<UpdateStatus>, Error> {
         request::<(), Vec<UpdateStatus>>(
-            &format!(
-                "{}/indexes/{}/updates",
-                self.host, self.uid
-            ),
+            &format!("{}/indexes/{}/updates", self.host, self.uid),
             &self.api_key,
             Method::Get,
             200,
@@ -871,7 +854,8 @@ impl Index {
             &self.api_key,
             Method::Get,
             200,
-        ).await
+        )
+        .await
     }
 }
 
@@ -914,10 +898,10 @@ mod tests {
         client.delete_index(uid).await.unwrap();
 
         match status {
-            UpdateStatus::Enqueued{content} => assert_eq!(content.update_id, update_id),
-            UpdateStatus::Processing{content} => assert_eq!(content.update_id, update_id),
-            UpdateStatus::Failed{content} => assert_eq!(content.update_id, update_id),
-            UpdateStatus::Processed{content} => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Enqueued { content } => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Processing { content } => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Failed { content } => assert_eq!(content.update_id, update_id),
+            UpdateStatus::Processed { content } => assert_eq!(content.update_id, update_id),
         }
     }
 }

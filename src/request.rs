@@ -12,43 +12,61 @@ pub(crate) enum Method<T: Serialize> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static + DeserializeOwned>(
+pub(crate) async fn request<
+    Input: Serialize + std::fmt::Debug,
+    Output: 'static + DeserializeOwned,
+>(
     url: &str,
     apikey: &str,
     method: Method<Input>,
-    expected_status_code: u16
+    expected_status_code: u16,
 ) -> Result<Output, Error> {
     use isahc::*;
 
     trace!("{:?} on {}", method, url);
 
     let mut response = match &method {
-        Method::Get => Request::get(url)
-            .header("X-Meili-API-Key", apikey)
-            .body(())
-            .map_err(|_| crate::errors::Error::InvalidRequest)?
-            .send_async().await?,
-        Method::Delete => Request::delete(url)
-            .header("X-Meili-API-Key", apikey)
-            .body(())
-            .map_err(|_| crate::errors::Error::InvalidRequest)?
-            .send_async().await?,
-        Method::Post(body) => Request::post(url)
-            .header("X-Meili-API-Key", apikey)
-            .header("Content-Type", "application/json")
-            .body(to_string(&body).unwrap())
-            .map_err(|_| crate::errors::Error::InvalidRequest)?
-            .send_async().await?,
-        Method::Put(body) => Request::put(url)
-            .header("X-Meili-API-Key", apikey)
-            .header("Content-Type", "application/json")
-            .body(to_string(&body).unwrap())
-            .map_err(|_| crate::errors::Error::InvalidRequest)?
-            .send_async().await?,
+        Method::Get => {
+            Request::get(url)
+                .header("X-Meili-API-Key", apikey)
+                .body(())
+                .map_err(|_| crate::errors::Error::InvalidRequest)?
+                .send_async()
+                .await?
+        }
+        Method::Delete => {
+            Request::delete(url)
+                .header("X-Meili-API-Key", apikey)
+                .body(())
+                .map_err(|_| crate::errors::Error::InvalidRequest)?
+                .send_async()
+                .await?
+        }
+        Method::Post(body) => {
+            Request::post(url)
+                .header("X-Meili-API-Key", apikey)
+                .header("Content-Type", "application/json")
+                .body(to_string(&body).unwrap())
+                .map_err(|_| crate::errors::Error::InvalidRequest)?
+                .send_async()
+                .await?
+        }
+        Method::Put(body) => {
+            Request::put(url)
+                .header("X-Meili-API-Key", apikey)
+                .header("Content-Type", "application/json")
+                .body(to_string(&body).unwrap())
+                .map_err(|_| crate::errors::Error::InvalidRequest)?
+                .send_async()
+                .await?
+        }
     };
 
     let status = response.status().as_u16();
-    let mut body = response.text().await.map_err(|e| crate::errors::Error::HttpError(e.into()))?;
+    let mut body = response
+        .text()
+        .await
+        .map_err(|e| crate::errors::Error::HttpError(e.into()))?;
     if body.is_empty() {
         body = "null".to_string();
     }
@@ -57,15 +75,18 @@ pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static 
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) async fn request<Input: Serialize + std::fmt::Debug, Output: 'static + DeserializeOwned>(
+pub(crate) async fn request<
+    Input: Serialize + std::fmt::Debug,
+    Output: 'static + DeserializeOwned,
+>(
     url: &str,
     apikey: &str,
     method: Method<Input>,
-    expected_status_code: u16
+    expected_status_code: u16,
 ) -> Result<Output, Error> {
     use wasm_bindgen::JsValue;
-    use web_sys::{Headers, RequestInit, Response};
     use wasm_bindgen_futures::JsFuture;
+    use web_sys::{Headers, RequestInit, Response};
 
     trace!("{:?} on {}", method, url);
 
@@ -148,7 +169,10 @@ fn parse_response<Output: DeserializeOwned>(
             }
         };
     }
-    warn!("Expected response code {}, got {}", expected_status_code, status_code);
+    warn!(
+        "Expected response code {}, got {}",
+        expected_status_code, status_code
+    );
     match from_str(&body) {
         Ok(e) => Err(Error::from(&e)),
         Err(e) => Err(Error::ParseError(e)),

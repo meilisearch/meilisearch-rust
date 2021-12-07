@@ -61,7 +61,7 @@ pub struct DumpInfo {
     pub error: Option<serde_json::Value>,
     pub started_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub finished_at: Option<String>
+    pub finished_at: Option<String>,
 }
 
 /// Dump related methods.\

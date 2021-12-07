@@ -1,11 +1,11 @@
+use crate::{
+    errors::Error,
+    indexes::Index,
+    progress::{Progress, ProgressJson},
+    request::{request, Method},
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::{
-    indexes::Index,
-    errors::Error,
-    request::{request, Method},
-    progress::{Progress, ProgressJson}
-};
 
 /// Struct reprensenting a set of settings.
 /// You can build this struct using the builder syntax.
@@ -170,7 +170,10 @@ impl Settings {
             displayed_attributes: None,
         }
     }
-    pub fn with_synonyms<T: Into<String>, U: IntoVecString>(self, synonyms: HashMap<T, U>) -> Settings {
+    pub fn with_synonyms<T: Into<String>, U: IntoVecString>(
+        self,
+        synonyms: HashMap<T, U>,
+    ) -> Settings {
         let mut converted_synonyms = HashMap::new();
         for (key, array) in synonyms {
             let key: String = key.into();
@@ -189,14 +192,16 @@ impl Settings {
             ..self
         }
     }
-    pub fn with_ranking_rules<T: IntoVecString>(self, ranking_rules: T) -> Settings
-    {
+    pub fn with_ranking_rules<T: IntoVecString>(self, ranking_rules: T) -> Settings {
         Settings {
             ranking_rules: Some(ranking_rules.convert()),
             ..self
         }
     }
-    pub fn with_filterable_attributes<T: IntoVecString>(self, filterable_attributes: T) -> Settings {
+    pub fn with_filterable_attributes<T: IntoVecString>(
+        self,
+        filterable_attributes: T,
+    ) -> Settings {
         Settings {
             filterable_attributes: Some(filterable_attributes.convert()),
             ..self
@@ -214,7 +219,10 @@ impl Settings {
             ..self
         }
     }
-    pub fn with_searchable_attributes<T: IntoVecString>(self, searchable_attributes: T) -> Settings {
+    pub fn with_searchable_attributes<T: IntoVecString>(
+        self,
+        searchable_attributes: T,
+    ) -> Settings {
         Settings {
             searchable_attributes: Some(searchable_attributes.convert()),
             ..self
@@ -245,7 +253,8 @@ impl Index {
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the Index.
@@ -264,7 +273,8 @@ impl Index {
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the Index.
@@ -283,7 +293,8 @@ impl Index {
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the Index.
@@ -302,7 +313,8 @@ impl Index {
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the Index.
@@ -317,11 +329,15 @@ impl Index {
     /// ```
     pub async fn get_filterable_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/filterable-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/filterable-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the Index.
@@ -336,11 +352,15 @@ impl Index {
     /// ```
     pub async fn get_sortable_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/sortable-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/sortable-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the Index.
@@ -355,11 +375,15 @@ impl Index {
     /// ```
     pub async fn get_distinct_attribute(&self) -> Result<Option<String>, Error> {
         Ok(request::<(), Option<String>>(
-            &format!("{}/indexes/{}/settings/distinct-attribute", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/distinct-attribute",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the Index.
@@ -374,11 +398,15 @@ impl Index {
     /// ```
     pub async fn get_searchable_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/searchable-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/searchable-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Get [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the Index.
@@ -393,11 +421,15 @@ impl Index {
     /// ```
     pub async fn get_displayed_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/displayed-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/displayed-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Get,
             200,
-        ).await?)
+        )
+        .await?)
     }
 
     /// Update [settings](../settings/struct.Settings.html) of the index.
@@ -426,7 +458,8 @@ impl Index {
             &self.api_key,
             Method::Post(settings),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -450,13 +483,17 @@ impl Index {
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_synonyms(&self, synonyms: &HashMap<String, Vec<String>>) -> Result<Progress, Error> {
+    pub async fn set_synonyms(
+        &self,
+        synonyms: &HashMap<String, Vec<String>>,
+    ) -> Result<Progress, Error> {
         Ok(request::<&HashMap<String, Vec<String>>, ProgressJson>(
             &format!("{}/indexes/{}/settings/synonyms", self.host, self.uid),
             &self.api_key,
             Method::Post(synonyms),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -482,7 +519,8 @@ impl Index {
             &self.api_key,
             Method::Post(stop_words.convert()),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -511,13 +549,17 @@ impl Index {
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_ranking_rules(&self, ranking_rules: impl IntoVecString) -> Result<Progress, Error> {
+    pub async fn set_ranking_rules(
+        &self,
+        ranking_rules: impl IntoVecString,
+    ) -> Result<Progress, Error> {
         Ok(request::<Vec<String>, ProgressJson>(
             &format!("{}/indexes/{}/settings/ranking-rules", self.host, self.uid),
             &self.api_key,
             Method::Post(ranking_rules.convert()),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -537,13 +579,20 @@ impl Index {
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_filterable_attributes(&self, filterable_attributes: impl IntoVecString) -> Result<Progress, Error> {
+    pub async fn set_filterable_attributes(
+        &self,
+        filterable_attributes: impl IntoVecString,
+    ) -> Result<Progress, Error> {
         Ok(request::<Vec<String>, ProgressJson>(
-            &format!("{}/indexes/{}/settings/filterable-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/filterable-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Post(filterable_attributes.convert()),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -563,13 +612,20 @@ impl Index {
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_sortable_attributes(&self, sortable_attributes: impl IntoVecString) -> Result<Progress, Error> {
+    pub async fn set_sortable_attributes(
+        &self,
+        sortable_attributes: impl IntoVecString,
+    ) -> Result<Progress, Error> {
         Ok(request::<Vec<String>, ProgressJson>(
-            &format!("{}/indexes/{}/settings/sortable-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/sortable-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Post(sortable_attributes.convert()),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -588,13 +644,20 @@ impl Index {
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_distinct_attribute(&self, distinct_attribute: impl Into<String>) -> Result<Progress, Error> {
+    pub async fn set_distinct_attribute(
+        &self,
+        distinct_attribute: impl Into<String>,
+    ) -> Result<Progress, Error> {
         Ok(request::<String, ProgressJson>(
-            &format!("{}/indexes/{}/settings/distinct-attribute", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/distinct-attribute",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Post(distinct_attribute.into()),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -613,13 +676,20 @@ impl Index {
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_searchable_attributes(&self, searchable_attributes: impl IntoVecString) -> Result<Progress, Error> {
+    pub async fn set_searchable_attributes(
+        &self,
+        searchable_attributes: impl IntoVecString,
+    ) -> Result<Progress, Error> {
         Ok(request::<Vec<String>, ProgressJson>(
-            &format!("{}/indexes/{}/settings/searchable-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/searchable-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Post(searchable_attributes.convert()),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -638,13 +708,20 @@ impl Index {
     /// # progress.get_status().await.unwrap();
     /// # });
     /// ```
-    pub async fn set_displayed_attributes(&self, displayed_attributes: impl IntoVecString) -> Result<Progress, Error> {
+    pub async fn set_displayed_attributes(
+        &self,
+        displayed_attributes: impl IntoVecString,
+    ) -> Result<Progress, Error> {
         Ok(request::<Vec<String>, ProgressJson>(
-            &format!("{}/indexes/{}/settings/displayed-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/displayed-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Post(displayed_attributes.convert()),
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -670,7 +747,8 @@ impl Index {
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -695,7 +773,8 @@ impl Index {
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -720,7 +799,8 @@ impl Index {
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -746,7 +826,8 @@ impl Index {
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -767,11 +848,15 @@ impl Index {
     /// ```
     pub async fn reset_filterable_attributes(&self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/filterable-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/filterable-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -792,11 +877,15 @@ impl Index {
     /// ```
     pub async fn reset_sortable_attributes(&self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/sortable-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/sortable-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -817,11 +906,15 @@ impl Index {
     /// ```
     pub async fn reset_distinct_attribute(&self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/distinct-attribute", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/distinct-attribute",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -842,11 +935,15 @@ impl Index {
     /// ```
     pub async fn reset_searchable_attributes(&self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/searchable-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/searchable-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 
@@ -867,11 +964,15 @@ impl Index {
     /// ```
     pub async fn reset_displayed_attributes(&self) -> Result<Progress, Error> {
         Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/displayed-attributes", self.host, self.uid),
+            &format!(
+                "{}/indexes/{}/settings/displayed-attributes",
+                self.host, self.uid
+            ),
             &self.api_key,
             Method::Delete,
             202,
-        ).await?
+        )
+        .await?
         .into_progress(self))
     }
 }
