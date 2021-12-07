@@ -94,7 +94,6 @@ pub enum ErrorCode {
     Unknown(UnknownErrorCode),
 }
 
-
 #[derive(Clone)]
 pub struct UnknownErrorCode(String);
 
@@ -258,7 +257,6 @@ impl std::error::Error for Error {}
 
 impl From<&serde_json::Value> for Error {
     fn from(json: &serde_json::Value) -> Error {
-
         let error_message = json
             .get("message")
             .and_then(|v| v.as_str())

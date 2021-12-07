@@ -1,4 +1,5 @@
 #![recursion_limit = "512"]
+use lazy_static::lazy_static;
 use meilisearch_sdk::{
     client::Client,
     indexes::Index,
@@ -9,10 +10,9 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
-use lazy_static::lazy_static;
 
 mod document;
-use crate::document::{Crate, display};
+use crate::document::{display, Crate};
 
 lazy_static! {
     static ref CLIENT: Client = Client::new(
@@ -36,7 +36,11 @@ enum Msg {
     /// An event sent to update the results with a query
     Input(String),
     /// The event sent to display new results once they are received
-    Update{results: Vec<Map<String, Value>>, processing_time_ms: usize, request_id: usize},
+    Update {
+        results: Vec<Map<String, Value>>,
+        processing_time_ms: usize,
+        request_id: usize,
+    },
 }
 
 impl Component for Model {
@@ -87,17 +91,21 @@ impl Component for Model {
                     }
 
                     // We send a new event with the up-to-date data so that we can update the results and display them.
-                    link.send_message(Msg::Update{
+                    link.send_message(Msg::Update {
                         results: fresh_formatted_results,
                         processing_time_ms: fresh_results.processing_time_ms,
-                        request_id
+                        request_id,
                     });
                 });
                 false
             }
 
             // Sent when new results are received
-            Msg::Update{results, processing_time_ms, request_id} => {
+            Msg::Update {
+                results,
+                processing_time_ms,
+                request_id,
+            } => {
                 if request_id >= self.latest_sent_request_id {
                     self.results = results;
                     self.processing_time_ms = processing_time_ms;

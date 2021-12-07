@@ -23,7 +23,6 @@ impl Document for Crate {
     }
 }
 
-
 fn get_readable_download_count(this: &Map<String, Value>) -> String {
     if let Some(downloads) = this["downloads"].as_f64() {
         if downloads < 1000.0 {
@@ -39,7 +38,10 @@ fn get_readable_download_count(this: &Map<String, Value>) -> String {
 }
 
 pub fn display(this: &Map<String, Value>) -> Html {
-    let mut url = format!("https://lib.rs/crates/{}", this["name"].as_str().unwrap_or_default());
+    let mut url = format!(
+        "https://lib.rs/crates/{}",
+        this["name"].as_str().unwrap_or_default()
+    );
     url = url.replace("<em>", "");
     url = url.replace("</em>", "");
 

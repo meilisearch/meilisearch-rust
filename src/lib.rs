@@ -1,7 +1,7 @@
 //! # 🚀 Getting Started
 //!
 //! ### Add Documents <!-- omit in TOC -->
-//! 
+//!
 //! ```rust
 //! use meilisearch_sdk::{document::*, client::*};
 //! use serde::{Serialize, Deserialize};
@@ -43,7 +43,7 @@
 //! ```
 //!
 //! ### Basic Search <!-- omit in TOC -->
-//! 
+//!
 //! ```rust
 //! # use meilisearch_sdk::{document::*, client::*};
 //! # use serde::{Serialize, Deserialize};
@@ -66,12 +66,12 @@
 //! println!("{:?}", client.index("movies").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
 //! # })}
 //! ```
-//! 
+//!
 //! Output:
 //! ```text
 //! [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
 //! ```
-//! 
+//!
 //! Json output:
 //! ```json
 //! {
@@ -86,9 +86,9 @@
 //!   "query": "caorl"
 //! }
 //! ```
-//! 
+//!
 //! ### Custom Search <!-- omit in toc -->
-//! 
+//!
 //! ```rust
 //! # use meilisearch_sdk::{document::*, client::*, search::*};
 //! # use serde::{Serialize, Deserialize};
@@ -110,7 +110,7 @@
 //! println!("{:?}", client.index("movies").search().with_query("phil").with_attributes_to_highlight(Selectors::Some(&["*"])).execute::<Movie>().await.unwrap().hits);
 //! # })}
 //! ```
-//! 
+//!
 //! Json output:
 //! ```json
 //! {
@@ -131,7 +131,7 @@
 //!     "query": "phil"
 //! }
 //! ```
-//! 
+//!
 //! ### Custom Search With Filters <!-- omit in TOC -->
 //!
 //! If you want to enable filtering, you must add your attributes to the `filterableAttributes`
@@ -214,7 +214,6 @@
 //!   "query": "wonder"
 //! }
 //! ```
-
 
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
