@@ -94,6 +94,35 @@ pub enum Selectors<T> {
 
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
+/// The query filter. It can either be a single string, an array of strings concatenated with `AND`,
+/// or an array of string arrays where the outer set of arrays is concatenated with `AND` and the
+/// inner set of strings is concatenated with `OR`.
+#[derive(Debug, Serialize, Clone)]
+#[serde(untagged)]
+pub enum Filter<'a> {
+    String(&'a str),
+    And(Vec<&'a str>),
+    AndOr(Vec<Vec<&'a str>>),
+}
+
+impl<'a> From<&'a str> for Filter<'a> {
+    fn from(s: &'a str) -> Self {
+        Filter::String(s)
+    }
+}
+
+impl<'a> From<Vec<&'a str>> for Filter<'a> {
+    fn from(filters: Vec<&'a str>) -> Self {
+        Filter::And(filters)
+    }
+}
+
+impl<'a> From<Vec<Vec<&'a str>>> for Filter<'a> {
+    fn from(filters: Vec<Vec<&'a str>>) -> Self {
+        Filter::AndOr(filters)
+    }
+}
+
 /// A struct representing a query.
 /// You can add search parameters using the builder syntax.
 /// See [this page](https://docs.meilisearch.com/reference/features/search_parameters.html#query-q) for the official list and description of all parameters.
@@ -148,7 +177,7 @@ pub struct Query<'a> {
     /// Filter applied to documents.
     /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub filter: Option<&'a str>,
+    pub filter: Option<Filter<'a>>,
     /// Facets for which to retrieve the matching count.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -222,8 +251,8 @@ impl<'a> Query<'a> {
         self.limit = Some(limit);
         self
     }
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut Query<'a> {
-        self.filter = Some(filter);
+    pub fn with_filter<'b>(&'b mut self, filter: impl Into<Filter<'a>>) -> &'b mut Query<'a> {
+        self.filter = Some(filter.into());
         self
     }
     pub fn with_facets_distribution<'b>(
@@ -281,6 +310,7 @@ impl<'a> Query<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{client::*, document, search::*};
+    use core::future::Future;
     use futures_await_test::async_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{Map, Value};
@@ -337,294 +367,303 @@ mod tests {
         index
     }
 
+    async fn with_test_index<F, Fut>(name: &str, func: F)
+    where
+        F: FnOnce(Index) -> Fut,
+        Fut: Future,
+    {
+        let client = Client::new("http://localhost:7700", "masterKey");
+        let index = setup_test_index(&client, name).await;
+
+        func(index).await;
+
+        client.delete_index(name).await.unwrap();
+    }
+
     #[async_test]
     async fn test_query_string() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_string").await;
-
-        let results: SearchResults<Document> =
-            index.search().with_query("dolor").execute().await.unwrap();
-        assert_eq!(results.hits.len(), 2);
-
-        client.delete_index("test_query_string").await.unwrap();
+        with_test_index("test_query_string", |index| async move {
+            let results: SearchResults<Document> =
+                index.search().with_query("dolor").execute().await.unwrap();
+            assert_eq!(results.hits.len(), 2);
+        })
+        .await
     }
 
     #[async_test]
     async fn test_query_limit() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_limit").await;
-
-        let results: SearchResults<Document> =
-            index.search().with_limit(5).execute().await.unwrap();
-        assert_eq!(results.hits.len(), 5);
-
-        client.delete_index("test_query_limit").await.unwrap();
+        with_test_index("test_query_limit", |index| async move {
+            let results: SearchResults<Document> =
+                index.search().with_limit(5).execute().await.unwrap();
+            assert_eq!(results.hits.len(), 5);
+        })
+        .await
     }
 
     #[async_test]
     async fn test_query_offset() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_offset").await;
-
-        let results: SearchResults<Document> =
-            index.search().with_offset(6).execute().await.unwrap();
-        assert_eq!(results.hits.len(), 4);
-
-        client.delete_index("test_query_offset").await.unwrap();
+        with_test_index("test_query_offset", |index| async move {
+            let results: SearchResults<Document> =
+                index.search().with_offset(6).execute().await.unwrap();
+            assert_eq!(results.hits.len(), 4);
+        })
+        .await
     }
 
     #[async_test]
     async fn test_query_filter() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_filter").await;
+        with_test_index("test_query_filter", |index| async move {
+            let results: SearchResults<Document> = index
+                .search()
+                .with_filter("value = \"The Social Network\"")
+                .execute()
+                .await
+                .unwrap();
+            assert_eq!(results.hits.len(), 1);
 
-        let results: SearchResults<Document> = index
-            .search()
-            .with_filter("value = \"The Social Network\"")
-            .execute()
-            .await
-            .unwrap();
-        assert_eq!(results.hits.len(), 1);
+            let results: SearchResults<Document> = index
+                .search()
+                .with_filter("NOT value = \"The Social Network\"")
+                .execute()
+                .await
+                .unwrap();
+            assert_eq!(results.hits.len(), 9);
+        })
+        .await
+    }
 
-        let results: SearchResults<Document> = index
-            .search()
-            .with_filter("NOT value = \"The Social Network\"")
-            .execute()
-            .await
-            .unwrap();
-        assert_eq!(results.hits.len(), 9);
+    #[async_test]
+    async fn test_query_filter_and() {
+        with_test_index("test_query_filter_and", |index| async move {
+            let results: SearchResults<Document> = index
+                .search()
+                .with_filter(vec![
+                    "NOT value = \"The Social Network\"",
+                    "kind = \"title\"",
+                ])
+                .execute()
+                .await
+                .unwrap();
+            assert_eq!(results.hits.len(), 7);
+        })
+        .await
+    }
 
-        client.delete_index("test_query_filter").await.unwrap();
+    #[async_test]
+    async fn test_query_filter_andor() {
+        with_test_index("test_query_filter_and", |index| async move {
+            let results: SearchResults<Document> = index
+                .search()
+                .with_filter(vec![
+                    vec!["NOT value = \"The Social Network\""],
+                    vec!["kind = \"title\"", "kind = \"not title\""],
+                ])
+                .execute()
+                .await
+                .unwrap();
+            assert_eq!(results.hits.len(), 7);
+        })
+        .await
     }
 
     #[async_test]
     async fn test_query_facet_distribution() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_facet_distribution").await;
+        with_test_index("test_query_facet_distribution", |index| async move {
+            let mut query = Query::new(&index);
+            query.with_facets_distribution(Selectors::All);
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(
+                results
+                    .facets_distribution
+                    .unwrap()
+                    .get("kind")
+                    .unwrap()
+                    .get("title")
+                    .unwrap(),
+                &8
+            );
 
-        let mut query = Query::new(&index);
-        query.with_facets_distribution(Selectors::All);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(
-            results
-                .facets_distribution
-                .unwrap()
-                .get("kind")
-                .unwrap()
-                .get("title")
-                .unwrap(),
-            &8
-        );
-
-        let mut query = Query::new(&index);
-        query.with_facets_distribution(Selectors::Some(&["kind"]));
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(
-            results
-                .facets_distribution
-                .clone()
-                .unwrap()
-                .get("kind")
-                .unwrap()
-                .get("title")
-                .unwrap(),
-            &8
-        );
-        assert_eq!(
-            results
-                .facets_distribution
-                .unwrap()
-                .get("kind")
-                .unwrap()
-                .get("text")
-                .unwrap(),
-            &2
-        );
-
-        client
-            .delete_index("test_query_facet_distribution")
-            .await
-            .unwrap();
+            let mut query = Query::new(&index);
+            query.with_facets_distribution(Selectors::Some(&["kind"]));
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(
+                results
+                    .facets_distribution
+                    .clone()
+                    .unwrap()
+                    .get("kind")
+                    .unwrap()
+                    .get("title")
+                    .unwrap(),
+                &8
+            );
+            assert_eq!(
+                results
+                    .facets_distribution
+                    .unwrap()
+                    .get("kind")
+                    .unwrap()
+                    .get("text")
+                    .unwrap(),
+                &2
+            );
+        })
+        .await
     }
 
     #[async_test]
     async fn test_query_attributes_to_retrieve() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_attributes_to_retrieve").await;
+        with_test_index("test_query_attributes_to_retrieve", |index| async move {
+            let results: SearchResults<Document> = index
+                .search()
+                .with_attributes_to_retrieve(Selectors::All)
+                .execute()
+                .await
+                .unwrap();
+            assert_eq!(results.hits.len(), 10);
 
-        let results: SearchResults<Document> = index
-            .search()
-            .with_attributes_to_retrieve(Selectors::All)
-            .execute()
-            .await
-            .unwrap();
-        assert_eq!(results.hits.len(), 10);
-
-        let mut query = Query::new(&index);
-        query.with_attributes_to_retrieve(Selectors::Some(&["kind", "id"])); // omit the "value" field
-        assert!(index.execute_query::<Document>(&query).await.is_err()); // error: missing "value" field
-
-        client
-            .delete_index("test_query_attributes_to_retrieve")
-            .await
-            .unwrap();
+            let mut query = Query::new(&index);
+            query.with_attributes_to_retrieve(Selectors::Some(&["kind", "id"])); // omit the "value" field
+            assert!(index.execute_query::<Document>(&query).await.is_err()); // error: missing "value" field
+        })
+        .await
     }
 
     #[async_test]
     async fn test_query_sort() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_sort").await;
-
-        let mut query = Query::new(&index);
-        query.with_query("harry potter");
-        query.with_sort(&["title:desc"]);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits.len(), 7);
-
-        client.delete_index("test_query_sort").await.unwrap();
+        with_test_index("test_query_sort", |index| async move {
+            let mut query = Query::new(&index);
+            query.with_query("harry potter");
+            query.with_sort(&["title:desc"]);
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(results.hits.len(), 7);
+        })
+        .await
     }
 
     #[async_test]
     async fn test_query_attributes_to_crop() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_attributes_to_crop").await;
-
-        let mut query = Query::new(&index);
-        query.with_query("lorem ipsum");
-        query.with_attributes_to_crop(Selectors::All);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(&Document {
-            id: 0,
-            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
-            kind: "text".to_string()
-        }, results.hits[0].formatted_result.as_ref().unwrap());
-
-        let mut query = Query::new(&index);
-        query.with_query("lorem ipsum");
-        query.with_attributes_to_crop(Selectors::Some(&[("value", Some(50)), ("kind", None)]));
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(
-            &Document {
+        with_test_index("test_query_attributes_to_crop", |index| async move {
+            let mut query = Query::new(&index);
+            query.with_query("lorem ipsum");
+            query.with_attributes_to_crop(Selectors::All);
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(&Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
+                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
                 kind: "text".to_string()
-            },
-            results.hits[0].formatted_result.as_ref().unwrap()
-        );
+            }, results.hits[0].formatted_result.as_ref().unwrap());
 
-        client
-            .delete_index("test_query_attributes_to_crop")
-            .await
-            .unwrap();
+            let mut query = Query::new(&index);
+            query.with_query("lorem ipsum");
+            query.with_attributes_to_crop(Selectors::Some(&[("value", Some(50)), ("kind", None)]));
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(
+                &Document {
+                    id: 0,
+                    value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
+                    kind: "text".to_string()
+                },
+                results.hits[0].formatted_result.as_ref().unwrap()
+            );
+        }).await
     }
 
     #[async_test]
     async fn test_query_crop_length() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_crop_lenght").await;
-
-        let mut query = Query::new(&index);
-        query.with_query("lorem ipsum");
-        query.with_attributes_to_crop(Selectors::All);
-        query.with_crop_length(200);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(&Document {
-            id: 0,
-            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
-            kind: "text".to_string(),
-        },
-        results.hits[0].formatted_result.as_ref().unwrap());
-
-        let mut query = Query::new(&index);
-        query.with_query("lorem ipsum");
-        query.with_attributes_to_crop(Selectors::All);
-        query.with_crop_length(50);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(
-            &Document {
+        with_test_index("test_query_crop_lenght", |index| async move {
+            let mut query = Query::new(&index);
+            query.with_query("lorem ipsum");
+            query.with_attributes_to_crop(Selectors::All);
+            query.with_crop_length(200);
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(&Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
-                kind: "text".to_string()
+                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
+                kind: "text".to_string(),
             },
-            results.hits[0].formatted_result.as_ref().unwrap()
-        );
+            results.hits[0].formatted_result.as_ref().unwrap());
 
-        client.delete_index("test_query_crop_lenght").await.unwrap();
+            let mut query = Query::new(&index);
+            query.with_query("lorem ipsum");
+            query.with_attributes_to_crop(Selectors::All);
+            query.with_crop_length(50);
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(
+                &Document {
+                    id: 0,
+                    value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
+                    kind: "text".to_string()
+                },
+                results.hits[0].formatted_result.as_ref().unwrap()
+            );
+        }).await
     }
 
     #[async_test]
     async fn test_query_attributes_to_highlight() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_attributes_to_highlight").await;
+        with_test_index("test_query_attributes_to_highlight", |index| async move {
+            let mut query = Query::new(&index);
+            query.with_query("dolor text");
+            query.with_attributes_to_highlight(Selectors::All);
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(
+                &Document {
+                    id: 1,
+                    value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
+                    kind: "<em>text</em>".to_string()
+                },
+                results.hits[0].formatted_result.as_ref().unwrap(),
+            );
 
-        let mut query = Query::new(&index);
-        query.with_query("dolor text");
-        query.with_attributes_to_highlight(Selectors::All);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(
-            &Document {
-                id: 1,
-                value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
-                kind: "<em>text</em>".to_string()
-            },
-            results.hits[0].formatted_result.as_ref().unwrap(),
-        );
-
-        let mut query = Query::new(&index);
-        query.with_query("dolor text");
-        query.with_attributes_to_highlight(Selectors::Some(&["value"]));
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(
-            &Document {
-                id: 1,
-                value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
-                kind: "text".to_string()
-            },
-            results.hits[0].formatted_result.as_ref().unwrap()
-        );
-
-        client
-            .delete_index("test_query_attributes_to_highlight")
-            .await
-            .unwrap();
+            let mut query = Query::new(&index);
+            query.with_query("dolor text");
+            query.with_attributes_to_highlight(Selectors::Some(&["value"]));
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(
+                &Document {
+                    id: 1,
+                    value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
+                    kind: "text".to_string()
+                },
+                results.hits[0].formatted_result.as_ref().unwrap()
+            );
+        })
+        .await
     }
 
     #[async_test]
     async fn test_query_matches() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_matches").await;
-
-        let mut query = Query::new(&index);
-        query.with_query("dolor text");
-        query.with_matches(true);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits[0].matches_info.as_ref().unwrap().len(), 2);
-        assert_eq!(
-            results.hits[0]
-                .matches_info
-                .as_ref()
-                .unwrap()
-                .get("value")
-                .unwrap(),
-            &vec![MatchRange {
-                start: 0,
-                length: 5
-            }]
-        );
-
-        client.delete_index("test_query_matches").await.unwrap();
+        with_test_index("test_query_matches", |index| async move {
+            let mut query = Query::new(&index);
+            query.with_query("dolor text");
+            query.with_matches(true);
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(results.hits[0].matches_info.as_ref().unwrap().len(), 2);
+            assert_eq!(
+                results.hits[0]
+                    .matches_info
+                    .as_ref()
+                    .unwrap()
+                    .get("value")
+                    .unwrap(),
+                &vec![MatchRange {
+                    start: 0,
+                    length: 5
+                }]
+            );
+        })
+        .await
     }
 
     #[async_test]
     async fn test_phrase_search() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_phrase_search").await;
-
-        let mut query = Query::new(&index);
-        query.with_query("harry \"of Fire\"");
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
-        assert_eq!(results.hits.len(), 1);
-
-        client.delete_index("test_phrase_search").await.unwrap();
+        with_test_index("test_phrase_search", |index| async move {
+            let mut query = Query::new(&index);
+            query.with_query("harry \"of Fire\"");
+            let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+            assert_eq!(results.hits.len(), 1);
+        })
+        .await
     }
 }
