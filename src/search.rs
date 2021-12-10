@@ -1,7 +1,7 @@
 use crate::{errors::Error, indexes::Index};
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct MatchRange {
@@ -100,26 +100,37 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 #[derive(Debug, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Filter<'a> {
-    String(&'a str),
-    And(Vec<&'a str>),
-    AndOr(Vec<Vec<&'a str>>),
+    One(Cow<'a, str>),
+    Many(Vec<Filter<'a>>),
 }
 
 impl<'a> From<&'a str> for Filter<'a> {
-    fn from(s: &'a str) -> Self {
-        Filter::String(s)
+    fn from(filter: &'a str) -> Self {
+        Filter::One(filter.into())
     }
 }
 
-impl<'a> From<Vec<&'a str>> for Filter<'a> {
-    fn from(filters: Vec<&'a str>) -> Self {
-        Filter::And(filters)
+impl<'a> From<String> for Filter<'a> {
+    fn from(filter: String) -> Self {
+        Filter::One(filter.into())
     }
 }
 
-impl<'a> From<Vec<Vec<&'a str>>> for Filter<'a> {
-    fn from(filters: Vec<Vec<&'a str>>) -> Self {
-        Filter::AndOr(filters)
+impl<'a> From<Cow<'a, str>> for Filter<'a> {
+    fn from(filter: Cow<'a, str>) -> Self {
+        Filter::One(filter)
+    }
+}
+
+impl<'a, F: Into<Filter<'a>>> From<Vec<F>> for Filter<'a> {
+    fn from(filters: Vec<F>) -> Self {
+        Filter::Many(filters.into_iter().map(|f| f.into()).collect())
+    }
+}
+
+impl<'a, F: Into<Filter<'a>>, const N: usize> From<[F; N]> for Filter<'a> {
+    fn from(filters: [F; N]) -> Self {
+        Filter::Many(<[F; N]>::into_iter(filters).map(|f| f.into()).collect())
     }
 }
 
