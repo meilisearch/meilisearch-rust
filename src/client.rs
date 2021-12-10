@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Client {
     pub(crate) host: Rc<String>,
     pub(crate) api_key: Rc<String>,
