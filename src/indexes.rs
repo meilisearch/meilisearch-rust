@@ -7,12 +7,12 @@ use serde_json::json;
 use std::{collections::HashMap, fmt::Display};
 
 #[derive(Deserialize, Debug)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub struct JsonIndex {
     uid: String,
-    primaryKey: Option<String>,
-    createdAt: String,
-    updatedAt: String,
+    primary_key: Option<String>,
+    created_at: String,
+    updated_at: String,
 }
 
 impl JsonIndex {
@@ -694,7 +694,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_primary_key(&self) -> Result<Option<String>, Error> {
-        Ok(self.fetch_info().await?.primaryKey)
+        Ok(self.fetch_info().await?.primary_key)
     }
 
     /// Get the status of an update on the index.

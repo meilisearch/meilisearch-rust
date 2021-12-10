@@ -272,7 +272,7 @@ impl From<&serde_json::Value> for Error {
         let error_type = json
             .get("type")
             .and_then(|v| v.as_str())
-            .and_then(|s| ErrorType::parse(s))
+            .and_then(ErrorType::parse)
             .unwrap_or(ErrorType::Internal);
 
         // If the response doesn't contain a type field, the error type
@@ -281,7 +281,7 @@ impl From<&serde_json::Value> for Error {
         let error_code = json
             .get("code")
             .and_then(|v| v.as_str())
-            .map(|s| ErrorCode::parse(s))
+            .map(ErrorCode::parse)
             .unwrap_or_else(|| {
                 ErrorCode::Unknown(UnknownErrorCode(String::from("missing error code")))
             });
