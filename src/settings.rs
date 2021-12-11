@@ -831,7 +831,7 @@ impl Index {
         .into_progress(self))
     }
 
-    /// Reset [filterable attributes]https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the index.
+    /// Reset [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the index.
     ///
     /// # Example
     ///
@@ -860,7 +860,7 @@ impl Index {
         .into_progress(self))
     }
 
-    /// Reset [sortable attributes]https://docs.meilisearch.com/reference/features/sorting.html) of the index.
+    /// Reset [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the index.
     ///
     /// # Example
     ///

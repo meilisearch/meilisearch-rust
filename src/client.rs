@@ -29,7 +29,7 @@ impl Client {
         }
     }
 
-    /// List all [indexes] and returns values as instances of Index(../indexes/struct.Index.html).
+    /// List all indexes and return values as instances of [Index](crate::indexes::Index).
     ///
     /// # Example
     ///
@@ -56,7 +56,7 @@ impl Client {
         }
     }
 
-    /// List all [indexes] and returns as Json (../indexes/struct.Index.html).
+    /// List all [indexes](crate::indexes::Index) and return as [Json](crate::indexes::JsonIndex).
     ///
     /// # Example
     ///

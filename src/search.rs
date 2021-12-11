@@ -322,22 +322,27 @@ impl<'a> Query<'a> {
             matches: None,
         }
     }
+
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut Query<'a> {
         self.query = Some(query);
         self
     }
+
     pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut Query<'a> {
         self.offset = Some(offset);
         self
     }
+
     pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut Query<'a> {
         self.limit = Some(limit);
         self
     }
+
     pub fn with_filter<'b>(&'b mut self, filter: impl Into<Filter<'a>>) -> &'b mut Query<'a> {
         self.filter = Some(filter.into());
         self
     }
+
     pub fn with_facets_distribution<'b>(
         &'b mut self,
         facets_distribution: Selectors<&'a [&'a str]>,
@@ -345,10 +350,12 @@ impl<'a> Query<'a> {
         self.facets_distribution = Some(facets_distribution);
         self
     }
+
     pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut Query<'a> {
         self.sort = Some(sort);
         self
     }
+
     pub fn with_attributes_to_retrieve<'b>(
         &'b mut self,
         attributes_to_retrieve: Selectors<&'a [&'a str]>,
@@ -356,6 +363,7 @@ impl<'a> Query<'a> {
         self.attributes_to_retrieve = Some(attributes_to_retrieve);
         self
     }
+
     pub fn with_attributes_to_crop<'b>(
         &'b mut self,
         attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>,
@@ -363,6 +371,7 @@ impl<'a> Query<'a> {
         self.attributes_to_crop = Some(attributes_to_crop);
         self
     }
+
     pub fn with_attributes_to_highlight<'b>(
         &'b mut self,
         attributes_to_highlight: Selectors<&'a [&'a str]>,
@@ -370,14 +379,17 @@ impl<'a> Query<'a> {
         self.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
+
     pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut Query<'a> {
         self.crop_length = Some(crop_length);
         self
     }
+
     pub fn with_matches<'b>(&'b mut self, matches: bool) -> &'b mut Query<'a> {
         self.matches = Some(matches);
         self
     }
+
     pub fn build(&mut self) -> Query<'a> {
         self.clone()
     }

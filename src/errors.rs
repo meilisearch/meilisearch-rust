@@ -3,13 +3,13 @@
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// The exhaustive list of MeiliSearch errors: https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md
-    /// Also check out: https://github.com/meilisearch/MeiliSearch/blob/main/meilisearch-error/src/lib.rs
+    /// The exhaustive list of MeiliSearch errors is available in the
+    /// [specification](https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md).
+    /// You can also check out the [source code](https://github.com/meilisearch/MeiliSearch/blob/main/meilisearch-error/src/lib.rs).
     MeiliSearchError {
         /// The human readable error message
         error_message: String,
-        /// The error code of the error.  Officially documented at
-        /// https://docs.meilisearch.com/errors.
+        /// The error code of the error. Officially documented [here](https://docs.meilisearch.com/errors).
         error_code: ErrorCode,
         /// The type of error (invalid request, internal error, or authentication
         /// error)
@@ -18,8 +18,7 @@ pub enum Error {
         error_link: String,
     },
 
-    /// There is no MeiliSearch server listening on the [specified host]
-    /// (../client/struct.Client.html#method.new).
+    /// There is no MeiliSearch server listening on the [specified host](crate::client::Client::new).
     UnreachableServer,
     /// The MeiliSearch server returned an invalid JSON for a request.
     ParseError(serde_json::Error),
@@ -49,7 +48,7 @@ pub enum ErrorType {
 
 /// The error code.
 ///
-/// Officially documented at https://docs.meilisearch.com/errors.
+/// Officially documented [here](https://docs.meilisearch.com/errors).
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum ErrorCode {
