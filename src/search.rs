@@ -94,13 +94,85 @@ pub enum Selectors<T> {
 
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
-/// The query filter. It can either be a single string, an array of strings concatenated with `AND`,
-/// or an array of string arrays where the outer set of arrays is concatenated with `AND` and the
-/// inner set of strings is concatenated with `OR`.
-#[derive(Debug, Serialize, Clone)]
+/// The query filter. This enum uses the `One` variant to represent single strings and the `Many`
+/// variant to represent an array of filters. Acceptable filter forms are described in the
+/// [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html).
+///
+/// # Examples
+///
+/// - A single filter which must hold true
+/// ```
+/// # use std::borrow::Cow;
+/// # use meilisearch_sdk::search::Filter;
+/// Filter::One("kind = \"text\"".into()); // "kind = \"text\""
+/// ```
+///
+/// - Multiple filters were all must hold true
+/// ```
+/// # use std::borrow::Cow;
+/// # use meilisearch_sdk::search::Filter;
+/// let timestamp = 1639200000;
+/// Filter::Many(vec![
+///     Filter::One("kind = \"text\"".into()),
+///     Filter::One(format!("createdAt > {}", timestamp).into())
+/// ]); // [ "kind = \"text\"", "createdAt > 1639200000" ]
+/// ```
+///
+/// - Multiple filters where any of the inner filter strings must hold true and all of the outer
+///   filters must hold true
+/// ```
+/// # use std::borrow::Cow;
+/// # use meilisearch_sdk::search::Filter;
+/// # let timestamp = 1639200000;
+/// Filter::Many(vec![
+///     Filter::Many(vec![
+///         Filter::One("kind = \"text\"".into()),
+///         Filter::One("kind = \"title\"".into())
+///     ]),
+///     Filter::Many(vec![
+///         Filter::One(format!("createdAt > {}", timestamp).into())
+///     ])
+/// ]); // [ [ "kind = \"text\"", "kind = \"title\"" ], [ "createdAt > 1639200000" ] ]
+/// ```
+///
+/// - For convenience, a few `From` conversions are also provided:
+/// ```
+/// # use std::borrow::Cow;
+/// # use meilisearch_sdk::search::Filter;
+/// # let timestamp = 1639200000;
+/// // From &str:
+/// assert_eq!(
+///     Filter::from("kind = \"text\""),
+///     Filter::One(Cow::Borrowed("kind = \"text\""))
+/// );
+/// // From String
+/// assert_eq!(
+///     Filter::from(format!("createdAt > {}", timestamp)),
+///     Filter::One(Cow::Owned("createdAt > 1639200000".to_string()))
+/// );
+/// // From Vec<F> where F can be converted to a filter
+/// assert_eq!(
+///     Filter::from(vec![
+///         vec![ Cow::from("kind = \"text\""), Cow::from("kind = \"title\"") ],
+///         vec![ Cow::from(format!("createdAt > {}", timestamp)) ]
+///     ]),
+///     Filter::Many(vec![
+///         Filter::Many(vec![
+///             Filter::One(Cow::Borrowed("kind = \"text\"")),
+///             Filter::One(Cow::Borrowed("kind = \"title\""))
+///         ]),
+///         Filter::Many(vec![
+///             Filter::One(Cow::Owned("createdAt > 1639200000".to_string()))
+///         ])
+///     ])
+/// );
+/// ```
+#[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum Filter<'a> {
+    /// A single filter string
     One(Cow<'a, str>),
+    /// Multiple filters represented by an array
     Many(Vec<Filter<'a>>),
 }
 
