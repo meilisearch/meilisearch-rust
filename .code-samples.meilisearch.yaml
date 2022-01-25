@@ -382,17 +382,13 @@ settings_guide_displayed_1: |-
 
   let progress: Progress = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_sortable_1: |-
-  let mut synonyms = std::collections::HashMap::new();
-  synonyms.insert(String::from("wolverine"), vec!["xmen", "logan"]);
-  synonyms.insert(String::from("logan"), vec!["wolverine"]);
-
   let settings = Settings::new()
     .with_sortable_attributes([
-      "title",
-      "release_date"
+      "author",
+      "price"
     ]);
 
-  let progress: Progress = movies.set_settings(&settings).await.unwrap();
+  let progress: Progress = client.index("books").set_settings(&settings).await.unwrap();
 add_movies_json_1: |-
   use meilisearch_sdk::{
     indexes::*,
