@@ -3,13 +3,13 @@
 <!-- sh scripts/update-readme.sh -->
 
 <p align="center">
-  <img src="https://res.cloudinary.com/meilisearch/image/upload/v1587402338/SDKs/meilisearch_rust.svg" alt="MeiliSearch-Dotnet" width="200" height="200" />
+  <img src="https://res.cloudinary.com/meilisearch/image/upload/v1587402338/SDKs/meilisearch_rust.svg" alt="Meilisearch-Dotnet" width="200" height="200" />
 </p>
 
-<h1 align="center">MeiliSearch Rust SDK</h1>
+<h1 align="center">Meilisearch Rust SDK</h1>
 
 <h4 align="center">
-  <a href="https://github.com/meilisearch/MeiliSearch">MeiliSearch</a> |
+  <a href="https://github.com/meilisearch/Meilisearch">Meilisearch</a> |
   <a href="https://docs.meilisearch.com">Documentation</a> |
   <a href="https://slack.meilisearch.com">Slack</a> |
   <a href="https://roadmap.meilisearch.com/tabs/1-under-consideration">Roadmap</a> |
@@ -21,15 +21,15 @@
   <a href="https://crates.io/crates/meilisearch-sdk"><img src="https://img.shields.io/crates/v/meilisearch-sdk.svg" alt="crates.io"></a>
   <a href="https://github.com/meilisearch/meilisearch-rust/actions"><img src="https://github.com/meilisearch/meilisearch-rust/workflows/Tests/badge.svg?branch=main" alt="Tests"></a>
   <a href="https://github.com/meilisearch/meilisearch-rust/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-informational" alt="License"></a>
-  <a href="https://github.com/meilisearch/MeiliSearch/discussions" alt="Discussions"><img src="https://img.shields.io/badge/github-discussions-red" /></a>
+  <a href="https://github.com/meilisearch/Meilisearch/discussions" alt="Discussions"><img src="https://img.shields.io/badge/github-discussions-red" /></a>
   <a href="https://app.bors.tech/repositories/28502"><img src="https://bors.tech/images/badge_small.svg" alt="Bors enabled"></a>
 </p>
 
-<p align="center">⚡ The MeiliSearch API client written for Rust 🦀</p>
+<p align="center">⚡ The Meilisearch API client written for Rust 🦀</p>
 
-**MeiliSearch Rust** is the MeiliSearch API client for Rust developers.
+**Meilisearch Rust** is the Meilisearch API client for Rust developers.
 
-**MeiliSearch** is an open-source search engine. [Discover what MeiliSearch is!](https://github.com/meilisearch/MeiliSearch)
+**Meilisearch** is an open-source search engine. [Discover what Meilisearch is!](https://github.com/meilisearch/Meilisearch)
 
 ## Table of Contents <!-- omit in TOC -->
 
@@ -37,7 +37,7 @@
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
 - [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
-- [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
+- [🤖 Compatibility with Meilisearch](#-compatibility-with-meilisearch)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
 
 ## 📖 Documentation
@@ -65,23 +65,23 @@ You can enable the `sync` feature to make most structs `Sync`. It may be a bit s
 
 Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
 
-### Run a MeiliSearch Instance <!-- omit in TOC -->
+### Run a Meilisearch Instance <!-- omit in TOC -->
 
-This crate requires a MeiliSearch server to run.
+This crate requires a Meilisearch server to run.
 
-There are many easy ways to [download and run a MeiliSearch instance](https://docs.meilisearch.com/reference/features/installation.html#download-and-launch).
+There are many easy ways to [download and run a Meilisearch instance](https://docs.meilisearch.com/reference/features/installation.html#download-and-launch).
 
 For example,using the `curl` command in [your Terminal](https://itconnect.uw.edu/learn/workshops/online-tutorials/web-publishing/what-is-a-terminal/):
 
 ```bash
-# Install MeiliSearch
+# Install Meilisearch
 curl -L https://install.meilisearch.com | sh
 
-# Launch MeiliSearch
+# Launch Meilisearch
 ./meilisearch --master-key=masterKey
 ```
 
-NB: you can also download MeiliSearch from **Homebrew** or **APT**.
+NB: you can also download Meilisearch from **Homebrew** or **APT**.
 
 ## 🚀 Getting Started
 
@@ -115,7 +115,7 @@ fn main() { block_on(async move {
     // An index is where the documents are stored.
     let movies = client.index("movies");
 
-    // Add some movies in the index. If the index 'movies' does not exist, MeiliSearch creates it when you first add the documents.
+    // Add some movies in the index. If the index 'movies' does not exist, Meilisearch creates it when you first add the documents.
     movies.add_documents(&[
         Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
         Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
@@ -130,7 +130,7 @@ fn main() { block_on(async move {
 #### Basic Search <!-- omit in TOC -->
 
 ```rust
-// MeiliSearch is typo-tolerant:
+// Meilisearch is typo-tolerant:
 println!("{:?}", client.index("movies").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
 ```
 
@@ -196,7 +196,7 @@ client.index("movies").set_filterable_attributes(&filterable_attributes).await.u
 
 You only need to perform this operation once.
 
-Note that MeiliSearch will rebuild your index whenever you update `filterableAttributes`.
+Note that Meilisearch will rebuild your index whenever you update `filterableAttributes`.
 Depending on the size of your dataset, this might take time. You can track the whole process
 using the [update
 status](https://docs.meilisearch.com/reference/api/updates.html#get-an-update-status).
@@ -232,13 +232,13 @@ This crate fully supports WASM.
 
 The only difference between the WASM and the native version is that the native version has one more variant (`Error::Http`) in the Error enum. That should not matter so much but we could add this variant in WASM too.
 
-However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using MeiliSearch, see the [our demo](./examples/web_app).
+However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using Meilisearch, see the [our demo](./examples/web_app).
 
 WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
 
-## 🤖 Compatibility with MeiliSearch
+## 🤖 Compatibility with Meilisearch
 
-This package only guarantees the compatibility with the [version v0.24.0 of MeiliSearch](https://github.com/meilisearch/MeiliSearch/releases/tag/v0.24.0).
+This package only guarantees the compatibility with the [version v0.24.0 of Meilisearch](https://github.com/meilisearch/Meilisearch/releases/tag/v0.24.0).
 
 ## ⚙️ Development Workflow and Contributing
 
@@ -248,4 +248,4 @@ If you want to know more about the development workflow or want to contribute, p
 
 <hr>
 
-**MeiliSearch** provides and maintains many **SDKs and Integration tools** like this one. We want to provide everyone with an **amazing search experience for any kind of project**. If you want to contribute, make suggestions, or just know what's going on right now, visit us in the [integration-guides](https://github.com/meilisearch/integration-guides) repository.
+**Meilisearch** provides and maintains many **SDKs and Integration tools** like this one. We want to provide everyone with an **amazing search experience for any kind of project**. If you want to contribute, make suggestions, or just know what's going on right now, visit us in the [integration-guides](https://github.com/meilisearch/integration-guides) repository.
