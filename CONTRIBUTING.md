@@ -1,6 +1,6 @@
 # Contributing <!-- omit in toc -->
 
-First of all, thank you for contributing to MeiliSearch! The goal of this document is to provide everything you need to know in order to contribute to MeiliSearch and its different integrations.
+First of all, thank you for contributing to meilisearch! The goal of this document is to provide everything you need to know in order to contribute to meilisearch and its different integrations.
 
 - [Assumptions](#assumptions)
 - [How to Contribute](#how-to-contribute)
@@ -12,8 +12,8 @@ First of all, thank you for contributing to MeiliSearch! The goal of this docume
 ## Assumptions
 
 1. **You're familiar with [GitHub](https://github.com) and the [Pull Request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests)(PR) workflow.**
-2. **You've read the MeiliSearch [documentation](https://docs.meilisearch.com) and the [README](/README.md).**
-3. **You know about the [MeiliSearch community](https://docs.meilisearch.com/learn/what_is_meilisearch/contact.html). Please use this for help.**
+2. **You've read the meilisearch [documentation](https://docs.meilisearch.com) and the [README](/README.md).**
+3. **You know about the [meilisearch community](https://docs.meilisearch.com/learn/what_is_meilisearch/contact.html). Please use this for help.**
 
 ## How to Contribute
 
@@ -30,14 +30,14 @@ First of all, thank you for contributing to MeiliSearch! The goal of this docume
 ### Tests <!-- omit in toc -->
 
 All the tests are documentation tests.<br>
-Since they are all making operations on the MeiliSearch server, running all the tests simultaneously would cause panics.
+Since they are all making operations on the meilisearch server, running all the tests simultaneously would cause panics.
 
 To run the tests one by one, run:
 
 ```bash
 # Tests
-curl -L https://install.meilisearch.com | sh # download MeiliSearch
-./meilisearch --master-key=masterKey --no-analytics=true # run MeiliSearch
+curl -L https://install.meilisearch.com | sh # download meilisearch
+./meilisearch --master-key=masterKey --no-analytics=true # run meilisearch
 cargo test -- --test-threads=1
 ```
 
@@ -122,7 +122,7 @@ Some notes on GitHub PRs:
 
 ## Release Process (for internal team only)
 
-MeiliSearch tools follow the [Semantic Versioning Convention](https://semver.org/).
+meilisearch tools follow the [Semantic Versioning Convention](https://semver.org/).
 
 ### Automation to Rebase and Merge the PRs <!-- omit in toc -->
 
