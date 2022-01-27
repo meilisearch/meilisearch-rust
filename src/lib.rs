@@ -30,7 +30,7 @@
 //!     // An index is where the documents are stored.
 //!     let movies = client.index("movies");
 //!
-//!     // Add some movies in the index. If the index 'movies' does not exist, MeiliSearch creates it when you first add the documents.
+//!     // Add some movies in the index. If the index 'movies' does not exist, Meilisearch creates it when you first add the documents.
 //!     movies.add_documents(&[
 //!         Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
 //!         Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
@@ -62,7 +62,7 @@
 //! # }
 //! # fn main() { block_on(async move {
 //! #    let client = Client::new("http://localhost:7700", "masterKey");
-//! // MeiliSearch is typo-tolerant:
+//! // Meilisearch is typo-tolerant:
 //! println!("{:?}", client.index("movies").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
 //! # })}
 //! ```
@@ -153,7 +153,7 @@
 //!
 //! You only need to perform this operation once.
 //!
-//! Note that MeiliSearch will rebuild your index whenever you update `filterableAttributes`.
+//! Note that Meilisearch will rebuild your index whenever you update `filterableAttributes`.
 //! Depending on the size of your dataset, this might take time. You can track the whole process
 //! using the [update
 //! status](https://docs.meilisearch.com/reference/api/updates.html#get-an-update-status).

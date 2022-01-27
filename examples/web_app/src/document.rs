@@ -14,7 +14,7 @@ pub struct Crate {
     version: String,
 }
 
-// Implement the Document trait so that we can use our struct with MeiliSearch
+// Implement the Document trait so that we can use our struct with Meilisearch
 impl Document for Crate {
     type UIDType = String;
 

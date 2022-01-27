@@ -73,7 +73,7 @@ impl<'a> Progress {
         .await
     }
 
-    /// Wait until MeiliSearch processes an update, and get its status.
+    /// Wait until Meilisearch processes an update, and get its status.
     ///
     /// `interval` = The frequency at which the server should be polled. Default = 50ms
     /// `timeout` = The maximum time to wait for processing to complete. Default = 5000ms

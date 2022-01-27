@@ -1,8 +1,8 @@
 //! The `dumps` module allows the creation of database dumps.
-//! Dumps are `.dump` files that can be used to launch MeiliSearch.
-//! Dumps are compatible between MeiliSearch versions.
+//! Dumps are `.dump` files that can be used to launch Meilisearch.
+//! Dumps are compatible between Meilisearch versions.
 //!
-//! Creating a dump is also referred to as exporting it, whereas launching MeiliSearch with a dump is referred to as importing it.
+//! Creating a dump is also referred to as exporting it, whereas launching Meilisearch with a dump is referred to as importing it.
 //!
 //! During a [dump export](Client::create_dump), all [indexes](crate::indexes::Index) of the current instance are exported—together with their documents and settings—and saved as a single `.dump` file.
 //!
@@ -26,7 +26,7 @@
 //! let dump_info = client.create_dump().await.unwrap();
 //! assert!(matches!(dump_info.status, DumpStatus::InProgress));
 //!
-//! // Wait for MeiliSearch to proceed
+//! // Wait for Meilisearch to proceed
 //! sleep(Duration::from_secs(5));
 //!
 //! // Check the status of the dump
