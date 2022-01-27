@@ -3,13 +3,13 @@
 <!-- sh scripts/update-readme.sh -->
 
 <p align="center">
-  <img src="https://res.cloudinary.com/meilisearch/image/upload/v1587402338/SDKs/meilisearch_rust.svg" alt="Meilisearch-Dotnet" width="200" height="200" />
+  <img src="https://raw.githubusercontent.com/meilisearch/integration-guides/main/assets/logos/meilisearch_rust.svg" alt="Meilisearch-Rust" width="200" height="200" />
 </p>
 
 <h1 align="center">Meilisearch Rust SDK</h1>
 
 <h4 align="center">
-  <a href="https://github.com/meilisearch/Meilisearch">Meilisearch</a> |
+  <a href="https://github.com/meilisearch/meilisearch">Meilisearch</a> |
   <a href="https://docs.meilisearch.com">Documentation</a> |
   <a href="https://slack.meilisearch.com">Slack</a> |
   <a href="https://roadmap.meilisearch.com/tabs/1-under-consideration">Roadmap</a> |
@@ -21,7 +21,7 @@
   <a href="https://crates.io/crates/meilisearch-sdk"><img src="https://img.shields.io/crates/v/meilisearch-sdk.svg" alt="crates.io"></a>
   <a href="https://github.com/meilisearch/meilisearch-rust/actions"><img src="https://github.com/meilisearch/meilisearch-rust/workflows/Tests/badge.svg?branch=main" alt="Tests"></a>
   <a href="https://github.com/meilisearch/meilisearch-rust/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-informational" alt="License"></a>
-  <a href="https://github.com/meilisearch/Meilisearch/discussions" alt="Discussions"><img src="https://img.shields.io/badge/github-discussions-red" /></a>
+  <a href="https://github.com/meilisearch/meilisearch/discussions" alt="Discussions"><img src="https://img.shields.io/badge/github-discussions-red" /></a>
   <a href="https://app.bors.tech/repositories/28502"><img src="https://bors.tech/images/badge_small.svg" alt="Bors enabled"></a>
 </p>
 
@@ -36,7 +36,6 @@
 - [📖 Documentation](#-documentation)
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
-- [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
 - [🤖 Compatibility with Meilisearch](#-compatibility-with-meilisearch)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
 
@@ -238,7 +237,7 @@ WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extensi
 
 ## 🤖 Compatibility with Meilisearch
 
-This package only guarantees the compatibility with the [version v0.24.0 of Meilisearch](https://github.com/meilisearch/Meilisearch/releases/tag/v0.24.0).
+This package only guarantees the compatibility with the [version v0.24.0 of Meilisearch](https://github.com/meilisearch/meilisearch/releases/tag/v0.24.0).
 
 ## ⚙️ Development Workflow and Contributing
 
