@@ -38,7 +38,7 @@ impl JsonIndex {
 /// let movies = client.get_or_create("movies").await.unwrap();
 ///
 /// // use the implicit index creation if the index already exist or
-/// // MeiliSearch would be able to create the index if it does not exist during:
+/// // Meilisearch would be able to create the index if it does not exist during:
 /// // - the documents addition (add and update routes)
 /// // - the settings update
 /// let movies = client.index("movies");
@@ -276,7 +276,7 @@ impl Index {
     /// Using the optional parameters offset and limit, you can browse through all your documents.
     /// If None, offset will be set to 0, limit to 20, and all attributes will be retrieved.
     ///
-    /// *Note: Documents are ordered by MeiliSearch depending on the hash of their id.*
+    /// *Note: Documents are ordered by Meilisearch depending on the hash of their id.*
     ///
     /// # Example
     ///
@@ -386,7 +386,7 @@ impl Index {
     ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
     ///     },
     /// ], Some("name")).await.unwrap();
-    /// sleep(Duration::from_secs(1)); // MeiliSearch may take some time to execute the request
+    /// sleep(Duration::from_secs(1)); // Meilisearch may take some time to execute the request
     /// # progress.get_status().await.unwrap();
     ///
     /// // retrieve movies (you have to put some movies in the index before)
@@ -470,7 +470,7 @@ impl Index {
     ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
     ///     },
     /// ], Some("name")).await.unwrap();
-    /// sleep(Duration::from_secs(1)); // MeiliSearch may take some time to execute the request
+    /// sleep(Duration::from_secs(1)); // Meilisearch may take some time to execute the request
     /// # progress.get_status().await.unwrap();
     ///
     /// // retrieve movies (you have to put some movies in the index before)

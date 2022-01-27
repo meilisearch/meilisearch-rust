@@ -136,7 +136,7 @@ impl Client {
     }
 
     /// Create an [index](../indexes/struct.Index.html).
-    /// The second parameter will be used as the primary key of the new index. If it is not specified, MeiliSearch will **try** to infer the primary key.
+    /// The second parameter will be used as the primary key of the new index. If it is not specified, Meilisearch will **try** to infer the primary key.
     /// # Example
     ///
     /// ```
@@ -239,7 +239,7 @@ impl Client {
         .await
     }
 
-    /// Get health of MeiliSearch server.
+    /// Get health of Meilisearch server.
     ///
     /// # Example
     ///
@@ -261,7 +261,7 @@ impl Client {
         .await
     }
 
-    /// Get health of MeiliSearch server, return true or false.
+    /// Get health of Meilisearch server, return true or false.
     ///
     /// # Example
     ///
@@ -304,7 +304,7 @@ impl Client {
         .await
     }
 
-    /// Get version of the MeiliSearch server.
+    /// Get version of the Meilisearch server.
     ///
     /// # Example
     ///
@@ -335,7 +335,7 @@ pub struct ClientStats {
     pub indexes: HashMap<String, IndexStats>,
 }
 
-/// Health of the MeiliSearch server.
+/// Health of the Meilisearch server.
 ///
 /// Example:
 ///
@@ -357,7 +357,7 @@ pub struct Keys {
     pub private: Option<String>,
 }
 
-/// Version of a MeiliSearch server.
+/// Version of a Meilisearch server.
 ///
 /// Example:
 ///

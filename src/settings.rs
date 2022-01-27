@@ -37,7 +37,7 @@ pub struct Settings {
     /// List of associated words treated similarly
     #[serde(skip_serializing_if = "Option::is_none")]
     pub synonyms: Option<HashMap<String, Vec<String>>>,
-    /// List of words ignored by MeiliSearch when present in search queries
+    /// List of words ignored by Meilisearch when present in search queries
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_words: Option<Vec<String>>,
     /// List of [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#order-of-the-rules) sorted by order of importance
