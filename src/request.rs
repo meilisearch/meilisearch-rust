@@ -21,14 +21,17 @@ pub(crate) async fn request<
     method: Method<Input>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
+    use isahc::http::header;
     use isahc::*;
 
     trace!("{:?} on {}", method, url);
 
+    let auth = format!("Bearer {}", apikey);
+
     let mut response = match &method {
         Method::Get => {
             Request::get(url)
-                .header("X-Meili-API-Key", apikey)
+                .header(header::AUTHORIZATION, auth)
                 .body(())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -36,7 +39,7 @@ pub(crate) async fn request<
         }
         Method::Delete => {
             Request::delete(url)
-                .header("X-Meili-API-Key", apikey)
+                .header(header::AUTHORIZATION, auth)
                 .body(())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -44,8 +47,8 @@ pub(crate) async fn request<
         }
         Method::Post(body) => {
             Request::post(url)
-                .header("X-Meili-API-Key", apikey)
-                .header("Content-Type", "application/json")
+                .header(header::AUTHORIZATION, auth)
+                .header(header::CONTENT_TYPE, "application/json")
                 .body(to_string(&body).unwrap())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -53,8 +56,8 @@ pub(crate) async fn request<
         }
         Method::Put(body) => {
             Request::put(url)
-                .header("X-Meili-API-Key", apikey)
-                .header("Content-Type", "application/json")
+                .header(header::AUTHORIZATION, auth)
+                .header(header::CONTENT_TYPE, "application/json")
                 .body(to_string(&body).unwrap())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()

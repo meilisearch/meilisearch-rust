@@ -1,10 +1,16 @@
-use crate::{errors::*, indexes::*, request::*, Rc};
+use crate::{
+    errors::*,
+    indexes::*,
+    request::*,
+    tasks::{async_sleep, Task},
+    Rc,
+};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Client {
     pub(crate) host: Rc<String>,
     pub(crate) api_key: Rc<String>,
@@ -29,7 +35,7 @@ impl Client {
         }
     }
 
-    /// List all [indexes] and returns values as instances of Index(../indexes/struct.Index.html).
+    /// List all [Index]es and returns values as instances of [Index].
     ///
     /// # Example
     ///
@@ -56,7 +62,7 @@ impl Client {
         }
     }
 
-    /// List all [indexes] and returns as Json (../indexes/struct.Index.html).
+    /// List all [Index]es and returns as Json.
     ///
     /// # Example
     ///
@@ -82,7 +88,7 @@ impl Client {
         Ok(json_indexes)
     }
 
-    /// Get an [index](../indexes/struct.Index.html), this index should already exist.
+    /// Get an [Index], this index should already exist.
     ///
     /// # Example
     ///
@@ -92,10 +98,12 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// # client.create_index("movies", None).await;
+    /// # let index = client.create_index("movies", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "movies"
     /// let movies = client.get_index("movies").await.unwrap();
+    /// assert_eq!(movies.as_ref(), "movies");
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
@@ -105,7 +113,7 @@ impl Client {
         }
     }
 
-    /// Get a raw JSON [index](../indexes/struct.Index.html), this index should already exist.
+    /// Get a raw JSON [Index], this index should already exist.
     ///
     /// # Example
     ///
@@ -115,104 +123,87 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// # client.create_index("movies", None).await;
+    /// # let index = client.create_index("movies", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "movies"
     /// let movies = client.get_raw_index("movies").await.unwrap();
+    /// assert_eq!(movies.uid, "movies");
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    /// If you use it directly from an index, you can use the method [fetch_info](#method.fetch_info), which is the equivalent method from an index.
+    /// If you use it directly from an [Index], you can use the method [Index::fetch_info], which is the equivalent method from an index.
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<JsonIndex, Error> {
         Index::fetch_info(&self.index(uid.as_ref())).await
     }
 
-    /// Create a corresponding object of an [index](../indexes/struct.Index.html) without any check or doing an HTTP call.
+    /// Create a corresponding object of an [Index] without any check or doing an HTTP call.
     pub fn index(&self, uid: impl Into<String>) -> Index {
         Index {
             uid: Rc::new(uid.into()),
-            host: Rc::clone(&self.host),
-            api_key: Rc::clone(&self.api_key),
+            client: self.clone(),
         }
     }
 
-    /// Create an [index](../indexes/struct.Index.html).
-    /// The second parameter will be used as the primary key of the new index. If it is not specified, Meilisearch will **try** to infer the primary key.
+    /// Create an [Index].
+    /// The second parameter will be used as the primary key of the new index.
+    /// If it is not specified, Meilisearch will **try** to infer the primary key.
     /// # Example
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
     /// # futures::executor::block_on(async move {
-    /// // create the client
+    /// // Create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
-    /// # if let Ok(mut movies) = client.get_index("movies").await {
-    /// #   movies.delete().await.unwrap();
-    /// # }
-    /// // create a new index called movies and access it
-    /// let movies = client.create_index("movies", None).await;
+    /// // Create a new index called movies and access it
+    /// let task = client.create_index("movies", None).await.unwrap();
+    ///
+    /// // Wait for the task to complete
+    /// let task = task.wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// // Try to get the inner index if the task succeeded
+    /// let index = task.try_make_index(&client).unwrap();
+    ///
+    /// assert_eq!(index.as_ref(), "movies");
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn create_index(
         &self,
         uid: impl AsRef<str>,
         primary_key: Option<&str>,
-    ) -> Result<Index, Error> {
-        Ok(request::<Value, JsonIndex>(
+    ) -> Result<Task, Error> {
+        Ok(request::<Value, Task>(
             &format!("{}/indexes", self.host),
             &self.api_key,
             Method::Post(json!({
                 "uid": uid.as_ref(),
                 "primaryKey": primary_key,
             })),
-            201,
-        )
-        .await?
-        .into_index(self))
-    }
-
-    /// Delete an index from its UID if it exists.
-    /// To delete an index if it exists from the [`Index`] object, use the [Index::delete_if_exists] method.
-    pub async fn delete_index_if_exists(&self, uid: &str) -> Result<bool, Error> {
-        match self.delete_index(uid).await {
-            Ok(_) => Ok(true),
-            Err(Error::MeiliSearchError {
-                error_message: _,
-                error_code: ErrorCode::IndexNotFound,
-                error_type: _,
-                error_link: _,
-            }) => Ok(false),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Delete an index from its UID.
-    /// To delete an index from the [index object](../indexes/struct.Index.html), use [the delete method](../indexes/struct.Index.html#method.delete).
-    pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<(), Error> {
-        Ok(request::<(), ()>(
-            &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            &self.api_key,
-            Method::Delete,
-            204,
+            202,
         )
         .await?)
     }
 
-    /// This will try to get an index and create the index if it does not exist.
-    pub async fn get_or_create(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
-        if let Ok(index) = self.get_index(uid.as_ref()).await {
-            Ok(index)
-        } else {
-            self.create_index(uid, None).await
-        }
+    /// Delete an index from its UID.
+    /// To delete an [Index], use the [Index::delete] method.
+    pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<Task, Error> {
+        Ok(request::<(), Task>(
+            &format!("{}/indexes/{}", self.host, uid.as_ref()),
+            &self.api_key,
+            Method::Delete,
+            202,
+        )
+        .await?)
     }
 
-    /// Alias for [list_all_indexes](#method.list_all_indexes).
+    /// Alias for [Client::list_all_indexes].
     pub async fn get_indexes(&self) -> Result<Vec<Index>, Error> {
         self.list_all_indexes().await
     }
 
-    /// Alias for [list_all_indexes_raw](#method.list_all_indexes_raw).
+    /// Alias for [Client::list_all_indexes_raw].
     pub async fn get_indexes_raw(&self) -> Result<Vec<JsonIndex>, Error> {
         self.list_all_indexes_raw().await
     }
@@ -249,6 +240,7 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let health = client.health().await.unwrap();
+    /// assert_eq!(health.status, "available");
     /// # });
     /// ```
     pub async fn health(&self) -> Result<Health, Error> {
@@ -282,7 +274,7 @@ impl Client {
         }
     }
 
-    /// Get the private and public key.
+    /// Get the API keys from Meilisearch.
     ///
     /// # Example
     ///
@@ -292,16 +284,26 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let keys = client.get_keys().await.unwrap();
+    /// assert_eq!(keys.len(), 2);
     /// # });
     /// ```
-    pub async fn get_keys(&self) -> Result<Keys, Error> {
-        request::<(), Keys>(
+    pub async fn get_keys(&self) -> Result<Vec<Key>, Error> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        pub struct Keys {
+            #[serde(rename = "results")]
+            pub inner: Vec<Key>,
+        }
+
+        let keys = request::<(), Keys>(
             &format!("{}/keys", self.host),
             &self.api_key,
             Method::Get,
             200,
         )
-        .await
+        .await?;
+
+        Ok(keys.inner)
     }
 
     /// Get version of the Meilisearch server.
@@ -309,7 +311,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::Error};
+    /// # use meilisearch_sdk::{client::*};
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -324,6 +326,135 @@ impl Client {
             200,
         )
         .await
+    }
+
+    /// Wait until Meilisearch processes a [Task], and get its status.
+    ///
+    /// `interval` = The frequency at which the server should be polled. Default = 50ms
+    /// `timeout` = The maximum time to wait for processing to complete. Default = 5000ms
+    ///
+    /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
+    ///
+    /// See also [Index::wait_for_task, Task::wait_for_completion].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, document, indexes::*, tasks::Task};
+    /// # use serde::{Serialize, Deserialize};
+    /// #
+    /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// # struct Document {
+    /// #    id: usize,
+    /// #    value: String,
+    /// #    kind: String,
+    /// # }
+    /// #
+    /// # impl document::Document for Document {
+    /// #    type UIDType = usize;
+    /// #
+    /// #    fn get_uid(&self) -> &Self::UIDType {
+    /// #        &self.id
+    /// #    }
+    /// # }
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let movies = client.index("movies_client_wait_for_task");
+    ///
+    /// let task = movies.add_documents(&[
+    ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
+    ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
+    /// ], None).await.unwrap();
+    ///
+    /// let status = client.wait_for_task(task, None, None).await.unwrap();
+    ///
+    /// assert!(matches!(status, Task::Succeeded { .. }));
+    /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn wait_for_task(
+        &self,
+        task_id: impl AsRef<u64>,
+        interval: Option<Duration>,
+        timeout: Option<Duration>,
+    ) -> Result<Task, Error> {
+        let interval = interval.unwrap_or_else(|| Duration::from_millis(50));
+        let timeout = timeout.unwrap_or_else(|| Duration::from_millis(5000));
+
+        let mut elapsed_time = Duration::new(0, 0);
+        let mut task_result: Result<Task, Error>;
+
+        while timeout > elapsed_time {
+            task_result = self.get_task(&task_id).await;
+
+            match task_result {
+                Ok(status) => match status {
+                    Task::Failed { .. } | Task::Succeeded { .. } => {
+                        return self.get_task(task_id).await;
+                    }
+                    Task::Enqueued { .. } | Task::Processing { .. } => {
+                        elapsed_time += interval;
+                        async_sleep(interval).await;
+                    }
+                },
+                Err(error) => return Err(error),
+            };
+        }
+
+        Err(Error::Timeout)
+    }
+
+    /// Get a task from the server given a task id.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::*;
+    /// # futures::executor::block_on(async move {
+    /// # let client = client::Client::new("http://localhost:7700", "masterKey");
+    /// # let index = client.create_index("movies_get_task", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    /// let task = index.delete_all_documents().await.unwrap();
+    /// let task = client.get_task(task).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_task(&self, task_id: impl AsRef<u64>) -> Result<Task, Error> {
+        request::<(), Task>(
+            &format!("{}/tasks/{}", self.host, task_id.as_ref()),
+            &self.api_key,
+            Method::Get,
+            200,
+        )
+        .await
+    }
+
+    /// Get all tasks from the server.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::*;
+    /// # futures::executor::block_on(async move {
+    /// # let client = client::Client::new("http://localhost:7700", "masterKey");
+    /// let tasks = client.get_tasks().await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_tasks(&self) -> Result<Vec<Task>, Error> {
+        #[derive(Deserialize)]
+        struct Tasks {
+            pub results: Vec<Task>,
+        }
+
+        let tasks = request::<(), Tasks>(
+            &format!("{}/tasks", self.host),
+            &self.api_key,
+            Method::Get,
+            200,
+        )
+        .await?;
+
+        Ok(tasks.results)
     }
 }
 
@@ -352,9 +483,14 @@ pub struct Health {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Keys {
-    pub public: Option<String>,
-    pub private: Option<String>,
+pub struct Key {
+    pub actions: Vec<String>,
+    pub created_at: String, // TODO: use a chrono date
+    pub description: String,
+    pub expires_at: Option<String>, // TODO: use a chrono date
+    pub indexes: Vec<String>,
+    pub key: String,
+    pub updated_at: String, // TODO: use a chrono date
 }
 
 /// Version of a Meilisearch server.
@@ -380,100 +516,80 @@ pub struct Version {
 #[cfg(test)]
 mod tests {
     use crate::client::*;
-    use futures_await_test::async_test;
+    use meilisearch_test_macro::meilisearch_test;
 
-    #[async_test]
-    async fn test_get_keys() {
-        let client = Client::new("http://localhost:7700", "masterKey");
+    #[meilisearch_test]
+    async fn test_get_keys(client: Client) {
         let keys = client.get_keys().await.unwrap();
-        assert!(keys.private.is_some());
-        assert!(keys.public.is_some());
+        assert_eq!(keys.len(), 2);
     }
 
-    #[async_test]
-    async fn test_get_index() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index_name = "get_index";
-        client.create_index(index_name, None).await.unwrap();
-        let index = client.get_index(index_name).await.unwrap();
-        assert_eq!(index.uid.to_string(), index_name);
+    #[meilisearch_test]
+    async fn test_get_index(client: Client, index_uid: String) -> Result<(), Error> {
+        let task = client.create_index(&index_uid, None).await?;
+        let index = client
+            .wait_for_task(task, None, None)
+            .await?
+            .try_make_index(&client)
+            .unwrap();
+
+        assert_eq!(index.uid.to_string(), index_uid);
+        index
+            .delete()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_delete_if_exits() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index_name = "movies_delete_if_exists";
-        client.create_index(index_name, None).await.unwrap();
-        let mut index = client.get_index(index_name).await;
-        assert!(index.is_ok());
-        let deleted = client.delete_index_if_exists(index_name).await.unwrap();
-        assert_eq!(deleted, true);
-        index = client.get_index(index_name).await;
-        assert!(index.is_err());
-    }
-
-    #[async_test]
-    async fn test_list_all_indexes() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index_name = "list_all_indexes";
-        client.create_index(index_name, None).await.unwrap();
-        let index = client.get_index(index_name).await;
-        assert!(index.is_ok());
+    #[meilisearch_test]
+    async fn test_list_all_indexes(client: Client, index: Index) {
         let all_indexes = client.list_all_indexes().await.unwrap();
         assert!(all_indexes.len() > 0);
-        let deleted = client.delete_index_if_exists(index_name).await.unwrap();
-        assert_eq!(deleted, true);
+        assert!(all_indexes.iter().any(|idx| idx.uid == index.uid));
     }
 
-    #[async_test]
-    async fn test_list_all_indexes_raw() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index_name = "list_all_indexes_raw";
-        client.create_index(index_name, None).await.unwrap();
-        let index = client.get_index(index_name).await;
-        assert!(index.is_ok());
+    #[meilisearch_test]
+    async fn test_list_all_indexes_raw(client: Client, index: Index) {
         let all_indexes_raw = client.list_all_indexes_raw().await.unwrap();
         assert!(all_indexes_raw.len() > 0);
-        let deleted = client.delete_index_if_exists(index_name).await.unwrap();
-        assert_eq!(deleted, true);
+        assert!(all_indexes_raw.iter().any(|idx| idx.uid == *index.uid));
     }
 
-    #[async_test]
-    async fn test_delete_if_exits_none() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let deleted = client.delete_index_if_exists("bad").await.unwrap();
-        assert_eq!(deleted, false);
-    }
-
-    #[async_test]
-    async fn test_fetch_info() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index_name = "fetch_info";
-        client.create_index(index_name, None).await.unwrap();
-        let index = client.index(index_name).fetch_info().await;
+    #[meilisearch_test]
+    async fn test_fetch_info(index: Index) {
+        let index = index.fetch_info().await;
         assert!(index.is_ok());
     }
 
-    #[async_test]
-    async fn test_get_primary_key_is_none() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index_name = "get_primary_key_is_none";
-        client.create_index(index_name, None).await.unwrap();
-        let primary_key = client.index(index_name).get_primary_key().await;
+    #[meilisearch_test]
+    async fn test_get_primary_key_is_none(index: Index) {
+        let primary_key = index.get_primary_key().await;
+
         assert!(primary_key.is_ok());
         assert!(primary_key.unwrap().is_none());
     }
 
-    #[async_test]
-    async fn test_get_primary_key() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index_name = "get_primary_key";
-        client
-            .create_index(index_name, Some("primary_key"))
-            .await
+    #[meilisearch_test]
+    async fn test_get_primary_key(client: Client, index_uid: String) -> Result<(), Error> {
+        let index = client
+            .create_index(index_uid, Some("primary_key"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?
+            .try_make_index(&client)
             .unwrap();
-        let primary_key = client.index(index_name).get_primary_key().await;
+
+        let primary_key = index.get_primary_key().await;
         assert!(primary_key.is_ok());
-        assert_eq!(primary_key.unwrap().unwrap(), "primary_key");
+        assert_eq!(primary_key?.unwrap(), "primary_key");
+
+        index
+            .delete()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        Ok(())
     }
 }

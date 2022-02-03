@@ -3,13 +3,13 @@
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// The exhaustive list of Meilisearch errors: https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md
-    /// Also check out: https://github.com/meilisearch/Meilisearch/blob/main/meilisearch-error/src/lib.rs
+    /// The exhaustive list of Meilisearch errors: <https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md>
+    /// Also check out: <https://github.com/meilisearch/Meilisearch/blob/main/meilisearch-error/src/lib.rs>
     MeiliSearchError {
         /// The human readable error message
         error_message: String,
         /// The error code of the error.  Officially documented at
-        /// https://docs.meilisearch.com/errors.
+        /// <https://docs.meilisearch.com/errors>.
         error_code: ErrorCode,
         /// The type of error (invalid request, internal error, or authentication
         /// error)
@@ -23,6 +23,8 @@ pub enum Error {
     UnreachableServer,
     /// The Meilisearch server returned an invalid JSON for a request.
     ParseError(serde_json::Error),
+    /// A timeout happened while waiting for an update to complete.
+    Timeout,
     /// This Meilisearch SDK generated an invalid request (which was not sent).
     /// It probably comes from an invalid API key resulting in an invalid HTTP header.
     InvalidRequest,
@@ -49,7 +51,7 @@ pub enum ErrorType {
 
 /// The error code.
 ///
-/// Officially documented at https://docs.meilisearch.com/errors.
+/// Officially documented at <https://docs.meilisearch.com/errors>.
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum ErrorCode {
@@ -249,6 +251,7 @@ impl std::fmt::Display for Error {
             Error::InvalidRequest => write!(fmt, "Unable to generate a valid HTTP request. It probably comes from an invalid API key."),
             Error::ParseError(e) => write!(fmt, "Error parsing response JSON: {}", e),
             Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e),
+            Error::Timeout => write!(fmt, "A task did not succeed in time."),
         }
     }
 }
@@ -272,7 +275,7 @@ impl From<&serde_json::Value> for Error {
         let error_type = json
             .get("type")
             .and_then(|v| v.as_str())
-            .and_then(|s| ErrorType::parse(s))
+            .and_then(ErrorType::parse)
             .unwrap_or(ErrorType::Internal);
 
         // If the response doesn't contain a type field, the error type
@@ -281,7 +284,7 @@ impl From<&serde_json::Value> for Error {
         let error_code = json
             .get("code")
             .and_then(|v| v.as_str())
-            .map(|s| ErrorCode::parse(s))
+            .map(ErrorCode::parse)
             .unwrap_or_else(|| {
                 ErrorCode::Unknown(UnknownErrorCode(String::from("missing error code")))
             });

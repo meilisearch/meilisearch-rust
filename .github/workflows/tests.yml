@@ -24,9 +24,9 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Meilisearch (latest version) setup with Docker
-      run: docker run -d -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --no-analytics=true --master-key=masterKey
+      run: docker run -d -p 7700:7700 getmeili/meilisearch:latest ./meilisearch --no-analytics --master-key=masterKey
     - name: Run tests
-      run: cargo test --verbose -- --test-threads=1
+      run: cargo test --verbose
 
   linter:
     name: clippy-check

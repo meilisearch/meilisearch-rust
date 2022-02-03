@@ -281,11 +281,9 @@ impl<'a> Query<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{client::*, document, search::*};
-    use futures_await_test::async_test;
+    use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{Map, Value};
-    use std::thread::sleep;
-    use std::time::Duration;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -310,13 +308,8 @@ mod tests {
         }
     }
 
-    #[allow(unused_must_use)]
-    async fn setup_test_index<'a>(client: &'a Client, name: &'a str) -> Index {
-        // try to delete
-        client.delete_index(name).await;
-
-        let index = client.create_index(name, None).await.unwrap();
-        index.add_documents(&[
+    async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
+        let t0 = index.add_documents(&[
             Document { id: 0, kind: "text".into(), value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string() },
             Document { id: 1, kind: "text".into(), value: "dolor sit amet, consectetur adipiscing elit".to_string() },
             Document { id: 2, kind: "title".into(), value: "The Social Network".to_string() },
@@ -327,84 +320,71 @@ mod tests {
             Document { id: 7, kind: "title".into(), value: "Harry Potter and the Order of the Phoenix".to_string() },
             Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string() },
             Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
-        ], None).await.unwrap();
-        index
-            .set_filterable_attributes(["kind", "value"])
-            .await
-            .unwrap();
-        index.set_sortable_attributes(["title"]).await.unwrap();
-        sleep(Duration::from_secs(1));
-        index
+        ], None).await?;
+        let t1 = index.set_filterable_attributes(["kind", "value"]).await?;
+        let t2 = index.set_sortable_attributes(["title"]).await?;
+
+        t2.wait_for_completion(client, None, None).await?;
+        t1.wait_for_completion(client, None, None).await?;
+        t0.wait_for_completion(client, None, None).await?;
+
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_string() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_string").await;
+    #[meilisearch_test]
+    async fn test_query_string(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
-        let results: SearchResults<Document> =
-            index.search().with_query("dolor").execute().await.unwrap();
+        let results: SearchResults<Document> = index.search().with_query("dolor").execute().await?;
         assert_eq!(results.hits.len(), 2);
-
-        client.delete_index("test_query_string").await.unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_limit() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_limit").await;
+    #[meilisearch_test]
+    async fn test_query_limit(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
-        let results: SearchResults<Document> =
-            index.search().with_limit(5).execute().await.unwrap();
+        let results: SearchResults<Document> = index.search().with_limit(5).execute().await?;
         assert_eq!(results.hits.len(), 5);
-
-        client.delete_index("test_query_limit").await.unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_offset() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_offset").await;
+    #[meilisearch_test]
+    async fn test_query_offset(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
-        let results: SearchResults<Document> =
-            index.search().with_offset(6).execute().await.unwrap();
+        let results: SearchResults<Document> = index.search().with_offset(6).execute().await?;
         assert_eq!(results.hits.len(), 4);
-
-        client.delete_index("test_query_offset").await.unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_filter() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_filter").await;
+    #[meilisearch_test]
+    async fn test_query_filter(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index
             .search()
             .with_filter("value = \"The Social Network\"")
             .execute()
-            .await
-            .unwrap();
+            .await?;
         assert_eq!(results.hits.len(), 1);
 
         let results: SearchResults<Document> = index
             .search()
             .with_filter("NOT value = \"The Social Network\"")
             .execute()
-            .await
-            .unwrap();
+            .await?;
         assert_eq!(results.hits.len(), 9);
-
-        client.delete_index("test_query_filter").await.unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_facet_distribution() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_facet_distribution").await;
+    #[meilisearch_test]
+    async fn test_query_facet_distribution(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
         let mut query = Query::new(&index);
         query.with_facets_distribution(Selectors::All);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             results
                 .facets_distribution
@@ -418,7 +398,7 @@ mod tests {
 
         let mut query = Query::new(&index);
         query.with_facets_distribution(Selectors::Some(&["kind"]));
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             results
                 .facets_distribution
@@ -440,59 +420,46 @@ mod tests {
                 .unwrap(),
             &2
         );
-
-        client
-            .delete_index("test_query_facet_distribution")
-            .await
-            .unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_attributes_to_retrieve() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_attributes_to_retrieve").await;
+    #[meilisearch_test]
+    async fn test_query_attributes_to_retrieve(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index
             .search()
             .with_attributes_to_retrieve(Selectors::All)
             .execute()
-            .await
-            .unwrap();
+            .await?;
         assert_eq!(results.hits.len(), 10);
 
         let mut query = Query::new(&index);
         query.with_attributes_to_retrieve(Selectors::Some(&["kind", "id"])); // omit the "value" field
         assert!(index.execute_query::<Document>(&query).await.is_err()); // error: missing "value" field
-
-        client
-            .delete_index("test_query_attributes_to_retrieve")
-            .await
-            .unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_sort() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_sort").await;
+    #[meilisearch_test]
+    async fn test_query_sort(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
         let mut query = Query::new(&index);
         query.with_query("harry potter");
         query.with_sort(&["title:desc"]);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(results.hits.len(), 7);
-
-        client.delete_index("test_query_sort").await.unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_attributes_to_crop() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_attributes_to_crop").await;
+    #[meilisearch_test]
+    async fn test_query_attributes_to_crop(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
         let mut query = Query::new(&index);
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(&Document {
             id: 0,
             value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
@@ -502,7 +469,7 @@ mod tests {
         let mut query = Query::new(&index);
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::Some(&[("value", Some(50)), ("kind", None)]));
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             &Document {
                 id: 0,
@@ -511,23 +478,18 @@ mod tests {
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
-
-        client
-            .delete_index("test_query_attributes_to_crop")
-            .await
-            .unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_crop_length() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_crop_lenght").await;
+    #[meilisearch_test]
+    async fn test_query_crop_length(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
         let mut query = Query::new(&index);
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
         query.with_crop_length(200);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(&Document {
             id: 0,
             value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
@@ -539,7 +501,7 @@ mod tests {
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
         query.with_crop_length(50);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             &Document {
                 id: 0,
@@ -548,19 +510,17 @@ mod tests {
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
-
-        client.delete_index("test_query_crop_lenght").await.unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_attributes_to_highlight() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_attributes_to_highlight").await;
+    #[meilisearch_test]
+    async fn test_query_attributes_to_highlight(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
         let mut query = Query::new(&index);
         query.with_query("dolor text");
         query.with_attributes_to_highlight(Selectors::All);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             &Document {
                 id: 1,
@@ -573,7 +533,7 @@ mod tests {
         let mut query = Query::new(&index);
         query.with_query("dolor text");
         query.with_attributes_to_highlight(Selectors::Some(&["value"]));
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             &Document {
                 id: 1,
@@ -582,22 +542,17 @@ mod tests {
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
-
-        client
-            .delete_index("test_query_attributes_to_highlight")
-            .await
-            .unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_query_matches() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_query_matches").await;
+    #[meilisearch_test]
+    async fn test_query_matches(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
         let mut query = Query::new(&index);
         query.with_query("dolor text");
         query.with_matches(true);
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(results.hits[0].matches_info.as_ref().unwrap().len(), 2);
         assert_eq!(
             results.hits[0]
@@ -611,20 +566,17 @@ mod tests {
                 length: 5
             }]
         );
-
-        client.delete_index("test_query_matches").await.unwrap();
+        Ok(())
     }
 
-    #[async_test]
-    async fn test_phrase_search() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-        let index = setup_test_index(&client, "test_phrase_search").await;
+    #[meilisearch_test]
+    async fn test_phrase_search(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
 
         let mut query = Query::new(&index);
         query.with_query("harry \"of Fire\"");
-        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(results.hits.len(), 1);
-
-        client.delete_index("test_phrase_search").await.unwrap();
+        Ok(())
     }
 }
