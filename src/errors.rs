@@ -3,8 +3,8 @@
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// The exhaustive list of MeiliSearch errors: https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md
-    /// Also check out: https://github.com/meilisearch/MeiliSearch/blob/main/meilisearch-error/src/lib.rs
+    /// The exhaustive list of Meilisearch errors: https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md
+    /// Also check out: https://github.com/meilisearch/Meilisearch/blob/main/meilisearch-error/src/lib.rs
     MeiliSearchError {
         /// The human readable error message
         error_message: String,
@@ -14,16 +14,16 @@ pub enum Error {
         /// The type of error (invalid request, internal error, or authentication
         /// error)
         error_type: ErrorType,
-        /// A link to the MeiliSearch documentation for an error.
+        /// A link to the Meilisearch documentation for an error.
         error_link: String,
     },
 
-    /// There is no MeiliSearch server listening on the [specified host]
+    /// There is no Meilisearch server listening on the [specified host]
     /// (../client/struct.Client.html#method.new).
     UnreachableServer,
-    /// The MeiliSearch server returned an invalid JSON for a request.
+    /// The Meilisearch server returned an invalid JSON for a request.
     ParseError(serde_json::Error),
-    /// This MeiliSearch SDK generated an invalid request (which was not sent).
+    /// This Meilisearch SDK generated an invalid request (which was not sent).
     /// It probably comes from an invalid API key resulting in an invalid HTTP header.
     InvalidRequest,
 
@@ -41,7 +41,7 @@ pub enum Error {
 pub enum ErrorType {
     /// The submitted request was invalid.
     InvalidRequest,
-    /// The MeiliSearch instance encountered an internal error.
+    /// The Meilisearch instance encountered an internal error.
     Internal,
     /// Authentication was either incorrect or missing.
     Authentication,
@@ -90,10 +90,9 @@ pub enum ErrorCode {
     MissingPayload,
 
     /// That's unexpected. Please open a GitHub issue after ensuring you are
-    /// using the supported version of the MeiliSearch server.
+    /// using the supported version of the Meilisearch server.
     Unknown(UnknownErrorCode),
 }
-
 
 #[derive(Clone)]
 pub struct UnknownErrorCode(String);
@@ -111,7 +110,7 @@ impl std::fmt::Debug for UnknownErrorCode {
 
 impl ErrorType {
     /// Converts the error type to the string representation returned by
-    /// MeiliSearch.
+    /// Meilisearch.
     pub fn as_str(&self) -> &'static str {
         match self {
             ErrorType::InvalidRequest => "invalid_request",
@@ -119,7 +118,7 @@ impl ErrorType {
             ErrorType::Authentication => "authentication",
         }
     }
-    /// Converts the error type string returned by MeiliSearch into an
+    /// Converts the error type string returned by Meilisearch into an
     /// `ErrorType` enum. If the error type input is not recognized, None is
     /// returned.
     pub fn parse(input: &str) -> Option<Self> {
@@ -134,7 +133,7 @@ impl ErrorType {
 
 impl ErrorCode {
     /// Converts the error code to the string representation returned by
-    /// MeiliSearch.
+    /// Meilisearch.
     pub fn as_str(&self) -> &str {
         match self {
             ErrorCode::IndexCreationFailed => "index_creation_failed",
@@ -176,7 +175,7 @@ impl ErrorCode {
             ErrorCode::Unknown(inner) => &inner.0,
         }
     }
-    /// Converts the error code string returned by MeiliSearch into an `ErrorCode`
+    /// Converts the error code string returned by Meilisearch into an `ErrorCode`
     /// enum. If the error type input is not recognized, `ErrorCode::Unknown`
     /// is returned.
     pub fn parse(input: &str) -> Self {
@@ -246,7 +245,7 @@ impl std::fmt::Display for Error {
                 error_message,
                 error_link,
             ),
-            Error::UnreachableServer => write!(fmt, "The MeiliSearch server can't be reached."),
+            Error::UnreachableServer => write!(fmt, "The Meilisearch server can't be reached."),
             Error::InvalidRequest => write!(fmt, "Unable to generate a valid HTTP request. It probably comes from an invalid API key."),
             Error::ParseError(e) => write!(fmt, "Error parsing response JSON: {}", e),
             Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e),
@@ -258,7 +257,6 @@ impl std::error::Error for Error {}
 
 impl From<&serde_json::Value> for Error {
     fn from(json: &serde_json::Value) -> Error {
-
         let error_message = json
             .get("message")
             .and_then(|v| v.as_str())

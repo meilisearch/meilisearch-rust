@@ -14,7 +14,7 @@ pub struct Crate {
     version: String,
 }
 
-// Implement the Document trait so that we can use our struct with MeiliSearch
+// Implement the Document trait so that we can use our struct with Meilisearch
 impl Document for Crate {
     type UIDType = String;
 
@@ -22,7 +22,6 @@ impl Document for Crate {
         &self.name
     }
 }
-
 
 fn get_readable_download_count(this: &Map<String, Value>) -> String {
     if let Some(downloads) = this["downloads"].as_f64() {
@@ -39,7 +38,10 @@ fn get_readable_download_count(this: &Map<String, Value>) -> String {
 }
 
 pub fn display(this: &Map<String, Value>) -> Html {
-    let mut url = format!("https://lib.rs/crates/{}", this["name"].as_str().unwrap_or_default());
+    let mut url = format!(
+        "https://lib.rs/crates/{}",
+        this["name"].as_str().unwrap_or_default()
+    );
     url = url.replace("<em>", "");
     url = url.replace("</em>", "");
 

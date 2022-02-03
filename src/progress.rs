@@ -2,7 +2,10 @@
 
 use crate::{errors::Error, indexes::Index, request::*, Rc};
 use serde::Deserialize;
-use std::{collections::{BTreeMap, BTreeSet}, time::Duration};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    time::Duration,
+};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -16,7 +19,7 @@ impl ProgressJson {
             id: self.update_id,
             index_uid: Rc::clone(&index.uid),
             host: Rc::clone(&index.host),
-            api_key: Rc::clone(&index.api_key)
+            api_key: Rc::clone(&index.api_key),
         }
     }
 }
@@ -26,7 +29,7 @@ pub struct Progress {
     id: usize,
     index_uid: Rc<String>,
     host: Rc<String>,
-    api_key: Rc<String>
+    api_key: Rc<String>,
 }
 
 impl<'a> Progress {
@@ -70,7 +73,7 @@ impl<'a> Progress {
         .await
     }
 
-    /// Wait until MeiliSearch processes an update, and get its status.
+    /// Wait until Meilisearch processes an update, and get its status.
     ///
     /// `interval` = The frequency at which the server should be polled. Default = 50ms
     /// `timeout` = The maximum time to wait for processing to complete. Default = 5000ms
@@ -100,7 +103,7 @@ impl<'a> Progress {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movies = client.create_index("movies_wait_for_pending", None).await.unwrap();
+    /// let movies = client.index("movies_wait_for_pending");
     ///
     /// let progress = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
@@ -128,18 +131,16 @@ impl<'a> Progress {
             status_result = self.get_status().await;
 
             match status_result {
-                Ok (status) => {
-                    match status {
-                        UpdateStatus::Failed { .. } | UpdateStatus::Processed { .. } => {
-                            return Some(self.get_status().await);
-                        },
-                        UpdateStatus::Enqueued { .. } | UpdateStatus::Processing { .. } => {
-                            elapsed_time += interval;
-                            async_sleep(interval).await;
-                        },
+                Ok(status) => match status {
+                    UpdateStatus::Failed { .. } | UpdateStatus::Processed { .. } => {
+                        return Some(self.get_status().await);
+                    }
+                    UpdateStatus::Enqueued { .. } | UpdateStatus::Processing { .. } => {
+                        elapsed_time += interval;
+                        async_sleep(interval).await;
                     }
                 },
-                Err (error) => return Some(Err(error)),
+                Err(error) => return Some(Err(error)),
             };
         }
 
@@ -159,8 +160,8 @@ pub(crate) async fn async_sleep(interval: Duration) {
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) async fn async_sleep(interval: Duration) {
-    use wasm_bindgen_futures::JsFuture;
     use std::convert::TryInto;
+    use wasm_bindgen_futures::JsFuture;
 
     JsFuture::from(js_sys::Promise::new(&mut |yes, _| {
         web_sys::window()
@@ -170,7 +171,9 @@ pub(crate) async fn async_sleep(interval: Duration) {
                 interval.as_millis().try_into().unwrap(),
             )
             .unwrap();
-    })).await.unwrap();
+    }))
+    .await
+    .unwrap();
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -227,7 +230,7 @@ pub struct FailedUpdateResult {
     #[serde(rename = "type")]
     pub error_type: String,
     #[serde(rename = "link")]
-    pub error_link: String
+    pub error_link: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -275,69 +278,91 @@ pub enum UpdateStatus {
 #[cfg(test)]
 mod test {
     use crate::{client::*, document, progress::*};
-    use serde::{Serialize, Deserialize};
     use futures_await_test::async_test;
+    use serde::{Deserialize, Serialize};
     use std::time;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
-       id: usize,
-       value: String,
-       kind: String,
+        id: usize,
+        value: String,
+        kind: String,
     }
 
     impl document::Document for Document {
-       type UIDType = usize;
+        type UIDType = usize;
 
-       fn get_uid(&self) -> &Self::UIDType {
-           &self.id
-       }
+        fn get_uid(&self) -> &Self::UIDType {
+            &self.id
+        }
     }
 
     #[async_test]
     async fn test_wait_for_pending_updates_with_args() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        let movies = client.get_or_create("movies_wait_for_pending_args").await.unwrap();
-        let progress = movies.add_documents(&[
-            Document {
-                id: 0,
-                kind: "title".into(),
-                value: "The Social Network".to_string(),
-            },
-            Document {
-                id: 1,
-                kind: "title".into(),
-                value: "Harry Potter and the Sorcerer's Stone".to_string(),
-            },
-        ], None).await.unwrap();
-        let status = progress.wait_for_pending_update(
-            Some(Duration::from_millis(1)), Some(Duration::from_millis(6000))
-        ).await.unwrap();
+        let movies = client.index("movies_wait_for_pending_args");
+        let progress = movies
+            .add_documents(
+                &[
+                    Document {
+                        id: 0,
+                        kind: "title".into(),
+                        value: "The Social Network".to_string(),
+                    },
+                    Document {
+                        id: 1,
+                        kind: "title".into(),
+                        value: "Harry Potter and the Sorcerer's Stone".to_string(),
+                    },
+                ],
+                None,
+            )
+            .await
+            .unwrap();
+        let status = progress
+            .wait_for_pending_update(
+                Some(Duration::from_millis(1)),
+                Some(Duration::from_millis(6000)),
+            )
+            .await
+            .unwrap();
 
-        client.delete_index("movies_wait_for_pending_args").await.unwrap();
+        client
+            .delete_index("movies_wait_for_pending_args")
+            .await
+            .unwrap();
         assert!(matches!(status.unwrap(), UpdateStatus::Processed { .. }));
     }
 
     #[async_test]
     async fn test_wait_for_pending_updates_time_out() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        let movies = client.get_or_create("movies_wait_for_pending_timeout").await.unwrap();
-        let progress = movies.add_documents(&[
-            Document {
-                id: 0,
-                kind: "title".into(),
-                value: "The Social Network".to_string(),
-            },
-            Document {
-                id: 1,
-                kind: "title".into(),
-                value: "Harry Potter and the Sorcerer's Stone".to_string(),
-            },
-        ], None).await.unwrap();
+        let movies = client.index("movies_wait_for_pending_timeout");
+        let progress = movies
+            .add_documents(
+                &[
+                    Document {
+                        id: 0,
+                        kind: "title".into(),
+                        value: "The Social Network".to_string(),
+                    },
+                    Document {
+                        id: 1,
+                        kind: "title".into(),
+                        value: "Harry Potter and the Sorcerer's Stone".to_string(),
+                    },
+                ],
+                None,
+            )
+            .await
+            .unwrap();
 
-        let status =  progress.wait_for_pending_update(
-            Some(Duration::from_millis(1)), Some(Duration::from_nanos(1))
-        ).await;
+        let status = progress
+            .wait_for_pending_update(
+                Some(Duration::from_millis(1)),
+                Some(Duration::from_nanos(1)),
+            )
+            .await;
 
         /*
          * TODO: This if let is here to try to log more information to resolve https://github.com/meilisearch/meilisearch-rust/issues/144.
@@ -345,10 +370,16 @@ mod test {
          */
         if let Some(Err(err)) = &status {
             println!("{:?}", err);
-            client.delete_index("movies_wait_for_pending_timeout").await.unwrap();
+            client
+                .delete_index("movies_wait_for_pending_timeout")
+                .await
+                .unwrap();
         };
 
-        client.delete_index("movies_wait_for_pending_timeout").await.unwrap();
+        client
+            .delete_index("movies_wait_for_pending_timeout")
+            .await
+            .unwrap();
         assert_eq!(status.is_none(), true);
     }
 
@@ -365,11 +396,18 @@ mod test {
     #[async_test]
     async fn test_failing_update() {
         let client = Client::new("http://localhost:7700", "masterKey");
-        let movies = client.get_or_create("movies_wait_for_pending_timeout").await.unwrap();
-        let progress = movies.set_ranking_rules(["wrong_ranking_rule"]).await.unwrap();
-        let status = progress.wait_for_pending_update(
-            Some(Duration::from_millis(1)), Some(Duration::from_nanos(1))
-        ).await.unwrap();
+        let movies = client.index("movies_wait_for_pending_timeout");
+        let progress = movies
+            .set_ranking_rules(["wrong_ranking_rule"])
+            .await
+            .unwrap();
+        let status = progress
+            .wait_for_pending_update(
+                Some(Duration::from_millis(1)),
+                Some(Duration::from_nanos(1)),
+            )
+            .await
+            .unwrap();
         assert!(matches!(status.unwrap(), UpdateStatus::Failed { .. }));
     }
 }

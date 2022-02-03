@@ -1,4 +1,5 @@
 #![recursion_limit = "512"]
+use lazy_static::lazy_static;
 use meilisearch_sdk::{
     client::Client,
     indexes::Index,
@@ -9,10 +10,9 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
-use lazy_static::lazy_static;
 
 mod document;
-use crate::document::{Crate, display};
+use crate::document::{display, Crate};
 
 lazy_static! {
     static ref CLIENT: Client = Client::new(
@@ -36,7 +36,11 @@ enum Msg {
     /// An event sent to update the results with a query
     Input(String),
     /// The event sent to display new results once they are received
-    Update{results: Vec<Map<String, Value>>, processing_time_ms: usize, request_id: usize},
+    Update {
+        results: Vec<Map<String, Value>>,
+        processing_time_ms: usize,
+        request_id: usize,
+    },
 }
 
 impl Component for Model {
@@ -49,10 +53,10 @@ impl Component for Model {
         Self {
             link: Rc::new(link),
 
-            // The assume_index method avoids checking the existence of the index.
+            // The index method avoids checking the existence of the index.
             // It won't make any HTTP request so the function is not async so it's easier to use.
             // Use only if you are sure that the index exists.
-            index: Rc::new(CLIENT.assume_index("crates")),
+            index: Rc::new(CLIENT.index("crates")),
             results: Vec::new(),
             processing_time_ms: 0,
 
@@ -87,17 +91,21 @@ impl Component for Model {
                     }
 
                     // We send a new event with the up-to-date data so that we can update the results and display them.
-                    link.send_message(Msg::Update{
+                    link.send_message(Msg::Update {
                         results: fresh_formatted_results,
                         processing_time_ms: fresh_results.processing_time_ms,
-                        request_id
+                        request_id,
                     });
                 });
                 false
             }
 
             // Sent when new results are received
-            Msg::Update{results, processing_time_ms, request_id} => {
+            Msg::Update {
+                results,
+                processing_time_ms,
+                request_id,
+            } => {
                 if request_id >= self.latest_sent_request_id {
                     self.results = results;
                     self.processing_time_ms = processing_time_ms;
@@ -150,7 +158,7 @@ fn header_content(processing_time_ms: usize, link: Rc<ComponentLink<Model>>) -> 
                 {"This search bar is provided by "}<a href="https://meilisearch.com">{"Meili"}</a>{", it is a demonstration of our instant search engine."}<br/>
                 {"If you want to take a look at the project source code, it's your lucky day as it is "}<a href="https://github.com/meilisearch/MeiliDB">{"available on github"}</a>{"."}<br/>
                 {"We wrote a blog post about "}<a href="https://blog.meilisearch.com/meili-finds-rust-crates/">{"how we made this search engine available for you"}</a>{"."}<br/>
-                {"What you are currently using is not the original front end, but a clone using "}<a href="https://github.com/meilisearch/meilisearch-rust">{"the MeiliSearch Rust SDK"}</a>{" and "}<a href="https://yew.rs">{"Yew"}</a>{". The code is available "}<a href="https://github.com/meilisearch/meilisearch-rust/tree/main/examples/web_app">{"here"}</a>{"."}<br/>
+                {"What you are currently using is not the original front end, but a clone using "}<a href="https://github.com/meilisearch/meilisearch-rust">{"the Meilisearch Rust SDK"}</a>{" and "}<a href="https://yew.rs">{"Yew"}</a>{". The code is available "}<a href="https://github.com/meilisearch/meilisearch-rust/tree/main/examples/web_app">{"here"}</a>{"."}<br/>
                 {"The whole design was taken from "}<a href="https://lib.rs">{"lib.rs"}</a>{" because we love it."}<br/>
                 <br/>{"We pull new crates and crates updates every "}<em>{"10 minutes"}</em>{" from "}<a href="https://docs.rs/releases">{"docs.rs"}</a>{" and all the downloads counts "}<em>{"every day at 3:30 PM UTC"}</em>{" from "}<a href="https://crates.io/data-access">{"crates.io"}</a>{". Currently we have something like "}<em>{" 31 729 crates"}</em>{"."}<br/>
                 <br/>{"Have fun using it "}<img draggable="false" class="emoji" alt="⌨️" src="moz-extension://57a82bfe-3134-4c34-bdb1-bc4ada430e6c/data/components/twemoji/svg/2328.svg"/>{" "}<img draggable="false" class="emoji" alt="💨" src="moz-extension://57a82bfe-3134-4c34-bdb1-bc4ada430e6c/data/components/twemoji/svg/1f4a8.svg"/><br/>

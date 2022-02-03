@@ -103,7 +103,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 /// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
 /// # let client = Client::new("http://localhost:7700", "masterKey");
-/// # let index = client.assume_index("does not matter");
+/// # let index = client.index("does not matter");
 /// let query = Query::new(&index)
 ///     .with_query("space")
 ///     .with_offset(42)
@@ -114,7 +114,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 /// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
 /// # let client = Client::new("http://localhost:7700", "masterKey");
-/// # let index = client.assume_index("does not matter");
+/// # let index = client.index("does not matter");
 /// let query = index.search()
 ///     .with_query("space")
 ///     .with_offset(42)
@@ -233,10 +233,7 @@ impl<'a> Query<'a> {
         self.facets_distribution = Some(facets_distribution);
         self
     }
-    pub fn with_sort<'b>(
-        &'b mut self,
-        sort: &'a [&'a str],
-    ) -> &'b mut Query<'a> {
+    pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut Query<'a> {
         self.sort = Some(sort);
         self
     }
@@ -284,11 +281,11 @@ impl<'a> Query<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{client::*, document, search::*};
+    use futures_await_test::async_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{Map, Value};
     use std::thread::sleep;
     use std::time::Duration;
-    use futures_await_test::async_test;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -308,8 +305,8 @@ mod tests {
     impl PartialEq<Map<String, Value>> for Document {
         fn eq(&self, rhs: &Map<String, Value>) -> bool {
             self.id.to_string() == rhs["id"]
-            && self.value == rhs["value"]
-            && self.kind == rhs["kind"]
+                && self.value == rhs["value"]
+                && self.kind == rhs["kind"]
         }
     }
 
@@ -331,7 +328,10 @@ mod tests {
             Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string() },
             Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
         ], None).await.unwrap();
-        index.set_filterable_attributes(["kind", "value"]).await.unwrap();
+        index
+            .set_filterable_attributes(["kind", "value"])
+            .await
+            .unwrap();
         index.set_sortable_attributes(["title"]).await.unwrap();
         sleep(Duration::from_secs(1));
         index
@@ -481,10 +481,7 @@ mod tests {
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
         assert_eq!(results.hits.len(), 7);
 
-        client
-            .delete_index("test_query_sort")
-            .await
-            .unwrap();
+        client.delete_index("test_query_sort").await.unwrap();
     }
 
     #[async_test]

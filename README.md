@@ -3,13 +3,13 @@
 <!-- sh scripts/update-readme.sh -->
 
 <p align="center">
-  <img src="https://res.cloudinary.com/meilisearch/image/upload/v1587402338/SDKs/meilisearch_rust.svg" alt="MeiliSearch-Dotnet" width="200" height="200" />
+  <img src="https://raw.githubusercontent.com/meilisearch/integration-guides/main/assets/logos/meilisearch_rust.svg" alt="Meilisearch-Rust" width="200" height="200" />
 </p>
 
-<h1 align="center">MeiliSearch Rust SDK</h1>
+<h1 align="center">Meilisearch Rust SDK</h1>
 
 <h4 align="center">
-  <a href="https://github.com/meilisearch/MeiliSearch">MeiliSearch</a> |
+  <a href="https://github.com/meilisearch/meilisearch">Meilisearch</a> |
   <a href="https://docs.meilisearch.com">Documentation</a> |
   <a href="https://slack.meilisearch.com">Slack</a> |
   <a href="https://roadmap.meilisearch.com/tabs/1-under-consideration">Roadmap</a> |
@@ -21,15 +21,15 @@
   <a href="https://crates.io/crates/meilisearch-sdk"><img src="https://img.shields.io/crates/v/meilisearch-sdk.svg" alt="crates.io"></a>
   <a href="https://github.com/meilisearch/meilisearch-rust/actions"><img src="https://github.com/meilisearch/meilisearch-rust/workflows/Tests/badge.svg?branch=main" alt="Tests"></a>
   <a href="https://github.com/meilisearch/meilisearch-rust/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-informational" alt="License"></a>
-  <a href="https://github.com/meilisearch/MeiliSearch/discussions" alt="Discussions"><img src="https://img.shields.io/badge/github-discussions-red" /></a>
+  <a href="https://github.com/meilisearch/meilisearch/discussions" alt="Discussions"><img src="https://img.shields.io/badge/github-discussions-red" /></a>
   <a href="https://app.bors.tech/repositories/28502"><img src="https://bors.tech/images/badge_small.svg" alt="Bors enabled"></a>
 </p>
 
-<p align="center">⚡ The MeiliSearch API client written for Rust 🦀</p>
+<p align="center">⚡ The Meilisearch API client written for Rust 🦀</p>
 
-**MeiliSearch Rust** is the MeiliSearch API client for Rust developers.
+**Meilisearch Rust** is the Meilisearch API client for Rust developers.
 
-**MeiliSearch** is an open-source search engine. [Discover what MeiliSearch is!](https://github.com/meilisearch/MeiliSearch)
+**Meilisearch** is an open-source search engine. [Discover what Meilisearch is!](https://github.com/meilisearch/meilisearch)
 
 ## Table of Contents <!-- omit in TOC -->
 
@@ -37,7 +37,7 @@
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
 - [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
-- [🤖 Compatibility with MeiliSearch](#-compatibility-with-meilisearch)
+- [🤖 Compatibility with Meilisearch](#-compatibility-with-meilisearch)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
 
 ## 📖 Documentation
@@ -50,7 +50,7 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.12.0"
+meilisearch-sdk = "0.13.0"
 ```
 
 The following optional dependencies may also be useful:
@@ -65,28 +65,30 @@ You can enable the `sync` feature to make most structs `Sync`. It may be a bit s
 
 Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
 
-### Run a MeiliSearch Instance <!-- omit in TOC -->
+### Run a Meilisearch Instance <!-- omit in TOC -->
 
-This crate requires a MeiliSearch server to run.
+This crate requires a Meilisearch server to run.
 
-There are many easy ways to [download and run a MeiliSearch instance](https://docs.meilisearch.com/reference/features/installation.html#download-and-launch).
+There are many easy ways to [download and run a Meilisearch instance](https://docs.meilisearch.com/reference/features/installation.html#download-and-launch).
 
 For example,using the `curl` command in [your Terminal](https://itconnect.uw.edu/learn/workshops/online-tutorials/web-publishing/what-is-a-terminal/):
 
 ```bash
-# Install MeiliSearch
+# Install Meilisearch
 curl -L https://install.meilisearch.com | sh
 
-# Launch MeiliSearch
+# Launch Meilisearch
 ./meilisearch --master-key=masterKey
 ```
 
-NB: you can also download MeiliSearch from **Homebrew** or **APT**.
+NB: you can also download Meilisearch from **Homebrew** or **APT**.
 
 ## 🚀 Getting Started
 
+#### Add Documents <!-- omit in TOC -->
+
 ```rust
-use meilisearch_sdk::{document::*, client::*, search::*};
+use meilisearch_sdk::{document::*, client::*};
 use serde::{Serialize, Deserialize};
 use futures::executor::block_on;
 
@@ -110,10 +112,10 @@ fn main() { block_on(async move {
     // Create a client (without sending any request so that can't fail)
     let client = Client::new("http://localhost:7700", "masterKey");
 
-    // Get the index called "movies"
-    let movies = client.get_or_create("movies").await.unwrap();
+    // An index is where the documents are stored.
+    let movies = client.index("movies");
 
-    // Add some movies in the index
+    // Add some movies in the index. If the index 'movies' does not exist, Meilisearch creates it when you first add the documents.
     movies.add_documents(&[
         Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
         Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
@@ -122,19 +124,64 @@ fn main() { block_on(async move {
         Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()]},
         Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()]},
     ], Some("id")).await.unwrap();
-
-    // Query movies (note that there is a typo)
-    println!("{:?}", movies.search().with_query("carol").execute::<Movie>().await.unwrap().hits);
 })}
 ```
 
-Output:
+#### Basic Search <!-- omit in TOC -->
 
+```rust
+// Meilisearch is typo-tolerant:
+println!("{:?}", client.index("movies").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
+```
+
+Output:
 ```
 [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
 ```
 
-##### Custom Search With Filters <!-- omit in TOC -->
+Json output:
+```json
+{
+  "hits": [{
+    "id": 1,
+    "title": "Carol",
+    "genres": ["Romance", "Drama"]
+  }],
+  "offset": 0,
+  "limit": 10,
+  "processingTimeMs": 1,
+  "query": "caorl"
+}
+```
+
+#### Custom Search <!-- omit in toc -->
+
+```rust
+println!("{:?}", client.index("movies").search().with_query("phil").with_attributes_to_highlight(Selectors::Some(&["*"])).execute::<Movie>().await.unwrap().hits);
+```
+
+Json output:
+```json
+{
+    "hits": [
+        {
+            "id": 6,
+            "title": "Philadelphia",
+            "_formatted": {
+                "id": 6,
+                "title": "<em>Phil</em>adelphia",
+                "genre": ["Drama"]
+            }
+        }
+    ],
+    "offset": 0,
+    "limit": 20,
+    "processingTimeMs": 0,
+    "query": "phil"
+}
+```
+
+#### Custom Search With Filters <!-- omit in TOC -->
 
 If you want to enable filtering, you must add your attributes to the `filterableAttributes`
 index setting.
@@ -144,12 +191,12 @@ let filterable_attributes = [
     "id",
     "genres"
 ];
-movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
+client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
 ```
 
 You only need to perform this operation once.
 
-Note that MeiliSearch will rebuild your index whenever you update `filterableAttributes`.
+Note that Meilisearch will rebuild your index whenever you update `filterableAttributes`.
 Depending on the size of your dataset, this might take time. You can track the whole process
 using the [update
 status](https://docs.meilisearch.com/reference/api/updates.html#get-an-update-status).
@@ -157,10 +204,11 @@ status](https://docs.meilisearch.com/reference/api/updates.html#get-an-update-st
 Then, you can perform the search:
 
 ```rust
-println!("{:?}", movies.search().with_query("wonder").with_filter("id > 1 AND genres = Action")
+println!("{:?}", client.index("movies").search().with_query("wonder").with_filter("id > 1 AND genres = Action")
 .execute::<Movie>().await.unwrap().hits);
 ```
 
+Json output:
 ```json
 {
   "hits": [
@@ -184,13 +232,13 @@ This crate fully supports WASM.
 
 The only difference between the WASM and the native version is that the native version has one more variant (`Error::Http`) in the Error enum. That should not matter so much but we could add this variant in WASM too.
 
-However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using MeiliSearch, see the [our demo](./examples/web_app).
+However, making a program intended to run in a web browser requires a **very** different design than a CLI program. To see an example of a simple Rust web app using Meilisearch, see the [our demo](./examples/web_app).
 
 WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extension).
 
-## 🤖 Compatibility with MeiliSearch
+## 🤖 Compatibility with Meilisearch
 
-This package only guarantees the compatibility with the [version v0.25.0 of MeiliSearch](https://github.com/meilisearch/MeiliSearch/releases/tag/v0.25.0).
+This package only guarantees the compatibility with the [version v0.25.0 of MeiliSearch](https://github.com/meilisearch/meilisearch/releases/tag/v0.25.0).
 
 ## ⚙️ Development Workflow and Contributing
 
@@ -200,4 +248,4 @@ If you want to know more about the development workflow or want to contribute, p
 
 <hr>
 
-**MeiliSearch** provides and maintains many **SDKs and Integration tools** like this one. We want to provide everyone with an **amazing search experience for any kind of project**. If you want to contribute, make suggestions, or just know what's going on right now, visit us in the [integration-guides](https://github.com/meilisearch/integration-guides) repository.
+**Meilisearch** provides and maintains many **SDKs and Integration tools** like this one. We want to provide everyone with an **amazing search experience for any kind of project**. If you want to contribute, make suggestions, or just know what's going on right now, visit us in the [integration-guides](https://github.com/meilisearch/integration-guides) repository.
