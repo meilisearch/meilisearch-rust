@@ -1,0 +1,14 @@
+[package]
+name = "meilisearch-test-macro"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+proc-macro2 = "1.0.0"
+quote = "1.0.0"
+syn = { version = "1.0.0", features = ["clone-impls", "full", "parsing", "printing", "proc-macro"], default-features = false }

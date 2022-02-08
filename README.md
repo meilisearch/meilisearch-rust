@@ -117,12 +117,12 @@ fn main() { block_on(async move {
 
     // Add some movies in the index. If the index 'movies' does not exist, Meilisearch creates it when you first add the documents.
     movies.add_documents(&[
-        Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
-        Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
-        Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()]},
-        Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()]},
-        Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()]},
-        Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()]},
+        Movie { id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()] },
+        Movie { id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()] },
+        Movie { id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()] },
+        Movie { id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()] },
+        Movie { id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()] },
+        Movie { id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()] },
     ], Some("id")).await.unwrap();
 })}
 ```
@@ -131,12 +131,12 @@ fn main() { block_on(async move {
 
 ```rust
 // Meilisearch is typo-tolerant:
-println!("{:?}", client.index("movies").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
+println!("{:?}", client.index("movies_2").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
 ```
 
 Output:
 ```
-[Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
+[Movie { id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"] }]
 ```
 
 Json output:
@@ -157,7 +157,14 @@ Json output:
 #### Custom Search <!-- omit in toc -->
 
 ```rust
-println!("{:?}", client.index("movies").search().with_query("phil").with_attributes_to_highlight(Selectors::Some(&["*"])).execute::<Movie>().await.unwrap().hits);
+let search_result = client.index("movies_3")
+  .search()
+  .with_query("phil")
+  .with_attributes_to_highlight(Selectors::Some(&["*"]))
+  .execute::<Movie>()
+  .await
+  .unwrap();
+println!("{:?}", search_result.hits);
 ```
 
 Json output:
@@ -189,9 +196,9 @@ index setting.
 ```rust
 let filterable_attributes = [
     "id",
-    "genres"
+    "genres",
 ];
-client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
+client.index("movies_4").set_filterable_attributes(&filterable_attributes).await.unwrap();
 ```
 
 You only need to perform this operation once.
@@ -204,8 +211,14 @@ status](https://docs.meilisearch.com/reference/api/updates.html#get-an-update-st
 Then, you can perform the search:
 
 ```rust
-println!("{:?}", client.index("movies").search().with_query("wonder").with_filter("id > 1 AND genres = Action")
-.execute::<Movie>().await.unwrap().hits);
+let search_result = client.index("movies_5")
+  .search()
+  .with_query("wonder")
+  .with_filter("id > 1 AND genres = Action")
+  .execute::<Movie>()
+  .await
+  .unwrap();
+println!("{:?}", search_result.hits);
 ```
 
 Json output:
