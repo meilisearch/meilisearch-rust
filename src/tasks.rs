@@ -1,10 +1,7 @@
 use serde::Deserialize;
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    time::Duration,
-};
+use std::time::Duration;
 
-use crate::{client::Client, errors::Error, indexes::Index};
+use crate::{client::Client, errors::Error, indexes::Index, settings::Settings};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -42,19 +39,6 @@ pub struct IndexCreation {
 #[serde(rename_all = "camelCase")]
 pub struct IndexDeletion {
     pub deleted_documents: Option<usize>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Settings {
-    pub ranking_rules: Option<Vec<String>>,
-    pub distinct_attribute: Option<String>,
-    pub searchable_attributes: Option<Vec<String>>,
-    pub displayed_attributes: Option<BTreeSet<String>>,
-    pub stop_words: Option<BTreeSet<String>>,
-    pub synonyms: Option<BTreeMap<String, Vec<String>>>,
-    pub filterable_attributes: Option<Vec<String>>,
-    pub sortable_attributes: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
