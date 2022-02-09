@@ -46,7 +46,7 @@ pub enum ErrorType {
     /// The Meilisearch instance encountered an internal error.
     Internal,
     /// Authentication was either incorrect or missing.
-    Authentication,
+    Auth,
 }
 
 /// The error code.
@@ -90,6 +90,12 @@ pub enum ErrorCode {
     MalformedPayload,
     InvalidContentType,
     MissingPayload,
+    MissingParameter,
+    InvalidApiKeyDescription,
+    InvalidApiKeyActions,
+    InvalidApiKeyIndexes,
+    InvalidApiKeyExpiresAt,
+    ApiKeyNotFound,
 
     /// That's unexpected. Please open a GitHub issue after ensuring you are
     /// using the supported version of the Meilisearch server.
@@ -117,7 +123,7 @@ impl ErrorType {
         match self {
             ErrorType::InvalidRequest => "invalid_request",
             ErrorType::Internal => "internal",
-            ErrorType::Authentication => "authentication",
+            ErrorType::Auth => "auth",
         }
     }
     /// Converts the error type string returned by Meilisearch into an
@@ -127,7 +133,7 @@ impl ErrorType {
         match input {
             "invalid_request" => Some(ErrorType::InvalidRequest),
             "internal" => Some(ErrorType::Internal),
-            "authentication" => Some(ErrorType::Authentication),
+            "auth" => Some(ErrorType::Auth),
             _ => None,
         }
     }
@@ -173,6 +179,12 @@ impl ErrorCode {
             ErrorCode::MalformedPayload => "malformed_payload",
             ErrorCode::InvalidContentType => "invalid_content_type",
             ErrorCode::MissingPayload => "missing_payload",
+            ErrorCode::MissingParameter => "missing_parameter",
+            ErrorCode::InvalidApiKeyDescription => "invalid_api_key_description",
+            ErrorCode::InvalidApiKeyActions => "invalid_api_key_actions",
+            ErrorCode::InvalidApiKeyIndexes => "invalid_api_key_indexes",
+            ErrorCode::InvalidApiKeyExpiresAt => "invalid_api_key_expires_at",
+            ErrorCode::ApiKeyNotFound => "api_key_not_found",
             // Other than this variant, all the other `&str`s are 'static
             ErrorCode::Unknown(inner) => &inner.0,
         }
@@ -217,6 +229,11 @@ impl ErrorCode {
             "malformed_payload" => ErrorCode::MalformedPayload,
             "invalid_content_type" => ErrorCode::InvalidContentType,
             "missing_payload" => ErrorCode::MissingPayload,
+            "invalid_api_key_description" => ErrorCode::InvalidApiKeyDescription,
+            "invalid_api_key_actions" => ErrorCode::InvalidApiKeyActions,
+            "invalid_api_key_indexes" => ErrorCode::InvalidApiKeyIndexes,
+            "invalid_api_key_expires_at" => ErrorCode::InvalidApiKeyExpiresAt,
+            "api_key_not_found" => ErrorCode::ApiKeyNotFound,
             inner => ErrorCode::Unknown(UnknownErrorCode(inner.to_string())),
         }
     }

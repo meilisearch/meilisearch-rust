@@ -240,21 +240,23 @@
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
-/// Module containing the Client struct.
+/// Module containing the [client::Client] struct.
 pub mod client;
-/// Module containing the Document trait.
+/// Module containing the [document::Document] trait.
 pub mod document;
 pub mod dumps;
-/// Module containing the Error struct.
+/// Module containing the [errors::Error] struct.
 pub mod errors;
 /// Module containing the Index struct.
 pub mod indexes;
+/// Module containing the [key::Key] struct.
+pub mod key;
 mod request;
 /// Module related to search queries and results.
 pub mod search;
-/// Module containing settings.
+/// Module containing [settings::Settings].
 pub mod settings;
-/// Module representing the tasks.
+/// Module representing the [tasks::Task]s.
 pub mod tasks;
 
 #[cfg(feature = "sync")]

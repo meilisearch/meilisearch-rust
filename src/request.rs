@@ -7,6 +7,7 @@ use serde_json::{from_str, to_string};
 pub(crate) enum Method<T: Serialize> {
     Get,
     Post(T),
+    Patch(T),
     Put(T),
     Delete,
 }
@@ -54,6 +55,15 @@ pub(crate) async fn request<
                 .send_async()
                 .await?
         }
+        Method::Patch(body) => {
+            Request::patch(url)
+                .header(header::AUTHORIZATION, auth)
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(to_string(&body).unwrap())
+                .map_err(|_| crate::errors::Error::InvalidRequest)?
+                .send_async()
+                .await?
+        }
         Method::Put(body) => {
             Request::put(url)
                 .header(header::AUTHORIZATION, auth)
@@ -93,10 +103,13 @@ pub(crate) async fn request<
 
     trace!("{:?} on {}", method, url);
 
+    const CONTENT_TYPE: &str = "Content-Type";
+    const JSON: &str = "application/json";
+
     // The 2 following unwraps should not be able to fail
 
     let headers = Headers::new().unwrap();
-    headers.append("X-Meili-API-Key", apikey).unwrap();
+    headers.append("Authorization: Bearer", apikey).unwrap();
 
     let mut request: RequestInit = RequestInit::new();
     request.headers(&headers);
@@ -108,14 +121,19 @@ pub(crate) async fn request<
         Method::Delete => {
             request.method("DELETE");
         }
+        Method::Patch(body) => {
+            request.method("PATCH");
+            headers.append(CONTENT_TYPE, JSON).unwrap();
+            request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
+        }
         Method::Post(body) => {
             request.method("POST");
-            headers.append("Content-Type", "application/json").unwrap();
+            headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
         Method::Put(body) => {
             request.method("PUT");
-            headers.append("Content-Type", "application/json").unwrap();
+            headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
     }
