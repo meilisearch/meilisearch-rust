@@ -1,6 +1,7 @@
 use crate::{
     errors::*,
     indexes::*,
+    key::{Key, KeyBuilder},
     request::*,
     tasks::{async_sleep, Task},
     Rc,
@@ -274,17 +275,20 @@ impl Client {
         }
     }
 
-    /// Get the API keys from Meilisearch.
+    /// Get the API [Key]s from Meilisearch.
+    /// See the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
+    ///
+    /// See also [Client::create_key] and [Client::get_key].
     ///
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, errors::Error};
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// let keys = client.get_keys().await.unwrap();
-    /// assert_eq!(keys.len(), 2);
+    /// assert!(keys.len() >= 2);
     /// # });
     /// ```
     pub async fn get_keys(&self) -> Result<Vec<Key>, Error> {
@@ -304,6 +308,128 @@ impl Client {
         .await?;
 
         Ok(keys.inner)
+    }
+
+    /// Get one API [Key] from Meilisearch.
+    /// See the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-one-key).
+    ///
+    /// See also [Client::create_key] and [Client::get_keys].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let key = client.get_keys().await.unwrap().into_iter().find(|k| k.description.starts_with("Default Search API Key")).unwrap();
+    /// let key_id = // enter your API key here, for the example we'll say we entered our search API key.
+    /// # key.key;
+    /// let key = client.get_key(key_id).await.unwrap();
+    /// assert_eq!(key.description, "Default Search API Key (Use it to search from the frontend)");
+    /// # });
+    /// ```
+    pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
+        request::<(), Key>(
+            &format!("{}/keys/{}", self.host, key.as_ref()),
+            &self.api_key,
+            Method::Get,
+            200,
+        )
+        .await
+    }
+
+    /// Delete an API [Key] from Meilisearch.
+    /// See the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#delete-a-key).
+    ///
+    /// See also [Client::create_key], [Client::update_key] and [Client::get_key].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let key = KeyBuilder::new("delete_key");
+    /// let key = client.create_key(key).await.unwrap();
+    /// let inner_key = key.key.clone();
+    ///
+    /// client.delete_key(key).await.unwrap();
+    ///
+    /// let keys = client.get_keys().await.unwrap();
+    /// assert!(keys.iter().all(|key| key.key != inner_key));
+    /// # });
+    /// ```
+    pub async fn delete_key(&self, key: impl AsRef<str>) -> Result<(), Error> {
+        request::<(), ()>(
+            &format!("{}/keys/{}", self.host, key.as_ref()),
+            &self.api_key,
+            Method::Delete,
+            204,
+        )
+        .await
+    }
+
+    /// Create an API [Key] in Meilisearch.
+    /// See the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#create-a-key).
+    ///
+    /// See also [Client::update_key], [Client::delete_key] and [Client::get_key].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder, key::Action};
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let mut key = KeyBuilder::new("create_key");
+    /// key.with_index("*").with_action(Action::DocumentsAdd);
+    /// let key = client.create_key(key).await.unwrap();
+    /// assert_eq!(key.description, "create_key");
+    /// # client.delete_key(key).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
+        request::<&KeyBuilder, Key>(
+            &format!("{}/keys", self.host),
+            &self.api_key,
+            Method::Post(key.as_ref()),
+            201,
+        )
+        .await
+    }
+
+    /// Update an API [Key] in Meilisearch.
+    /// See the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#update-a-key).
+    ///
+    /// See also [Client::create_key], [Client::delete_key] and [Client::get_key].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let key = KeyBuilder::new("update_key");
+    /// let mut key = client.create_key(key).await.unwrap();
+    /// assert!(key.indexes.is_empty());
+    ///
+    /// key.indexes = vec!["*".to_string()];
+    /// let key = client.update_key(key).await.unwrap();
+    /// assert_eq!(key.indexes, vec!["*"]);
+    /// # client.delete_key(key).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn update_key(&self, key: impl AsRef<Key>) -> Result<Key, Error> {
+        request::<&Key, Key>(
+            &format!("{}/keys/{}", self.host, key.as_ref().key),
+            &self.api_key,
+            Method::Patch(key.as_ref()),
+            200,
+        )
+        .await
     }
 
     /// Get version of the Meilisearch server.
@@ -481,18 +607,6 @@ pub struct Health {
     pub status: String,
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Key {
-    pub actions: Vec<String>,
-    pub created_at: String, // TODO: use a chrono date
-    pub description: String,
-    pub expires_at: Option<String>, // TODO: use a chrono date
-    pub indexes: Vec<String>,
-    pub key: String,
-    pub updated_at: String, // TODO: use a chrono date
-}
-
 /// Version of a Meilisearch server.
 ///
 /// Example:
@@ -515,13 +629,250 @@ pub struct Version {
 
 #[cfg(test)]
 mod tests {
-    use crate::client::*;
+    use crate::{
+        client::*,
+        key::{Action, KeyBuilder},
+    };
     use meilisearch_test_macro::meilisearch_test;
 
     #[meilisearch_test]
     async fn test_get_keys(client: Client) {
         let keys = client.get_keys().await.unwrap();
-        assert_eq!(keys.len(), 2);
+        assert!(keys.len() >= 2);
+        assert!(keys.iter().any(
+            |k| k.description != "Default Search API Key (Use it to search from the frontend)"
+        ));
+        assert!(keys.iter().any(
+            |k| k.description != "Default Admin API Key (Use it for all other operations. Caution! Do not use it on a public frontend)"
+        ));
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_key(client: Client, description: String) {
+        let key = KeyBuilder::new(description);
+        let key = client.create_key(key).await.unwrap();
+
+        client.delete_key(&key).await.unwrap();
+        let keys = client.get_keys().await.unwrap();
+        assert!(keys.iter().all(|k| k.key != key.key));
+    }
+
+    #[meilisearch_test]
+    async fn test_error_delete_key(mut client: Client, description: String) {
+        // ==> accessing a key that does not exist
+        let error = client.delete_key("invalid_key").await.unwrap_err();
+        assert!(matches!(
+            error,
+            Error::MeiliSearchError {
+                error_code: ErrorCode::ApiKeyNotFound,
+                error_type: ErrorType::InvalidRequest,
+                ..
+            }
+        ));
+
+        // ==> executing the action without enough right
+        let key = KeyBuilder::new(description);
+        let key = client.create_key(key).await.unwrap();
+
+        let master_key = client.api_key.clone();
+        // this key has no right
+        client.api_key = Rc::new(key.key.clone());
+        // with a wrong key
+        let error = client.delete_key("invalid_key").await.unwrap_err();
+        assert!(matches!(
+            error,
+            Error::MeiliSearchError {
+                error_code: ErrorCode::InvalidApiKey,
+                error_type: ErrorType::Auth,
+                ..
+            }
+        ));
+        // with a good key
+        let error = client.delete_key(&key.key).await.unwrap_err();
+        assert!(matches!(
+            error,
+            Error::MeiliSearchError {
+                error_code: ErrorCode::InvalidApiKey,
+                error_type: ErrorType::Auth,
+                ..
+            }
+        ));
+
+        // cleanup
+        client.api_key = master_key;
+        client.delete_key(key).await.unwrap();
+    }
+
+    #[meilisearch_test]
+    async fn test_create_key(client: Client, description: String) {
+        let mut key = KeyBuilder::new(description.clone());
+        key.with_action(Action::DocumentsAdd)
+            .with_expires_at("3022-02-09T01:32:46Z")
+            .with_index("*");
+        let key = client.create_key(key).await.unwrap();
+
+        assert_eq!(key.actions, vec![Action::DocumentsAdd]);
+        assert_eq!(key.description, description);
+        assert_eq!(key.expires_at, Some("3022-02-09T01:32:46Z".to_string()));
+        assert_eq!(key.indexes, vec!["*".to_string()]);
+
+        let keys = client.get_keys().await.unwrap();
+
+        let remote_key = keys.iter().find(|k| k.key == key.key).unwrap();
+
+        assert_eq!(remote_key.actions, vec![Action::DocumentsAdd]);
+        assert_eq!(remote_key.description, description);
+        assert_eq!(
+            remote_key.expires_at,
+            Some("3022-02-09T01:32:46Z".to_string())
+        );
+        assert_eq!(remote_key.indexes, vec!["*".to_string()]);
+
+        client.delete_key(key).await.unwrap();
+    }
+
+    #[meilisearch_test]
+    async fn test_error_create_key(mut client: Client, description: String) {
+        // ==> Invalid index name
+        /* TODO: uncomment once meilisearch fix this bug: https://github.com/meilisearch/meilisearch/issues/2158
+        let mut key = KeyBuilder::new(&description);
+        key.with_index("invalid index # / \\name with spaces");
+        let error = client.create_key(key).await.unwrap_err();
+
+        assert!(matches!(
+            error,
+            Error::MeiliSearchError {
+                error_code: ErrorCode::InvalidApiKeyIndexes,
+                error_type: ErrorType::InvalidRequest,
+                ..
+            }
+        ));
+        */
+
+        // ==> Invalid expires_at
+        let mut key = KeyBuilder::new(&description);
+        key.with_expires_at("That’s totally not a date");
+        let error = client.create_key(key).await.unwrap_err();
+
+        assert!(matches!(
+            error,
+            Error::MeiliSearchError {
+                error_code: ErrorCode::InvalidApiKeyExpiresAt,
+                error_type: ErrorType::InvalidRequest,
+                ..
+            }
+        ));
+
+        // ==> executing the action without enough right
+        let no_right_key = KeyBuilder::new(&description);
+        let no_right_key = client.create_key(no_right_key).await.unwrap();
+
+        // backup the master key for cleanup at the end of the test
+        let master_client = client.clone();
+        client.api_key = Rc::new(no_right_key.key.clone());
+
+        let key = KeyBuilder::new(&description);
+        let error = client.create_key(key).await.unwrap_err();
+
+        assert!(matches!(
+            error,
+            Error::MeiliSearchError {
+                error_code: ErrorCode::InvalidApiKey,
+                error_type: ErrorType::Auth,
+                ..
+            }
+        ));
+
+        // cleanup
+        master_client.delete_key(&*client.api_key).await.unwrap();
+    }
+
+    #[meilisearch_test]
+    async fn test_update_key(client: Client, description: String) {
+        let key = KeyBuilder::new(description.clone());
+        let mut key = client.create_key(key).await.unwrap();
+
+        key.actions = vec![Action::DocumentsAdd];
+        key.expires_at = Some("3022-02-09T01:32:46Z".to_string());
+        key.indexes = vec!["*".to_string()];
+
+        let key = client.update_key(key).await.unwrap();
+
+        assert_eq!(key.actions, vec![Action::DocumentsAdd]);
+        assert_eq!(key.description, description);
+        assert_eq!(key.expires_at, Some("3022-02-09T01:32:46Z".to_string()));
+        assert_eq!(key.indexes, vec!["*".to_string()]);
+
+        let keys = client.get_keys().await.unwrap();
+
+        let remote_key = keys.iter().find(|k| k.key == key.key).unwrap();
+
+        assert_eq!(remote_key.actions, vec![Action::DocumentsAdd]);
+        assert_eq!(remote_key.description, description);
+        assert_eq!(
+            remote_key.expires_at,
+            Some("3022-02-09T01:32:46Z".to_string())
+        );
+        assert_eq!(remote_key.indexes, vec!["*".to_string()]);
+
+        client.delete_key(key).await.unwrap();
+    }
+
+    #[meilisearch_test]
+    async fn test_error_update_key(mut client: Client, description: String) {
+        let key = KeyBuilder::new(description.clone());
+        let mut key = client.create_key(key).await.unwrap();
+
+        // ==> Invalid index name
+        /* TODO: uncomment once meilisearch fix this bug: https://github.com/meilisearch/meilisearch/issues/2158
+        key.indexes = vec!["invalid index # / \\name with spaces".to_string()];
+        let error = client.update_key(key).await.unwrap_err();
+
+        assert!(matches!(
+            error,
+            Error::MeiliSearchError {
+                error_code: ErrorCode::InvalidApiKeyIndexes,
+                error_type: ErrorType::InvalidRequest,
+                ..
+            }
+        ));
+        */
+
+        // ==> Invalid expires_at
+        key.expires_at = Some("That’s totally not a date".to_string());
+        let error = client.update_key(&key).await.unwrap_err();
+
+        assert!(matches!(
+            error,
+            Error::MeiliSearchError {
+                error_code: ErrorCode::InvalidApiKeyExpiresAt,
+                error_type: ErrorType::InvalidRequest,
+                ..
+            }
+        ));
+        key.expires_at = None;
+
+        // ==> executing the action without enough right
+        let no_right_key = KeyBuilder::new(&description);
+        let no_right_key = client.create_key(no_right_key).await.unwrap();
+
+        // backup the master key for cleanup at the end of the test
+        let master_client = client.clone();
+        client.api_key = Rc::new(no_right_key.key.clone());
+
+        let error = client.update_key(key).await.unwrap_err();
+
+        assert!(matches!(
+            error,
+            Error::MeiliSearchError {
+                error_code: ErrorCode::InvalidApiKey,
+                error_type: ErrorType::Auth,
+                ..
+            }
+        ));
+
+        // cleanup
+        master_client.delete_key(&*client.api_key).await.unwrap();
     }
 
     #[meilisearch_test]
