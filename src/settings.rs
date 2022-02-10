@@ -1,8 +1,8 @@
 use crate::{
     errors::Error,
     indexes::Index,
-    progress::{Progress, ProgressJson},
     request::{request, Method},
+    tasks::Task,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -237,203 +237,230 @@ impl Settings {
 }
 
 impl Index {
-    /// Get [settings](../settings/struct.Settings.html) of the Index.
+    /// Get [Settings] of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let settings = movie_index.get_settings().await.unwrap();
+    /// # client.create_index("get_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_settings");
+    /// let settings = index.get_settings().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_settings(&self) -> Result<Settings, Error> {
         Ok(request::<(), Settings>(
-            &format!("{}/indexes/{}/settings", self.host, self.uid),
-            &self.api_key,
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+            &self.client.api_key,
             Method::Get,
             200,
         )
         .await?)
     }
 
-    /// Get [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the Index.
+    /// Get [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let synonyms = movie_index.get_synonyms().await.unwrap();
+    /// # client.create_index("get_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_synonyms");
+    /// let synonyms = index.get_synonyms().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_synonyms(&self) -> Result<HashMap<String, Vec<String>>, Error> {
         Ok(request::<(), HashMap<String, Vec<String>>>(
-            &format!("{}/indexes/{}/settings/synonyms", self.host, self.uid),
-            &self.api_key,
+            &format!(
+                "{}/indexes/{}/settings/synonyms",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
             Method::Get,
             200,
         )
         .await?)
     }
 
-    /// Get [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the Index.
+    /// Get [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let stop_words = movie_index.get_stop_words().await.unwrap();
+    /// # client.create_index("get_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_stop_words");
+    /// let stop_words = index.get_stop_words().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_stop_words(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/stop-words", self.host, self.uid),
-            &self.api_key,
+            &format!(
+                "{}/indexes/{}/settings/stop-words",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
             Method::Get,
             200,
         )
         .await?)
     }
 
-    /// Get [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the Index.
+    /// Get [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let ranking_rules = movie_index.get_ranking_rules().await.unwrap();
+    /// # client.create_index("get_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_ranking_rules");
+    /// let ranking_rules = index.get_ranking_rules().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_ranking_rules(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
-            &format!("{}/indexes/{}/settings/ranking-rules", self.host, self.uid),
-            &self.api_key,
+            &format!(
+                "{}/indexes/{}/settings/ranking-rules",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
             Method::Get,
             200,
         )
         .await?)
     }
 
-    /// Get [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the Index.
+    /// Get [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let filterable_attributes = movie_index.get_filterable_attributes().await.unwrap();
+    /// # client.create_index("get_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_filterable_attributes");
+    /// let filterable_attributes = index.get_filterable_attributes().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_filterable_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/filterable-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Get,
             200,
         )
         .await?)
     }
 
-    /// Get [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the Index.
+    /// Get [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let sortable_attributes = movie_index.get_sortable_attributes().await.unwrap();
+    /// # client.create_index("get_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_sortable_attributes");
+    /// let sortable_attributes = index.get_sortable_attributes().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_sortable_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/sortable-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Get,
             200,
         )
         .await?)
     }
 
-    /// Get the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the Index.
+    /// Get the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let distinct_attribute = movie_index.get_distinct_attribute().await.unwrap();
+    /// # client.create_index("get_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_distinct_attribute");
+    /// let distinct_attribute = index.get_distinct_attribute().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_distinct_attribute(&self) -> Result<Option<String>, Error> {
         Ok(request::<(), Option<String>>(
             &format!(
                 "{}/indexes/{}/settings/distinct-attribute",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Get,
             200,
         )
         .await?)
     }
 
-    /// Get [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the Index.
+    /// Get [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let searchable_attributes = movie_index.get_searchable_attributes().await.unwrap();
+    /// # client.create_index("get_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_searchable_attributes");
+    /// let searchable_attributes = index.get_searchable_attributes().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_searchable_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/searchable-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Get,
             200,
         )
         .await?)
     }
 
-    /// Get [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the Index.
+    /// Get [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let movie_index = client.get_or_create("movies").await.unwrap();
-    /// let displayed_attributes = movie_index.get_displayed_attributes().await.unwrap();
+    /// # client.create_index("get_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_displayed_attributes");
+    /// let displayed_attributes = index.get_displayed_attributes().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_displayed_attributes(&self) -> Result<Vec<String>, Error> {
         Ok(request::<(), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Get,
             200,
         )
         .await?)
     }
 
-    /// Update [settings](../settings/struct.Settings.html) of the index.
-    /// Updates in the settings are partial. This means that any parameters corresponding to a None value will be left unchanged.
+    /// Update [settings](../settings/struct.Settings.html) of the [Index].
+    /// Updates in the settings are partial. This means that any parameters corresponding to a `None` value will be left unchanged.
     ///
     /// # Example
     ///
@@ -441,29 +468,28 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("set_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_settings");
     ///
     /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
     /// let settings = Settings::new()
     ///     .with_stop_words(stop_words.clone());
     ///
-    /// let progress = movie_index.set_settings(&settings).await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.set_settings(&settings).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn set_settings(&self, settings: &Settings) -> Result<Progress, Error> {
-        Ok(request::<&Settings, ProgressJson>(
-            &format!("{}/indexes/{}/settings", self.host, self.uid),
-            &self.api_key,
+    pub async fn set_settings(&self, settings: &Settings) -> Result<Task, Error> {
+        Ok(request::<&Settings, Task>(
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+            &self.client.api_key,
             Method::Post(settings),
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Update [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the index.
+    /// Update [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the [Index].
     ///
     /// # Example
     ///
@@ -471,33 +497,35 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("set_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_synonyms");
     ///
     /// let mut synonyms = std::collections::HashMap::new();
     /// synonyms.insert(String::from("wolverine"), vec![String::from("xmen"), String::from("logan")]);
     /// synonyms.insert(String::from("logan"), vec![String::from("xmen"), String::from("wolverine")]);
     /// synonyms.insert(String::from("wow"), vec![String::from("world of warcraft")]);
     ///
-    /// let progress = movie_index.set_synonyms(&synonyms).await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.set_synonyms(&synonyms).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn set_synonyms(
         &self,
         synonyms: &HashMap<String, Vec<String>>,
-    ) -> Result<Progress, Error> {
-        Ok(request::<&HashMap<String, Vec<String>>, ProgressJson>(
-            &format!("{}/indexes/{}/settings/synonyms", self.host, self.uid),
-            &self.api_key,
+    ) -> Result<Task, Error> {
+        Ok(request::<&HashMap<String, Vec<String>>, Task>(
+            &format!(
+                "{}/indexes/{}/settings/synonyms",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
             Method::Post(synonyms),
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Update [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the index.
+    /// Update [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
     ///
     /// # Example
     ///
@@ -505,26 +533,28 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("set_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_stop_words");
     ///
     /// let stop_words = ["the", "of", "to"];
-    /// let progress = movie_index.set_stop_words(&stop_words).await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.set_stop_words(&stop_words).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn set_stop_words(&self, stop_words: impl IntoVecString) -> Result<Progress, Error> {
-        Ok(request::<Vec<String>, ProgressJson>(
-            &format!("{}/indexes/{}/settings/stop-words", self.host, self.uid),
-            &self.api_key,
+    pub async fn set_stop_words(&self, stop_words: impl IntoVecString) -> Result<Task, Error> {
+        Ok(request::<Vec<String>, Task>(
+            &format!(
+                "{}/indexes/{}/settings/stop-words",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
             Method::Post(stop_words.convert()),
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Update [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the index.
+    /// Update [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index].
     ///
     /// # Example
     ///
@@ -532,7 +562,8 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("set_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_ranking_rules");
     ///
     /// let ranking_rules = [
     ///     "words",
@@ -544,26 +575,27 @@ impl Index {
     ///     "release_date:asc",
     ///     "rank:desc",
     /// ];
-    /// let progress = movie_index.set_ranking_rules(ranking_rules).await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.set_ranking_rules(ranking_rules).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn set_ranking_rules(
         &self,
         ranking_rules: impl IntoVecString,
-    ) -> Result<Progress, Error> {
-        Ok(request::<Vec<String>, ProgressJson>(
-            &format!("{}/indexes/{}/settings/ranking-rules", self.host, self.uid),
-            &self.api_key,
+    ) -> Result<Task, Error> {
+        Ok(request::<Vec<String>, Task>(
+            &format!(
+                "{}/indexes/{}/settings/ranking-rules",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
             Method::Post(ranking_rules.convert()),
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Update [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the index.
+    /// Update [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the [Index].
     ///
     /// # Example
     ///
@@ -571,32 +603,31 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("set_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_filterable_attributes");
     ///
     /// let filterable_attributes = ["genre", "director"];
-    /// let progress = movie_index.set_filterable_attributes(&filterable_attributes).await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.set_filterable_attributes(&filterable_attributes).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn set_filterable_attributes(
         &self,
         filterable_attributes: impl IntoVecString,
-    ) -> Result<Progress, Error> {
-        Ok(request::<Vec<String>, ProgressJson>(
+    ) -> Result<Task, Error> {
+        Ok(request::<Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/filterable-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Post(filterable_attributes.convert()),
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Update [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the index.
+    /// Update [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the [Index].
     ///
     /// # Example
     ///
@@ -604,32 +635,31 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("set_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_sortable_attributes");
     ///
     /// let sortable_attributes = ["genre", "director"];
-    /// let progress = movie_index.set_sortable_attributes(&sortable_attributes).await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.set_sortable_attributes(&sortable_attributes).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn set_sortable_attributes(
         &self,
         sortable_attributes: impl IntoVecString,
-    ) -> Result<Progress, Error> {
-        Ok(request::<Vec<String>, ProgressJson>(
+    ) -> Result<Task, Error> {
+        Ok(request::<Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/sortable-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Post(sortable_attributes.convert()),
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Update the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the index.
+    /// Update the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -637,31 +667,30 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("set_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_distinct_attribute");
     ///
-    /// let progress = movie_index.set_distinct_attribute("movie_id").await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.set_distinct_attribute("movie_id").await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn set_distinct_attribute(
         &self,
         distinct_attribute: impl Into<String>,
-    ) -> Result<Progress, Error> {
-        Ok(request::<String, ProgressJson>(
+    ) -> Result<Task, Error> {
+        Ok(request::<String, Task>(
             &format!(
                 "{}/indexes/{}/settings/distinct-attribute",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Post(distinct_attribute.into()),
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Update [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the index.
+    /// Update [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the [Index].
     ///
     /// # Example
     ///
@@ -669,31 +698,30 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("set_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_searchable_attributes");
     ///
-    /// let progress = movie_index.set_searchable_attributes(["title", "description", "uid"]).await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.set_searchable_attributes(["title", "description", "uid"]).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn set_searchable_attributes(
         &self,
         searchable_attributes: impl IntoVecString,
-    ) -> Result<Progress, Error> {
-        Ok(request::<Vec<String>, ProgressJson>(
+    ) -> Result<Task, Error> {
+        Ok(request::<Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/searchable-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Post(searchable_attributes.convert()),
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Update [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the index.
+    /// Update [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -701,31 +729,30 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("set_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_displayed_attributes");
     ///
-    /// let progress = movie_index.set_displayed_attributes(["title", "description", "release_date", "rank", "poster"]).await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.set_displayed_attributes(["title", "description", "release_date", "rank", "poster"]).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn set_displayed_attributes(
         &self,
         displayed_attributes: impl IntoVecString,
-    ) -> Result<Progress, Error> {
-        Ok(request::<Vec<String>, ProgressJson>(
+    ) -> Result<Task, Error> {
+        Ok(request::<Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Post(displayed_attributes.convert()),
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Reset [settings](../settings/struct.Settings.html) of the index.
+    /// Reset [Settings] of the [Index].
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/reference/api/settings.html#reset-settings).
     ///
     /// # Example
@@ -734,25 +761,24 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("reset_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_settings");
     ///
-    /// let progress = movie_index.reset_settings().await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.reset_settings().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_settings(&self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings", self.host, self.uid),
-            &self.api_key,
+    pub async fn reset_settings(&self) -> Result<Task, Error> {
+        Ok(request::<(), Task>(
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+            &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Reset [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the index.
+    /// Reset [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the [Index].
     ///
     /// # Example
     ///
@@ -760,25 +786,27 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("reset_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_synonyms");
     ///
-    /// let progress = movie_index.reset_synonyms().await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.reset_synonyms().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_synonyms(&self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/synonyms", self.host, self.uid),
-            &self.api_key,
+    pub async fn reset_synonyms(&self) -> Result<Task, Error> {
+        Ok(request::<(), Task>(
+            &format!(
+                "{}/indexes/{}/settings/synonyms",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Reset [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the index.
+    /// Reset [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
     ///
     /// # Example
     ///
@@ -786,26 +814,28 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("reset_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_stop_words");
     ///
-    /// let progress = movie_index.reset_stop_words().await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.reset_stop_words().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_stop_words(&self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/stop-words", self.host, self.uid),
-            &self.api_key,
+    pub async fn reset_stop_words(&self) -> Result<Task, Error> {
+        Ok(request::<(), Task>(
+            &format!(
+                "{}/indexes/{}/settings/stop-words",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Reset [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the index to default value.
-    /// Default value: ["words", "typo", "proximity", "attribute", "sort", "exactness"].
+    /// Reset [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index] to default value.
+    /// Default value: `["words", "typo", "proximity", "attribute", "sort", "exactness"]`.
     ///
     /// # Example
     ///
@@ -813,25 +843,27 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("reset_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_ranking_rules");
     ///
-    /// let progress = movie_index.reset_ranking_rules().await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.reset_ranking_rules().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_ranking_rules(&self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
-            &format!("{}/indexes/{}/settings/ranking-rules", self.host, self.uid),
-            &self.api_key,
+    pub async fn reset_ranking_rules(&self) -> Result<Task, Error> {
+        Ok(request::<(), Task>(
+            &format!(
+                "{}/indexes/{}/settings/ranking-rules",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Reset [filterable attributes]https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the index.
+    /// Reset [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the [Index].
     ///
     /// # Example
     ///
@@ -839,28 +871,27 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("reset_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_filterable_attributes");
     ///
-    /// let progress = movie_index.reset_filterable_attributes().await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.reset_filterable_attributes().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_filterable_attributes(&self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
+    pub async fn reset_filterable_attributes(&self) -> Result<Task, Error> {
+        Ok(request::<(), Task>(
             &format!(
                 "{}/indexes/{}/settings/filterable-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Reset [sortable attributes]https://docs.meilisearch.com/reference/features/sorting.html) of the index.
+    /// Reset [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the [Index].
     ///
     /// # Example
     ///
@@ -868,28 +899,27 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("reset_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_sortable_attributes");
     ///
-    /// let progress = movie_index.reset_sortable_attributes().await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.reset_sortable_attributes().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_sortable_attributes(&self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
+    pub async fn reset_sortable_attributes(&self) -> Result<Task, Error> {
+        Ok(request::<(), Task>(
             &format!(
                 "{}/indexes/{}/settings/sortable-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Reset the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the index.
+    /// Reset the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -897,28 +927,27 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("reset_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_distinct_attribute");
     ///
-    /// let progress = movie_index.reset_distinct_attribute().await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.reset_distinct_attribute().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_distinct_attribute(&self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
+    pub async fn reset_distinct_attribute(&self) -> Result<Task, Error> {
+        Ok(request::<(), Task>(
             &format!(
                 "{}/indexes/{}/settings/distinct-attribute",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Reset [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the index (enable all attributes).
+    /// Reset [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the [Index] (enable all attributes).
     ///
     /// # Example
     ///
@@ -926,28 +955,27 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("reset_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_searchable_attributes");
     ///
-    /// let progress = movie_index.reset_searchable_attributes().await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.reset_searchable_attributes().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_searchable_attributes(&self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
+    pub async fn reset_searchable_attributes(&self) -> Result<Task, Error> {
+        Ok(request::<(), Task>(
             &format!(
                 "{}/indexes/{}/settings/searchable-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 
-    /// Reset [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the index (enable all attributes).
+    /// Reset [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the [Index] (enable all attributes).
     ///
     /// # Example
     ///
@@ -955,24 +983,23 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, document::*, settings::Settings};
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// let mut movie_index = client.get_or_create("movies").await.unwrap();
+    /// # client.create_index("reset_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_displayed_attributes");
     ///
-    /// let progress = movie_index.reset_displayed_attributes().await.unwrap();
-    /// # std::thread::sleep(std::time::Duration::from_secs(2));
-    /// # progress.get_status().await.unwrap();
+    /// let task = index.reset_displayed_attributes().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_displayed_attributes(&self) -> Result<Progress, Error> {
-        Ok(request::<(), ProgressJson>(
+    pub async fn reset_displayed_attributes(&self) -> Result<Task, Error> {
+        Ok(request::<(), Task>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
-                self.host, self.uid
+                self.client.host, self.uid
             ),
-            &self.api_key,
+            &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?
-        .into_progress(self))
+        .await?)
     }
 }

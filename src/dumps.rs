@@ -140,13 +140,11 @@ pub async fn get_dump_status(
 mod tests {
     use super::*;
     use crate::client::*;
-    use futures_await_test::async_test;
+    use meilisearch_test_macro::meilisearch_test;
     use std::{thread::sleep, time::Duration};
 
-    #[async_test]
-    async fn test_dumps() {
-        let client = Client::new("http://localhost:7700", "masterKey");
-
+    #[meilisearch_test]
+    async fn test_dumps(client: Client) {
         // Create a dump
         let dump_info = client.create_dump().await.unwrap();
         assert!(matches!(dump_info.status, DumpStatus::InProgress));

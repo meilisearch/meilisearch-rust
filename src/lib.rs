@@ -27,20 +27,24 @@
 //!     // Create a client (without sending any request so that can't fail)
 //!     let client = Client::new("http://localhost:7700", "masterKey");
 //!
+//! #    let index = client.create_index("movies", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //!     // An index is where the documents are stored.
 //!     let movies = client.index("movies");
 //!
 //!     // Add some movies in the index. If the index 'movies' does not exist, Meilisearch creates it when you first add the documents.
 //!     movies.add_documents(&[
-//!         Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
-//!         Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
-//!         Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()]},
-//!         Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()]},
-//!         Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()]},
-//!         Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()]},
+//!         Movie { id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()] },
+//!         Movie { id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()] },
+//!         Movie { id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()] },
+//!         Movie { id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()] },
+//!         Movie { id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()] },
+//!         Movie { id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()] },
 //!     ], Some("id")).await.unwrap();
+//! #   index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 //! })}
 //! ```
+//!
+//! With the `uid`, you can check the status (`enqueued`, `processing`, `succeeded` or `failed`) of your documents addition using the [task](https://docs.meilisearch.com/reference/api/tasks.html#get-task).
 //!
 //! ### Basic Search <!-- omit in TOC -->
 //!
@@ -62,14 +66,16 @@
 //! # }
 //! # fn main() { block_on(async move {
 //! #    let client = Client::new("http://localhost:7700", "masterKey");
+//! #    let movies = client.create_index("movies_2", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! // Meilisearch is typo-tolerant:
-//! println!("{:?}", client.index("movies").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
+//! println!("{:?}", client.index("movies_2").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
+//! # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 //! # })}
 //! ```
 //!
 //! Output:
 //! ```text
-//! [Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"]}]
+//! [Movie { id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"] }]
 //! ```
 //!
 //! Json output:
@@ -107,7 +113,16 @@
 //! # }
 //! # fn main() { block_on(async move {
 //! #    let client = Client::new("http://localhost:7700", "masterKey");
-//! println!("{:?}", client.index("movies").search().with_query("phil").with_attributes_to_highlight(Selectors::Some(&["*"])).execute::<Movie>().await.unwrap().hits);
+//! #    let movies = client.create_index("movies_3", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+//! let search_result = client.index("movies_3")
+//!   .search()
+//!   .with_query("phil")
+//!   .with_attributes_to_highlight(Selectors::Some(&["*"]))
+//!   .execute::<Movie>()
+//!   .await
+//!   .unwrap();
+//! println!("{:?}", search_result.hits);
+//! # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 //! # })}
 //! ```
 //!
@@ -143,20 +158,19 @@
 //! # use futures::executor::block_on;
 //! # fn main() { block_on(async move {
 //! #    let client = Client::new("http://localhost:7700", "masterKey");
+//! #    let movies = client.create_index("movies_4", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let filterable_attributes = [
 //!     "id",
-//!     "genres"
+//!     "genres",
 //! ];
-//! client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
+//! client.index("movies_4").set_filterable_attributes(&filterable_attributes).await.unwrap();
+//! # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 //! # })}
 //! ```
 //!
 //! You only need to perform this operation once.
 //!
-//! Note that Meilisearch will rebuild your index whenever you update `filterableAttributes`.
-//! Depending on the size of your dataset, this might take time. You can track the whole process
-//! using the [update
-//! status](https://docs.meilisearch.com/reference/api/updates.html#get-an-update-status).
+//! Note that Meilisearch will rebuild your index whenever you update `filterableAttributes`. Depending on the size of your dataset, this might take time. You can track the process using the [tasks](https://docs.meilisearch.com/reference/api/tasks.html#get-task)).
 //!
 //! Then, you can perform the search:
 //!
@@ -178,22 +192,29 @@
 //! # }
 //! # fn main() { block_on(async move {
 //! # let client = Client::new("http://localhost:7700", "masterKey");
-//! # let movies = client.get_or_create("movies").await.unwrap();
+//! # let movies = client.create_index("movies_5", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! # let filterable_attributes = [
 //! #     "id",
 //! #    "genres"
 //! # ];
-//! # movies.set_filterable_attributes(&filterable_attributes).await.unwrap();
+//! # movies.set_filterable_attributes(&filterable_attributes).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 //! # movies.add_documents(&[
-//! #     Movie{id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()]},
-//! #     Movie{id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()]},
-//! #     Movie{id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()]},
-//! #     Movie{id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()]},
-//! #     Movie{id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()]},
-//! #     Movie{id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()]},
-//! # ], Some("id")).await.unwrap();
-//! println!("{:?}", client.index("movies").search().with_query("wonder").with_filter("id > 1 AND genres = Action")
-//! .execute::<Movie>().await.unwrap().hits);
+//! #     Movie { id: 1, title: String::from("Carol"), genres: vec!["Romance".to_string(), "Drama".to_string()] },
+//! #     Movie { id: 2, title: String::from("Wonder Woman"), genres: vec!["Action".to_string(), "Adventure".to_string()] },
+//! #     Movie { id: 3, title: String::from("Life of Pi"), genres: vec!["Adventure".to_string(), "Drama".to_string()] },
+//! #     Movie { id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()] },
+//! #     Movie { id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()] },
+//! #     Movie { id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()] },
+//! # ], Some("id")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+//! let search_result = client.index("movies_5")
+//!   .search()
+//!   .with_query("wonder")
+//!   .with_filter("id > 1 AND genres = Action")
+//!   .execute::<Movie>()
+//!   .await
+//!   .unwrap();
+//! println!("{:?}", search_result.hits);
+//! # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 //! # })}
 //! ```
 //!
@@ -218,22 +239,24 @@
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
-/// Module containing the Client struct.
+/// Module containing the [client::Client] struct.
 pub mod client;
-/// Module containing the Document trait.
+/// Module containing the [document::Document] trait.
 pub mod document;
 pub mod dumps;
-/// Module containing the Error struct.
+/// Module containing the [errors::Error] struct.
 pub mod errors;
 /// Module containing the Index struct.
 pub mod indexes;
-/// Module containing objects useful for tracking the progress of async operations.
-pub mod progress;
+/// Module containing the [key::Key] struct.
+pub mod key;
 mod request;
 /// Module related to search queries and results.
 pub mod search;
-/// Module containing settings
+/// Module containing [settings::Settings].
 pub mod settings;
+/// Module representing the [tasks::Task]s.
+pub mod tasks;
 
 #[cfg(feature = "sync")]
 pub(crate) type Rc<T> = std::sync::Arc<T>;

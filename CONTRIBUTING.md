@@ -29,17 +29,18 @@ First of all, thank you for contributing to Meilisearch! The goal of this docume
 
 ### Tests <!-- omit in toc -->
 
-All the tests are documentation tests.<br>
-Since they are all making operations on the Meilisearch server, running all the tests simultaneously would cause panics.
-
-To run the tests one by one, run:
+To run the tests, run:
 
 ```bash
 # Tests
 curl -L https://install.meilisearch.com | sh # download Meilisearch
-./meilisearch --master-key=masterKey --no-analytics=true # run Meilisearch
-cargo test -- --test-threads=1
+./meilisearch --master-key=masterKey --no-analytics # run Meilisearch
+cargo test
 ```
+
+There is two kind of tests, documentation tests and unit tests.
+If you need to write or read the unit tests you should consider reading this
+[readme](meilisearch-test-macro/README.md) about our custom testing macro.
 
 Also, the WASM example compilation should be checked:
 
