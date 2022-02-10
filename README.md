@@ -127,6 +127,8 @@ fn main() { block_on(async move {
 })}
 ```
 
+With the `uid`, you can check the status (`enqueued`, `processing`, `succeeded` or `failed`) of your documents addition using the [task](https://docs.meilisearch.com/reference/api/tasks.html#get-task).
+
 #### Basic Search <!-- omit in TOC -->
 
 ```rust
@@ -203,10 +205,7 @@ client.index("movies_4").set_filterable_attributes(&filterable_attributes).await
 
 You only need to perform this operation once.
 
-Note that Meilisearch will rebuild your index whenever you update `filterableAttributes`.
-Depending on the size of your dataset, this might take time. You can track the whole process
-using the [update
-status](https://docs.meilisearch.com/reference/api/updates.html#get-an-update-status).
+Note that Meilisearch will rebuild your index whenever you update `filterableAttributes`. Depending on the size of your dataset, this might take time. You can track the process using the [tasks](https://docs.meilisearch.com/reference/api/tasks.html#get-task)).
 
 Then, you can perform the search:
 
