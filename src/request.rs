@@ -1,4 +1,4 @@
-use crate::errors::Error;
+use crate::errors::{Error, MeilisearchError};
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
@@ -194,8 +194,8 @@ fn parse_response<Output: DeserializeOwned>(
         "Expected response code {}, got {}",
         expected_status_code, status_code
     );
-    match from_str(&body) {
-        Ok(e) => Err(Error::from(&e)),
+    match from_str::<MeilisearchError>(&body) {
+        Ok(e) => Err(Error::from(e)),
         Err(e) => Err(Error::ParseError(e)),
     }
 }

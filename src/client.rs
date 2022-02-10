@@ -663,11 +663,11 @@ mod tests {
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
             error,
-            Error::MeiliSearchError {
+            Error::Meilisearch(MeilisearchError {
                 error_code: ErrorCode::ApiKeyNotFound,
                 error_type: ErrorType::InvalidRequest,
                 ..
-            }
+            })
         ));
 
         // ==> executing the action without enough right
@@ -681,21 +681,21 @@ mod tests {
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
             error,
-            Error::MeiliSearchError {
+            Error::Meilisearch(MeilisearchError {
                 error_code: ErrorCode::InvalidApiKey,
                 error_type: ErrorType::Auth,
                 ..
-            }
+            })
         ));
         // with a good key
         let error = client.delete_key(&key.key).await.unwrap_err();
         assert!(matches!(
             error,
-            Error::MeiliSearchError {
+            Error::Meilisearch(MeilisearchError {
                 error_code: ErrorCode::InvalidApiKey,
                 error_type: ErrorType::Auth,
                 ..
-            }
+            })
         ));
 
         // cleanup
@@ -741,7 +741,7 @@ mod tests {
 
         assert!(matches!(
             error,
-            Error::MeiliSearchError {
+            Error::MeilisearchError {
                 error_code: ErrorCode::InvalidApiKeyIndexes,
                 error_type: ErrorType::InvalidRequest,
                 ..
@@ -756,11 +756,11 @@ mod tests {
 
         assert!(matches!(
             error,
-            Error::MeiliSearchError {
+            Error::Meilisearch(MeilisearchError {
                 error_code: ErrorCode::InvalidApiKeyExpiresAt,
                 error_type: ErrorType::InvalidRequest,
                 ..
-            }
+            })
         ));
 
         // ==> executing the action without enough right
@@ -776,11 +776,11 @@ mod tests {
 
         assert!(matches!(
             error,
-            Error::MeiliSearchError {
+            Error::Meilisearch(MeilisearchError {
                 error_code: ErrorCode::InvalidApiKey,
                 error_type: ErrorType::Auth,
                 ..
-            }
+            })
         ));
 
         // cleanup
@@ -830,7 +830,7 @@ mod tests {
 
         assert!(matches!(
             error,
-            Error::MeiliSearchError {
+            Error::MeilisearchError {
                 error_code: ErrorCode::InvalidApiKeyIndexes,
                 error_type: ErrorType::InvalidRequest,
                 ..
@@ -844,11 +844,11 @@ mod tests {
 
         assert!(matches!(
             error,
-            Error::MeiliSearchError {
+            Error::Meilisearch(MeilisearchError {
                 error_code: ErrorCode::InvalidApiKeyExpiresAt,
                 error_type: ErrorType::InvalidRequest,
                 ..
-            }
+            })
         ));
         key.expires_at = None;
 
@@ -864,11 +864,11 @@ mod tests {
 
         assert!(matches!(
             error,
-            Error::MeiliSearchError {
+            Error::Meilisearch(MeilisearchError {
                 error_code: ErrorCode::InvalidApiKey,
                 error_type: ErrorType::Auth,
                 ..
-            }
+            })
         ));
 
         // cleanup
