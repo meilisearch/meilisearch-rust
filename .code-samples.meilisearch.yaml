@@ -58,16 +58,14 @@ search_post_1: |-
     .execute()
     .await
     .unwrap();
-get_update_1: |-
-  // You can get the status of a `Progress` object:
-  let status: Status = progress.get_status().await.unwrap();
-
-  // Or you can use index to get an update status using its `update_id`:
-  let status: Status = client.index("movies").get_update(1).await.unwrap();
-get_all_updates_1: |-
-  let status: Vec<ProgressStatus> = client.index("movies").get_all_updates().await.unwrap();
-get_keys_1: |-
-  let keys: Keys = client.get_keys().await.unwrap();
+get_task_by_index_1: |-
+  let task: Task = client.index("movies").get_task(1).await.unwrap();
+get_all_tasks_by_index_1: |-
+  let tasks: Vec<Task> = client.index("movies").get_tasks().await.unwrap();
+get_all_tasks_1: |-
+  let tasks: Vec<Task> = client.get_tasks().await.unwrap();
+get_task_1: |-
+  let task: Task = client.get_task(1).await.unwrap();
 get_settings_1: |-
   let settings: Settings = client.index("movies").get_settings().await.unwrap();
 update_settings_1: |-
@@ -685,3 +683,48 @@ geosearch_guide_sort_usage_2: |-
     .execute()
     .await
     .unwrap();
+get_one_key_1: |-
+  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+get_all_keys_1: |-
+  let keys = client.get_keys().await.unwrap();
+create_a_key_1: |-
+  let mut key_options = KeyBuilder::new("Add documents: Products API key");
+  key_options.with_action(Action::DocumentsAdd)
+      .with_expires_at("2042-04-02T00:42:42Z")
+      .with_index("products");
+  let new_key = client.create_key(key_options).await.unwrap();
+update_a_key_1: |-
+  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+  key.description = "Manage documents: Products/Reviews API key".to_string();
+  key.actions = vec![Action::DocumentsAdd, Action::DocumentsDelete];
+  key.indexes = vec!["products".to_string(), "reviews".to_string()];
+  key.expires_at = Some("2042-04-02T00:42:42Z".to_string());
+  let updated_key = client.update_key(&key);
+delete_a_key_1: |-
+  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+  client.delete_key(&key);
+authorization_header_1:
+  let client = Client::new("http://localhost:7700", "masterKey");
+  let keys = client.get_keys().await.unwrap();
+security_guide_search_key_1: |-
+  let client = Client::new("http://localhost:7700", "apiKey");
+  let result = client.index("patient_medical_records").search().execute().await.unwrap();
+security_guide_update_key_1: |-
+  let client = Client::new("http://localhost:7700", "masterKey");
+  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+  key.indexes = vec!["doctors".to_string()];
+  let updated_key = client.update_key(&key);
+security_guide_create_key_1: |-
+  let client = Client::new("http://localhost:7700", "masterKey");
+  let mut key_options = KeyBuilder::new("Search patient records key");
+  key_options.with_action(Action::Search)
+      .with_expires_at("2023-01-01T00:00:00Z")
+      .with_index("patient_medical_records");
+  let new_key = client.create_key(key_options).await.unwrap();
+security_guide_list_keys_1: |-
+  let client = Client::new("http://localhost:7700", "masterKey");
+  let keys = client.get_keys().await.unwrap();
+security_guide_delete_key_1: |-
+  let client = Client::new("http://localhost:7700", "masterKey");
+  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+  client.delete_key(&key);
