@@ -1,5 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use std::time::Duration;
+use time::OffsetDateTime;
 
 use crate::{
     client::Client, errors::Error, errors::MeilisearchError, indexes::Index, settings::Settings,
@@ -57,13 +58,26 @@ impl AsRef<u64> for FailedTask {
     }
 }
 
+fn deserialize_duration<'de, D>(deserializer: D) -> Result<std::time::Duration, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    let iso_duration = iso8601_duration::Duration::parse(&s).map_err(serde::de::Error::custom)?;
+    Ok(iso_duration.to_std())
+}
+
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessedTask {
-    pub duration: String,    // TODO deserialize to Duration
-    pub enqueued_at: String, // TODO deserialize to datetime
-    pub started_at: String,  // TODO deserialize to datetime
-    pub finished_at: String, // TODO deserialize to datetime
+    #[serde(deserialize_with = "deserialize_duration")]
+    pub duration: Duration,
+    #[serde(with = "time::serde::rfc3339")]
+    pub enqueued_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub started_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub finished_at: OffsetDateTime,
     pub index_uid: String,
     #[serde(flatten)]
     pub update_type: TaskType,
@@ -79,7 +93,8 @@ impl AsRef<u64> for ProcessedTask {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EnqueuedTask {
-    pub enqueued_at: String, // TODO deserialize to datetime
+    #[serde(with = "time::serde::rfc3339")]
+    pub enqueued_at: OffsetDateTime,
     pub index_uid: String,
     #[serde(flatten)]
     pub update_type: TaskType,
@@ -392,7 +407,13 @@ mod test {
     }
 
     #[test]
-    fn test_deserialize_enqueued_task() {
+    fn test_deserialize_task() {
+        let datetime = OffsetDateTime::parse(
+            "2022-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
         let task: Task = serde_json::from_str(
             r#"
 {
@@ -415,7 +436,7 @@ mod test {
                     uid: 12,
                 }
             }
-        if enqueued_at == "2022-02-03T13:02:38.369634Z" && index_uid == "mieli"));
+        if enqueued_at == datetime && index_uid == "mieli"));
 
         let task: Task = serde_json::from_str(
             r#"
@@ -482,9 +503,11 @@ mod test {
                         })
                     },
                     uid: 14,
+                    duration,
                     ..
                 }
             }
+            if duration == Duration::from_secs_f32(10.848957061)
         ));
     }
 

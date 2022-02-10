@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 use crate::{client::Client, errors::Error};
 
@@ -10,17 +11,17 @@ use crate::{client::Client, errors::Error};
 pub struct Key {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub actions: Vec<Action>,
-    #[serde(skip_serializing)]
-    pub created_at: String, // TODO: use a chrono date
+    #[serde(skip_serializing, with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
     pub description: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub expires_at: Option<String>, // TODO: use a chrono date
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub expires_at: Option<OffsetDateTime>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub indexes: Vec<String>,
     #[serde(skip_serializing)]
     pub key: String,
-    #[serde(skip_serializing)]
-    pub updated_at: String, // TODO: use a chrono date
+    #[serde(skip_serializing, with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
 }
 
 impl AsRef<str> for Key {
@@ -59,7 +60,8 @@ impl AsRef<Key> for Key {
 pub struct KeyBuilder {
     pub actions: Vec<Action>,
     pub description: String,
-    pub expires_at: Option<String>, // TODO: use a chrono date
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub expires_at: Option<OffsetDateTime>,
     pub indexes: Vec<String>,
 }
 
@@ -115,11 +117,13 @@ impl KeyBuilder {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder};
+    /// use time::{OffsetDateTime, Duration};
     /// let mut builder = KeyBuilder::new("My little lovely test key");
-    /// builder.with_expires_at("3022-02-09T10:35:58Z".to_string());
+    /// // create a key that expires in two weeks from now
+    /// builder.with_expires_at(OffsetDateTime::now_utc() + Duration::WEEK * 2);
     /// ```
-    pub fn with_expires_at(&mut self, expires_at: impl AsRef<str>) -> &mut Self {
-        self.expires_at = Some(expires_at.as_ref().to_string());
+    pub fn with_expires_at(&mut self, expires_at: OffsetDateTime) -> &mut Self {
+        self.expires_at = Some(expires_at);
         self
     }
 
