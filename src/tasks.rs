@@ -4,7 +4,11 @@ use std::{
     time::Duration,
 };
 
-use crate::{client::Client, errors::Error, indexes::Index};
+use crate::{
+    client::Client,
+    errors::{Error, MeilisearchError},
+    indexes::Index,
+};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -57,23 +61,10 @@ pub struct Settings {
     pub sortable_attributes: Option<Vec<String>>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TaskError {
-    #[serde(rename = "message")]
-    pub error_message: String,
-    #[serde(rename = "code")]
-    pub error_code: String,
-    #[serde(rename = "type")]
-    pub error_type: String,
-    #[serde(rename = "link")]
-    pub error_link: String,
-}
-
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FailedTask {
-    pub error: TaskError,
+    pub error: MeilisearchError,
     #[serde(flatten)]
     pub task: ProcessedTask,
 }
@@ -219,7 +210,6 @@ impl Task {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
-    /// // create a new index called movies
     /// let task = client.create_index("try_make_index", None).await.unwrap();
     /// let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
@@ -240,6 +230,117 @@ impl Task {
             } => Ok(client.index(index_uid)),
             _ => Err(self),
         }
+    }
+
+    /// Unwrap the [MeilisearchError] from a [Self::Failed] [Task].
+    ///
+    /// Will panic if the task was not [Self::Failed].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let task = client.create_index("unwrap_failure", None).await.unwrap();
+    /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
+    ///
+    ///
+    /// let task = index.set_ranking_rules(["wrong_ranking_rule"])
+    ///   .await
+    ///   .unwrap()
+    ///   .wait_for_completion(&client, None, None)
+    ///   .await
+    ///   .unwrap();
+    ///
+    /// assert!(task.is_failure());
+    ///
+    /// let failure = task.unwrap_failure();
+    ///
+    /// assert_eq!(failure.error_code, ErrorCode::InvalidRankingRule);
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub fn unwrap_failure(self) -> MeilisearchError {
+        match self {
+            Self::Failed {
+                content: FailedTask { error, .. },
+            } => error,
+            _ => panic!("Called `unwrap_failure` on a non `Failed` task."),
+        }
+    }
+
+    /// Returns `true` if the [Task] is [Self::Failed].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let task = client.create_index("is_failure", None).await.unwrap();
+    /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
+    ///
+    ///
+    /// let task = index.set_ranking_rules(["wrong_ranking_rule"])
+    ///   .await
+    ///   .unwrap()
+    ///   .wait_for_completion(&client, None, None)
+    ///   .await
+    ///   .unwrap();
+    ///
+    /// assert!(task.is_failure());
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    pub fn is_failure(&self) -> bool {
+        matches!(self, Self::Failed { .. })
+    }
+
+    /// Returns `true` if the [Task] is [Self::Succeeded].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// let task = client
+    ///   .create_index("is_success", None)
+    ///   .await
+    ///   .unwrap()
+    ///   .wait_for_completion(&client, None, None)
+    ///   .await
+    ///   .unwrap();
+    ///
+    /// assert!(task.is_success());
+    /// # task.try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    pub fn is_success(&self) -> bool {
+        matches!(self, Self::Succeeded { .. })
+    }
+
+    /// Returns `true` if the [Task] is pending ([Self::Enqueued] or [Self::Processing]).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// let task = client
+    ///   .create_index("is_success", None)
+    ///   .await
+    ///   .unwrap();
+    ///
+    /// assert!(task.is_pending());
+    /// # task.wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    pub fn is_pending(&self) -> bool {
+        matches!(self, Self::Enqueued { .. } | Self::Processing { .. })
     }
 }
 
@@ -284,7 +385,11 @@ pub(crate) async fn async_sleep(interval: Duration) {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{client::*, document};
+    use crate::{
+        client::*,
+        document,
+        errors::{ErrorCode, ErrorType},
+    };
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
     use std::time::{self, Duration};
@@ -485,11 +590,9 @@ mod test {
         let task = movies.set_ranking_rules(["wrong_ranking_rule"]).await?;
         let status = client.wait_for_task(task, None, None).await?;
 
-        assert!(matches!(status, Task::Failed { .. }));
-        if let Task::Failed { content: status } = status {
-            assert_eq!(status.error.error_code, "invalid_ranking_rule");
-            assert_eq!(status.error.error_type, "invalid_request");
-        }
+        let error = status.unwrap_failure();
+        assert_eq!(error.error_code, ErrorCode::InvalidRankingRule);
+        assert_eq!(error.error_type, ErrorType::InvalidRequest);
         Ok(())
     }
 }

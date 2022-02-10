@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 /// An enum representing the errors that can occur.
 
 #[derive(Debug)]
@@ -5,19 +7,7 @@
 pub enum Error {
     /// The exhaustive list of Meilisearch errors: <https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md>
     /// Also check out: <https://github.com/meilisearch/Meilisearch/blob/main/meilisearch-error/src/lib.rs>
-    MeiliSearchError {
-        /// The human readable error message
-        error_message: String,
-        /// The error code of the error.  Officially documented at
-        /// <https://docs.meilisearch.com/errors>.
-        error_code: ErrorCode,
-        /// The type of error (invalid request, internal error, or authentication
-        /// error)
-        error_type: ErrorType,
-        /// A link to the Meilisearch documentation for an error.
-        error_link: String,
-    },
-
+    Meilisearch(MeilisearchError),
     /// There is no Meilisearch server listening on the [specified host]
     /// (../client/struct.Client.html#method.new).
     UnreachableServer,
@@ -37,8 +27,34 @@ pub enum Error {
     HttpError(String),
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MeilisearchError {
+    /// The human readable error message
+    #[serde(rename = "message")]
+    pub error_message: String,
+    /// The error code of the error.  Officially documented at
+    /// <https://docs.meilisearch.com/errors>.
+    #[serde(rename = "code")]
+    pub error_code: ErrorCode,
+    /// The type of error (invalid request, internal error, or authentication
+    /// error)
+    #[serde(rename = "type")]
+    pub error_type: ErrorType,
+    /// A link to the Meilisearch documentation for an error.
+    #[serde(rename = "link")]
+    pub error_link: String,
+}
+
+impl From<MeilisearchError> for Error {
+    fn from(error: MeilisearchError) -> Self {
+        Self::Meilisearch(error)
+    }
+}
+
 /// The type of error that was encountered.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum ErrorType {
     /// The submitted request was invalid.
@@ -47,12 +63,29 @@ pub enum ErrorType {
     Internal,
     /// Authentication was either incorrect or missing.
     Auth,
+
+    /// That's unexpected. Please open a GitHub issue after ensuring you are
+    /// using the supported version of the Meilisearch server.
+    #[serde(other)]
+    Unknown,
+}
+
+impl std::fmt::Display for ErrorType {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(
+            fmt,
+            "{}",
+            // this can't fail
+            serde_json::to_value(self).unwrap().as_str().unwrap()
+        )
+    }
 }
 
 /// The error code.
 ///
 /// Officially documented at <https://docs.meilisearch.com/errors>.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum ErrorCode {
     IndexCreationFailed,
@@ -99,167 +132,33 @@ pub enum ErrorCode {
 
     /// That's unexpected. Please open a GitHub issue after ensuring you are
     /// using the supported version of the Meilisearch server.
-    Unknown(UnknownErrorCode),
-}
-
-#[derive(Clone)]
-pub struct UnknownErrorCode(String);
-
-impl std::fmt::Display for UnknownErrorCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(&self.0, f)
-    }
-}
-impl std::fmt::Debug for UnknownErrorCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(&self.0, f)
-    }
-}
-
-impl ErrorType {
-    /// Converts the error type to the string representation returned by
-    /// Meilisearch.
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            ErrorType::InvalidRequest => "invalid_request",
-            ErrorType::Internal => "internal",
-            ErrorType::Auth => "auth",
-        }
-    }
-    /// Converts the error type string returned by Meilisearch into an
-    /// `ErrorType` enum. If the error type input is not recognized, None is
-    /// returned.
-    pub fn parse(input: &str) -> Option<Self> {
-        match input {
-            "invalid_request" => Some(ErrorType::InvalidRequest),
-            "internal" => Some(ErrorType::Internal),
-            "auth" => Some(ErrorType::Auth),
-            _ => None,
-        }
-    }
-}
-
-impl ErrorCode {
-    /// Converts the error code to the string representation returned by
-    /// Meilisearch.
-    pub fn as_str(&self) -> &str {
-        match self {
-            ErrorCode::IndexCreationFailed => "index_creation_failed",
-            ErrorCode::IndexAlreadyExists => "index_already_exists",
-            ErrorCode::IndexNotFound => "index_not_found",
-            ErrorCode::InvalidIndexUid => "invalid_index_uid",
-            ErrorCode::InvalidState => "invalid_state",
-            ErrorCode::PrimaryKeyInferenceFailed => "primary_key_inference_failed",
-            ErrorCode::IndexPrimaryKeyAlreadyPresent => "index_primary_key_already_exists",
-            ErrorCode::InvalidRankingRule => "invalid_ranking_rule",
-            ErrorCode::InvalidStoreFile => "invalid_store_file",
-            ErrorCode::MaxFieldsLimitExceeded => "max_field_limit_exceeded",
-            ErrorCode::MissingDocumentId => "missing_document_id",
-            ErrorCode::InvalidDocumentId => "invalid_document_id",
-            ErrorCode::InvalidFilter => "invalid_filter",
-            ErrorCode::InvalidSort => "invalid_sort",
-            ErrorCode::BadParameter => "bad_parameter",
-            ErrorCode::BadRequest => "bad_request",
-            ErrorCode::DatabaseSizeLimitReached => "database_size_limit_reached",
-            ErrorCode::DocumentNotFound => "document_not_found",
-            ErrorCode::InternalError => "internal",
-            ErrorCode::InvalidGeoField => "invalid_geo_field",
-            ErrorCode::InvalidApiKey => "invalid_api_key",
-            ErrorCode::MissingAuthorizationHeader => "missing_authorization_header",
-            ErrorCode::TaskNotFound => "task_not_found",
-            ErrorCode::DumpNotFound => "dump_not_found",
-            ErrorCode::NoSpaceLeftOnDevice => "no_space_left_on_device",
-            ErrorCode::PayloadTooLarge => "payload_too_large",
-            ErrorCode::UnretrievableDocument => "unretrievable_document",
-            ErrorCode::SearchError => "search_error",
-            ErrorCode::UnsupportedMediaType => "unsupported_media_type",
-            ErrorCode::DumpAlreadyProcessing => "dump_already_processing",
-            ErrorCode::DumpProcessFailed => "dump_process_failed",
-            ErrorCode::MissingContentType => "missing_content_type",
-            ErrorCode::MalformedPayload => "malformed_payload",
-            ErrorCode::InvalidContentType => "invalid_content_type",
-            ErrorCode::MissingPayload => "missing_payload",
-            ErrorCode::MissingParameter => "missing_parameter",
-            ErrorCode::InvalidApiKeyDescription => "invalid_api_key_description",
-            ErrorCode::InvalidApiKeyActions => "invalid_api_key_actions",
-            ErrorCode::InvalidApiKeyIndexes => "invalid_api_key_indexes",
-            ErrorCode::InvalidApiKeyExpiresAt => "invalid_api_key_expires_at",
-            ErrorCode::ApiKeyNotFound => "api_key_not_found",
-            // Other than this variant, all the other `&str`s are 'static
-            ErrorCode::Unknown(inner) => &inner.0,
-        }
-    }
-    /// Converts the error code string returned by Meilisearch into an `ErrorCode`
-    /// enum. If the error type input is not recognized, `ErrorCode::Unknown`
-    /// is returned.
-    pub fn parse(input: &str) -> Self {
-        match input {
-            "index_creation_failed" => ErrorCode::IndexCreationFailed,
-            "index_already_exists" => ErrorCode::IndexAlreadyExists,
-            "index_not_found" => ErrorCode::IndexNotFound,
-            "invalid_index_uid" => ErrorCode::InvalidIndexUid,
-            "invalid_state" => ErrorCode::InvalidState,
-            "primary_key_inference_failed" => ErrorCode::PrimaryKeyInferenceFailed,
-            "index_primary_key_already_exists" => ErrorCode::IndexPrimaryKeyAlreadyPresent,
-            "invalid_ranking_rule" => ErrorCode::InvalidRankingRule,
-            "invalid_store_file" => ErrorCode::InvalidStoreFile,
-            "max_field_limit_exceeded" => ErrorCode::MaxFieldsLimitExceeded,
-            "missing_document_id" => ErrorCode::MissingDocumentId,
-            "invalid_document_id" => ErrorCode::InvalidDocumentId,
-            "invalid_filter" => ErrorCode::InvalidFilter,
-            "invalid_sort" => ErrorCode::InvalidSort,
-            "bad_parameter" => ErrorCode::BadParameter,
-            "bad_request" => ErrorCode::BadRequest,
-            "database_size_limit_reached" => ErrorCode::DatabaseSizeLimitReached,
-            "document_not_found" => ErrorCode::DocumentNotFound,
-            "internal" => ErrorCode::InternalError,
-            "invalid_geo_field" => ErrorCode::InvalidGeoField,
-            "invalid_api_key" => ErrorCode::InvalidApiKey,
-            "missing_authorization_header" => ErrorCode::MissingAuthorizationHeader,
-            "task_not_found" => ErrorCode::TaskNotFound,
-            "dump_not_found" => ErrorCode::DumpNotFound,
-            "no_space_left_on_device" => ErrorCode::NoSpaceLeftOnDevice,
-            "payload_too_large" => ErrorCode::PayloadTooLarge,
-            "unretrievable_document" => ErrorCode::UnretrievableDocument,
-            "search_error" => ErrorCode::SearchError,
-            "unsupported_media_type" => ErrorCode::UnsupportedMediaType,
-            "dump_already_processing" => ErrorCode::DumpAlreadyProcessing,
-            "dump_process_failed" => ErrorCode::DumpProcessFailed,
-            "missing_content_type" => ErrorCode::MissingContentType,
-            "malformed_payload" => ErrorCode::MalformedPayload,
-            "invalid_content_type" => ErrorCode::InvalidContentType,
-            "missing_payload" => ErrorCode::MissingPayload,
-            "invalid_api_key_description" => ErrorCode::InvalidApiKeyDescription,
-            "invalid_api_key_actions" => ErrorCode::InvalidApiKeyActions,
-            "invalid_api_key_indexes" => ErrorCode::InvalidApiKeyIndexes,
-            "invalid_api_key_expires_at" => ErrorCode::InvalidApiKeyExpiresAt,
-            "api_key_not_found" => ErrorCode::ApiKeyNotFound,
-            inner => ErrorCode::Unknown(UnknownErrorCode(inner.to_string())),
-        }
-    }
+    #[serde(other)]
+    Unknown,
 }
 
 impl std::fmt::Display for ErrorCode {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        match self {
-            ErrorCode::Unknown(inner) => write!(fmt, "unknown ({})", inner),
-            _ => write!(fmt, "{}", self.as_str()),
-        }
+        write!(
+            fmt,
+            "{}",
+            // this can't fail
+            serde_json::to_value(self).unwrap().as_str().unwrap()
+        )
     }
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         match self {
-            Error::MeiliSearchError {
+            Error::Meilisearch(MeilisearchError {
                 error_message,
                 error_code,
                 error_type,
                 error_link,
-            } => write!(
+            }) => write!(
                 fmt,
                 "Meilisearch {}: {}: {}. {}",
-                error_type.as_str(),
+                error_type,
                 error_code,
                 error_message,
                 error_link,
@@ -275,46 +174,6 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<&serde_json::Value> for Error {
-    fn from(json: &serde_json::Value) -> Error {
-        let error_message = json
-            .get("message")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| json.to_string());
-
-        let error_link = json
-            .get("link")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .unwrap_or_else(String::new);
-
-        let error_type = json
-            .get("type")
-            .and_then(|v| v.as_str())
-            .and_then(ErrorType::parse)
-            .unwrap_or(ErrorType::Internal);
-
-        // If the response doesn't contain a type field, the error type
-        // is assumed to be an internal error.
-
-        let error_code = json
-            .get("code")
-            .and_then(|v| v.as_str())
-            .map(ErrorCode::parse)
-            .unwrap_or_else(|| {
-                ErrorCode::Unknown(UnknownErrorCode(String::from("missing error code")))
-            });
-
-        Error::MeiliSearchError {
-            error_message,
-            error_code,
-            error_type,
-            error_link,
-        }
-    }
-}
-
 #[cfg(not(target_arch = "wasm32"))]
 impl From<isahc::Error> for Error {
     fn from(error: isahc::Error) -> Error {
@@ -323,5 +182,43 @@ impl From<isahc::Error> for Error {
         } else {
             Error::HttpError(error)
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_meilisearch_error() {
+        let error: MeilisearchError = serde_json::from_str(
+            r#"
+{
+  "message": "The cool error message.",
+  "code": "index_creation_failed",
+  "type": "internal",
+  "link": "https://the best link eveer"
+}"#,
+        )
+        .unwrap();
+
+        assert_eq!(error.error_message, "The cool error message.");
+        assert_eq!(error.error_code, ErrorCode::IndexCreationFailed);
+        assert_eq!(error.error_type, ErrorType::Internal);
+        assert_eq!(error.error_link, "https://the best link eveer");
+
+        let error: MeilisearchError = serde_json::from_str(
+            r#"
+{
+  "message": "",
+  "code": "An unknown error",
+  "type": "An unknown type",
+  "link": ""
+}"#,
+        )
+        .unwrap();
+
+        assert_eq!(error.error_code, ErrorCode::Unknown);
+        assert_eq!(error.error_type, ErrorType::Unknown);
     }
 }
