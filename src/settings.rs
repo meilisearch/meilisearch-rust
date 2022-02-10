@@ -31,7 +31,7 @@ use std::collections::HashMap;
 ///     ..Settings::new()
 /// };
 /// ```
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     /// List of associated words treated similarly
@@ -60,101 +60,6 @@ pub struct Settings {
     pub displayed_attributes: Option<Vec<String>>,
 }
 
-pub trait IntoVecString: Sized {
-    fn convert(self) -> Vec<String>;
-}
-
-impl IntoVecString for &[&str] {
-    #[inline]
-    fn convert(self) -> Vec<String> {
-        let mut vec = Vec::new();
-        for item in self {
-            vec.push((*item).into())
-        }
-        vec
-    }
-}
-
-impl IntoVecString for Vec<&str> {
-    #[inline]
-    fn convert(self) -> Vec<String> {
-        let mut vec = Vec::new();
-        for item in self {
-            vec.push((*item).into())
-        }
-        vec
-    }
-}
-
-impl IntoVecString for Vec<String> {
-    #[inline]
-    fn convert(self) -> Vec<String> {
-        self
-    }
-}
-
-impl IntoVecString for &[String] {
-    #[inline]
-    fn convert(self) -> Vec<String> {
-        let mut vec = Vec::new();
-        for item in self {
-            vec.push(item.clone())
-        }
-        vec
-    }
-}
-
-impl IntoVecString for &[&String] {
-    #[inline]
-    fn convert(self) -> Vec<String> {
-        let mut vec = Vec::new();
-        for item in self {
-            vec.push((*item).clone())
-        }
-        vec
-    }
-}
-
-impl<const N: usize> IntoVecString for &[String; N] {
-    fn convert(self) -> Vec<String> {
-        let mut vec = Vec::new();
-        for item in self {
-            vec.push((*item).clone())
-        }
-        vec
-    }
-}
-
-impl<const N: usize> IntoVecString for &[&str; N] {
-    fn convert(self) -> Vec<String> {
-        let mut vec = Vec::new();
-        for item in self {
-            vec.push((*item).to_string())
-        }
-        vec
-    }
-}
-
-impl<const N: usize> IntoVecString for [String; N] {
-    fn convert(self) -> Vec<String> {
-        let mut vec = Vec::new();
-        for item in self.iter() {
-            vec.push((*item).clone())
-        }
-        vec
-    }
-}
-
-impl<const N: usize> IntoVecString for [&str; N] {
-    fn convert(self) -> Vec<String> {
-        let mut vec = Vec::new();
-        for item in self.iter() {
-            vec.push((*item).to_string())
-        }
-        vec
-    }
-}
-
 #[allow(missing_docs)]
 impl Settings {
     /// Create undefined settings
@@ -170,67 +75,121 @@ impl Settings {
             displayed_attributes: None,
         }
     }
-    pub fn with_synonyms<T: Into<String>, U: IntoVecString>(
-        self,
-        synonyms: HashMap<T, U>,
-    ) -> Settings {
-        let mut converted_synonyms = HashMap::new();
-        for (key, array) in synonyms {
-            let key: String = key.into();
-            let array: Vec<String> = array.convert();
-            converted_synonyms.insert(key, array);
+    pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
+    where
+        S: AsRef<str>,
+        V: AsRef<str>,
+        U: IntoIterator<Item = V>,
+    {
+        Settings {
+            synonyms: Some(
+                synonyms
+                    .into_iter()
+                    .map(|(key, value)| {
+                        (
+                            key.as_ref().to_string(),
+                            value.into_iter().map(|v| v.as_ref().to_string()).collect(),
+                        )
+                    })
+                    .collect(),
+            ),
+            ..self
         }
+    }
 
-        Settings {
-            synonyms: Some(converted_synonyms),
-            ..self
-        }
-    }
-    pub fn with_stop_words(self, stop_words: impl IntoVecString) -> Settings {
-        Settings {
-            stop_words: Some(stop_words.convert()),
-            ..self
-        }
-    }
-    pub fn with_ranking_rules<T: IntoVecString>(self, ranking_rules: T) -> Settings {
-        Settings {
-            ranking_rules: Some(ranking_rules.convert()),
-            ..self
-        }
-    }
-    pub fn with_filterable_attributes<T: IntoVecString>(
+    pub fn with_stop_words(
         self,
-        filterable_attributes: T,
+        stop_words: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Settings {
         Settings {
-            filterable_attributes: Some(filterable_attributes.convert()),
+            stop_words: Some(
+                stop_words
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             ..self
         }
     }
-    pub fn with_sortable_attributes<T: IntoVecString>(self, sortable_attributes: T) -> Settings {
-        Settings {
-            sortable_attributes: Some(sortable_attributes.convert()),
-            ..self
-        }
-    }
-    pub fn with_distinct_attribute<T: Into<String>>(self, distinct_attribute: T) -> Settings {
-        Settings {
-            distinct_attribute: Some(distinct_attribute.into()),
-            ..self
-        }
-    }
-    pub fn with_searchable_attributes<T: IntoVecString>(
+
+    pub fn with_ranking_rules(
         self,
-        searchable_attributes: T,
+        ranking_rules: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Settings {
         Settings {
-            searchable_attributes: Some(searchable_attributes.convert()),
+            ranking_rules: Some(
+                ranking_rules
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             ..self
         }
     }
-    pub fn with_displayed_attributes<T: IntoVecString>(self, displayed_attributes: T) -> Settings {
+
+    pub fn with_filterable_attributes(
+        self,
+        filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Settings {
         Settings {
-            displayed_attributes: Some(displayed_attributes.convert()),
+            filterable_attributes: Some(
+                filterable_attributes
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
+            ..self
+        }
+    }
+
+    pub fn with_sortable_attributes(
+        self,
+        sortable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Settings {
+        Settings {
+            sortable_attributes: Some(
+                sortable_attributes
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
+            ..self
+        }
+    }
+
+    pub fn with_distinct_attribute(self, distinct_attribute: impl AsRef<str>) -> Settings {
+        Settings {
+            distinct_attribute: Some(distinct_attribute.as_ref().to_string()),
+            ..self
+        }
+    }
+
+    pub fn with_searchable_attributes(
+        self,
+        searchable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Settings {
+        Settings {
+            searchable_attributes: Some(
+                searchable_attributes
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
+            ..self
+        }
+    }
+
+    pub fn with_displayed_attributes(
+        self,
+        displayed_attributes: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Settings {
+        Settings {
+            displayed_attributes: Some(
+                displayed_attributes
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             ..self
         }
     }
@@ -541,14 +500,22 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn set_stop_words(&self, stop_words: impl IntoVecString) -> Result<Task, Error> {
+    pub async fn set_stop_words(
+        &self,
+        stop_words: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Result<Task, Error> {
         Ok(request::<Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(stop_words.convert()),
+            Method::Post(
+                stop_words
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             202,
         )
         .await?)
@@ -581,7 +548,7 @@ impl Index {
     /// ```
     pub async fn set_ranking_rules(
         &self,
-        ranking_rules: impl IntoVecString,
+        ranking_rules: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
         Ok(request::<Vec<String>, Task>(
             &format!(
@@ -589,7 +556,12 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(ranking_rules.convert()),
+            Method::Post(
+                ranking_rules
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             202,
         )
         .await?)
@@ -613,7 +585,7 @@ impl Index {
     /// ```
     pub async fn set_filterable_attributes(
         &self,
-        filterable_attributes: impl IntoVecString,
+        filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
         Ok(request::<Vec<String>, Task>(
             &format!(
@@ -621,7 +593,12 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(filterable_attributes.convert()),
+            Method::Post(
+                filterable_attributes
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             202,
         )
         .await?)
@@ -645,7 +622,7 @@ impl Index {
     /// ```
     pub async fn set_sortable_attributes(
         &self,
-        sortable_attributes: impl IntoVecString,
+        sortable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
         Ok(request::<Vec<String>, Task>(
             &format!(
@@ -653,7 +630,12 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(sortable_attributes.convert()),
+            Method::Post(
+                sortable_attributes
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             202,
         )
         .await?)
@@ -676,7 +658,7 @@ impl Index {
     /// ```
     pub async fn set_distinct_attribute(
         &self,
-        distinct_attribute: impl Into<String>,
+        distinct_attribute: impl AsRef<str>,
     ) -> Result<Task, Error> {
         Ok(request::<String, Task>(
             &format!(
@@ -684,7 +666,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(distinct_attribute.into()),
+            Method::Post(distinct_attribute.as_ref().to_string()),
             202,
         )
         .await?)
@@ -707,7 +689,7 @@ impl Index {
     /// ```
     pub async fn set_searchable_attributes(
         &self,
-        searchable_attributes: impl IntoVecString,
+        searchable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
         Ok(request::<Vec<String>, Task>(
             &format!(
@@ -715,7 +697,12 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(searchable_attributes.convert()),
+            Method::Post(
+                searchable_attributes
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             202,
         )
         .await?)
@@ -738,7 +725,7 @@ impl Index {
     /// ```
     pub async fn set_displayed_attributes(
         &self,
-        displayed_attributes: impl IntoVecString,
+        displayed_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
         Ok(request::<Vec<String>, Task>(
             &format!(
@@ -746,7 +733,12 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(displayed_attributes.convert()),
+            Method::Post(
+                displayed_attributes
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             202,
         )
         .await?)
