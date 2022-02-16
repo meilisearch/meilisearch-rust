@@ -690,7 +690,7 @@ get_all_keys_1: |-
 create_a_key_1: |-
   let mut key_options = KeyBuilder::new("Add documents: Products API key");
   key_options.with_action(Action::DocumentsAdd)
-      .with_expires_at("2042-04-02T00:42:42Z")
+      .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
       .with_index("products");
   let new_key = client.create_key(key_options).await.unwrap();
 update_a_key_1: |-
@@ -698,7 +698,7 @@ update_a_key_1: |-
   key.description = "Manage documents: Products/Reviews API key".to_string();
   key.actions = vec![Action::DocumentsAdd, Action::DocumentsDelete];
   key.indexes = vec!["products".to_string(), "reviews".to_string()];
-  key.expires_at = Some("2042-04-02T00:42:42Z".to_string());
+  key.expires_at = Some(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC));
   let updated_key = client.update_key(&key);
 delete_a_key_1: |-
   let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
@@ -718,7 +718,7 @@ security_guide_create_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let mut key_options = KeyBuilder::new("Search patient records key");
   key_options.with_action(Action::Search)
-      .with_expires_at("2023-01-01T00:00:00Z")
+      .with_expires_at(time::macros::datetime!(2023 - 01 - 01 00:00:00 UTC))
       .with_index("patient_medical_records");
   let new_key = client.create_key(key_options).await.unwrap();
 security_guide_list_keys_1: |-

@@ -2,14 +2,17 @@ use crate::{client::Client, document::*, errors::Error, request::*, search::*, t
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, fmt::Display, time::Duration};
+use time::OffsetDateTime;
 
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
 pub struct JsonIndex {
     pub uid: String,
     pub primaryKey: Option<String>,
-    pub createdAt: String, // TODO: use a chrono date
-    pub updatedAt: String, // TODO: use a chrono date
+    #[serde(with = "time::serde::rfc3339")]
+    pub createdAt: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updatedAt: OffsetDateTime,
 }
 
 impl JsonIndex {

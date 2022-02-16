@@ -99,11 +99,11 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// # let index = client.create_index("movies", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    /// # let index = client.create_index("get_index", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    /// // get the index named "movies"
-    /// let movies = client.get_index("movies").await.unwrap();
-    /// assert_eq!(movies.as_ref(), "movies");
+    /// // get the index named "get_index"
+    /// let index = client.get_index("get_index").await.unwrap();
+    /// assert_eq!(index.as_ref(), "get_index");
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -124,11 +124,11 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
-    /// # let index = client.create_index("movies", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    /// # let index = client.create_index("get_raw_index", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    /// // get the index named "movies"
-    /// let movies = client.get_raw_index("movies").await.unwrap();
-    /// assert_eq!(movies.uid, "movies");
+    /// // get the index named "get_raw_index"
+    /// let raw_index = client.get_raw_index("get_raw_index").await.unwrap();
+    /// assert_eq!(raw_index.uid, "get_raw_index");
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -158,7 +158,7 @@ impl Client {
     /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
     /// // Create a new index called movies and access it
-    /// let task = client.create_index("movies", None).await.unwrap();
+    /// let task = client.create_index("create_index", None).await.unwrap();
     ///
     /// // Wait for the task to complete
     /// let task = task.wait_for_completion(&client, None, None).await.unwrap();
@@ -166,7 +166,7 @@ impl Client {
     /// // Try to get the inner index if the task succeeded
     /// let index = task.try_make_index(&client).unwrap();
     ///
-    /// assert_eq!(index.as_ref(), "movies");
+    /// assert_eq!(index.as_ref(), "create_index");
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -634,6 +634,7 @@ mod tests {
         key::{Action, KeyBuilder},
     };
     use meilisearch_test_macro::meilisearch_test;
+    use time::OffsetDateTime;
 
     #[meilisearch_test]
     async fn test_get_keys(client: Client) {
@@ -705,15 +706,20 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_create_key(client: Client, description: String) {
+        let expires_at = OffsetDateTime::now_utc() + time::Duration::HOUR;
         let mut key = KeyBuilder::new(description.clone());
         key.with_action(Action::DocumentsAdd)
-            .with_expires_at("3022-02-09T01:32:46Z")
+            .with_expires_at(expires_at.clone())
             .with_index("*");
         let key = client.create_key(key).await.unwrap();
 
         assert_eq!(key.actions, vec![Action::DocumentsAdd]);
         assert_eq!(key.description, description);
-        assert_eq!(key.expires_at, Some("3022-02-09T01:32:46Z".to_string()));
+        // We can't compare the two timestamp directly because of some nanoseconds imprecision with the floats
+        assert_eq!(
+            key.expires_at.unwrap().unix_timestamp(),
+            expires_at.unix_timestamp()
+        );
         assert_eq!(key.indexes, vec!["*".to_string()]);
 
         let keys = client.get_keys().await.unwrap();
@@ -722,9 +728,10 @@ mod tests {
 
         assert_eq!(remote_key.actions, vec![Action::DocumentsAdd]);
         assert_eq!(remote_key.description, description);
+        // We can't compare the two timestamp directly because of some nanoseconds imprecision with the floats
         assert_eq!(
-            remote_key.expires_at,
-            Some("3022-02-09T01:32:46Z".to_string())
+            remote_key.expires_at.unwrap().unix_timestamp(),
+            expires_at.unix_timestamp()
         );
         assert_eq!(remote_key.indexes, vec!["*".to_string()]);
 
@@ -748,20 +755,6 @@ mod tests {
             }
         ));
         */
-
-        // ==> Invalid expires_at
-        let mut key = KeyBuilder::new(&description);
-        key.with_expires_at("That’s totally not a date");
-        let error = client.create_key(key).await.unwrap_err();
-
-        assert!(matches!(
-            error,
-            Error::Meilisearch(MeilisearchError {
-                error_code: ErrorCode::InvalidApiKeyExpiresAt,
-                error_type: ErrorType::InvalidRequest,
-                ..
-            })
-        ));
 
         // ==> executing the action without enough right
         let no_right_key = KeyBuilder::new(&description);
@@ -789,18 +782,23 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_update_key(client: Client, description: String) {
+        let expires_at = OffsetDateTime::now_utc() + time::Duration::HOUR;
         let key = KeyBuilder::new(description.clone());
         let mut key = client.create_key(key).await.unwrap();
 
         key.actions = vec![Action::DocumentsAdd];
-        key.expires_at = Some("3022-02-09T01:32:46Z".to_string());
+        key.expires_at = Some(expires_at);
         key.indexes = vec!["*".to_string()];
 
         let key = client.update_key(key).await.unwrap();
 
         assert_eq!(key.actions, vec![Action::DocumentsAdd]);
         assert_eq!(key.description, description);
-        assert_eq!(key.expires_at, Some("3022-02-09T01:32:46Z".to_string()));
+        // We can't compare the two timestamp directly because of some nanoseconds imprecision with the floats
+        assert_eq!(
+            key.expires_at.unwrap().unix_timestamp(),
+            expires_at.unix_timestamp()
+        );
         assert_eq!(key.indexes, vec!["*".to_string()]);
 
         let keys = client.get_keys().await.unwrap();
@@ -809,9 +807,10 @@ mod tests {
 
         assert_eq!(remote_key.actions, vec![Action::DocumentsAdd]);
         assert_eq!(remote_key.description, description);
+        // We can't compare the two timestamp directly because of some nanoseconds imprecision with the floats
         assert_eq!(
-            remote_key.expires_at,
-            Some("3022-02-09T01:32:46Z".to_string())
+            remote_key.expires_at.unwrap().unix_timestamp(),
+            expires_at.unix_timestamp()
         );
         assert_eq!(remote_key.indexes, vec!["*".to_string()]);
 
@@ -821,7 +820,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_error_update_key(mut client: Client, description: String) {
         let key = KeyBuilder::new(description.clone());
-        let mut key = client.create_key(key).await.unwrap();
+        let key = client.create_key(key).await.unwrap();
 
         // ==> Invalid index name
         /* TODO: uncomment once meilisearch fix this bug: https://github.com/meilisearch/meilisearch/issues/2158
@@ -837,20 +836,6 @@ mod tests {
             }
         ));
         */
-
-        // ==> Invalid expires_at
-        key.expires_at = Some("That’s totally not a date".to_string());
-        let error = client.update_key(&key).await.unwrap_err();
-
-        assert!(matches!(
-            error,
-            Error::Meilisearch(MeilisearchError {
-                error_code: ErrorCode::InvalidApiKeyExpiresAt,
-                error_type: ErrorType::InvalidRequest,
-                ..
-            })
-        ));
-        key.expires_at = None;
 
         // ==> executing the action without enough right
         let no_right_key = KeyBuilder::new(&description);
