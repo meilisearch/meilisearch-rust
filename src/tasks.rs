@@ -329,7 +329,7 @@ impl Task {
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new("http://localhost:7700", "masterKey");
     /// let task = client
-    ///   .create_index("is_success", None)
+    ///   .create_index("is_pending", None)
     ///   .await
     ///   .unwrap();
     ///
