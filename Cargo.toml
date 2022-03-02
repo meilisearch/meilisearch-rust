@@ -36,6 +36,7 @@ env_logger = "0.9"
 futures-await-test = "0.3"
 futures = "0.3"
 meilisearch-test-macro = { path = "meilisearch-test-macro" }
+tokio = { version = "1", features = ["rt", "macros"] }
 
 # The following dependencies are required for examples
 wasm-bindgen = "0.2"
