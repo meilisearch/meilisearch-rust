@@ -881,6 +881,41 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_error_create_index(client: Client, index: Index) -> Result<(), Error> {
+        let error = client
+            .create_index("Wrong index name", None)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            Error::Meilisearch(MeilisearchError {
+                error_code: ErrorCode::InvalidIndexUid,
+                error_type: ErrorType::InvalidRequest,
+                ..
+            })
+        ));
+
+        // we try to create an index with the same uid of an already existing index
+        let error = client
+            .create_index(&*index.uid, None)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?
+            .unwrap_failure();
+
+        assert!(matches!(
+            error,
+            MeilisearchError {
+                error_code: ErrorCode::IndexAlreadyExists,
+                error_type: ErrorType::InvalidRequest,
+                ..
+            }
+        ));
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_list_all_indexes(client: Client, index: Index) {
         let all_indexes = client.list_all_indexes().await.unwrap();
         assert!(all_indexes.len() > 0);
