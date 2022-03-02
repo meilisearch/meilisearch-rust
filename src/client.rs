@@ -9,6 +9,7 @@ use crate::{
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{collections::HashMap, time::Duration};
+use time::OffsetDateTime;
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
@@ -588,7 +589,8 @@ impl Client {
 #[serde(rename_all = "camelCase")]
 pub struct ClientStats {
     pub database_size: usize,
-    pub last_update: Option<String>,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub last_update: Option<OffsetDateTime>,
     pub indexes: HashMap<String, IndexStats>,
 }
 
