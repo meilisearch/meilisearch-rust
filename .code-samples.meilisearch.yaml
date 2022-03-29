@@ -18,7 +18,7 @@ get_one_document_1: |-
 get_documents_1: |-
   let documents: Vec<Movie> = client.index("movies").get_documents(None, Some(2), None).await.unwrap();
 add_or_replace_documents_1: |-
-  let progress: Progress = client.index("movies").add_or_replace(&[
+  let task: Task = client.index("movies").add_or_replace(&[
     Movie {
       id: 287947,
       title: "Shazam".to_string(),
@@ -39,18 +39,18 @@ add_or_update_documents_1: |-
     fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
-  let progress: Progress = client.index("movies").add_or_update(&[
+  let task: Task = client.index("movies").add_or_update(&[
     IncompleteMovie {
       id: 287947,
       title: "Shazam ⚡️".to_string()
     }
   ], None).await.unwrap();
 delete_all_documents_1: |-
-  let progress: Progress = client.index("movies").delete_all_documents().await.unwrap();
+  let task: Task = client.index("movies").delete_all_documents().await.unwrap();
 delete_one_document_1: |-
-  let progress: Progress = client.index("movies").delete_document(25684).await.unwrap();
+  let task: Task = client.index("movies").delete_document(25684).await.unwrap();
 delete_documents_1: |-
-  let progress: Progress = client.index("movies").delete_documents(&[23488, 153738, 437035, 363869]).await.unwrap();
+  let task: Task = client.index("movies").delete_documents(&[23488, 153738, 437035, 363869]).await.unwrap();
 search_post_1: |-
   let results: SearchResults<Movie> = client.index("movies")
     .search()
@@ -107,9 +107,9 @@ update_settings_1: |-
     ])
     .with_synonyms(synonyms);
 
-  let progress: Progress = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: Task = client.index("movies").set_settings(&settings).await.unwrap();
 reset_settings_1: |-
-  let progress: Progress = client.index("movies").reset_settings().await.unwrap();
+  let task: Task = client.index("movies").reset_settings().await.unwrap();
 get_synonyms_1: |-
   let synonyms: HashMap<String, Vec<String>> = client.index("movies").get_synonyms().await.unwrap();
 update_synonyms_1: |-
@@ -118,16 +118,16 @@ update_synonyms_1: |-
   synonyms.insert(String::from("logan"), vec![String::from("xmen"), String::from("wolverine")]);
   synonyms.insert(String::from("wow"), vec![String::from("world of warcraft")]);
 
-  let progress: Progress = client.index("movies").set_synonyms(&synonyms).await.unwrap();
+  let task: Task = client.index("movies").set_synonyms(&synonyms).await.unwrap();
 reset_synonyms_1: |-
-  let progress: Progress = client.index("movies").reset_synonyms().await.unwrap();
+  let task: Task = client.index("movies").reset_synonyms().await.unwrap();
 get_stop_words_1: |-
   let stop_words: Vec<String> = client.index("movies").get_stop_words().await.unwrap();
 update_stop_words_1: |-
   let stop_words = ["of", "the", "to"];
-  let progress: Progress = client.index("movies").set_stop_words(&stop_words).await.unwrap();
+  let task: Task = client.index("movies").set_stop_words(&stop_words).await.unwrap();
 reset_stop_words_1: |-
-  let progress: Progress = client.index("movies").reset_stop_words().await.unwrap();
+  let task: Task = client.index("movies").reset_stop_words().await.unwrap();
 get_ranking_rules_1: |-
   let ranking_rules: Vec<String> = client.index("movies").get_ranking_rules().await.unwrap();
 update_ranking_rules_1: |-
@@ -142,15 +142,15 @@ update_ranking_rules_1: |-
     "rank:desc",
   ];
 
-  let progress: Progress = client.index("movies").set_ranking_rules(&ranking_rules).await.unwrap();
+  let task: Task = client.index("movies").set_ranking_rules(&ranking_rules).await.unwrap();
 reset_ranking_rules_1: |-
-  let progress: Progress = client.index("movies").reset_ranking_rules().await.unwrap();
+  let task: Task = client.index("movies").reset_ranking_rules().await.unwrap();
 get_distinct_attribute_1: |-
   let distinct_attribute: Option<String> = client.index("shoes").get_distinct_attribute().await.unwrap();
 update_distinct_attribute_1: |-
-  let progress: Progress = client.index("shoes").set_distinct_attribute("skuid").await.unwrap();
+  let task: Task = client.index("shoes").set_distinct_attribute("skuid").await.unwrap();
 reset_distinct_attribute_1: |-
-  let progress: Progress = client.index("shoes").reset_distinct_attribute().await.unwrap();
+  let task: Task = client.index("shoes").reset_distinct_attribute().await.unwrap();
 get_searchable_attributes_1: |-
   let searchable_attributes: Vec<String> = client.index("movies").get_searchable_attributes().await.unwrap();
 update_searchable_attributes_1: |-
@@ -160,9 +160,9 @@ update_searchable_attributes_1: |-
     "genre"
   ];
 
-  let progress: Progress = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
+  let task: Task = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
 reset_searchable_attributes_1: |-
-  let progress: Progress = client.index("movies").reset_searchable_attributes().await.unwrap();
+  let task: Task = client.index("movies").reset_searchable_attributes().await.unwrap();
 get_filterable_attributes_1: |-
   let filterable_attributes: Vec<String> = client.index("movies").get_filterable_attributes().await.unwrap();
 update_filterable_attributes_1: |-
@@ -171,9 +171,9 @@ update_filterable_attributes_1: |-
     "director"
   ];
 
-  let progress: Progress = client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
+  let task: Task = client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
 reset_filterable_attributes_1: |-
-  let progress: Progress = client.index("movies").reset_filterable_attributes().await.unwrap();
+  let task: Task = client.index("movies").reset_filterable_attributes().await.unwrap();
 get_displayed_attributes_1: |-
   let displayed_attributes: Vec<String> = client.index("movies").get_displayed_attributes().await.unwrap();
 update_displayed_attributes_1: |-
@@ -184,9 +184,9 @@ update_displayed_attributes_1: |-
     "release_date"
   ];
 
-  let progress: Progress = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
+  let task: Task = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
 reset_displayed_attributes_1: |-
-  let progress: Progress = client.index("movies").reset_displayed_attributes().await.unwrap();
+  let task: Task = client.index("movies").reset_displayed_attributes().await.unwrap();
 get_index_stats_1: |-
   let stats: IndexStats = client.index("movies").get_stats().await.unwrap();
 get_indexes_stats_1: |-
@@ -197,7 +197,7 @@ get_health_1: |-
 get_version_1: |-
   let version: Version = client.get_version().await.unwrap();
 distinct_attribute_guide_1: |-
-  let progress: Progress = client.index("jackets").set_distinct_attribute("product_id").await.unwrap();
+  let task: Task = client.index("jackets").set_distinct_attribute("product_id").await.unwrap();
 field_properties_guide_searchable_1: |-
   let searchable_attributes = [
     "title",
@@ -205,7 +205,7 @@ field_properties_guide_searchable_1: |-
     "genre"
   ];
 
-  let progress: Progress = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
+  let task: Task = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
 field_properties_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
@@ -214,7 +214,7 @@ field_properties_guide_displayed_1: |-
     "release_date"
   ];
 
-  let progress: Progress = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
+  let task: Task = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
 filtering_guide_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Avengers")
@@ -323,7 +323,7 @@ settings_guide_synonyms_1: |-
   let settings = Settings::new()
     .with_synonyms(synonyms);
 
-  let progress = client.index("tops").set_settings(&settings).await.unwrap();
+  let task = client.index("tops").set_settings(&settings).await.unwrap();
 settings_guide_stop_words_1: |-
   let settings = Settings::new()
     .with_stop_words([
@@ -332,7 +332,7 @@ settings_guide_stop_words_1: |-
       "an"
     ]);
 
-  let progress = client.index("movies").set_settings(&settings).await.unwrap();
+  let task = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_filterable_attributes_1: |-
   let settings = Settings::new()
     .with_filterable_attributes([
@@ -340,7 +340,7 @@ settings_guide_filterable_attributes_1: |-
       "genres"
     ]);
 
-  let progress: Progress = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: Task = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_ranking_rules_1: |-
   let settings = Settings::new()
     .with_ranking_rules([
@@ -354,12 +354,12 @@ settings_guide_ranking_rules_1: |-
       "rank:desc",
     ]);
 
-  let progress = client.index("movies").set_settings(&settings).await.unwrap();
+  let task = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_distinct_1: |-
   let settings = Settings::new()
     .with_distinct_attribute("product_id");
 
-  let progress: Progress = client.index("jackets").set_settings(&settings).await.unwrap();
+  let task: Task = client.index("jackets").set_settings(&settings).await.unwrap();
 settings_guide_searchable_1: |-
   let settings = Settings::new()
     .with_searchable_attributes([
@@ -368,7 +368,7 @@ settings_guide_searchable_1: |-
       "genre"
     ]);
 
-  let progress: Progress = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: Task = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_displayed_1: |-
   let settings = Settings::new()
     .with_displayed_attributes([
@@ -378,7 +378,7 @@ settings_guide_displayed_1: |-
       "release_date"
     ]);
 
-  let progress: Progress = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: Task = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_sortable_1: |-
   let settings = Settings::new()
     .with_sortable_attributes([
@@ -386,14 +386,13 @@ settings_guide_sortable_1: |-
       "price"
     ]);
 
-  let progress: Progress = client.index("books").set_settings(&settings).await.unwrap();
+  let task: Task = client.index("books").set_settings(&settings).await.unwrap();
 add_movies_json_1: |-
   use meilisearch_sdk::{
     indexes::*,
     document::*,
     client::*,
     search::*,
-    progress::*,
     settings::*
   };
   use serde::{Serialize, Deserialize};
@@ -425,7 +424,7 @@ documents_guide_add_movie_1: |-
   }
 
   // Add a document to our index
-  let progress: Progress = client.index("movies").add_documents(&[
+  let task: Task = client.index("movies").add_documents(&[
     IncompleteMovie {
       id: "123sq178".to_string(),
       title: "Amélie Poulain".to_string(),
@@ -502,7 +501,6 @@ getting_started_add_documents_md: |-
     document::*,
     client::*,
     search::*,
-    progress::*,
     settings::*
   };
   use serde::{Serialize, Deserialize};
@@ -554,7 +552,7 @@ getting_started_search_md: |-
 
   [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 faceted_search_update_settings_1: |-
-  let progress: Progress = client.index("movies").set_filterable_attributes(["director", "genres"]).await.unwrap();
+  let task: Task = client.index("movies").set_filterable_attributes(["director", "genres"]).await.unwrap();
 faceted_search_filter_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("thriller")
@@ -578,7 +576,7 @@ faceted_search_walkthrough_filterable_attributes_1: |-
     "production_companies"
   ];
 
-  let progress: Progress = client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
+  let task: Task = client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
 faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("thriller")
@@ -611,7 +609,7 @@ sorting_guide_update_sortable_attributes_1: |-
     "price"
   ];
 
-  let progress: Progress = client.index("books").set_sortable_attributes(&sortable_attributes).await.unwrap();
+  let task: Task = client.index("books").set_sortable_attributes(&sortable_attributes).await.unwrap();
 sorting_guide_update_ranking_rules_1: |-
   let ranking_rules = [
     "words",
@@ -622,7 +620,7 @@ sorting_guide_update_ranking_rules_1: |-
     "exactness"
   ];
 
-  let progress: Progress = client.index("books").set_ranking_rules(&ranking_rules).await.unwrap();
+  let task: Task = client.index("books").set_ranking_rules(&ranking_rules).await.unwrap();
 sorting_guide_sort_parameter_1: |-
   let results: SearchResults<Books> = client.index("books").search()
     .with_query("science fiction")
@@ -645,9 +643,9 @@ update_sortable_attributes_1: |-
     "author"
   ];
 
-  let progress: Progress = client.index("books").set_sortable_attributes(&sortable_attributes).await.unwrap();
+  let task: Task = client.index("books").set_sortable_attributes(&sortable_attributes).await.unwrap();
 reset_sortable_attributes_1: |-
-  let progress: Progress = client.index("books").reset_sortable_attributes().await.unwrap();
+  let task: Task = client.index("books").reset_sortable_attributes().await.unwrap();
 search_parameter_guide_sort_1: |-
   let results: SearchResults<Books> = client.index("books").search()
     .with_query("science fiction")
@@ -656,7 +654,7 @@ search_parameter_guide_sort_1: |-
     .await
     .unwrap();
 geosearch_guide_filter_settings_1: |-
-  let progress: Progress = client.index("restaurants").set_filterable_attributes(&["_geo"]).await.unwrap();
+  let task: Task = client.index("restaurants").set_filterable_attributes(&["_geo"]).await.unwrap();
 geosearch_guide_filter_usage_1: |-
   let results: SearchResults<Restaurant> = client.index("restaurants").search()
     .with_filter("_geoRadius(45.4628328, 9.1076931, 2000)")
@@ -670,7 +668,7 @@ geosearch_guide_filter_usage_2: |-
     .await
     .unwrap();
 geosearch_guide_sort_settings_1: |-
-  let progress: Progress = client.index("restaurants").set_sortable_attributes(&["_geo"]).await.unwrap();
+  let task: Task = client.index("restaurants").set_sortable_attributes(&["_geo"]).await.unwrap();
 geosearch_guide_sort_usage_1: |-
   let results: SearchResults<Restaurant> = client.index("restaurants").search()
     .with_sort(&["_geoPoint(48.8583701,2.2922926):asc"])
