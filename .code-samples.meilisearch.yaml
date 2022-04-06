@@ -726,3 +726,24 @@ security_guide_delete_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
   client.delete_key(&key);
+landing_getting_started_1: |-
+  let client = Client::new("http://localhost:7700", "masterKey");
+
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Movie {
+    id: String,
+    title: String
+  }
+  impl Document for Movie {
+    type UIDType = String;
+    fn get_uid(&self) -> &Self::UIDType { &self.id }
+  }
+
+  client.index("movies").add_documents(&[
+    Movie { "id": "1".to_string(), "title": "Carol".to_string() },
+    Movie { "id": "2".to_string(), "title": "Wonder Woman".to_string() },
+    Movie { "id": "3".to_string(), "title": "Life of Pi".to_string() },
+    Movie { "id": "4".to_string(), "title": "Mad Max: Fury Road".to_string() },
+    Movie { "id": "5".to_string(), "title": "Moana".to_string() },
+    Movie { "id": "6".to_string(), "title": "Philadelphia".to_string() }
+  ], Some("reference_number")).await.unwrap();
