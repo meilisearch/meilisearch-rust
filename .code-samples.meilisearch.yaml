@@ -231,13 +231,6 @@ filtering_guide_2: |-
     .unwrap();
 filtering_guide_3: |-
   let results: SearchResults<Movie> = client.index("movies").search()
-    .with_query("horror")
-    .with_filter(r#"director = "Jordan Peele""#)
-    .execute()
-    .await
-    .unwrap();
-filtering_guide_4: |-
-  let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Planet of the Apes")
     .with_filter(r#"rating >= 3 AND (NOT director = "Tim Burton")"#)
     .execute()
@@ -291,20 +284,6 @@ search_parameter_guide_highlight_1: |-
 
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
-search_parameter_guide_filter_1: |-
-  let results: SearchResults<Movie> = client.index("movies").search()
-    .with_query("n")
-    .with_filter("title = Nightshift")
-    .execute()
-    .await
-    .unwrap();
-search_parameter_guide_filter_2: |-
-  let results: SearchResults<Movie> = client.index("movies").search()
-    .with_query("shifu")
-    .with_filter(r#"title = "Kung Fu Panda""#)
-    .execute()
-    .await
-    .unwrap();
 search_parameter_guide_matches_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("winter feast")
@@ -703,15 +682,6 @@ faceted_search_facets_distribution_1: |-
     .await
     .unwrap();
   let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
-faceted_search_walkthrough_filterable_attributes_1: |-
-  let filterable_attributes = [
-    "director",
-    "producer",
-    "genres",
-    "production_companies"
-  ];
-
-  let task: Task = client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
 faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("thriller")
@@ -719,14 +689,6 @@ faceted_search_walkthrough_filter_1: |-
     .execute()
     .await
     .unwrap();
-faceted_search_walkthrough_facets_distribution_1: |-
-  let results: SearchResults<Movie> = client.index("movies").search()
-    .with_query("Batman")
-    .with_facets_distribution(Selectors::Some(&["genres"]))
-    .execute()
-    .await
-    .unwrap();
-  let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
 post_dump_1: |-
   client.create_dump().await.unwrap();
 get_dump_status_1: |-
