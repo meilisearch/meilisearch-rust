@@ -8,7 +8,7 @@ get_one_index_1: |-
 list_all_indexes_1: |-
   let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
 create_an_index_1: |-
-  let movies: Index = client.create_index("movies", Some("movie_id")).await.unwrap();
+  let movies: Index = client.create_index("movies", None).await.unwrap();
 update_an_index_1: |-
   client.index("movies").update("movie_review_id").await.unwrap();
 delete_an_index_1: |-
