@@ -611,10 +611,6 @@ getting_started_add_meteorites: |-
 
   client.index("meteorites").add_documents(&meteorites, None).await?;
 getting_started_configure_settings: |-
-  let mut synonyms = std::collections::HashMap::new();
-  synonyms.insert(String::from("wolverine"), vec!["xmen", "logan"]);
-  synonyms.insert(String::from("logan"), vec!["wolverine"]);
-
   let settings = Settings::new()
     .with_filterable_attributes([
       "mass",
