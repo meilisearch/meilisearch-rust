@@ -620,22 +620,7 @@ getting_started_configure_settings: |-
       "mass",
       "geo"
     ])
-    .with_searchable_attributes([
-      "title",
-      "overview",
-      "genres"
-    ])
-    .with_displayed_attributes([
-      "title",
-      "overview",
-      "genre"s,
-      "release_date"
-    ])
-
-  client.index("meteorites").updateSettings({
-    filterableAttributes: ["mass", "_geo"],
-    sortableAttributes: ["mass", "_geo"]
-  })
+  let task: Task = client.index("meteorites").set_settings(&settings).await.unwrap();
 getting_started_geoRadius: |-
   let results: SearchResults<Meteorite> = client.index("meteorites").search()
     .with_filter("_geoRadius(46.9480, 7.4474, 210000)")
