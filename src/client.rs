@@ -176,7 +176,7 @@ impl Client {
         uid: impl AsRef<str>,
         primary_key: Option<&str>,
     ) -> Result<Task, Error> {
-        Ok(request::<Value, Task>(
+        request::<Value, Task>(
             &format!("{}/indexes", self.host),
             &self.api_key,
             Method::Post(json!({
@@ -185,19 +185,19 @@ impl Client {
             })),
             202,
         )
-        .await?)
+        .await
     }
 
     /// Delete an index from its UID.
     /// To delete an [Index], use the [Index::delete] method.
     pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<Task, Error> {
-        Ok(request::<(), Task>(
+        request::<(), Task>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
             &self.api_key,
             Method::Delete,
             202,
         )
-        .await?)
+        .await
     }
 
     /// Alias for [Client::list_all_indexes].
@@ -467,7 +467,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, document, indexes::*, tasks::Task};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -477,13 +477,6 @@ impl Client {
     /// #    kind: String,
     /// # }
     /// #
-    /// # impl document::Document for Document {
-    /// #    type UIDType = usize;
-    /// #
-    /// #    fn get_uid(&self) -> &Self::UIDType {
-    /// #        &self.id
-    /// #    }
-    /// # }
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");

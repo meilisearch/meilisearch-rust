@@ -3,7 +3,7 @@
 //! ### Add Documents <!-- omit in TOC -->
 //!
 //! ```rust
-//! use meilisearch_sdk::{document::*, client::*};
+//! use meilisearch_sdk::client::*;
 //! use serde::{Serialize, Deserialize};
 //! use futures::executor::block_on;
 //!
@@ -14,14 +14,6 @@
 //!     genres: Vec<String>,
 //! }
 //!
-//! // That trait is required to make a struct usable by an index
-//! impl Document for Movie {
-//!     type UIDType = usize;
-//!
-//!     fn get_uid(&self) -> &Self::UIDType {
-//!         &self.id
-//!     }
-//! }
 //!
 //! fn main() { block_on(async move {
 //!     // Create a client (without sending any request so that can't fail)
@@ -49,7 +41,7 @@
 //! ### Basic Search <!-- omit in TOC -->
 //!
 //! ```rust
-//! # use meilisearch_sdk::{document::*, client::*};
+//! # use meilisearch_sdk::client::*;
 //! # use serde::{Serialize, Deserialize};
 //! # use futures::executor::block_on;
 //! # #[derive(Serialize, Deserialize, Debug)]
@@ -57,12 +49,6 @@
 //! #    id: usize,
 //! #    title: String,
 //! #    genres: Vec<String>,
-//! # }
-//! # impl Document for Movie {
-//! #    type UIDType = usize;
-//! #    fn get_uid(&self) -> &Self::UIDType {
-//! #        &self.id
-//! #    }
 //! # }
 //! # fn main() { block_on(async move {
 //! #    let client = Client::new("http://localhost:7700", "masterKey");
@@ -96,7 +82,7 @@
 //! ### Custom Search <!-- omit in toc -->
 //!
 //! ```rust
-//! # use meilisearch_sdk::{document::*, client::*, search::*};
+//! # use meilisearch_sdk::{client::*, search::*};
 //! # use serde::{Serialize, Deserialize};
 //! # use futures::executor::block_on;
 //! # #[derive(Serialize, Deserialize, Debug)]
@@ -104,12 +90,6 @@
 //! #    id: usize,
 //! #    title: String,
 //! #    genres: Vec<String>,
-//! # }
-//! # impl Document for Movie {
-//! #    type UIDType = usize;
-//! #    fn get_uid(&self) -> &Self::UIDType {
-//! #        &self.id
-//! #    }
 //! # }
 //! # fn main() { block_on(async move {
 //! #    let client = Client::new("http://localhost:7700", "masterKey");
@@ -175,7 +155,7 @@
 //! Then, you can perform the search:
 //!
 //! ```
-//! # use meilisearch_sdk::{document::*, client::*, search::*};
+//! # use meilisearch_sdk::{client::*, search::*};
 //! # use serde::{Serialize, Deserialize};
 //! # use futures::executor::block_on;
 //! # #[derive(Serialize, Deserialize, Debug)]
@@ -183,12 +163,6 @@
 //! #    id: usize,
 //! #    title: String,
 //! #    genres: Vec<String>,
-//! # }
-//! # impl Document for Movie {
-//! #    type UIDType = usize;
-//! #    fn get_uid(&self) -> &Self::UIDType {
-//! #        &self.id
-//! #    }
 //! # }
 //! # fn main() { block_on(async move {
 //! # let client = Client::new("http://localhost:7700", "masterKey");
@@ -242,7 +216,6 @@
 /// Module containing the [client::Client] struct.
 pub mod client;
 /// Module containing the [document::Document] trait.
-pub mod document;
 pub mod dumps;
 /// Module containing the [errors::Error] struct.
 pub mod errors;
