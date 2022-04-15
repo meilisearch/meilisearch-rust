@@ -34,10 +34,6 @@ add_or_update_documents_1: |-
     id: usize,
     title: String
   }
-  impl Document for IncompleteMovie {
-    type UIDType = usize;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
-  }
 
   let task: Task = client.index("movies").add_or_update(&[
     IncompleteMovie {
@@ -369,7 +365,6 @@ settings_guide_sortable_1: |-
 add_movies_json_1: |-
   use meilisearch_sdk::{
     indexes::*,
-    document::*,
     client::*,
     search::*,
     settings::*
@@ -397,10 +392,6 @@ documents_guide_add_movie_1: |-
     id: String,
     title: String
   }
-  impl Document for IncompleteMovie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
-  }
 
   // Add a document to our index
   let task: Task = client.index("movies").add_documents(&[
@@ -419,10 +410,6 @@ document_guide_add_document_primary_key: |-
     poster: String,
     overview: String,
     release_date: String
-  }
-  impl Document for Movie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   let task: Task = client.index("movies").add_documents(&[
@@ -459,10 +446,6 @@ getting_started_add_documents_md: |-
     release_date: i64,
     genres: Vec<String>
   }
-  impl Document for Movie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
-  }
   ```
 
   You will often need this `Movie` struct in other parts of this documentation. (you will have to change it a bit sometimes)
@@ -475,11 +458,6 @@ getting_started_add_documents_md: |-
     #[serde(flatten)]
     value: serde_json::Value,
   }
-
-  impl Document for Movie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
-  }
   ```
 
   Then, add documents into the index:
@@ -487,7 +465,6 @@ getting_started_add_documents_md: |-
   ```rust
   use meilisearch_sdk::{
     indexes::*,
-    document::*,
     client::*,
     search::*,
     settings::*
@@ -599,11 +576,6 @@ getting_started_add_meteorites: |-
     mass: i64,
     fall: String,
     _geo: Geo
-  }
-
-  impl Document for Meteorite {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   let mut file = File::open("meteorites.json")?;
@@ -811,10 +783,6 @@ landing_getting_started_1: |-
   struct Movie {
     id: String,
     title: String
-  }
-  impl Document for Movie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   client.index("movies").add_documents(&[
