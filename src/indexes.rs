@@ -1008,7 +1008,4 @@ mod tests {
         }
         Ok(())
     }
-
-    #[meilisearch_test]
-    async fn test_add_documents_in_batches() {}
 }
