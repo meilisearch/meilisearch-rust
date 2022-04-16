@@ -798,6 +798,169 @@ impl Index {
     ) -> Result<Task, Error> {
         self.client.wait_for_task(task_id, interval, timeout).await
     }
+
+    /// Add documents to the index in batches
+    ///
+    /// `documents` = A slice of documents
+    /// `batch_size` = Optional parameter that allows you to specify the size of the batch
+    /// `batch_size` is 1000 by default
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    /// use meilisearch_sdk::{client::*, document::*};
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    ///
+    /// impl Document for Movie {
+    ///     type UIDType = String;
+    ///
+    ///     fn get_uid(&self) -> &Self::UIDType {
+    ///         &self.name
+    ///     }
+    /// }
+    ///
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let movie_index = client.index("add_documents_in_batches");
+    ///
+    /// let tasks = movie_index.add_documents_in_batches(&[
+    ///  Movie {
+    ///         name: String::from("Interstellar"),
+    ///         description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
+    ///  },
+    ///  Movie {
+    ///         // note that the id field can only take alphanumerics characters (and '-' and '/')
+    ///         name: String::from("MrsDoubtfire"),
+    ///         description: String::from("Loving but irresponsible dad Daniel Hillard, estranged from his exasperated spouse, is crushed by a court order allowing only weekly visits with his kids. When Daniel learns his ex needs a housekeeper, he gets the job -- disguised as an English nanny. Soon he becomes not only his children's best pal but the kind of parent he should have been from the start.")
+    ///  },
+    ///  Movie {
+    ///         name: String::from("Apollo13"),
+    ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
+    ///     }],
+    ///     Some(1),
+    ///     Some("name")
+    /// ).await.unwrap();
+    ///
+    /// client.wait_for_task(tasks.last().unwrap(), None, None).await.unwrap();
+    ///
+    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
+    /// assert!(movies.len() >= 3);
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None,
+    /// None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn add_documents_in_batches<T: Document>(
+        &self,
+        documents: &[T],
+        batch_size: Option<usize>,
+        primary_key: Option<&str>,
+    ) -> Result<Vec<Task>, Error> {
+        let mut task = Vec::with_capacity(documents.len());
+        for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
+            task.push(self.add_documents(document_batch, primary_key).await?);
+        }
+        Ok(task)
+    }
+
+    /// Update documents to the index in batches
+    ///
+    /// `documents` = A slice of documents
+    /// `batch_size` = Optional parameter that allows you to specify the size of the batch
+    /// `batch_size` is 1000 by default
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    /// use meilisearch_sdk::{client::*, document::*};
+    ///
+    /// #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    ///
+    /// impl Document for Movie {
+    ///     type UIDType = String;
+    ///
+    ///     fn get_uid(&self) -> &Self::UIDType {
+    ///         &self.name
+    ///     }
+    /// }
+    ///
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let movie_index = client.index("update_documents_in_batches");
+    ///
+    /// let tasks = movie_index.add_documents_in_batches(&[
+    ///  Movie {
+    ///         name: String::from("Interstellar"),
+    ///         description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
+    ///  },
+    ///  Movie {
+    ///         // note that the id field can only take alphanumerics characters (and '-' and '/')
+    ///         name: String::from("MrsDoubtfire"),
+    ///         description: String::from("Loving but irresponsible dad Daniel Hillard, estranged from his exasperated spouse, is crushed by a court order allowing only weekly visits with his kids. When Daniel learns his ex needs a housekeeper, he gets the job -- disguised as an English nanny. Soon he becomes not only his children's best pal but the kind of parent he should have been from the start.")
+    ///  },
+    ///  Movie {
+    ///         name: String::from("Apollo13"),
+    ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
+    ///     }],
+    ///     Some(1),
+    ///     Some("name")
+    /// ).await.unwrap();
+    ///
+    /// client.wait_for_task(tasks.last().unwrap(), None, None).await.unwrap();
+    ///
+    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
+    /// assert!(movies.len() >= 3);
+    ///
+    /// let updated_movies = [
+    ///  Movie {
+    ///         name: String::from("Interstellar"),
+    ///         description: String::from("Updated!")
+    ///  },
+    ///  Movie {
+    ///         // note that the id field can only take alphanumerics characters (and '-' and '/')
+    ///         name: String::from("MrsDoubtfire"),
+    ///         description: String::from("Updated!")
+    ///  },
+    ///  Movie {
+    ///         name: String::from("Apollo13"),
+    ///         description: String::from("Updated!")
+    /// }];
+    ///
+    /// let tasks = movie_index.update_documents_in_batches(&updated_movies, Some(1), None).await.unwrap();
+    ///
+    /// client.wait_for_task(tasks.last().unwrap(), None, None).await.unwrap();
+    ///
+    /// let movies_updated = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
+    /// assert!(movies_updated.len() >= 3);
+    ///
+    /// assert!(&movies_updated[..] == &updated_movies[..]);
+    ///
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None,
+    /// None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn update_documents_in_batches<T: Document>(
+        &self,
+        documents: &[T],
+        batch_size: Option<usize>,
+        primary_key: Option<&str>,
+    ) -> Result<Vec<Task>, Error> {
+        let mut task = Vec::with_capacity(documents.len());
+        for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
+            task.push(self.add_or_update(document_batch, primary_key).await?);
+        }
+        Ok(task)
+    }
 }
 
 impl AsRef<str> for Index {
@@ -845,4 +1008,7 @@ mod tests {
         }
         Ok(())
     }
+
+    #[meilisearch_test]
+    async fn test_add_documents_in_batches() {}
 }
