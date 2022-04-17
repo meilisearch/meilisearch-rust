@@ -3,7 +3,7 @@
 //! ### Add Documents <!-- omit in TOC -->
 //!
 //! ```rust
-//! use meilisearch_sdk::{client::*};
+//! use meilisearch_sdk::client::*;
 //! use serde::{Serialize, Deserialize};
 //! use futures::executor::block_on;
 //!
