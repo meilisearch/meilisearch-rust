@@ -535,7 +535,7 @@ impl Index {
     ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*};
+    /// # use meilisearch_sdk::client::*;
     /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
