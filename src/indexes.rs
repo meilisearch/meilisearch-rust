@@ -422,7 +422,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_or_update<'a ,T: DeserializeOwned + Serialize + std::fmt::Debug>(
+    pub async fn add_or_update<T: DeserializeOwned + Serialize + std::fmt::Debug>(
         &self,
         documents: &[T],
         primary_key: Option<impl AsRef<str>>,
