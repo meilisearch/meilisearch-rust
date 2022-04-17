@@ -217,7 +217,7 @@ impl Index {
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// // retrieve a document (you have to put the document in the index before)
-    /// let interstellar = movies.get_document::<Movie>(&String::from("Interstellar")).await.unwrap();
+    /// let interstellar = movies.get_document::<Movie>("Interstellar").await.unwrap();
     ///
     /// assert_eq!(interstellar, Movie {
     ///     name: String::from("Interstellar"),
