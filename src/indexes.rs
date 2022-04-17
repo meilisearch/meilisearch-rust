@@ -195,7 +195,7 @@ impl Index {
 
     /// Get one [Document] using its unique id.
     /// Serde is needed. Add `serde = {version="1.0", features=["derive"]}` in the dependencies section of your Cargo.toml.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
