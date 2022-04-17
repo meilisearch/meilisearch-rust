@@ -385,7 +385,7 @@ impl Index {
     /// ```
     /// use serde::{Serialize, Deserialize};
     ///
-    /// # use meilisearch_sdk::{client::*};
+    /// # use meilisearch_sdk::client::*;
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
     /// #[derive(Serialize, Deserialize, Debug)]
