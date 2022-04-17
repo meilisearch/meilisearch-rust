@@ -274,7 +274,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_documents<'a, T: 'static + DeserializeOwned + Serialize + std::fmt::Debug>(
+    pub async fn get_documents<T: 'static + DeserializeOwned + Serialize + std::fmt::Debug>(
         &self,
         offset: Option<usize>,
         limit: Option<usize>,
