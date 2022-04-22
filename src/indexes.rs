@@ -809,20 +809,12 @@ impl Index {
     ///
     /// ```
     /// use serde::{Serialize, Deserialize};
-    /// use meilisearch_sdk::{client::*, document::*};
+    /// use meilisearch_sdk::client::*;
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
     ///     description: String,
-    /// }
-    ///
-    /// impl Document for Movie {
-    ///     type UIDType = String;
-    ///
-    ///     fn get_uid(&self) -> &Self::UIDType {
-    ///         &self.name
-    ///     }
     /// }
     ///
     /// # futures::executor::block_on(async move {
@@ -855,7 +847,7 @@ impl Index {
     /// None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_documents_in_batches<T: Document>(
+    pub async fn add_documents_in_batches<T: Serialize>(
         &self,
         documents: &[T],
         batch_size: Option<usize>,
@@ -878,20 +870,12 @@ impl Index {
     ///
     /// ```
     /// use serde::{Serialize, Deserialize};
-    /// use meilisearch_sdk::{client::*, document::*};
+    /// use meilisearch_sdk::client::*;
     ///
     /// #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
     /// struct Movie {
     ///     name: String,
     ///     description: String,
-    /// }
-    ///
-    /// impl Document for Movie {
-    ///     type UIDType = String;
-    ///
-    ///     fn get_uid(&self) -> &Self::UIDType {
-    ///         &self.name
-    ///     }
     /// }
     ///
     /// # futures::executor::block_on(async move {
@@ -949,7 +933,7 @@ impl Index {
     /// None).await.unwrap();
     /// # });
     /// ```
-    pub async fn update_documents_in_batches<T: Document>(
+    pub async fn update_documents_in_batches<T: Serialize>(
         &self,
         documents: &[T],
         batch_size: Option<usize>,
