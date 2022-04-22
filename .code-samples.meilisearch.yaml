@@ -29,14 +29,10 @@ add_or_replace_documents_1: |-
   ], None).await.unwrap();
 add_or_update_documents_1: |-
   // Define the type of our documents
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct IncompleteMovie {
     id: usize,
     title: String
-  }
-  impl Document for IncompleteMovie {
-    type UIDType = usize;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   let task: Task = client.index("movies").add_or_update(&[
@@ -369,7 +365,6 @@ settings_guide_sortable_1: |-
 add_movies_json_1: |-
   use meilisearch_sdk::{
     indexes::*,
-    document::*,
     client::*,
     search::*,
     settings::*
@@ -392,14 +387,10 @@ add_movies_json_1: |-
   })}
 documents_guide_add_movie_1: |-
   // Define the type of our documents
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct IncompleteMovie {
     id: String,
     title: String
-  }
-  impl Document for IncompleteMovie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   // Add a document to our index
@@ -412,17 +403,13 @@ documents_guide_add_movie_1: |-
 document_guide_create_index_primary_key: |-
   client.create_index("movies", Some("reference_number")).await.unwrap();
 document_guide_add_document_primary_key: |-
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct Movie {
     id: String,
     title: String,
     poster: String,
     overview: String,
     release_date: String
-  }
-  impl Document for Movie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   let task: Task = client.index("movies").add_documents(&[
@@ -447,10 +434,9 @@ getting_started_add_documents_md: |-
   ```
 
   Documents in the Rust library are strongly typed.
-  You have to implement the `Document` trait on a struct to be able to use it with Meilisearch.
 
   ```rust
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct Movie {
     id: String,
     title: String,
@@ -459,26 +445,17 @@ getting_started_add_documents_md: |-
     release_date: i64,
     genres: Vec<String>
   }
-  impl Document for Movie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
-  }
   ```
 
   You will often need this `Movie` struct in other parts of this documentation. (you will have to change it a bit sometimes)
   You can also use schemaless values, by putting a `serde_json::Value` inside your own struct like this:
 
   ```rust
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct Movie {
     id: String,
     #[serde(flatten)]
     value: serde_json::Value,
-  }
-
-  impl Document for Movie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
   ```
 
@@ -487,7 +464,6 @@ getting_started_add_documents_md: |-
   ```rust
   use meilisearch_sdk::{
     indexes::*,
-    document::*,
     client::*,
     search::*,
     settings::*
@@ -582,10 +558,10 @@ getting_started_communicating_with_a_protected_instance: |-
   let client = Client::new("http://localhost:7700", "apiKey");
   client.index("movies").search()
 getting_started_add_meteorites: |-
-  use serde::Deserialize;
+  use serde::{Serialize, Deserialize};
   use std::fs::File;
 
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct Geo {
     lat: f64,
     lon: f64
@@ -599,11 +575,6 @@ getting_started_add_meteorites: |-
     mass: i64,
     fall: String,
     _geo: Geo
-  }
-
-  impl Document for Meteorite {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   let mut file = File::open("meteorites.json")?;
@@ -807,14 +778,10 @@ security_guide_delete_key_1: |-
 landing_getting_started_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
 
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct Movie {
     id: String,
     title: String
-  }
-  impl Document for Movie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   client.index("movies").add_documents(&[

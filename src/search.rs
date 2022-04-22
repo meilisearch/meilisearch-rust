@@ -280,7 +280,7 @@ impl<'a> Query<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*, document, search::*};
+    use crate::{client::*, search::*};
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{Map, Value};
@@ -290,14 +290,6 @@ mod tests {
         id: usize,
         value: String,
         kind: String,
-    }
-
-    impl document::Document for Document {
-        type UIDType = usize;
-
-        fn get_uid(&self) -> &Self::UIDType {
-            &self.id
-        }
     }
 
     impl PartialEq<Map<String, Value>> for Document {

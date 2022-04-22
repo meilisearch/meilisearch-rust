@@ -149,7 +149,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, document, indexes::*, tasks::Task};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -159,13 +159,6 @@ impl Task {
     /// #    kind: String,
     /// # }
     /// #
-    /// # impl document::Document for Document {
-    /// #    type UIDType = usize;
-    /// #
-    /// #    fn get_uid(&self) -> &Self::UIDType {
-    /// #        &self.id
-    /// #    }
-    /// # }
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -384,7 +377,6 @@ mod test {
     use super::*;
     use crate::{
         client::*,
-        document,
         errors::{ErrorCode, ErrorType},
     };
     use meilisearch_test_macro::meilisearch_test;
@@ -396,14 +388,6 @@ mod test {
         id: usize,
         value: String,
         kind: String,
-    }
-
-    impl document::Document for Document {
-        type UIDType = usize;
-
-        fn get_uid(&self) -> &Self::UIDType {
-            &self.id
-        }
     }
 
     #[test]

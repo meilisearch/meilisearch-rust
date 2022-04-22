@@ -1,4 +1,4 @@
-use crate::{client::Client, document::*, errors::Error, request::*, search::*, tasks::*, Rc};
+use crate::{client::Client, errors::Error, request::*, search::*, tasks::*, Rc};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, fmt::Display, time::Duration};
@@ -106,13 +106,13 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete(self) -> Result<Task, Error> {
-        Ok(request::<(), Task>(
+        request::<(), Task>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?)
+        .await
     }
 
     /// Search for documents matching a specific query in the index.\
@@ -122,19 +122,12 @@ impl Index {
     ///
     /// ```
     /// use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, search::*};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
     ///     description: String,
-    /// }
-    /// // that trait is used by the sdk when the primary key is needed
-    /// impl Document for Movie {
-    ///     type UIDType = String;
-    ///     fn get_uid(&self) -> &Self::UIDType {
-    ///         &self.name
-    ///     }
     /// }
     ///
     /// # futures::executor::block_on(async move {
@@ -154,13 +147,13 @@ impl Index {
         &self,
         query: &Query<'_>,
     ) -> Result<SearchResults<T>, Error> {
-        Ok(request::<&Query, SearchResults<T>>(
+        request::<&Query, SearchResults<T>>(
             &format!("{}/indexes/{}/search", self.client.host, self.uid),
             &self.client.api_key,
             Method::Post(query),
             200,
         )
-        .await?)
+        .await
     }
 
     /// Search for documents matching a specific query in the index.\
@@ -170,19 +163,12 @@ impl Index {
     ///
     /// ```
     /// use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*, search::*};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
     ///     description: String,
-    /// }
-    /// // that trait is used by the sdk when the primary key is needed
-    /// impl Document for Movie {
-    ///     type UIDType = String;
-    ///     fn get_uid(&self) -> &Self::UIDType {
-    ///         &self.name
-    ///     }
     /// }
     ///
     /// # futures::executor::block_on(async move {
@@ -215,7 +201,7 @@ impl Index {
     /// ```
     /// use serde::{Serialize, Deserialize};
     ///
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
@@ -224,13 +210,6 @@ impl Index {
     ///    description: String,
     /// }
     ///
-    /// // that trait is used by the sdk when the primary key is needed
-    /// impl Document for Movie {
-    ///    type UIDType = String;
-    ///    fn get_uid(&self) -> &Self::UIDType {
-    ///        &self.name
-    ///    }
-    /// }
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -238,7 +217,7 @@ impl Index {
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// // retrieve a document (you have to put the document in the index before)
-    /// let interstellar = movies.get_document::<Movie>(String::from("Interstellar")).await.unwrap();
+    /// let interstellar = movies.get_document::<Movie>("Interstellar").await.unwrap();
     ///
     /// assert_eq!(interstellar, Movie {
     ///     name: String::from("Interstellar"),
@@ -247,8 +226,8 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_document<T: 'static + Document>(&self, uid: T::UIDType) -> Result<T, Error> {
-        Ok(request::<(), T>(
+    pub async fn get_document<T: 'static + DeserializeOwned>(&self, uid: &str) -> Result<T, Error> {
+        request::<(), T>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
@@ -257,7 +236,7 @@ impl Index {
             Method::Get,
             200,
         )
-        .await?)
+        .await
     }
 
     /// Get [Document]s by batch.
@@ -272,7 +251,7 @@ impl Index {
     /// ```
     /// use serde::{Serialize, Deserialize};
     ///
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
@@ -281,13 +260,6 @@ impl Index {
     ///    description: String,
     /// }
     ///
-    /// // that trait is used by the sdk when the primary key is needed
-    /// impl Document for Movie {
-    ///    type UIDType = String;
-    ///    fn get_uid(&self) -> &Self::UIDType {
-    ///        &self.name
-    ///    }
-    /// }
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -302,7 +274,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_documents<T: 'static + Document>(
+    pub async fn get_documents<T: DeserializeOwned + 'static>(
         &self,
         offset: Option<usize>,
         limit: Option<usize>,
@@ -323,7 +295,7 @@ impl Index {
             url.push_str("attributesToRetrieve=");
             url.push_str(attributes_to_retrieve);
         }
-        Ok(request::<(), Vec<T>>(&url, &self.client.api_key, Method::Get, 200).await?)
+        request::<(), Vec<T>>(&url, &self.client.api_key, Method::Get, 200).await
     }
 
     /// Add a list of [Document]s or replace them if they already exist.
@@ -340,20 +312,13 @@ impl Index {
     /// ```
     /// use serde::{Serialize, Deserialize};
     ///
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///    name: String,
     ///    description: String,
-    /// }
-    /// // that trait is used by the sdk when the primary key is needed
-    /// impl Document for Movie {
-    ///    type UIDType = String;
-    ///    fn get_uid(&self) -> &Self::UIDType {
-    ///        &self.name
-    ///    }
     /// }
     ///
     /// # futures::executor::block_on(async move {
@@ -383,7 +348,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_or_replace<T: Document>(
+    pub async fn add_or_replace<T: Serialize>(
         &self,
         documents: &[T],
         primary_key: Option<&str>,
@@ -396,11 +361,11 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        Ok(request::<&[T], Task>(&url, &self.client.api_key, Method::Post(documents), 202).await?)
+        request::<&[T], Task>(&url, &self.client.api_key, Method::Post(documents), 202).await
     }
 
     /// Alias for [Index::add_or_replace].
-    pub async fn add_documents<T: Document>(
+    pub async fn add_documents<T: Serialize>(
         &self,
         documents: &[T],
         primary_key: Option<&str>,
@@ -420,20 +385,13 @@ impl Index {
     /// ```
     /// use serde::{Serialize, Deserialize};
     ///
-    /// # use meilisearch_sdk::{client::*, document::*};
+    /// # use meilisearch_sdk::client::*;
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///    name: String,
     ///    description: String,
-    /// }
-    /// // that trait is used by the sdk when the primary key is needed
-    /// impl Document for Movie {
-    ///    type UIDType = String;
-    ///    fn get_uid(&self) -> &Self::UIDType {
-    ///        &self.name
-    ///    }
     /// }
     ///
     /// # futures::executor::block_on(async move {
@@ -464,7 +422,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_or_update<T: Document>(
+    pub async fn add_or_update<T: Serialize>(
         &self,
         documents: &[T],
         primary_key: Option<impl AsRef<str>>,
@@ -479,7 +437,7 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        Ok(request::<&[T], Task>(&url, &self.client.api_key, Method::Put(documents), 202).await?)
+        request::<&[T], Task>(&url, &self.client.api_key, Method::Put(documents), 202).await
     }
 
     /// Delete all documents in the index.
@@ -488,7 +446,7 @@ impl Index {
     ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, indexes::*, document::*};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
@@ -496,13 +454,6 @@ impl Index {
     /// #    description: String,
     /// # }
     /// #
-    /// # // that trait is used by the sdk when the primary key is needed
-    /// # impl Document for Movie {
-    /// #    type UIDType = String;
-    /// #    fn get_uid(&self) -> &Self::UIDType {
-    /// #        &self.name
-    /// #    }
-    /// # }
     /// #
     /// # futures::executor::block_on(async move {
     /// #
@@ -524,13 +475,13 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete_all_documents(&self) -> Result<Task, Error> {
-        Ok(request::<(), Task>(
+        request::<(), Task>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             &self.client.api_key,
             Method::Delete,
             202,
         )
-        .await?)
+        .await
     }
 
     /// Delete one document based on its unique id.
@@ -539,7 +490,7 @@ impl Index {
     ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, document::*};
+    /// # use meilisearch_sdk::client::*;
     /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
@@ -547,13 +498,6 @@ impl Index {
     /// #    description: String,
     /// # }
     /// #
-    /// # // that trait is used by the sdk when the primary key is needed
-    /// # impl Document for Movie {
-    /// #    type UIDType = String;
-    /// #    fn get_uid(&self) -> &Self::UIDType {
-    /// #        &self.name
-    /// #    }
-    /// # }
     /// #
     /// # futures::executor::block_on(async move {
     /// #
@@ -573,7 +517,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete_document<T: Display>(&self, uid: T) -> Result<Task, Error> {
-        Ok(request::<(), Task>(
+        request::<(), Task>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
@@ -582,7 +526,7 @@ impl Index {
             Method::Delete,
             202,
         )
-        .await?)
+        .await
     }
 
     /// Delete a selection of documents based on array of document id's.
@@ -591,7 +535,7 @@ impl Index {
     ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, document::*};
+    /// # use meilisearch_sdk::client::*;
     /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
@@ -599,13 +543,6 @@ impl Index {
     /// #    description: String,
     /// # }
     /// #
-    /// # // that trait is used by the sdk when the primary key is needed
-    /// # impl Document for Movie {
-    /// #    type UIDType = String;
-    /// #    fn get_uid(&self) -> &Self::UIDType {
-    /// #        &self.name
-    /// #    }
-    /// # }
     /// #
     /// # futures::executor::block_on(async move {
     /// #
@@ -629,7 +566,7 @@ impl Index {
         &self,
         uids: &[T],
     ) -> Result<Task, Error> {
-        Ok(request::<&[T], Task>(
+        request::<&[T], Task>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
                 self.client.host, self.uid
@@ -638,7 +575,7 @@ impl Index {
             Method::Post(uids),
             202,
         )
-        .await?)
+        .await
     }
 
     /// Alias for the [Index::update] method.
@@ -665,13 +602,13 @@ impl Index {
     /// ```
     /// If you use it directly from the [Client], you can use the method [Client::get_raw_index], which is the equivalent method from the client.
     pub async fn fetch_info(&self) -> Result<JsonIndex, Error> {
-        Ok(request::<(), JsonIndex>(
+        request::<(), JsonIndex>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             &self.client.api_key,
             Method::Get,
             200,
         )
-        .await?)
+        .await
     }
 
     /// Fetch the primary key of the index.
@@ -703,7 +640,7 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
-    /// # use meilisearch_sdk::{client::*, document, indexes::*, tasks::Task};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// # struct Document {
@@ -712,13 +649,6 @@ impl Index {
     /// #    kind: String,
     /// # }
     /// #
-    /// # impl document::Document for Document {
-    /// #    type UIDType = usize;
-    /// #
-    /// #    fn get_uid(&self) -> &Self::UIDType {
-    /// #        &self.id
-    /// #    }
-    /// # }
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
@@ -764,7 +694,7 @@ impl Index {
     ///
     /// ```
     /// # use serde::{Serialize, Deserialize};
-    /// # use meilisearch_sdk::{client::*, document, indexes::*};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new("http://localhost:7700", "masterKey");
@@ -834,7 +764,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, document, indexes::*, tasks::Task};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -844,13 +774,6 @@ impl Index {
     /// #    kind: String,
     /// # }
     /// #
-    /// # impl document::Document for Document {
-    /// #    type UIDType = usize;
-    /// #
-    /// #    fn get_uid(&self) -> &Self::UIDType {
-    /// #        &self.id
-    /// #    }
-    /// # }
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new("http://localhost:7700", "masterKey");
