@@ -558,7 +558,7 @@ getting_started_communicating_with_a_protected_instance: |-
   let client = Client::new("http://localhost:7700", "apiKey");
   client.index("movies").search()
 getting_started_add_meteorites: |-
-  use serde::Deserialize;
+  use serde::{Serialize, Deserialize};
   use std::fs::File;
 
   #[derive(Serialize, Deserialize)]
@@ -778,7 +778,7 @@ security_guide_delete_key_1: |-
 landing_getting_started_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
 
-  #[derive(Serialize, Deserialize )]
+  #[derive(Serialize, Deserialize)]
   struct Movie {
     id: String,
     title: String
