@@ -792,3 +792,17 @@ landing_getting_started_1: |-
     Movie { "id": "5".to_string(), "title": "Moana".to_string() },
     Movie { "id": "6".to_string(), "title": "Philadelphia".to_string() }
   ], Some("reference_number")).await.unwrap();
+tenant_token_guide_generate_sdk_1: |-
+  let api_key = "B5KdX2MY2jV6EXfUs6scSfmC...";
+  let expires_at = time::macros::datetime!(2025 - 12 - 20 00:00:00 UTC);
+  let search_rules = json!({ "patient_medical_records": { "filter": "user_id = 1" } });
+
+  let token = client.generate_tenant_token(search_rules, api_key, expires_at).unwrap();
+tenant_token_guide_search_sdk_1: |-
+  let front_end_client = Client::new("http://127.0.0.1:7700", token);
+  let results: SearchResults<Patient> = front_end_client.index("patient_medical_records")
+    .search()
+    .with_query("blood test")
+    .execute()
+    .await
+    .unwrap();

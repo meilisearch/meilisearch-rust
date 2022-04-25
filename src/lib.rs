@@ -230,6 +230,8 @@ pub mod search;
 pub mod settings;
 /// Module representing the [tasks::Task]s.
 pub mod tasks;
+/// Module that generates tenant tokens.
+mod tenant_tokens;
 
 #[cfg(feature = "sync")]
 pub(crate) type Rc<T> = std::sync::Arc<T>;
