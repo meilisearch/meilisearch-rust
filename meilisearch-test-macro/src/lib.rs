@@ -98,6 +98,11 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
         // And finally if an index was asked we create it and wait until meilisearch confirm its creation.
         // We’ll need to delete it later.
         if use_index {
+            outer_block.push(parse_quote!(client
+                .delete_index(&name)
+                .await
+                .unwrap();
+            ));
             outer_block.push(parse_quote!(
                 let index = client
                     .create_index(&name, None)
