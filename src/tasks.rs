@@ -15,6 +15,7 @@ pub enum TaskType {
     DocumentPartial { details: Option<DocumentAddition> },
     DocumentDeletion { details: Option<DocumentDeletion> },
     IndexCreation { details: Option<IndexCreation> },
+    IndexUpdate { details: Option<IndexUpdate> },
     IndexDeletion { details: Option<IndexDeletion> },
     SettingsUpdate { details: Option<Settings> },
 }
@@ -35,6 +36,12 @@ pub struct DocumentDeletion {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexCreation {
+    pub primary_key: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexUpdate {
     pub primary_key: Option<String>,
 }
 
