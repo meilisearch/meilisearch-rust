@@ -95,9 +95,27 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
             ));
         }
 
-        // And finally if an index was asked we create it and wait until meilisearch confirm its creation.
-        // We’ll need to delete it later.
+        // And finally if an index was asked we delete it, and we (re)create it and wait until meilisearch confirm its creation.
         if use_index {
+            outer_block.push(parse_quote!({
+                let res = client
+                    .delete_index(&name)
+                    .await
+                    .unwrap()
+                    .wait_for_completion(&client, None, None)
+                    .await
+                    .unwrap();
+                if res.is_failure() {
+                    let error = res.unwrap_failure();
+                    assert_eq!(
+                        error.error_code,
+                        crate::errors::ErrorCode::IndexNotFound,
+                        "{:?}",
+                        error
+                    );
+                }
+            }));
+
             outer_block.push(parse_quote!(
                 let index = client
                     .create_index(&name, None)
