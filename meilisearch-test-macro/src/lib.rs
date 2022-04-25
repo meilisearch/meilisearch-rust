@@ -95,8 +95,7 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
             ));
         }
 
-        // And finally if an index was asked we create it and wait until meilisearch confirm its creation.
-        // We’ll need to delete it later.
+        // And finally if an index was asked we delete it, and we (re)create it and wait until meilisearch confirm its creation.
         if use_index {
             outer_block.push(parse_quote!(client
                 .delete_index(&name)
