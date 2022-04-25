@@ -452,20 +452,24 @@ mod tests {
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
-        assert_eq!(&Document {
-            id: 0,
-            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
-            kind: "text".to_string()
-        }, results.hits[0].formatted_result.as_ref().unwrap());
+        assert_eq!(
+            &Document {
+                id: 0,
+                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do…"
+                    .to_string(),
+                kind: "text".to_string()
+            },
+            results.hits[0].formatted_result.as_ref().unwrap()
+        );
 
         let mut query = Query::new(&index);
         query.with_query("lorem ipsum");
-        query.with_attributes_to_crop(Selectors::Some(&[("value", Some(50)), ("kind", None)]));
+        query.with_attributes_to_crop(Selectors::Some(&[("value", Some(5)), ("kind", None)]));
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
+                value: "Lorem ipsum dolor sit amet…".to_string(),
                 kind: "text".to_string()
             },
             results.hits[0].formatted_result.as_ref().unwrap()
@@ -484,7 +488,7 @@ mod tests {
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(&Document {
             id: 0,
-            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
+            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string(),
             kind: "text".to_string(),
         },
         results.hits[0].formatted_result.as_ref().unwrap());
@@ -492,12 +496,12 @@ mod tests {
         let mut query = Query::new(&index);
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
-        query.with_crop_length(50);
+        query.with_crop_length(5);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
+                value: "Lorem ipsum dolor sit amet…".to_string(),
                 kind: "text".to_string()
             },
             results.hits[0].formatted_result.as_ref().unwrap()
