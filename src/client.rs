@@ -576,6 +576,24 @@ impl Client {
 
         Ok(tasks.results)
     }
+
+    /// Generates a new tenant token.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::*;
+    /// # futures::executor::block_on(async move {
+    /// # let client = client::Client::new("http://localhost:7700", "masterKey");
+    /// let token = client.generate_tenant_token(serde_json::json!(["*"]), None, None).unwrap();
+    /// let client = client::Client::new("http://localhost:7700", token);
+    /// # });
+    /// ```
+    pub fn generate_tenant_token(&self, search_rules: serde_json::Value, api_key: Option<&str>, expires_at: Option<OffsetDateTime>) -> Result<String, Error> {
+        let api_key = api_key.unwrap_or(&self.api_key);
+
+        crate::tenant_tokens::generate_tenant_token(search_rules, api_key, expires_at)
+    }
 }
 
 #[derive(Deserialize)]

@@ -19,6 +19,15 @@ pub enum Error {
     /// It probably comes from an invalid API key resulting in an invalid HTTP header.
     InvalidRequest,
 
+    /// It is not possible to generate a tenant token with a invalid api key.
+    /// Empty strings or with less than 8 characters are considered invalid.
+    TenantTokensInvalidApiKey,
+    /// It is not possible to generate an already expired tenant token.
+    TenantTokensExpiredSignature,
+    
+    /// When jsonwebtoken cannot generate the token successfully.
+    InvalidTenantToken(jsonwebtoken::errors::Error),
+
     /// The http client encountered an error.
     #[cfg(not(target_arch = "wasm32"))]
     HttpError(isahc::Error),
@@ -49,6 +58,12 @@ pub struct MeilisearchError {
 impl From<MeilisearchError> for Error {
     fn from(error: MeilisearchError) -> Self {
         Self::Meilisearch(error)
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for Error {
+    fn from(error: jsonwebtoken::errors::Error) -> Error {
+        Error::InvalidTenantToken(error)
     }
 }
 
@@ -168,6 +183,9 @@ impl std::fmt::Display for Error {
             Error::ParseError(e) => write!(fmt, "Error parsing response JSON: {}", e),
             Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e),
             Error::Timeout => write!(fmt, "A task did not succeed in time."),
+            Error::TenantTokensInvalidApiKey => write!(fmt, "The provided api_key is invalid."),
+            Error::TenantTokensExpiredSignature => write!(fmt, "The provided expires_at is already expired."),
+            Error::InvalidTenantToken(e) => write!(fmt, "Impossible to generate the token, jsonwebtoken encountered an error: {}", e)
         }
     }
 }

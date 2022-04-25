@@ -283,7 +283,7 @@ mod tests {
     use crate::{client::*, search::*};
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
-    use serde_json::{Map, Value};
+    use serde_json::{Map, Value, json};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -569,6 +569,41 @@ mod tests {
         query.with_query("harry \"of Fire\"");
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(results.hits.len(), 1);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_generate_tenant_token_from_client(client: Client, index: Index) -> Result<(), Error> {
+        use crate::key::{KeyBuilder, Action};
+
+        setup_test_index(&client, &index).await?;
+
+        let key = KeyBuilder::new("key for generate_tenant_token test")
+            .with_action(Action::All)
+            .with_index("*")
+            .create(&client).await.unwrap();
+        let allowed_client = Client::new("http://localhost:7700", key.key);
+
+        let search_rules = vec![
+            json!({ "*": {}}),
+            json!({ "*": Value::Null }),
+            json!(["*"]),
+            json!({ "*": { "filter": "kind = text" } }),
+            json!([index.uid.to_string()]),
+        ];
+
+        for rules in search_rules {
+            let token = allowed_client.generate_tenant_token(rules, None, None).expect("Cannot generate tenant token.");
+            let new_client = Client::new("http://localhost:7700", token);
+
+            let result: SearchResults<Document> = new_client.index(index.uid.to_string())
+                .search()
+                .execute()
+                .await?;
+
+            assert!(!result.hits.is_empty());
+        }
+
         Ok(())
     }
 }
