@@ -13,10 +13,7 @@ pub(crate) enum Method<T: Serialize> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn request<
-    Input: Serialize + std::fmt::Debug,
-    Output: 'static + DeserializeOwned,
->(
+pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
     url: &str,
     apikey: &str,
     method: Method<Input>,
@@ -24,8 +21,6 @@ pub(crate) async fn request<
 ) -> Result<Output, Error> {
     use isahc::http::header;
     use isahc::*;
-
-    trace!("{:?} on {}", method, url);
 
     let auth = format!("Bearer {}", apikey);
 
@@ -88,10 +83,7 @@ pub(crate) async fn request<
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) async fn request<
-    Input: Serialize + std::fmt::Debug,
-    Output: 'static + DeserializeOwned,
->(
+pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
     url: &str,
     apikey: &str,
     method: Method<Input>,
@@ -100,8 +92,6 @@ pub(crate) async fn request<
     use wasm_bindgen::JsValue;
     use wasm_bindgen_futures::JsFuture;
     use web_sys::{Headers, RequestInit, Response};
-
-    trace!("{:?} on {}", method, url);
 
     const CONTENT_TYPE: &str = "Content-Type";
     const JSON: &str = "application/json";

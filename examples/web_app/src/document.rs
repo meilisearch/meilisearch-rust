@@ -1,4 +1,3 @@
-use meilisearch_sdk::document::Document;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use yew::prelude::*;
@@ -15,14 +14,6 @@ pub struct Crate {
 }
 
 // Implement the Document trait so that we can use our struct with Meilisearch
-impl Document for Crate {
-    type UIDType = String;
-
-    fn get_uid(&self) -> &Self::UIDType {
-        &self.name
-    }
-}
-
 fn get_readable_download_count(this: &Map<String, Value>) -> String {
     if let Some(downloads) = this["downloads"].as_f64() {
         if downloads < 1000.0 {

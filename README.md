@@ -88,7 +88,7 @@ NB: you can also download Meilisearch from **Homebrew** or **APT**.
 #### Add Documents <!-- omit in TOC -->
 
 ```rust
-use meilisearch_sdk::{document::*, client::*};
+use meilisearch_sdk::client::*;
 use serde::{Serialize, Deserialize};
 use futures::executor::block_on;
 
@@ -99,14 +99,6 @@ struct Movie {
     genres: Vec<String>,
 }
 
-// That trait is required to make a struct usable by an index
-impl Document for Movie {
-    type UIDType = usize;
-
-    fn get_uid(&self) -> &Self::UIDType {
-        &self.id
-    }
-}
 
 fn main() { block_on(async move {
     // Create a client (without sending any request so that can't fail)

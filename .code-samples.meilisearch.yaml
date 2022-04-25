@@ -8,9 +8,9 @@ get_one_index_1: |-
 list_all_indexes_1: |-
   let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
 create_an_index_1: |-
-  let movies: Index = client.create_index("movies", Some("movie_id")).await.unwrap();
+  client.create_index("movies", Some("id")).await.unwrap();
 update_an_index_1: |-
-  client.index("movies").update("movie_review_id").await.unwrap();
+  client.index("movies").update("movie_review_id", Some("id")).await.unwrap();
 delete_an_index_1: |-
   client.index("movies").delete().await.unwrap();
 get_one_document_1: |-
@@ -29,14 +29,10 @@ add_or_replace_documents_1: |-
   ], None).await.unwrap();
 add_or_update_documents_1: |-
   // Define the type of our documents
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct IncompleteMovie {
     id: usize,
     title: String
-  }
-  impl Document for IncompleteMovie {
-    type UIDType = usize;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   let task: Task = client.index("movies").add_or_update(&[
@@ -87,13 +83,13 @@ update_settings_1: |-
     .with_distinct_attribute("movie_id")
     .with_searchable_attributes([
       "title",
-      "description",
-      "genre"
+      "overview",
+      "genres"
     ])
     .with_displayed_attributes([
       "title",
-      "description",
-      "genre",
+      "overview",
+      "genres",
       "release_date"
     ])
     .with_stop_words([
@@ -156,8 +152,8 @@ get_searchable_attributes_1: |-
 update_searchable_attributes_1: |-
   let searchable_attributes = [
     "title",
-    "description",
-    "genre"
+    "overview",
+    "genres"
   ];
 
   let task: Task = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
@@ -179,8 +175,8 @@ get_displayed_attributes_1: |-
 update_displayed_attributes_1: |-
   let displayed_attributes = [
     "title",
-    "description",
-    "genre",
+    "overview",
+    "genres",
     "release_date"
   ];
 
@@ -201,16 +197,16 @@ distinct_attribute_guide_1: |-
 field_properties_guide_searchable_1: |-
   let searchable_attributes = [
     "title",
-    "description",
-    "genre"
+    "overvieww",
+    "genres"
   ];
 
   let task: Task = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
 field_properties_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
-    "description",
-    "genre",
+    "overvieww",
+    "genres",
     "release_date"
   ];
 
@@ -230,13 +226,6 @@ filtering_guide_2: |-
     .await
     .unwrap();
 filtering_guide_3: |-
-  let results: SearchResults<Movie> = client.index("movies").search()
-    .with_query("horror")
-    .with_filter(r#"director = "Jordan Peele""#)
-    .execute()
-    .await
-    .unwrap();
-filtering_guide_4: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Planet of the Apes")
     .with_filter(r#"rating >= 3 AND (NOT director = "Tim Burton")"#)
@@ -291,20 +280,6 @@ search_parameter_guide_highlight_1: |-
 
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
-search_parameter_guide_filter_1: |-
-  let results: SearchResults<Movie> = client.index("movies").search()
-    .with_query("n")
-    .with_filter("title = Nightshift")
-    .execute()
-    .await
-    .unwrap();
-search_parameter_guide_filter_2: |-
-  let results: SearchResults<Movie> = client.index("movies").search()
-    .with_query("shifu")
-    .with_filter(r#"title = "Kung Fu Panda""#)
-    .execute()
-    .await
-    .unwrap();
 search_parameter_guide_matches_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("winter feast")
@@ -364,8 +339,8 @@ settings_guide_searchable_1: |-
   let settings = Settings::new()
     .with_searchable_attributes([
       "title",
-      "description",
-      "genre"
+      "overview",
+      "genres"
     ]);
 
   let task: Task = client.index("movies").set_settings(&settings).await.unwrap();
@@ -373,8 +348,8 @@ settings_guide_displayed_1: |-
   let settings = Settings::new()
     .with_displayed_attributes([
       "title",
-      "description",
-      "genre",
+      "overview",
+      "genres",
       "release_date"
     ]);
 
@@ -390,7 +365,6 @@ settings_guide_sortable_1: |-
 add_movies_json_1: |-
   use meilisearch_sdk::{
     indexes::*,
-    document::*,
     client::*,
     search::*,
     settings::*
@@ -413,14 +387,10 @@ add_movies_json_1: |-
   })}
 documents_guide_add_movie_1: |-
   // Define the type of our documents
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct IncompleteMovie {
     id: String,
     title: String
-  }
-  impl Document for IncompleteMovie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
 
   // Add a document to our index
@@ -430,21 +400,27 @@ documents_guide_add_movie_1: |-
       title: "Amélie Poulain".to_string(),
     }
   ], None).await.unwrap();
-search_guide_1: |-
-  let results: SearchResults<Movie> = client.index("movies").search()
-    .with_query("shifu")
-    .with_limit(5)
-    .with_offset(10)
-    .execute()
-    .await
-    .unwrap();
-search_guide_2: |-
-  let results: SearchResults<Movie> = client.index("movies").search()
-    .with_query("Avengers")
-    .with_filter("release_date > 795484800")
-    .execute()
-    .await
-    .unwrap();
+document_guide_create_index_primary_key: |-
+  client.create_index("movies", Some("reference_number")).await.unwrap();
+document_guide_add_document_primary_key: |-
+  #[derive(Serialize, Deserialize)]
+  struct Movie {
+    id: String,
+    title: String,
+    poster: String,
+    overview: String,
+    release_date: String
+  }
+
+  let task: Task = client.index("movies").add_documents(&[
+    Movie {
+      "reference_number": "287947".to_string(),
+      "title": "Shazam".to_string(),
+      "poster": "https://image.tmdb.org/t/p/w1280/xnopI5Xtky18MPhK40cZAGAOVeV.jpg".to_string(),
+      "overview": "A boy is given the ability to become an adult superhero in times of need with a single magic word.".to_string(),
+      "release_date": "2019-03-23".to_string()
+    }
+  ], Some("reference_number")).await.unwrap();
 getting_started_add_documents_md: |-
   ```toml
     [dependencies]
@@ -458,10 +434,9 @@ getting_started_add_documents_md: |-
   ```
 
   Documents in the Rust library are strongly typed.
-  You have to implement the `Document` trait on a struct to be able to use it with Meilisearch.
 
   ```rust
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct Movie {
     id: String,
     title: String,
@@ -470,26 +445,17 @@ getting_started_add_documents_md: |-
     release_date: i64,
     genres: Vec<String>
   }
-  impl Document for Movie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
-  }
   ```
 
   You will often need this `Movie` struct in other parts of this documentation. (you will have to change it a bit sometimes)
   You can also use schemaless values, by putting a `serde_json::Value` inside your own struct like this:
 
   ```rust
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize)]
   struct Movie {
     id: String,
     #[serde(flatten)]
     value: serde_json::Value,
-  }
-
-  impl Document for Movie {
-    type UIDType = String;
-    fn get_uid(&self) -> &Self::UIDType { &self.id }
   }
   ```
 
@@ -498,7 +464,6 @@ getting_started_add_documents_md: |-
   ```rust
   use meilisearch_sdk::{
     indexes::*,
-    document::*,
     client::*,
     search::*,
     settings::*
@@ -551,6 +516,107 @@ getting_started_search_md: |-
   ```
 
   [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
+getting_started_update_rankingRules: |-
+  let ranking_rules = [
+    "exactness",
+    "words",
+    "typo",
+    "proximity",
+    "attribute",
+    "sort",
+    "release_date:asc",
+    "rank:desc"
+  ];
+
+  client.index("movies").set_ranking_rules(&ranking_rules).await.unwrap();
+getting_started_update_searchableAttributes: |-
+  let searchable_attributes = [
+    "title"
+  ];
+
+  client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
+getting_started_update_stop_words: |-
+  let stop_words = ["the"];
+  client.index("movies").set_stop_words(&stop_words).await.unwrap();
+getting_started_check_task_status: |-
+  client.index("movies").get_task(0).await.unwrap();
+getting_started_synonyms: |-
+  let mut synonyms = std::collections::HashMap::new();
+  synonyms.insert(String::from("winnie"), vec![String::from("piglet")]);
+  synonyms.insert(String::from("piglet"), vec![String::from("winnie")]);
+
+  client.index("movies").set_synonyms(&synonyms).await.unwrap();
+getting_started_update_displayedAttributes: |-
+  let displayed_attributes = [
+    "title",
+    "overview",
+    "poster",
+  ];
+
+  client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
+getting_started_communicating_with_a_protected_instance: |-
+  let client = Client::new("http://localhost:7700", "apiKey");
+  client.index("movies").search()
+getting_started_add_meteorites: |-
+  use serde::{Serialize, Deserialize};
+  use std::fs::File;
+
+  #[derive(Serialize, Deserialize)]
+  struct Geo {
+    lat: f64,
+    lon: f64
+  }
+
+  struct Meteorite {
+    name: String,
+    id: String,
+    nametype: String,
+    recclass: String,
+    mass: i64,
+    fall: String,
+    _geo: Geo
+  }
+
+  let mut file = File::open("meteorites.json")?;
+  let meteorites: Vec<Meteorite> = serde_json::from_reader(file)?;
+
+  client.index("meteorites").add_documents(&meteorites, None).await?;
+getting_started_configure_settings: |-
+  let settings = Settings::new()
+    .with_filterable_attributes([
+      "mass",
+      "geo"
+    ])
+    .with_sortable_attributes([
+      "mass",
+      "geo"
+    ])
+  let task: Task = client.index("meteorites").set_settings(&settings).await.unwrap();
+getting_started_geoRadius: |-
+  let results: SearchResults<Meteorite> = client.index("meteorites").search()
+    .with_filter("_geoRadius(46.9480, 7.4474, 210000)")
+    .execute()
+    .await
+    .unwrap();
+getting_started_geoPoint: |-
+  let results: SearchResults<Meteorite> = client.index("meteorites").search()
+    .with_sort(&["_geoPoint(48.8583701, 2.2922926):asc"])
+    .execute()
+    .await
+    .unwrap();
+getting_started_sorting: |-
+  let results: SearchResults<Meteorite> = client.index("meteorites").search()
+    .with_filter("mass < 200")
+    .with_sort(&["mass:asc"])
+    .execute()
+    .await
+    .unwrap();
+getting_started_filtering: |-
+  let results: SearchResults<Meteorite> = client.index("meteorites").search()
+    .with_filter("mass < 200")
+    .execute()
+    .await
+    .unwrap();
 faceted_search_update_settings_1: |-
   let task: Task = client.index("movies").set_filterable_attributes(["director", "genres"]).await.unwrap();
 faceted_search_filter_1: |-
@@ -568,15 +634,6 @@ faceted_search_facets_distribution_1: |-
     .await
     .unwrap();
   let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
-faceted_search_walkthrough_filterable_attributes_1: |-
-  let filterable_attributes = [
-    "director",
-    "producer",
-    "genres",
-    "production_companies"
-  ];
-
-  let task: Task = client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
 faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("thriller")
@@ -584,14 +641,6 @@ faceted_search_walkthrough_filter_1: |-
     .execute()
     .await
     .unwrap();
-faceted_search_walkthrough_facets_distribution_1: |-
-  let results: SearchResults<Movie> = client.index("movies").search()
-    .with_query("Batman")
-    .with_facets_distribution(Selectors::Some(&["genres"]))
-    .execute()
-    .await
-    .unwrap();
-  let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
 post_dump_1: |-
   client.create_dump().await.unwrap();
 get_dump_status_1: |-
@@ -657,13 +706,13 @@ geosearch_guide_filter_settings_1: |-
   let task: Task = client.index("restaurants").set_filterable_attributes(&["_geo"]).await.unwrap();
 geosearch_guide_filter_usage_1: |-
   let results: SearchResults<Restaurant> = client.index("restaurants").search()
-    .with_filter("_geoRadius(45.4628328, 9.1076931, 2000)")
+    .with_filter("_geoRadius(45.472735, 9.184019, 2000)")
     .execute()
     .await
     .unwrap();
 geosearch_guide_filter_usage_2: |-
   let results: SearchResults<Restaurant> = client.index("restaurants").search()
-    .with_filter("_geoRadius(45.4628328, 9.1076931, 2000) AND type = pizza")
+    .with_filter("_geoRadius(45.472735, 9.184019, 2000) AND type = pizza")
     .execute()
     .await
     .unwrap();
@@ -671,13 +720,13 @@ geosearch_guide_sort_settings_1: |-
   let task: Task = client.index("restaurants").set_sortable_attributes(&["_geo"]).await.unwrap();
 geosearch_guide_sort_usage_1: |-
   let results: SearchResults<Restaurant> = client.index("restaurants").search()
-    .with_sort(&["_geoPoint(48.8583701,2.2922926):asc"])
+    .with_sort(&["_geoPoint(48.8561446, 2.2978204):asc"])
     .execute()
     .await
     .unwrap();
 geosearch_guide_sort_usage_2: |-
   let results: SearchResults<Restaurant> = client.index("restaurants").search()
-    .with_sort(&["_geoPoint(48.8583701,2.2922926):asc", "rating:desc"])
+    .with_sort(&["_geoPoint(48.8561446, 2.2978204):asc", "rating:desc"])
     .execute()
     .await
     .unwrap();
@@ -726,3 +775,20 @@ security_guide_delete_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
   client.delete_key(&key);
+landing_getting_started_1: |-
+  let client = Client::new("http://localhost:7700", "masterKey");
+
+  #[derive(Serialize, Deserialize)]
+  struct Movie {
+    id: String,
+    title: String
+  }
+
+  client.index("movies").add_documents(&[
+    Movie { "id": "1".to_string(), "title": "Carol".to_string() },
+    Movie { "id": "2".to_string(), "title": "Wonder Woman".to_string() },
+    Movie { "id": "3".to_string(), "title": "Life of Pi".to_string() },
+    Movie { "id": "4".to_string(), "title": "Mad Max: Fury Road".to_string() },
+    Movie { "id": "5".to_string(), "title": "Moana".to_string() },
+    Movie { "id": "6".to_string(), "title": "Philadelphia".to_string() }
+  ], Some("reference_number")).await.unwrap();
