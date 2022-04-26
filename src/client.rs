@@ -52,16 +52,11 @@ impl Client {
     /// # });
     /// ```
     pub async fn list_all_indexes(&self) -> Result<Vec<Index>, Error> {
-        match self.list_all_indexes_raw().await {
-            Ok(json_indexes) => Ok({
-                let mut indexes = Vec::new();
-                for json_index in json_indexes {
-                    indexes.push(json_index.into_index(self))
-                }
-                indexes
-            }),
-            Err(error) => Err(error),
+        let mut v = vec![];
+        for index in self.list_all_indexes_raw().await? {
+            v.push(Index::from_value(index, self.clone())?);
         }
+        Ok(v)
     }
 
     /// List all [Index]es and returns as Json.
@@ -74,12 +69,12 @@ impl Client {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
     ///
-    /// let json_indexes: Vec<JsonIndex> = client.list_all_indexes_raw().await.unwrap();
+    /// let json_indexes = client.list_all_indexes_raw().await.unwrap();
     /// println!("{:?}", json_indexes);
     /// # });
     /// ```
-    pub async fn list_all_indexes_raw(&self) -> Result<Vec<JsonIndex>, Error> {
-        let json_indexes = request::<(), Vec<JsonIndex>>(
+    pub async fn list_all_indexes_raw(&self) -> Result<Vec<Value>, Error> {
+        let json_indexes = request::<(), Vec<Value>>(
             &format!("{}/indexes", self.host),
             &self.api_key,
             Method::Get,
@@ -109,10 +104,9 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
-        match self.get_raw_index(uid).await {
-            Ok(raw_idx) => Ok(raw_idx.into_index(self)),
-            Err(error) => Err(error),
-        }
+        let mut idx = self.index(uid.as_ref());
+        idx.fetch_info().await?;
+        Ok(idx)
     }
 
     /// Get a raw JSON [Index], this index should already exist.
@@ -129,13 +123,20 @@ impl Client {
     ///
     /// // get the index named "get_raw_index"
     /// let raw_index = client.get_raw_index("get_raw_index").await.unwrap();
-    /// assert_eq!(raw_index.uid, "get_raw_index");
+    /// assert_eq!(raw_index.get("uid").unwrap().as_str().unwrap(), "get_raw_index");
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     /// If you use it directly from an [Index], you can use the method [Index::fetch_info], which is the equivalent method from an index.
-    pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<JsonIndex, Error> {
-        Index::fetch_info(&self.index(uid.as_ref())).await
+    pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<Value, Error> {
+        let idx = self.index(uid.as_ref());
+        request::<(), Value>(
+            &format!("{}/indexes/{}", self.host, idx.uid),
+            &self.api_key,
+            Method::Get,
+            200,
+        )
+        .await
     }
 
     /// Create a corresponding object of an [Index] without any check or doing an HTTP call.
@@ -143,6 +144,9 @@ impl Client {
         Index {
             uid: Rc::new(uid.into()),
             client: self.clone(),
+            primary_key: None,
+            created_at: None,
+            updated_at: None,
         }
     }
 
@@ -206,7 +210,7 @@ impl Client {
     }
 
     /// Alias for [Client::list_all_indexes_raw].
-    pub async fn get_indexes_raw(&self) -> Result<Vec<JsonIndex>, Error> {
+    pub async fn get_indexes_raw(&self) -> Result<Vec<Value>, Error> {
         self.list_all_indexes_raw().await
     }
 
@@ -937,17 +941,19 @@ mod tests {
     async fn test_list_all_indexes_raw(client: Client, index: Index) {
         let all_indexes_raw = client.list_all_indexes_raw().await.unwrap();
         assert!(all_indexes_raw.len() > 0);
-        assert!(all_indexes_raw.iter().any(|idx| idx.uid == *index.uid));
+        assert!(all_indexes_raw
+            .iter()
+            .any(|idx| idx.get("uid").unwrap().as_str().unwrap() == *index.uid));
     }
 
     #[meilisearch_test]
-    async fn test_fetch_info(index: Index) {
+    async fn test_fetch_info(mut index: Index) {
         let index = index.fetch_info().await;
         assert!(index.is_ok());
     }
 
     #[meilisearch_test]
-    async fn test_get_primary_key_is_none(index: Index) {
+    async fn test_get_primary_key_is_none(mut index: Index) {
         let primary_key = index.get_primary_key().await;
 
         assert!(primary_key.is_ok());
@@ -956,7 +962,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_primary_key(client: Client, index_uid: String) -> Result<(), Error> {
-        let index = client
+        let mut index = client
             .create_index(index_uid, Some("primary_key"))
             .await?
             .wait_for_completion(&client, None, None)
