@@ -173,7 +173,7 @@ pub struct Query<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
-    /// Number of words smart cropped around the matching word.
+    /// Maximum number of words including the matched query term(s) contained in the returned cropped value(s).
     /// See [attributes_to_crop](#structfield.attributes_to_crop).
     ///
     /// Default: `10`
