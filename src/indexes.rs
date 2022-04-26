@@ -53,8 +53,8 @@ pub struct Index {
     pub(crate) uid: Rc<String>,
     pub(crate) client: Client,
     pub(crate) primary_key: Option<String>,
-    pub(crate) created_at: Option<OffsetDateTime>,
-    pub(crate) updated_at: Option<OffsetDateTime>,
+    pub created_at: Option<OffsetDateTime>,
+    pub updated_at: Option<OffsetDateTime>,
 }
 
 impl Index {
@@ -1006,6 +1006,12 @@ mod tests {
         assert_eq!(res.primary_key, idx.primary_key);
         assert_eq!(res.client.host, idx.client.host);
         assert_eq!(res.client.api_key, idx.client.api_key);
+    }
+
+    #[meilisearch_test]
+    async fn test_fetch_info(mut index: Index) {
+        let res = index.fetch_info().await;
+        assert!(res.is_ok());
     }
 
     #[meilisearch_test]
