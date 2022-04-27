@@ -3,8 +3,7 @@ use lazy_static::lazy_static;
 use meilisearch_sdk::{client::*,settings::Settings};
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::fs::File;
-use std::io::{stdin, Read};
+use std::io::{stdin};
 
 // instantiate the client. load it once
 lazy_static! {
@@ -63,12 +62,10 @@ async fn search(query: &str) {
 
 async fn build_index() {
     // reading and parsing the file
-    let mut file = File::open("./assets/clothes.json").unwrap();
-    let mut content = String::new();
-    file.read_to_string(&mut content).unwrap();
-
+    let content = include_str!("../assets/clothes.json");
+    
     // serialize the string to clothes objects
-    let clothes: Vec<Clothes> = serde_json::from_str(&content).unwrap();
+    let clothes: Vec<Clothes> = serde_json::from_str(content).unwrap();
 
     //create displayed attributes
     let displayed_attributes = ["article", "cost", "size", "pattern"];
