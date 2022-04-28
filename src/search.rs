@@ -173,18 +173,36 @@ pub struct Query<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
-    /// Number of characters to keep on each side of the start of the matching word.
+    /// Maximum number of words including the matched query term(s) contained in the returned cropped value(s).
     /// See [attributes_to_crop](#structfield.attributes_to_crop).
     ///
-    /// Default: `200`
+    /// Default: `10`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_length: Option<usize>,
+    /// Marker at the start and the end of a cropped value.
+    /// ex: `...middle of a crop...`
+    ///
+    /// Default: `...`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub crop_marker: Option<&'a str>,
     /// Attributes whose values will contain **highlighted matching terms**.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
+    /// Tag in front of a highlighted term.
+    /// ex: `<mytag>hello world`
+    ///
+    /// Default: `<em>`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub highlight_pre_tag: Option<&'a str>,
+    /// Tag after the a highlighted term.
+    /// ex: `hello world</ mytag>`
+    ///
+    /// Default: `</em>`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub highlight_post_tag: Option<&'a str>,
     /// Defines whether an object that contains information about the matches should be returned or not.
     ///
     /// Default: `false`
@@ -206,7 +224,10 @@ impl<'a> Query<'a> {
             attributes_to_retrieve: None,
             attributes_to_crop: None,
             crop_length: None,
+            crop_marker: None,
             attributes_to_highlight: None,
+            highlight_pre_tag: None,
+            highlight_post_tag: None,
             matches: None,
         }
     }
@@ -251,6 +272,14 @@ impl<'a> Query<'a> {
         self.attributes_to_crop = Some(attributes_to_crop);
         self
     }
+    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut Query<'a> {
+        self.crop_length = Some(crop_length);
+        self
+    }
+    pub fn with_crop_marker<'b>(&'b mut self, crop_marker: &'a str) -> &'b mut Query<'a> {
+        self.crop_marker = Some(crop_marker);
+        self
+    }
     pub fn with_attributes_to_highlight<'b>(
         &'b mut self,
         attributes_to_highlight: Selectors<&'a [&'a str]>,
@@ -258,8 +287,18 @@ impl<'a> Query<'a> {
         self.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
-    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut Query<'a> {
-        self.crop_length = Some(crop_length);
+    pub fn with_highlight_pre_tag<'b>(
+        &'b mut self,
+        highlight_pre_tag: &'a str,
+    ) -> &'b mut Query<'a> {
+        self.highlight_pre_tag = Some(highlight_pre_tag);
+        self
+    }
+    pub fn with_highlight_post_tag<'b>(
+        &'b mut self,
+        highlight_post_tag: &'a str,
+    ) -> &'b mut Query<'a> {
+        self.highlight_post_tag = Some(highlight_post_tag);
         self
     }
     pub fn with_matches<'b>(&'b mut self, matches: bool) -> &'b mut Query<'a> {
@@ -544,6 +583,62 @@ mod tests {
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_customized_crop_marker(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = Query::new(&index);
+        query.with_query("sed do eiusmod");
+        query.with_attributes_to_crop(Selectors::All);
+        query.with_crop_length(6);
+        query.with_crop_marker("(ꈍᴗꈍ)");
+
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
+
+        assert_eq!(
+            &Document {
+                id: 0,
+                value: "(ꈍᴗꈍ)consectetur adipiscing elit, sed do eiusmod(ꈍᴗꈍ)".to_string(),
+                kind: "text".to_string(),
+                nested: Nested {
+                    child: "first".to_string()
+                }
+            },
+            results.hits[0].formatted_result.as_ref().unwrap()
+        );
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_customized_highlight_pre_tag(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = Query::new(&index);
+        query.with_query("Social");
+        query.with_attributes_to_highlight(Selectors::All);
+        query.with_highlight_pre_tag("(⊃｡•́‿•̀｡)⊃ ");
+        query.with_highlight_post_tag(" ⊂(´• ω •`⊂)");
+
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
+        dbg!(&results);
+        assert_eq!(
+            &Document {
+                id: 2,
+                value: "The (⊃｡•́‿•̀｡)⊃ Social ⊂(´• ω •`⊂) Network".to_string(),
+                kind: "title".to_string(),
+                nested: Nested {
+                    child: "third".to_string()
+                }
+            },
+            results.hits[0].formatted_result.as_ref().unwrap()
+        );
+
         Ok(())
     }
 
