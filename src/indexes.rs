@@ -612,10 +612,7 @@ impl Index {
     /// If you use it directly from the [Client], you can use the method [Client::get_raw_index], which is the equivalent method from the client.
     pub async fn fetch_info(&mut self) -> Result<(), Error> {
         let v = self.client.get_raw_index(self.uid.as_ref()).await?;
-        *self = match Index::from_value(v, self.client.clone()) {
-            Ok(x) => x,
-            Err(e) => return Err(e),
-        };
+        *self = Index::from_value(v, self.client.clone())?;
         Ok(())
     }
 
@@ -636,9 +633,9 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_primary_key(&mut self) -> Result<Option<String>, Error> {
+    pub async fn get_primary_key(&mut self) -> Result<Option<&str>, Error> {
         self.fetch_info().await?;
-        Ok(self.primary_key.to_owned())
+        Ok(self.primary_key.as_deref())
     }
 
     /// Get a [Task] from a specific [Index] to keep track of [asynchronous operations](https://docs.meilisearch.com/learn/advanced/asynchronous_operations.html).

@@ -52,11 +52,11 @@ impl Client {
     /// # });
     /// ```
     pub async fn list_all_indexes(&self) -> Result<Vec<Index>, Error> {
-        let mut v = vec![];
-        for index in self.list_all_indexes_raw().await? {
-            v.push(Index::from_value(index, self.clone())?);
-        }
-        Ok(v)
+        self.list_all_indexes_raw()
+            .await?
+            .into_iter()
+            .map(|index| Index::from_value(index, self.clone()))
+            .collect()
     }
 
     /// List all [Index]es and returns as Json.
@@ -593,7 +593,12 @@ impl Client {
     /// let client = client::Client::new("http://localhost:7700", token);
     /// # });
     /// ```
-    pub fn generate_tenant_token(&self, search_rules: serde_json::Value, api_key: Option<&str>, expires_at: Option<OffsetDateTime>) -> Result<String, Error> {
+    pub fn generate_tenant_token(
+        &self,
+        search_rules: serde_json::Value,
+        api_key: Option<&str>,
+        expires_at: Option<OffsetDateTime>,
+    ) -> Result<String, Error> {
         let api_key = api_key.unwrap_or(&self.api_key);
 
         crate::tenant_tokens::generate_tenant_token(search_rules, api_key, expires_at)
@@ -943,13 +948,16 @@ mod tests {
         assert!(all_indexes_raw.len() > 0);
         assert!(all_indexes_raw
             .iter()
-            .any(|idx| idx.get("uid").unwrap().as_str().unwrap() == *index.uid));
+            .any(|idx| idx["uid"] == json!(index.uid.to_string())));
     }
 
     #[meilisearch_test]
     async fn test_fetch_info(mut index: Index) {
-        let index = index.fetch_info().await;
-        assert!(index.is_ok());
+        let res = index.fetch_info().await;
+        assert!(res.is_ok());
+        assert!(index.updated_at.is_some());
+        assert!(index.created_at.is_some());
+        assert!(index.primary_key.is_none());
     }
 
     #[meilisearch_test]
