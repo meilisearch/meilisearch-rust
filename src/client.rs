@@ -15,7 +15,7 @@ use time::OffsetDateTime;
 #[derive(Debug, Clone)]
 pub struct Client {
     pub(crate) host: Rc<String>,
-    pub(crate) api_key: Rc<String>,
+    pub(crate) api_key: Rc<Option<String>>,
 }
 
 impl Client {
@@ -30,7 +30,7 @@ impl Client {
     /// // create the client
     /// let client = Client::new("http://localhost:7700", "masterKey");
     /// ```
-    pub fn new(host: impl Into<String>, api_key: impl Into<String>) -> Client {
+    pub fn new(host: impl Into<String>, api_key: impl Into<Option<String>>) -> Client {
         Client {
             host: Rc::new(host.into()),
             api_key: Rc::new(api_key.into()),
@@ -589,7 +589,12 @@ impl Client {
     /// let client = client::Client::new("http://localhost:7700", token);
     /// # });
     /// ```
-    pub fn generate_tenant_token(&self, search_rules: serde_json::Value, api_key: Option<&str>, expires_at: Option<OffsetDateTime>) -> Result<String, Error> {
+    pub fn generate_tenant_token(
+        &self,
+        search_rules: serde_json::Value,
+        api_key: Option<&str>,
+        expires_at: Option<OffsetDateTime>,
+    ) -> Result<String, Error> {
         let api_key = api_key.unwrap_or(&self.api_key);
 
         crate::tenant_tokens::generate_tenant_token(search_rules, api_key, expires_at)

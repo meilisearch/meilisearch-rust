@@ -283,7 +283,7 @@ mod tests {
     use crate::{client::*, search::*};
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
-    use serde_json::{Map, Value, json};
+    use serde_json::{json, Map, Value};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -573,15 +573,20 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_generate_tenant_token_from_client(client: Client, index: Index) -> Result<(), Error> {
-        use crate::key::{KeyBuilder, Action};
+    async fn test_generate_tenant_token_from_client(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        use crate::key::{Action, KeyBuilder};
 
         setup_test_index(&client, &index).await?;
 
         let key = KeyBuilder::new("key for generate_tenant_token test")
             .with_action(Action::All)
             .with_index("*")
-            .create(&client).await.unwrap();
+            .create(&client)
+            .await
+            .unwrap();
         let allowed_client = Client::new("http://localhost:7700", key.key);
 
         let search_rules = vec![
@@ -593,10 +598,13 @@ mod tests {
         ];
 
         for rules in search_rules {
-            let token = allowed_client.generate_tenant_token(rules, None, None).expect("Cannot generate tenant token.");
+            let token = allowed_client
+                .generate_tenant_token(rules, None, None)
+                .expect("Cannot generate tenant token.");
             let new_client = Client::new("http://localhost:7700", token);
 
-            let result: SearchResults<Document> = new_client.index(index.uid.to_string())
+            let result: SearchResults<Document> = new_client
+                .index(index.uid.to_string())
                 .search()
                 .execute()
                 .await?;
