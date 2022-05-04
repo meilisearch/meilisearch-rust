@@ -953,6 +953,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_fetch_info(mut index: Index) {
         let res = index.fetch_info().await;
+
         assert!(res.is_ok());
         assert!(index.updated_at.is_some());
         assert!(index.created_at.is_some());
