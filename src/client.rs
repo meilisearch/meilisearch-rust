@@ -595,7 +595,13 @@ impl Client {
         api_key: Option<&str>,
         expires_at: Option<OffsetDateTime>,
     ) -> Result<String, Error> {
-        let api_key = api_key.unwrap_or(&self.api_key);
+
+        let secondary_key = match &*self.api_key {
+            Some(key)=>key,
+            None => ""
+        };
+
+        let api_key = api_key.unwrap_or(secondary_key);
 
         crate::tenant_tokens::generate_tenant_token(search_rules, api_key, expires_at)
     }
@@ -695,7 +701,7 @@ mod tests {
 
         let master_key = client.api_key.clone();
         // this key has no right
-        client.api_key = Rc::new(key.key.clone());
+        client.api_key = Rc::new(Some(key.key.clone()));
         // with a wrong key
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
@@ -780,7 +786,7 @@ mod tests {
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
-        client.api_key = Rc::new(no_right_key.key.clone());
+        client.api_key = Rc::new(Some(no_right_key.key.clone()));
 
         let key = KeyBuilder::new(&description);
         let error = client.create_key(key).await.unwrap_err();
@@ -794,8 +800,12 @@ mod tests {
             })
         ));
 
+        let key = match &*client.api_key {
+            Some(key)=>key,
+            None => panic!("no api key on test test_error_create_key")
+        };
         // cleanup
-        master_client.delete_key(&*client.api_key).await.unwrap();
+        master_client.delete_key(key).await.unwrap();
     }
 
     #[meilisearch_test]
@@ -861,7 +871,7 @@ mod tests {
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
-        client.api_key = Rc::new(no_right_key.key.clone());
+        client.api_key = Rc::new(Some(no_right_key.key.clone()));
 
         let error = client.update_key(key).await.unwrap_err();
 
@@ -875,7 +885,12 @@ mod tests {
         ));
 
         // cleanup
-        master_client.delete_key(&*client.api_key).await.unwrap();
+
+        let key = match &*client.api_key {
+            Some(key)=> key,
+            None => panic!("no key on test: test error update key")
+        };
+        master_client.delete_key(key).await.unwrap();
     }
 
     #[meilisearch_test]

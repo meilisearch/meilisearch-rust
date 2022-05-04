@@ -132,7 +132,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 #[cfg(target_arch = "wasm32")]
 pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
     url: &str,
-    apikey: &str,
+    apikey: &Option<String>,
     method: Method<Input>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
@@ -146,7 +146,10 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     // The 2 following unwraps should not be able to fail
 
     let headers = Headers::new().unwrap();
-    headers.append("Authorization: Bearer", apikey).unwrap();
+
+    if let Some(key) = apikey {
+        headers.append("Authorization: Bearer", key).unwrap();
+    }
 
     let mut request: RequestInit = RequestInit::new();
     request.headers(&headers);
