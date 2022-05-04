@@ -62,7 +62,7 @@ impl Index {
     pub(crate) fn from_value(v: serde_json::Value, client: Client) -> Result<Index, Error> {
         #[derive(Deserialize, Debug)]
         #[allow(non_snake_case)]
-        struct PrivIndex {
+        struct IndexFromSerde {
             uid: String,
             #[serde(with = "time::serde::rfc3339::option")]
             updatedAt: Option<OffsetDateTime>,
@@ -71,7 +71,7 @@ impl Index {
             primaryKey: Option<String>,
         }
 
-        let i: PrivIndex = serde_json::from_value(v).map_err(Error::ParseError)?;
+        let i: IndexFromSerde = serde_json::from_value(v).map_err(Error::ParseError)?;
 
         Ok(Index {
             uid: Rc::new(i.uid),
