@@ -129,9 +129,8 @@ impl Client {
     /// ```
     /// If you use it directly from an [Index], you can use the method [Index::fetch_info], which is the equivalent method from an index.
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<Value, Error> {
-        let idx = self.index(uid.as_ref());
         request::<(), Value>(
-            &format!("{}/indexes/{}", self.host, idx.uid),
+            &format!("{}/indexes/{}", self.host, uid.as_ref()),
             &self.api_key,
             Method::Get,
             200,
