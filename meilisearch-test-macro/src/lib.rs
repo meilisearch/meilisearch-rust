@@ -89,9 +89,12 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
 
         // Now we do the same for the index name
         if use_name {
-            let name = &outer_fn.sig.ident;
+            let fn_name = &outer_fn.sig.ident;
+            // the name we're going to return is the complete path to the function ie something like that;
+            // `indexes::tests::test_fetch_info` but since the `::` are not allowed by meilisearch as an index
+            // name we're going to rename that to `indexes-tests-test_fetch_info`.
             outer_block.push(parse_quote!(
-                let name = stringify!(#name).to_string();
+                let name = format!("{}::{}", std::module_path!(), stringify!(#fn_name)).replace("::", "-");
             ));
         }
 
