@@ -8,6 +8,9 @@ license = "MIT"
 readme  = "README.md"
 repository = "https://github.com/meilisearch/meilisearch-sdk"
 
+[workspace]
+members = ["examples/*"]
+
 [dependencies]
 async-trait = "0.1.51"
 iso8601-duration = "0.1.0"
@@ -47,9 +50,3 @@ yew = "0.18"
 lazy_static = "1.4"
 web-sys = "0.3"
 console_error_panic_hook = "0.1"
-
-[[example]]
-name = "web_app"
-crate-type = ["cdylib", "rlib"]
-required-features = ["sync"]
-path = "examples/web_app/src/lib.rs"
