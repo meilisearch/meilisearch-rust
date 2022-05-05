@@ -1,9 +1,9 @@
 use futures::executor::block_on;
 use lazy_static::lazy_static;
-use meilisearch_sdk::{client::*,settings::Settings};
+use meilisearch_sdk::{client::*, settings::Settings};
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::io::{stdin};
+use std::io::stdin;
 
 // instantiate the client. load it once
 lazy_static! {
@@ -63,7 +63,7 @@ async fn search(query: &str) {
 async fn build_index() {
     // reading and parsing the file
     let content = include_str!("../assets/clothes.json");
-    
+
     // serialize the string to clothes objects
     let clothes: Vec<Clothes> = serde_json::from_str(content).unwrap();
 
@@ -78,15 +78,9 @@ async fn build_index() {
 
     // create the synonyms hashmap
     let mut synonyms = std::collections::HashMap::new();
-    synonyms.insert(
-        "sweater",
-        vec!["cardigan", "long-sleeve"],
-    );
+    synonyms.insert("sweater", vec!["cardigan", "long-sleeve"]);
     synonyms.insert("sweat pants", vec!["joggers", "gym pants"]);
-    synonyms.insert(
-        "t-shirt",
-        vec!["tees", "tshirt"],
-    );
+    synonyms.insert("t-shirt", vec!["tees", "tshirt"]);
 
     //create the settings struct
     let settings = Settings::new()
@@ -121,7 +115,7 @@ async fn build_index() {
         .wait_for_completion(&CLIENT, None, None)
         .await
         .unwrap();
-    
+
     if result.is_failure() {
         panic!(
             "Encountered an error while sending the documents: {:?}",
