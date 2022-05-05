@@ -4,26 +4,6 @@ use serde_json::json;
 use std::{collections::HashMap, fmt::Display, time::Duration};
 use time::OffsetDateTime;
 
-#[derive(Deserialize, Debug)]
-#[allow(non_snake_case)]
-pub struct JsonIndex {
-    pub uid: String,
-    pub primaryKey: Option<String>,
-    #[serde(with = "time::serde::rfc3339")]
-    pub createdAt: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    pub updatedAt: OffsetDateTime,
-}
-
-impl JsonIndex {
-    pub(crate) fn into_index(self, client: &Client) -> Index {
-        Index {
-            uid: Rc::new(self.uid),
-            client: client.clone(),
-        }
-    }
-}
-
 /// An index containing [Document]s.
 ///
 /// # Example
@@ -72,14 +52,41 @@ impl JsonIndex {
 pub struct Index {
     pub(crate) uid: Rc<String>,
     pub(crate) client: Client,
+    pub(crate) primary_key: Option<String>,
+    pub created_at: Option<OffsetDateTime>,
+    pub updated_at: Option<OffsetDateTime>,
 }
 
 impl Index {
+    /// Internal Function to create an [Index] from `serde_json::Value` and [Client]
+    pub(crate) fn from_value(v: serde_json::Value, client: Client) -> Result<Index, Error> {
+        #[derive(Deserialize, Debug)]
+        #[allow(non_snake_case)]
+        struct IndexFromSerde {
+            uid: String,
+            #[serde(with = "time::serde::rfc3339::option")]
+            updatedAt: Option<OffsetDateTime>,
+            #[serde(with = "time::serde::rfc3339::option")]
+            createdAt: Option<OffsetDateTime>,
+            primaryKey: Option<String>,
+        }
+
+        let i: IndexFromSerde = serde_json::from_value(v).map_err(Error::ParseError)?;
+
+        Ok(Index {
+            uid: Rc::new(i.uid),
+            client,
+            created_at: i.createdAt,
+            updated_at: i.updatedAt,
+            primary_key: i.primaryKey,
+        })
+    }
+
     /// Set the primary key of the index.
     ///
     /// If you prefer, you can use the method [Index::set_primary_key], which is an alias.
     pub async fn update(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
-        request::<serde_json::Value, JsonIndex>(
+        request::<serde_json::Value, serde_json::Value>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             &self.client.api_key,
             Method::Put(json!({ "primaryKey": primary_key.as_ref() })),
@@ -596,19 +603,17 @@ impl Index {
     /// # let index = client.create_index("fetch_info", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the information of the index named "fetch_info"
-    /// let movies = client.index("fetch_info").fetch_info().await.unwrap();
+    /// let mut idx = client.index("fetch_info");
+    /// idx.fetch_info().await.unwrap();
+    /// println!("{idx:?}");
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     /// If you use it directly from the [Client], you can use the method [Client::get_raw_index], which is the equivalent method from the client.
-    pub async fn fetch_info(&self) -> Result<JsonIndex, Error> {
-        request::<(), JsonIndex>(
-            &format!("{}/indexes/{}", self.client.host, self.uid),
-            &self.client.api_key,
-            Method::Get,
-            200,
-        )
-        .await
+    pub async fn fetch_info(&mut self) -> Result<(), Error> {
+        let v = self.client.get_raw_index(self.uid.as_ref()).await?;
+        *self = Index::from_value(v, self.client.clone())?;
+        Ok(())
     }
 
     /// Fetch the primary key of the index.
@@ -628,8 +633,9 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_primary_key(&self) -> Result<Option<String>, Error> {
-        Ok(self.fetch_info().await?.primaryKey)
+    pub async fn get_primary_key(&mut self) -> Result<Option<&str>, Error> {
+        self.fetch_info().await?;
+        Ok(self.primary_key.as_deref())
     }
 
     /// Get a [Task] from a specific [Index] to keep track of [asynchronous operations](https://docs.meilisearch.com/learn/advanced/asynchronous_operations.html).
@@ -966,6 +972,44 @@ mod tests {
     use super::*;
 
     use meilisearch_test_macro::meilisearch_test;
+
+    #[meilisearch_test]
+    async fn test_from_value(client: Client) {
+        let t = OffsetDateTime::now_utc();
+        let trfc3339 = t
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap();
+
+        let value = json!({
+            "createdAt": &trfc3339,
+            "primaryKey": null,
+            "uid": "test_from_value",
+            "updatedAt": &trfc3339,
+        });
+
+        let idx = Index {
+            uid: Rc::new("test_from_value".to_string()),
+            primary_key: None,
+            created_at: Some(t),
+            updated_at: Some(t),
+            client: client.clone(),
+        };
+
+        let res = Index::from_value(value, client).unwrap();
+
+        assert_eq!(res.updated_at, idx.updated_at);
+        assert_eq!(res.created_at, idx.created_at);
+        assert_eq!(res.uid, idx.uid);
+        assert_eq!(res.primary_key, idx.primary_key);
+        assert_eq!(res.client.host, idx.client.host);
+        assert_eq!(res.client.api_key, idx.client.api_key);
+    }
+
+    #[meilisearch_test]
+    async fn test_fetch_info(mut index: Index) {
+        let res = index.fetch_info().await;
+        assert!(res.is_ok());
+    }
 
     #[meilisearch_test]
     async fn test_get_tasks_no_docs(index: Index) {
