@@ -622,7 +622,7 @@ impl Client {
             None => ""
         };
 
-        let api_key = api_key.unwrap_or(String::from(secondary_key));
+        let api_key = api_key.unwrap_or_else(|| String::from(secondary_key));
         crate::tenant_tokens::generate_tenant_token(search_rules, api_key, expires_at)
     }
 }
