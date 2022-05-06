@@ -101,7 +101,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 
     const CONTENT_TYPE: &str = "Content-Type";
     const JSON: &str = "application/json";
-    const user_agent: str = qualified_version();
+    let user_agent = qualified_version();
 
     // The 2 following unwraps should not be able to fail
 
