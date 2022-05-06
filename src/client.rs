@@ -656,6 +656,46 @@ mod tests {
     };
     use meilisearch_test_macro::meilisearch_test;
     use time::OffsetDateTime;
+    use mockito::mock;
+    use std::mem;
+
+    #[meilisearch_test]
+    async fn test_methods_has_qualified_version_as_header() {
+        let mock_server_url = &mockito::server_url();
+        let path = "/hello";
+        let address = &format!("{}{}", mock_server_url, path);
+        let user_agent = &*qualified_version();
+
+        let assertions = vec![
+            (
+                mock("GET", path).match_header("User-Agent", user_agent).create(),
+                request::<String, ()>(address, "", Method::Get, 200)
+            ),
+            (
+                mock("POST", path).match_header("User-Agent", user_agent).create(),
+                request::<String, ()>(address, "", Method::Post("".to_string()), 200)
+            ),
+            (
+                mock("DELETE", path).match_header("User-Agent", user_agent).create(),
+                request::<String, ()>(address, "", Method::Delete, 200)
+            ),
+            (
+                mock("PUT", path).match_header("User-Agent", user_agent).create(),
+                request::<String, ()>(address, "", Method::Put("".to_string()), 200)
+            ),
+            (
+                mock("PATCH", path).match_header("User-Agent", user_agent).create(),
+                request::<String, ()>(address, "", Method::Patch("".to_string()), 200)
+            )
+        ];
+
+        for (m, req) in assertions {
+            let _ = req.await;
+
+            m.assert();
+            mem::drop(m);
+        }
+    }
 
     #[meilisearch_test]
     async fn test_get_keys(client: Client) {
