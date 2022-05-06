@@ -102,7 +102,8 @@ struct Movie {
 
 fn main() { block_on(async move {
     // Create a client (without sending any request so that can't fail)
-    let client = Client::new("http://localhost:7700", "masterKey");
+    let api_key = Option::Some(String::from("masterKey"));
+    let client = Client::new("http://localhost:7700", api_key);
 
     // An index is where the documents are stored.
     let movies = client.index("movies");
@@ -124,6 +125,8 @@ With the `uid`, you can check the status (`enqueued`, `processing`, `succeeded` 
 #### Basic Search <!-- omit in TOC -->
 
 ```rust
+     let api_key = Option::Some(String::from("masterKey"));
+     let client = Client::new("http://localhost:7700", api_key);
 // Meilisearch is typo-tolerant:
 println!("{:?}", client.index("movies_2").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
 ```
@@ -151,6 +154,8 @@ Json output:
 #### Custom Search <!-- omit in toc -->
 
 ```rust
+     let api_key = Option::Some(String::from("masterKey"));
+     let client = Client::new("http://localhost:7700", api_key);
 let search_result = client.index("movies_3")
   .search()
   .with_query("phil")
@@ -188,6 +193,8 @@ If you want to enable filtering, you must add your attributes to the `filterable
 index setting.
 
 ```rust
+     let api_key = Option::Some(String::from("masterKey"));
+     let client = Client::new("http://localhost:7700", api_key);
 let filterable_attributes = [
     "id",
     "genres",
