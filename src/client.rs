@@ -31,10 +31,10 @@ impl Client {
     /// # let api_key = Option::Some(String::from("masterKey"));
     /// # let client = Client::new("http://localhost:7700", api_key);
     /// ```
-    pub fn new(host: impl Into<String>, api_key: impl Into<Option<String>>) -> Client {
+    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
         Client {
             host: Rc::new(host.into()),
-            api_key: Rc::new(api_key.into()),
+            api_key: Rc::new(api_key.map(|key| key.into())),
         }
     }
 

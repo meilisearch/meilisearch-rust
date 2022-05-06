@@ -83,7 +83,7 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
         // First we need to check if a client will be used and create it if it’s the case
         if use_client {
             outer_block.push(parse_quote!(
-                let client = Client::new("http://localhost:7700", "masterKey");
+                let client = Client::new("http://localhost:7700", Some("masterKey"));
             ));
         }
 
