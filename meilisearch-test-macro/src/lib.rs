@@ -89,9 +89,12 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
 
         // Now we do the same for the index name
         if use_name {
-            let name = &outer_fn.sig.ident;
+            let fn_name = &outer_fn.sig.ident;
+            // the name we're going to return is the complete path to the function ie something like that;
+            // `indexes::tests::test_fetch_info` but since the `::` are not allowed by meilisearch as an index
+            // name we're going to rename that to `indexes-tests-test_fetch_info`.
             outer_block.push(parse_quote!(
-                let name = stringify!(#name).to_string();
+                let name = format!("{}::{}", std::module_path!(), stringify!(#fn_name)).replace("::", "-");
             ));
         }
 
@@ -101,10 +104,10 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
                 let res = client
                     .delete_index(&name)
                     .await
-                    .unwrap()
+                    .expect("Network issue while sending the delete index task")
                     .wait_for_completion(&client, None, None)
                     .await
-                    .unwrap();
+                    .expect("Network issue while waiting for the index deletion");
                 if res.is_failure() {
                     let error = res.unwrap_failure();
                     assert_eq!(
@@ -120,12 +123,12 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
                 let index = client
                     .create_index(&name, None)
                     .await
-                    .unwrap()
+                    .expect("Network issue while sending the create index task")
                     .wait_for_completion(&client, None, None)
                     .await
-                    .unwrap()
+                    .expect("Network issue while waiting for the index creation")
                     .try_make_index(&client)
-                    .unwrap();
+                    .expect("Could not create the index out of the create index task");
             ));
         }
 
@@ -144,16 +147,14 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
             let result = #inner_ident(#(#params.clone()),*).await;
         ));
 
-        // And right before the end, if an index was created we need to delete it.
+        // And right before the end, if an index was created and the tests successfully executed we delete it.
         if use_index {
             outer_block.push(parse_quote!(
                 index
                     .delete()
                     .await
-                    .unwrap()
-                    .wait_for_completion(&client, None, None)
-                    .await
-                    .unwrap();
+                    .expect("Network issue while sending the last delete index task");
+                // we early exit the test here and let meilisearch handle the deletion asynchonously
             ));
         }
 
