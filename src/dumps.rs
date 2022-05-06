@@ -19,8 +19,8 @@
 //! # use futures_await_test::async_test;
 //! # use std::{thread::sleep, time::Duration};
 //! # futures::executor::block_on(async move {
-//! #
-//! let client = Client::new("http://localhost:7700", "masterKey");
+//! # let api_key = Option::Some(String::from("masterKey"));
+//! # let client = Client::new("http://localhost:7700", api_key);
 //!
 //! // Create a dump
 //! let dump_info = client.create_dump().await.unwrap();
@@ -78,8 +78,8 @@ impl Client {
     /// # use futures_await_test::async_test;
     /// # use std::{thread::sleep, time::Duration};
     /// # futures::executor::block_on(async move {
-    /// #
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let api_key = Option::Some(String::from("masterKey"));
+    /// # let client = Client::new("http://localhost:7700", api_key);
     /// #
     /// let dump_info = client.create_dump().await.unwrap();
     /// assert!(matches!(dump_info.status, DumpStatus::InProgress));
@@ -104,8 +104,8 @@ impl Client {
     /// # use futures_await_test::async_test;
     /// # use std::{thread::sleep, time::Duration};
     /// # futures::executor::block_on(async move {
-    /// #
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let api_key = Option::Some(String::from("masterKey"));
+    /// # let client = Client::new("http://localhost:7700", api_key);
     /// # let dump_info = client.create_dump().await.unwrap();
     /// # sleep(Duration::from_secs(5));
     /// #
