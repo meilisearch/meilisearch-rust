@@ -15,64 +15,117 @@ pub(crate) enum Method<T: Serialize> {
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
     url: &str,
-    apikey: &str,
+    apikey: &Option<String>,
     method: Method<Input>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
     use isahc::http::header;
     use isahc::*;
-
-    let auth = format!("Bearer {}", apikey);
     let user_agent = qualified_version();
-
     let mut response = match &method {
         Method::Get => {
-            Request::get(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
-                .body(())
-                .map_err(|_| crate::errors::Error::InvalidRequest)?
-                .send_async()
-                .await?
+        
+            if let Some(key) = apikey {
+                let auth = format!("Bearer {}", key);
+                Request::get(url)
+                    .header(header::AUTHORIZATION, auth)
+                    .header(header::USER_AGENT, user_agent)
+                    .body(())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            } else {
+                Request::get(url)
+                    .header(header::USER_AGENT, user_agent)
+                    .body(())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            }
         }
+
         Method::Delete => {
-            Request::delete(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
-                .body(())
-                .map_err(|_| crate::errors::Error::InvalidRequest)?
-                .send_async()
-                .await?
+            if let Some(key) = apikey {
+                let auth = format!("Bearer {}", key);
+                Request::delete(url)
+                    .header(header::AUTHORIZATION, auth)
+                    .header(header::USER_AGENT, user_agent)
+                    .body(())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            } else {
+                Request::delete(url)
+                    .header(header::USER_AGENT, user_agent)
+                    .body(())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            }
         }
         Method::Post(body) => {
-            Request::post(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::CONTENT_TYPE, "application/json")
-                .header(header::USER_AGENT, user_agent)
-                .body(to_string(&body).unwrap())
-                .map_err(|_| crate::errors::Error::InvalidRequest)?
-                .send_async()
-                .await?
+            if let Some(key) = apikey {
+                let auth = format!("Bearer {}", key);
+                Request::post(url)
+                    .header(header::AUTHORIZATION, auth)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
+                    .body(to_string(&body).unwrap())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            } else {
+                Request::post(url)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
+                    .body(to_string(&body).unwrap())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            }
         }
         Method::Patch(body) => {
-            Request::patch(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::CONTENT_TYPE, "application/json")
-                .header(header::USER_AGENT, user_agent)
-                .body(to_string(&body).unwrap())
-                .map_err(|_| crate::errors::Error::InvalidRequest)?
-                .send_async()
-                .await?
+            if let Some(key) = apikey {
+                let auth = format!("Bearer {}", key);
+                Request::patch(url)
+                    .header(header::AUTHORIZATION, auth)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
+                    .body(to_string(&body).unwrap())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            } else {
+                Request::patch(url)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
+                    .body(to_string(&body).unwrap())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            }
         }
         Method::Put(body) => {
-            Request::put(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::CONTENT_TYPE, "application/json")
-                .header(header::USER_AGENT, user_agent)
-                .body(to_string(&body).unwrap())
-                .map_err(|_| crate::errors::Error::InvalidRequest)?
-                .send_async()
-                .await?
+            if let Some(key) = apikey {
+                let auth = format!("Bearer {}", key);
+                Request::put(url)
+                    .header(header::AUTHORIZATION, auth)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
+                    .body(to_string(&body).unwrap())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            } else {
+                Request::put(url)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
+                    .body(to_string(&body).unwrap())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            }
+
         }
     };
 
@@ -91,7 +144,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 #[cfg(target_arch = "wasm32")]
 pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
     url: &str,
-    apikey: &str,
+    apikey: &Option<String>,
     method: Method<Input>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
@@ -106,7 +159,10 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     // The 2 following unwraps should not be able to fail
 
     let headers = Headers::new().unwrap();
-    headers.append("Authorization: Bearer", apikey).unwrap();
+
+    if let Some(key) = apikey {
+        headers.append("Authorization: Bearer", key).unwrap();
+    }
     headers.append("User-Agent", &user_agent).unwrap();
 
     let mut request: RequestInit = RequestInit::new();

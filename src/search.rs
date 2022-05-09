@@ -102,7 +102,8 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
-/// # let client = Client::new("http://localhost:7700", "masterKey");
+/// # let api_key = Option::Some(String::from("masterKey"));
+/// # let client = Client::new("http://localhost:7700", api_key);
 /// # let index = client.index("does not matter");
 /// let query = Query::new(&index)
 ///     .with_query("space")
@@ -113,7 +114,8 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
-/// # let client = Client::new("http://localhost:7700", "masterKey");
+/// # let api_key = Option::Some(String::from("masterKey"));
+/// # let client = Client::new("http://localhost:7700", api_key);
 /// # let index = client.index("does not matter");
 /// let query = index.search()
 ///     .with_query("space")
@@ -324,10 +326,12 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use serde_json::{json, Map, Value};
 
+
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Nested {
         child: String,
     }
+
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -730,7 +734,9 @@ mod tests {
             .create(&client)
             .await
             .unwrap();
-        let allowed_client = Client::new("http://localhost:7700", key.key);
+
+        let allowed_client = Client::new("http://localhost:7700", Some(key.key));
+
 
         let search_rules = vec![
             json!({ "*": {}}),
@@ -744,7 +750,9 @@ mod tests {
             let token = allowed_client
                 .generate_tenant_token(rules, None, None)
                 .expect("Cannot generate tenant token.");
-            let new_client = Client::new("http://localhost:7700", token);
+
+            let new_client = Client::new("http://localhost:7700", Some(token));
+
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())
