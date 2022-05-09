@@ -102,7 +102,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
-/// # let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
+/// # let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
 /// # let index = client.index("does not matter");
 /// let query = Query::new(&index)
 ///     .with_query("space")
@@ -113,7 +113,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
-/// # let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
+/// # let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
 /// # let index = client.index("does not matter");
 /// let query = index.search()
 ///     .with_query("space")

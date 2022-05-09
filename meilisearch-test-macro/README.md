@@ -13,7 +13,7 @@ Before explaining its usage, we're going to see a simple test *before* this macr
 ```rust
 #[async_test]
 async fn test_get_tasks() -> Result<(), Error> {
-  let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
+  let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
 
   let index = client
     .create_index("test_get_tasks", None)
@@ -36,7 +36,7 @@ async fn test_get_tasks() -> Result<(), Error> {
 ```
 
 I have multiple problems with this test:
-- `let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));`: This line is always the same in every test.
+- `let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));`: This line is always the same in every test.
   And if you make a typo on the http addr or the master key, you'll have an error.
 - `let index = client.create_index("test_get_tasks", None)...`: Each test needs to have an unique name.
   This means we currently need to write the name of the test everywhere; it's not practical.
@@ -61,7 +61,7 @@ the test, the macro automatically did the same thing we've seen before.
 There are a few rules, though:
 1. The macro only handles three types of arguments:
   - `String`: It returns the name of the test.
-  - `Client`: It creates a client like that: `Client::new("http://localhost:7700", Some(String::from("masterKey")))`.
+  - `Client`: It creates a client like that: `Client::new("http://localhost:7700", Some("masterKey".to_string()))`.
   - `Index`: It creates and deletes an index, as we've seen before.
 2. You only get what you asked for. That means if you don't ask for an index, no index will be created in meilisearch.
   So, if you are testing the creation of indexes, you can ask for a `Client` and a `String` and then create it yourself.
