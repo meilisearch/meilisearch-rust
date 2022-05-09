@@ -160,7 +160,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     let headers = Headers::new().unwrap();
 
     if let Some(key) = apikey{
-        headers.append("Authorization: Bearer", apikey).unwrap();
+        headers.append("Authorization: Bearer", key).unwrap();
     }
     headers.append("User-Agent", &user_agent).unwrap();
 
