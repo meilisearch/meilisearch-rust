@@ -138,7 +138,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = ("http://localhost:7700", Some(String::from("masterKey")));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// let movies = client.index("execute_query");
     ///
     /// // add some documents
@@ -926,7 +926,7 @@ impl Index {
     ///         description: String::from("Updated!")
     /// }];
     ///
-    /// let tasks = movie_index.(&updated_movies, Some(1), None).await.unwrap();
+    /// let tasks = movie_index.update_documents_in_batches(&updated_movies, Some(1), None).await.unwrap();
     ///
     /// client.wait_for_task(tasks.last().unwrap(), None, None).await.unwrap();
     ///

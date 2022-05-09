@@ -51,7 +51,7 @@
 //! #    genres: Vec<String>,
 //! # }
 //! # fn main() { block_on(async move {
-//! #    let client = ("http://localhost:7700", Some("masterKey"));
+//! #    let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
 //! #    let movies = client.create_index("movies_2", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! // Meilisearch is typo-tolerant:
 //! println!("{:?}", client.index("movies_2").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);

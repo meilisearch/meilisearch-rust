@@ -482,7 +482,7 @@ impl Client {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = client::Client::new("http://localhost:7700", Some(String::from("masterKey")));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// let movies = client.index("movies_client_wait_for_task");
     ///
     /// let task = movies.add_documents(&[
@@ -535,7 +535,7 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::*;
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
+    /// # let client = client::Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # let index = client.create_index("movies_get_task", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// let task = index.delete_all_documents().await.unwrap();
     /// let task = client.get_task(task).await.unwrap();
@@ -589,7 +589,7 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// let token = client.generate_tenant_token(serde_json::json!(["*"]), None, None).unwrap();
-    /// let client = client::Client::new("http://localhost:7700", token);
+    /// let client = client::Client::new("http://localhost:7700", Some(token));
     /// # });
     /// ```
     pub fn generate_tenant_token(

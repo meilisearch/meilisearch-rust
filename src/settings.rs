@@ -223,7 +223,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", SSome(String::from("masterKey")));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("get_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_synonyms");
     /// let synonyms = index.get_synonyms().await.unwrap();
@@ -298,7 +298,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = ("http://localhost:7700", Some(String::from("masterKey")));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("get_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_filterable_attributes");
     /// let filterable_attributes = index.get_filterable_attributes().await.unwrap();
@@ -398,7 +398,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = ("http://localhost:7700", Some(String::from("masterKey")));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("get_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_displayed_attributes");
     /// let displayed_attributes = index.get_displayed_attributes().await.unwrap();
@@ -834,7 +834,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", SSome(String::from("masterKey")));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("reset_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_ranking_rules");
     ///
