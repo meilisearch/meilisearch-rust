@@ -143,7 +143,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 #[cfg(target_arch = "wasm32")]
 pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
     url: &str,
-    apikey: Option<String>,
+    apikey: &Option<String>,
     method: Method<Input>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
