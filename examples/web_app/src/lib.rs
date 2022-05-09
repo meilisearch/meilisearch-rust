@@ -17,7 +17,7 @@ use crate::document::{display, Crate};
 lazy_static! {
     static ref CLIENT: Client = Client::new(
         "https://finding-demos.meilisearch.com",
-        Some("2b902cce4f868214987a9f3c7af51a69fa660d74a785bed258178b96e3480bb3"),
+        Some(String::from("2b902cce4f868214987a9f3c7af51a69fa660d74a785bed258178b96e3480bb3")),
     );
 }
 

@@ -201,7 +201,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("get_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_settings");
     /// let settings = index.get_settings().await.unwrap();
@@ -223,7 +223,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", SSome(String::from("masterKey")));
     /// # client.create_index("get_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_synonyms");
     /// let synonyms = index.get_synonyms().await.unwrap();
@@ -248,7 +248,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("get_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_stop_words");
     /// let stop_words = index.get_stop_words().await.unwrap();
@@ -273,7 +273,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("get_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_ranking_rules");
     /// let ranking_rules = index.get_ranking_rules().await.unwrap();
@@ -298,7 +298,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = ("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("get_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_filterable_attributes");
     /// let filterable_attributes = index.get_filterable_attributes().await.unwrap();
@@ -348,7 +348,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("get_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_distinct_attribute");
     /// let distinct_attribute = index.get_distinct_attribute().await.unwrap();
@@ -373,7 +373,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("get_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_searchable_attributes");
     /// let searchable_attributes = index.get_searchable_attributes().await.unwrap();
@@ -398,7 +398,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = ("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("get_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_displayed_attributes");
     /// let displayed_attributes = index.get_displayed_attributes().await.unwrap();
@@ -455,7 +455,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("set_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_synonyms");
     ///
@@ -491,7 +491,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("set_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_stop_words");
     ///
@@ -528,7 +528,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("set_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_ranking_rules");
     ///
@@ -574,7 +574,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("set_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_filterable_attributes");
     ///
@@ -611,7 +611,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("set_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_sortable_attributes");
     ///
@@ -648,7 +648,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("set_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_distinct_attribute");
     ///
@@ -679,7 +679,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("set_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_searchable_attributes");
     ///
@@ -715,7 +715,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("set_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_displayed_attributes");
     ///
@@ -752,7 +752,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("reset_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_settings");
     ///
@@ -777,7 +777,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("reset_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_synonyms");
     ///
@@ -805,7 +805,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("reset_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_stop_words");
     ///
@@ -834,7 +834,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", SSome(String::from("masterKey")));
     /// # client.create_index("reset_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_ranking_rules");
     ///
@@ -862,7 +862,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("reset_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_filterable_attributes");
     ///
@@ -890,7 +890,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-   /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+   /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("reset_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_sortable_attributes");
     ///
@@ -918,7 +918,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("reset_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_distinct_attribute");
     ///
@@ -946,7 +946,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("reset_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_searchable_attributes");
     ///
@@ -974,7 +974,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # client.create_index("reset_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_displayed_attributes");
     ///

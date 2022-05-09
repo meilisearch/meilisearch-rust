@@ -102,7 +102,7 @@ struct Movie {
 
 fn main() { block_on(async move {
     // Create a client (without sending any request so that can't fail)
-    let client = Client::new("http://localhost:7700", Some("masterKey"));
+    let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
 
     // An index is where the documents are stored.
     let movies = client.index("movies");

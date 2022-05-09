@@ -20,7 +20,7 @@
 //! # use std::{thread::sleep, time::Duration};
 //! # futures::executor::block_on(async move {
 //! #
-//! let client = Client::new("http://localhost:7700", Some("masterKey"));
+//! let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
 //!
 //! // Create a dump
 //! let dump_info = client.create_dump().await.unwrap();
@@ -79,7 +79,7 @@ impl Client {
     /// # use std::{thread::sleep, time::Duration};
     /// # futures::executor::block_on(async move {
     /// #
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// #
     /// let dump_info = client.create_dump().await.unwrap();
     /// assert!(matches!(dump_info.status, DumpStatus::InProgress));
@@ -105,7 +105,7 @@ impl Client {
     /// # use std::{thread::sleep, time::Duration};
     /// # futures::executor::block_on(async move {
     /// #
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # let dump_info = client.create_dump().await.unwrap();
     /// # sleep(Duration::from_secs(5));
     /// #

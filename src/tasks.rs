@@ -168,7 +168,7 @@ impl Task {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey")); 
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey"))); 
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
@@ -205,7 +205,7 @@ impl Task {
     /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     ///
     /// let task = client.create_index("try_make_index", None).await.unwrap();
     /// let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
@@ -239,7 +239,7 @@ impl Task {
     /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # let task = client.create_index("unwrap_failure", None).await.unwrap();
     /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
@@ -276,7 +276,7 @@ impl Task {
     /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// # let task = client.create_index("is_failure", None).await.unwrap();
     /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
@@ -303,7 +303,7 @@ impl Task {
     /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// let task = client
     ///   .create_index("is_success", None)
     ///   .await
@@ -327,7 +327,7 @@ impl Task {
     /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
     /// let task = client
     ///   .create_index("is_pending", None)
     ///   .await

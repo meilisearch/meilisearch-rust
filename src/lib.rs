@@ -17,7 +17,7 @@
 //!
 //! fn main() { block_on(async move {
 //!     // Create a client (without sending any request so that can't fail)
-//!     let client = Client::new("http://localhost:7700", Some("masterKey"));
+//!     let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
 //!
 //! #    let index = client.create_index("movies", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //!     // An index is where the documents are stored.
@@ -51,7 +51,7 @@
 //! #    genres: Vec<String>,
 //! # }
 //! # fn main() { block_on(async move {
-//! #    let client = Client::new("http://localhost:7700", Some("masterKey"));
+//! #    let client = ("http://localhost:7700", Some("masterKey"));
 //! #    let movies = client.create_index("movies_2", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! // Meilisearch is typo-tolerant:
 //! println!("{:?}", client.index("movies_2").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
@@ -92,7 +92,7 @@
 //! #    genres: Vec<String>,
 //! # }
 //! # fn main() { block_on(async move {
-//! #    let client = Client::new("http://localhost:7700", Some("masterKey"));
+//! #    let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
 //! #    let movies = client.create_index("movies_3", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let search_result = client.index("movies_3")
 //!   .search()
@@ -137,7 +137,7 @@
 //! # use serde::{Serialize, Deserialize};
 //! # use futures::executor::block_on;
 //! # fn main() { block_on(async move {
-//! #    let client = Client::new("http://localhost:7700", Some("masterKey"));
+//! #    let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
 //! #    let movies = client.create_index("movies_4", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let filterable_attributes = [
 //!     "id",
@@ -165,7 +165,7 @@
 //! #    genres: Vec<String>,
 //! # }
 //! # fn main() { block_on(async move {
-//! # let client = Client::new("http://localhost:7700", Some("masterKey"));
+//! # let client = Client::new("http://localhost:7700", Some(String::from("masterKey")));
 //! # let movies = client.create_index("movies_5", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! # let filterable_attributes = [
 //! #     "id",
