@@ -175,18 +175,36 @@ pub struct Query<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
-    /// Number of characters to keep on each side of the start of the matching word.
+    /// Maximum number of words including the matched query term(s) contained in the returned cropped value(s).
     /// See [attributes_to_crop](#structfield.attributes_to_crop).
     ///
-    /// Default: `200`
+    /// Default: `10`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_length: Option<usize>,
+    /// Marker at the start and the end of a cropped value.
+    /// ex: `...middle of a crop...`
+    ///
+    /// Default: `...`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub crop_marker: Option<&'a str>,
     /// Attributes whose values will contain **highlighted matching terms**.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
+    /// Tag in front of a highlighted term.
+    /// ex: `<mytag>hello world`
+    ///
+    /// Default: `<em>`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub highlight_pre_tag: Option<&'a str>,
+    /// Tag after the a highlighted term.
+    /// ex: `hello world</ mytag>`
+    ///
+    /// Default: `</em>`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub highlight_post_tag: Option<&'a str>,
     /// Defines whether an object that contains information about the matches should be returned or not.
     ///
     /// Default: `false`
@@ -208,7 +226,10 @@ impl<'a> Query<'a> {
             attributes_to_retrieve: None,
             attributes_to_crop: None,
             crop_length: None,
+            crop_marker: None,
             attributes_to_highlight: None,
+            highlight_pre_tag: None,
+            highlight_post_tag: None,
             matches: None,
         }
     }
@@ -253,6 +274,14 @@ impl<'a> Query<'a> {
         self.attributes_to_crop = Some(attributes_to_crop);
         self
     }
+    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut Query<'a> {
+        self.crop_length = Some(crop_length);
+        self
+    }
+    pub fn with_crop_marker<'b>(&'b mut self, crop_marker: &'a str) -> &'b mut Query<'a> {
+        self.crop_marker = Some(crop_marker);
+        self
+    }
     pub fn with_attributes_to_highlight<'b>(
         &'b mut self,
         attributes_to_highlight: Selectors<&'a [&'a str]>,
@@ -260,8 +289,18 @@ impl<'a> Query<'a> {
         self.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
-    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut Query<'a> {
-        self.crop_length = Some(crop_length);
+    pub fn with_highlight_pre_tag<'b>(
+        &'b mut self,
+        highlight_pre_tag: &'a str,
+    ) -> &'b mut Query<'a> {
+        self.highlight_pre_tag = Some(highlight_pre_tag);
+        self
+    }
+    pub fn with_highlight_post_tag<'b>(
+        &'b mut self,
+        highlight_post_tag: &'a str,
+    ) -> &'b mut Query<'a> {
+        self.highlight_post_tag = Some(highlight_post_tag);
         self
     }
     pub fn with_matches<'b>(&'b mut self, matches: bool) -> &'b mut Query<'a> {
@@ -287,11 +326,19 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use serde_json::{json, Map, Value};
 
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Nested {
+        child: String,
+    }
+
+
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
         id: usize,
         value: String,
         kind: String,
+        nested: Nested,
     }
 
     impl PartialEq<Map<String, Value>> for Document {
@@ -304,16 +351,16 @@ mod tests {
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
         let t0 = index.add_documents(&[
-            Document { id: 0, kind: "text".into(), value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string() },
-            Document { id: 1, kind: "text".into(), value: "dolor sit amet, consectetur adipiscing elit".to_string() },
-            Document { id: 2, kind: "title".into(), value: "The Social Network".to_string() },
-            Document { id: 3, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
-            Document { id: 4, kind: "title".into(), value: "Harry Potter and the Chamber of Secrets".to_string() },
-            Document { id: 5, kind: "title".into(), value: "Harry Potter and the Prisoner of Azkaban".to_string() },
-            Document { id: 6, kind: "title".into(), value: "Harry Potter and the Goblet of Fire".to_string() },
-            Document { id: 7, kind: "title".into(), value: "Harry Potter and the Order of the Phoenix".to_string() },
-            Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string() },
-            Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
+            Document { id: 0, kind: "text".into(), value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string(), nested: Nested { child: "first".to_string() } },
+            Document { id: 1, kind: "text".into(), value: "dolor sit amet, consectetur adipiscing elit".to_string(), nested: Nested { child: "second".to_string() } },
+            Document { id: 2, kind: "title".into(), value: "The Social Network".to_string(), nested: Nested { child: "third".to_string() } },
+            Document { id: 3, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string(), nested: Nested { child: "fourth".to_string() } },
+            Document { id: 4, kind: "title".into(), value: "Harry Potter and the Chamber of Secrets".to_string(), nested: Nested { child: "fift".to_string() } },
+            Document { id: 5, kind: "title".into(), value: "Harry Potter and the Prisoner of Azkaban".to_string(), nested: Nested { child: "sixth".to_string() } },
+            Document { id: 6, kind: "title".into(), value: "Harry Potter and the Goblet of Fire".to_string(), nested: Nested { child: "seventh".to_string() } },
+            Document { id: 7, kind: "title".into(), value: "Harry Potter and the Order of the Phoenix".to_string(), nested: Nested { child: "eighth".to_string() } },
+            Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string(), nested: Nested { child: "ninth".to_string() } },
+            Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string(), nested: Nested { child: "tenth".to_string() } },
         ], None).await?;
         let t1 = index.set_filterable_attributes(["kind", "value"]).await?;
         let t2 = index.set_sortable_attributes(["title"]).await?;
@@ -331,6 +378,28 @@ mod tests {
 
         let results: SearchResults<Document> = index.search().with_query("dolor").execute().await?;
         assert_eq!(results.hits.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_string_on_nested_field(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results: SearchResults<Document> =
+            index.search().with_query("second").execute().await?;
+
+        assert_eq!(
+            &Document {
+                id: 1,
+                value: "dolor sit amet, consectetur adipiscing elit".to_string(),
+                kind: "text".to_string(),
+                nested: Nested {
+                    child: "second".to_string()
+                }
+            },
+            &results.hits[0].result
+        );
+
         Ok(())
     }
 
@@ -454,21 +523,31 @@ mod tests {
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
-        assert_eq!(&Document {
-            id: 0,
-            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
-            kind: "text".to_string()
-        }, results.hits[0].formatted_result.as_ref().unwrap());
+        assert_eq!(
+            &Document {
+                id: 0,
+                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do…"
+                    .to_string(),
+                kind: "text".to_string(),
+                nested: Nested {
+                    child: "first".to_string()
+                }
+            },
+            results.hits[0].formatted_result.as_ref().unwrap()
+        );
 
         let mut query = Query::new(&index);
         query.with_query("lorem ipsum");
-        query.with_attributes_to_crop(Selectors::Some(&[("value", Some(50)), ("kind", None)]));
+        query.with_attributes_to_crop(Selectors::Some(&[("value", Some(5)), ("kind", None)]));
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
-                kind: "text".to_string()
+                value: "Lorem ipsum dolor sit amet…".to_string(),
+                kind: "text".to_string(),
+                nested: Nested {
+                    child: "first".to_string()
+                }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -486,24 +565,84 @@ mod tests {
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(&Document {
             id: 0,
-            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip".to_string(),
+            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string(),
             kind: "text".to_string(),
+            nested: Nested { child: "first".to_string() }
         },
         results.hits[0].formatted_result.as_ref().unwrap());
 
         let mut query = Query::new(&index);
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
-        query.with_crop_length(50);
+        query.with_crop_length(5);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit".to_string(),
-                kind: "text".to_string()
+                value: "Lorem ipsum dolor sit amet…".to_string(),
+                kind: "text".to_string(),
+                nested: Nested {
+                    child: "first".to_string()
+                }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_customized_crop_marker(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = Query::new(&index);
+        query.with_query("sed do eiusmod");
+        query.with_attributes_to_crop(Selectors::All);
+        query.with_crop_length(6);
+        query.with_crop_marker("(ꈍᴗꈍ)");
+
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
+
+        assert_eq!(
+            &Document {
+                id: 0,
+                value: "(ꈍᴗꈍ)consectetur adipiscing elit, sed do eiusmod(ꈍᴗꈍ)".to_string(),
+                kind: "text".to_string(),
+                nested: Nested {
+                    child: "first".to_string()
+                }
+            },
+            results.hits[0].formatted_result.as_ref().unwrap()
+        );
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_customized_highlight_pre_tag(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = Query::new(&index);
+        query.with_query("Social");
+        query.with_attributes_to_highlight(Selectors::All);
+        query.with_highlight_pre_tag("(⊃｡•́‿•̀｡)⊃ ");
+        query.with_highlight_post_tag(" ⊂(´• ω •`⊂)");
+
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
+        dbg!(&results);
+        assert_eq!(
+            &Document {
+                id: 2,
+                value: "The (⊃｡•́‿•̀｡)⊃ Social ⊂(´• ω •`⊂) Network".to_string(),
+                kind: "title".to_string(),
+                nested: Nested {
+                    child: "third".to_string()
+                }
+            },
+            results.hits[0].formatted_result.as_ref().unwrap()
+        );
+
         Ok(())
     }
 
@@ -519,7 +658,10 @@ mod tests {
             &Document {
                 id: 1,
                 value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
-                kind: "<em>text</em>".to_string()
+                kind: "<em>text</em>".to_string(),
+                nested: Nested {
+                    child: "first".to_string()
+                }
             },
             results.hits[0].formatted_result.as_ref().unwrap(),
         );
@@ -532,7 +674,10 @@ mod tests {
             &Document {
                 id: 1,
                 value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
-                kind: "text".to_string()
+                kind: "text".to_string(),
+                nested: Nested {
+                    child: "first".to_string()
+                }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -589,7 +734,9 @@ mod tests {
             .create(&client)
             .await
             .unwrap();
+
         let allowed_client = Client::new("http://localhost:7700", Some(key.key));
+
 
         let search_rules = vec![
             json!({ "*": {}}),
@@ -603,7 +750,9 @@ mod tests {
             let token = allowed_client
                 .generate_tenant_token(rules, None, None)
                 .expect("Cannot generate tenant token.");
+
             let new_client = Client::new("http://localhost:7700", Some(token));
+
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())

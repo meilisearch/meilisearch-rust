@@ -21,19 +21,22 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 ) -> Result<Output, Error> {
     use isahc::http::header;
     use isahc::*;
-
+    let user_agent = qualified_version();
     let mut response = match &method {
         Method::Get => {
+        
             if let Some(key) = apikey {
                 let auth = format!("Bearer {}", key);
                 Request::get(url)
                     .header(header::AUTHORIZATION, auth)
+                    .header(header::USER_AGENT, user_agent)
                     .body(())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
                     .await?
             } else {
                 Request::get(url)
+                    .header(header::USER_AGENT, user_agent)
                     .body(())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
@@ -46,12 +49,14 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 let auth = format!("Bearer {}", key);
                 Request::delete(url)
                     .header(header::AUTHORIZATION, auth)
+                    .header(header::USER_AGENT, user_agent)
                     .body(())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
                     .await?
             } else {
                 Request::delete(url)
+                    .header(header::USER_AGENT, user_agent)
                     .body(())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
@@ -64,6 +69,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 Request::post(url)
                     .header(header::AUTHORIZATION, auth)
                     .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
                     .body(to_string(&body).unwrap())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
@@ -71,6 +77,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
             } else {
                 Request::post(url)
                     .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
                     .body(to_string(&body).unwrap())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
@@ -83,6 +90,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 Request::patch(url)
                     .header(header::AUTHORIZATION, auth)
                     .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
                     .body(to_string(&body).unwrap())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
@@ -90,6 +98,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
             } else {
                 Request::patch(url)
                     .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
                     .body(to_string(&body).unwrap())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
@@ -102,6 +111,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 Request::put(url)
                     .header(header::AUTHORIZATION, auth)
                     .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
                     .body(to_string(&body).unwrap())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
@@ -109,11 +119,13 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
             } else {
                 Request::put(url)
                     .header(header::CONTENT_TYPE, "application/json")
+                    .header(header::USER_AGENT, user_agent)
                     .body(to_string(&body).unwrap())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
                     .await?
             }
+
         }
     };
 
@@ -142,6 +154,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 
     const CONTENT_TYPE: &str = "Content-Type";
     const JSON: &str = "application/json";
+    let user_agent = qualified_version();
 
     // The 2 following unwraps should not be able to fail
 
@@ -150,6 +163,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     if let Some(key) = apikey {
         headers.append("Authorization: Bearer", key).unwrap();
     }
+    headers.append("User-Agent", &user_agent).unwrap();
 
     let mut request: RequestInit = RequestInit::new();
     request.headers(&headers);
@@ -238,4 +252,10 @@ fn parse_response<Output: DeserializeOwned>(
         Ok(e) => Err(Error::from(e)),
         Err(e) => Err(Error::ParseError(e)),
     }
+}
+
+pub fn qualified_version() -> String {
+    const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
+
+    format!("Meilisearch Rust (v{})", VERSION.unwrap_or("unknown"))
 }
