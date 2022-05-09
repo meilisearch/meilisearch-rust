@@ -20,7 +20,7 @@
 //! # use std::{thread::sleep, time::Duration};
 //! # futures::executor::block_on(async move {
 //! #
-//! let client = Client::new("http://localhost:7700", "masterKey");
+//! let client = Client::new("http://localhost:7700", Some("masterKey"));
 //!
 //! // Create a dump
 //! let dump_info = client.create_dump().await.unwrap();

@@ -15,7 +15,7 @@ use time::OffsetDateTime;
 #[derive(Debug, Clone)]
 pub struct Client {
     pub(crate) host: Rc<String>,
-    pub(crate) api_key: Rc<String>,
+    pub(crate) api_key: Rc<Option<String>>,
 }
 
 impl Client {
@@ -28,12 +28,12 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// ```
-    pub fn new(host: impl Into<String>, api_key: impl Into<String>) -> Client {
+    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
         Client {
             host: Rc::new(host.into()),
-            api_key: Rc::new(api_key.into()),
+            api_key: Rc::new(api_key.map(|key| key.into())),
         }
     }
 
@@ -67,7 +67,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     ///
     /// let json_indexes = client.list_all_indexes_raw().await.unwrap();
     /// println!("{:?}", json_indexes);
@@ -94,7 +94,7 @@ impl Client {
     ///
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// # let index = client.create_index("get_index", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "get_index"
@@ -118,7 +118,7 @@ impl Client {
     ///
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// # let index = client.create_index("get_raw_index", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "get_raw_index"
@@ -159,7 +159,7 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// // Create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     ///
     /// // Create a new index called movies and access it
     /// let task = client.create_index("create_index", None).await.unwrap();
@@ -221,7 +221,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let stats = client.get_stats().await.unwrap();
     /// # });
     /// ```
@@ -243,7 +243,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::{Error, ErrorCode}};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let health = client.health().await.unwrap();
     /// assert_eq!(health.status, "available");
     /// # });
@@ -266,7 +266,7 @@ impl Client {
     /// # use meilisearch_sdk::client::*;
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let health = client.is_healthy().await;
     /// assert_eq!(health, true);
     /// # });
@@ -290,7 +290,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let keys = client.get_keys().await.unwrap();
     /// assert!(keys.len() >= 2);
     /// # });
@@ -325,7 +325,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// # let key = client.get_keys().await.unwrap().into_iter().find(|k| k.description.starts_with("Default Search API Key")).unwrap();
     /// let key_id = // enter your API key here, for the example we'll say we entered our search API key.
     /// # key.key;
@@ -354,7 +354,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let key = KeyBuilder::new("delete_key");
     /// let key = client.create_key(key).await.unwrap();
     /// let inner_key = key.key.clone();
@@ -386,7 +386,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder, key::Action};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let mut key = KeyBuilder::new("create_key");
     /// key.with_index("*").with_action(Action::DocumentsAdd);
     /// let key = client.create_key(key).await.unwrap();
@@ -415,7 +415,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let key = KeyBuilder::new("update_key");
     /// let mut key = client.create_key(key).await.unwrap();
     /// assert!(key.indexes.is_empty());
@@ -444,7 +444,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let version = client.get_version().await.unwrap();
     /// # });
     /// ```
@@ -482,7 +482,7 @@ impl Client {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = client::Client::new("http://localhost:7700", Some("masterKey"));
     /// let movies = client.index("movies_client_wait_for_task");
     ///
     /// let task = movies.add_documents(&[
@@ -535,7 +535,7 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::*;
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// # let index = client.create_index("movies_get_task", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// let task = index.delete_all_documents().await.unwrap();
     /// let task = client.get_task(task).await.unwrap();
@@ -559,7 +559,7 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::*;
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new("http://localhost:7700", "masterKey");
+    /// # let client = client::Client::new("http://localhost:7700", Some("masterKey"));
     /// let tasks = client.get_tasks().await.unwrap();
     /// # });
     /// ```
@@ -595,10 +595,14 @@ impl Client {
     pub fn generate_tenant_token(
         &self,
         search_rules: serde_json::Value,
-        api_key: Option<&str>,
+        api_key: Option<String>,
         expires_at: Option<OffsetDateTime>,
     ) -> Result<String, Error> {
-        let api_key = api_key.unwrap_or(&self.api_key);
+        let self_key = match self.api_key.as_ref(){
+            Some(key)=>key,
+            None=> ""
+        };
+        let api_key = api_key.unwrap_or(String::from(self_key));
 
         crate::tenant_tokens::generate_tenant_token(search_rules, api_key, expires_at)
     }
@@ -669,23 +673,23 @@ mod tests {
         let assertions = vec![
             (
                 mock("GET", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Get, 200)
+                request::<String, ()>(address, &None, Method::Get, 200)
             ),
             (
                 mock("POST", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Post("".to_string()), 200)
+                request::<String, ()>(address, &None, Method::Post("".to_string()), 200)
             ),
             (
                 mock("DELETE", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Delete, 200)
+                request::<String, ()>(address, &None, Method::Delete, 200)
             ),
             (
                 mock("PUT", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Put("".to_string()), 200)
+                request::<String, ()>(address, &None, Method::Put("".to_string()), 200)
             ),
             (
                 mock("PATCH", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Patch("".to_string()), 200)
+                request::<String, ()>(address, &None, Method::Patch("".to_string()), 200)
             )
         ];
 
@@ -738,7 +742,7 @@ mod tests {
 
         let master_key = client.api_key.clone();
         // this key has no right
-        client.api_key = Rc::new(key.key.clone());
+        client.api_key = Rc::new(Option::from(key.key.clone()));
         // with a wrong key
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
@@ -823,7 +827,7 @@ mod tests {
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
-        client.api_key = Rc::new(no_right_key.key.clone());
+        client.api_key = Rc::new(Some(no_right_key.key.clone()));
 
         let key = KeyBuilder::new(&description);
         let error = client.create_key(key).await.unwrap_err();
@@ -837,8 +841,12 @@ mod tests {
             })
         ));
 
+        let key = match client.api_key.as_ref(){
+            Some(key)=>key,
+            None=> panic!("test_error_create_key no key to delete")
+        };
         // cleanup
-        master_client.delete_key(&*client.api_key).await.unwrap();
+        master_client.delete_key(key).await.unwrap();
     }
 
     #[meilisearch_test]
@@ -904,7 +912,7 @@ mod tests {
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
-        client.api_key = Rc::new(no_right_key.key.clone());
+        client.api_key = Rc::new(Option::from(no_right_key.key.clone()));
 
         let error = client.update_key(key).await.unwrap_err();
 
@@ -917,8 +925,13 @@ mod tests {
             })
         ));
 
-        // cleanup
-        master_client.delete_key(&*client.api_key).await.unwrap();
+
+        let key = match &*client.api_key {
+            Some(key)=> key,
+            None => panic!("no key on test: test error update key")
+        };
+        master_client.delete_key(key).await.unwrap();
+
     }
 
     #[meilisearch_test]

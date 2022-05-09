@@ -16,6 +16,7 @@ struct TenantTokenClaim {
 }
 
 pub fn generate_tenant_token(search_rules: Value, api_key: impl AsRef<str>, expires_at: Option<OffsetDateTime>) -> Result<String, Error> {
+    
     if api_key.as_ref().chars().count() < 8 {
         return Err(Error::TenantTokensInvalidApiKey)
     }

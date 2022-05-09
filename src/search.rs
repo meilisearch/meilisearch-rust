@@ -730,7 +730,7 @@ mod tests {
             .create(&client)
             .await
             .unwrap();
-        let allowed_client = Client::new("http://localhost:7700", key.key);
+        let allowed_client = Client::new("http://localhost:7700", Option::from(key.key));
 
         let search_rules = vec![
             json!({ "*": {}}),
@@ -744,7 +744,7 @@ mod tests {
             let token = allowed_client
                 .generate_tenant_token(rules, None, None)
                 .expect("Cannot generate tenant token.");
-            let new_client = Client::new("http://localhost:7700", token);
+            let new_client = Client::new("http://localhost:7700", Option::from(token));
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())
