@@ -263,7 +263,18 @@ search_parameter_guide_crop_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("shifu")
     .with_attributes_to_crop(Selectors::Some(&[("overview", None)]))
-    .with_crop_length(10)
+    .with_crop_length(5)
+    .execute()
+    .await
+    .unwrap();
+
+  // Get the formatted results
+  let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
+search_parameter_guide_crop_marker_1: |-
+  let results: SearchResults<Movie> = client.index("movies").search()
+    .with_query("shifu")
+    .with_attributes_to_crop(Selectors::Some(&[("overview", None)]))
+    .with_crop_marker("[…]")
     .execute()
     .await
     .unwrap();
@@ -274,6 +285,18 @@ search_parameter_guide_highlight_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("winter feast")
     .with_attributes_to_highlight(Selectors::Some(&["overview"]))
+    .execute()
+    .await
+    .unwrap();
+
+  // Get the formatted results
+  let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
+search_parameter_guide_highlight_tag_1: |-
+  let results: SearchResults<Movie> = client.index("movies").search()
+    .with_query("winter feast")
+    .with_attributes_to_highlight(Selectors::Some(&["overview"]))
+    .with_highlight_pre_tag("<span class=\"highlight\">")
+    .with_highlight_post_tag("</span>")
     .execute()
     .await
     .unwrap();
