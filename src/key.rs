@@ -40,7 +40,7 @@ impl Key {
     ///   .create(&client).await.unwrap();
     ///
     /// key.with_description("My not so little lovely test key");
-    /// assert_eq!(key.description, "My not so little lovely test key".to_string());
+    /// # assert_eq!(key.description, "My not so little lovely test key".to_string());
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
