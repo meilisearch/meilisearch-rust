@@ -922,7 +922,7 @@ mod tests {
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
-        client.api_key = Arc::new(Option::from(no_right_key.key.clone()));
+        client.api_key = Arc::new(Some(no_right_key.key.clone()));
 
         let error = client.update_key(key).await.unwrap_err();
 
