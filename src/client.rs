@@ -677,7 +677,7 @@ mod tests {
             ),
             (
                 mock("POST", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, &None, Method::Post("".to_string()), 200)
+                request::<String, ()>(address, None, Method::Post("".to_string()), 200)
             ),
             (
                 mock("DELETE", path).match_header("User-Agent", user_agent).create(),
