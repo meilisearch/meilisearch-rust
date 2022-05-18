@@ -57,7 +57,8 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
         Method::Post(body) => {
             
             let mut request = Request::post(url)
-            .header(header::USER_AGENT, user_agent);
+            .header(header::USER_AGENT, user_agent)
+            .header(header::CONTENT_TYPE, "application/json");
           
           if let Some(key) = apikey {
               let auth = format!("Bearer {}", key);
@@ -72,7 +73,8 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
         }
         Method::Patch(body) => {
             let mut request = Request::patch(url)
-            .header(header::USER_AGENT, user_agent);
+            .header(header::USER_AGENT, user_agent)
+            .header(header::CONTENT_TYPE, "application/json");
           
           if let Some(key) = apikey {
               let auth = format!("Bearer {}", key);
@@ -85,25 +87,19 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                   .await?
         }
         Method::Put(body) => {
-            if let Some(key) = apikey {
-                let auth = format!("Bearer {}", key);
-                Request::put(url)
-                    .header(header::AUTHORIZATION, auth)
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .header(header::USER_AGENT, user_agent)
-                    .body(to_string(&body).unwrap())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
-            } else {
-                Request::put(url)
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .header(header::USER_AGENT, user_agent)
-                    .body(to_string(&body).unwrap())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
-            }
+            let mut request = Request::put(url)
+            .header(header::USER_AGENT, user_agent)
+            .header(header::CONTENT_TYPE, "application/json");
+          
+          if let Some(key) = apikey {
+              let auth = format!("Bearer {}", key);
+              request = request.header(header::AUTHORIZATION, auth);
+          }
+          request
+                  .body(to_string(&body).unwrap())
+                  .map_err(|_| crate::errors::Error::InvalidRequest)?
+                  .send_async()
+                  .await?
         }
     };
 
