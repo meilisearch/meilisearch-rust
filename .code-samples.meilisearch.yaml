@@ -764,12 +764,13 @@ create_a_key_1: |-
       .with_index("products");
   let new_key = client.create_key(key_options).await.unwrap();
 update_a_key_1: |-
-  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
-  key.description = "Manage documents: Products/Reviews API key".to_string();
-  key.actions = vec![Action::DocumentsAdd, Action::DocumentsDelete];
-  key.indexes = vec!["products".to_string(), "reviews".to_string()];
-  key.expires_at = Some(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC));
-  let updated_key = client.update_key(&key);
+  let mut key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+  key
+      .with_description("Manage documents: Products/Reviews API key".to_string())
+      .with_actions(vec![Action::DocumentsAdd, Action::DocumentsDelete])
+      .with_indexes(vec!["products".to_string(), "reviews".to_string()])
+      .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
+      .update(&client);
 delete_a_key_1: |-
   let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
   client.delete_key(&key);
@@ -781,9 +782,8 @@ security_guide_search_key_1: |-
   let result = client.index("patient_medical_records").search().execute().await.unwrap();
 security_guide_update_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
-  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
-  key.indexes = vec!["doctors".to_string()];
-  let updated_key = client.update_key(&key);
+  let mut key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+  key.with_indexes(vec!["doctors".to_string()]).update(&client);
 security_guide_create_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let mut key_options = KeyBuilder::new("Search patient records key");
