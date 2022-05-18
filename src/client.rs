@@ -673,7 +673,7 @@ mod tests {
         let assertions = vec![
             (
                 mock("GET", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, &None, Method::Get, 200)
+                request::<String, ()>(address, None, Method::Get, 200)
             ),
             (
                 mock("POST", path).match_header("User-Agent", user_agent).create(),
