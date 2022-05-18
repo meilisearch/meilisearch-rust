@@ -851,9 +851,11 @@ mod tests {
             })
         ));
 
-        
         // cleanup
-        master_client.delete_key(client.api_key.as_deref().unwrap()).await.unwrap();
+        master_client
+            .delete_key(client.api_key.as_deref().unwrap())
+            .await
+            .unwrap();
     }
 
     #[meilisearch_test]
@@ -932,7 +934,10 @@ mod tests {
             })
         ));
 
-        master_client.delete_key(client.api_key.as_deref().unwrap()).await.unwrap();
+        master_client
+            .delete_key(client.api_key.as_deref().unwrap())
+            .await
+            .unwrap();
     }
 
     #[meilisearch_test]
