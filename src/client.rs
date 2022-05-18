@@ -681,7 +681,7 @@ mod tests {
             ),
             (
                 mock("DELETE", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, &None, Method::Delete, 200)
+                request::<String, ()>(address, None, Method::Delete, 200)
             ),
             (
                 mock("PUT", path).match_header("User-Agent", user_agent).create(),
