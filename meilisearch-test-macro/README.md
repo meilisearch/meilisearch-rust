@@ -13,7 +13,7 @@ Before explaining its usage, we're going to see a simple test *before* this macr
 ```rust
 #[async_test]
 async fn test_get_tasks() -> Result<(), Error> {
-  let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
 
   let index = client
     .create_index("test_get_tasks", None)
