@@ -685,7 +685,7 @@ mod tests {
             ),
             (
                 mock("PUT", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, &None, Method::Put("".to_string()), 200)
+                request::<String, ()>(address, None, Method::Put("".to_string()), 200)
             ),
             (
                 mock("PATCH", path).match_header("User-Agent", user_agent).create(),
