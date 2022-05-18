@@ -4,18 +4,17 @@ use crate::{
     key::{Key, KeyBuilder},
     request::*,
     tasks::{async_sleep, Task},
-    Rc,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use time::OffsetDateTime;
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
 pub struct Client {
-    pub(crate) host: Rc<String>,
-    pub(crate) api_key: Rc<String>,
+    pub(crate) host: Arc<String>,
+    pub(crate) api_key: Arc<String>,
 }
 
 impl Client {
@@ -32,8 +31,8 @@ impl Client {
     /// ```
     pub fn new(host: impl Into<String>, api_key: impl Into<String>) -> Client {
         Client {
-            host: Rc::new(host.into()),
-            api_key: Rc::new(api_key.into()),
+            host: Arc::new(host.into()),
+            api_key: Arc::new(api_key.into()),
         }
     }
 
@@ -141,7 +140,7 @@ impl Client {
     /// Create a corresponding object of an [Index] without any check or doing an HTTP call.
     pub fn index(&self, uid: impl Into<String>) -> Index {
         Index {
-            uid: Rc::new(uid.into()),
+            uid: Arc::new(uid.into()),
             client: self.clone(),
             primary_key: None,
             created_at: None,
@@ -738,7 +737,7 @@ mod tests {
 
         let master_key = client.api_key.clone();
         // this key has no right
-        client.api_key = Rc::new(key.key.clone());
+        client.api_key = Arc::new(key.key.clone());
         // with a wrong key
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
@@ -823,7 +822,7 @@ mod tests {
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
-        client.api_key = Rc::new(no_right_key.key.clone());
+        client.api_key = Arc::new(no_right_key.key.clone());
 
         let key = KeyBuilder::new(&description);
         let error = client.create_key(key).await.unwrap_err();
@@ -904,7 +903,7 @@ mod tests {
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
-        client.api_key = Rc::new(no_right_key.key.clone());
+        client.api_key = Arc::new(no_right_key.key.clone());
 
         let error = client.update_key(key).await.unwrap_err();
 
