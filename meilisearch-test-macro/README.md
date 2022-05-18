@@ -36,7 +36,7 @@ async fn test_get_tasks() -> Result<(), Error> {
 ```
 
 I have multiple problems with this test:
-- `let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));`: This line is always the same in every test.
+- `let client = Client::new("http://localhost:7700", Some("masterKey"));`: This line is always the same in every test.
   And if you make a typo on the http addr or the master key, you'll have an error.
 - `let index = client.create_index("test_get_tasks", None)...`: Each test needs to have an unique name.
   This means we currently need to write the name of the test everywhere; it's not practical.
