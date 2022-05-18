@@ -935,11 +935,7 @@ mod tests {
             })
         ));
 
-        let key = match &*client.api_key {
-            Some(key) => key,
-            None => panic!("no key on test: test error update key"),
-        };
-        master_client.delete_key(key).await.unwrap();
+        master_client.delete_key(key.unwrap()).await.unwrap();
     }
 
     #[meilisearch_test]
