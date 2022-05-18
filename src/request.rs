@@ -26,18 +26,14 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 
     let mut response = match &method {
         Method::Get => {
+            let mut request = Request::get(url)
+              .header(header::USER_AGENT, user_agent);
+            
             if let Some(key) = apikey {
                 let auth = format!("Bearer {}", key);
-                Request::get(url)
-                    .header(header::AUTHORIZATION, auth)
-                    .header(header::USER_AGENT, user_agent)
-                    .body(())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
-            } else {
-                Request::get(url)
-                    .header(header::USER_AGENT, user_agent)
+                request = request.header(header::AUTHORIZATION, auth);
+            }
+            request
                     .body(())
                     .map_err(|_| crate::errors::Error::InvalidRequest)?
                     .send_async()
