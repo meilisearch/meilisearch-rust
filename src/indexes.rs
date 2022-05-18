@@ -13,7 +13,7 @@ use time::OffsetDateTime;
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
 /// # futures::executor::block_on(async move {
-/// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+/// let client = Client::new("http://localhost:7700", some("masterKey"));
 ///
 /// // get the index called movies or create it if it does not exist
 /// let movies = client
@@ -37,7 +37,7 @@ use time::OffsetDateTime;
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
 /// # futures::executor::block_on(async move {
-/// let client = Client::new("http://localhost:7700",Some("masterKey".to_string()));
+/// let client = Client::new("http://localhost:7700",some("masterKey"));
 ///
 /// // use the implicit index creation if the index already exist or
 /// // Meilisearch would be able to create the index if it does not exist during:
@@ -103,7 +103,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// # let index = client.create_index("delete", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "movies" and delete it
@@ -138,7 +138,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movies = client.index("execute_query");
     ///
     /// // add some documents
@@ -219,7 +219,7 @@ impl Index {
     ///
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movies = client.index("get_document");
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
@@ -269,7 +269,7 @@ impl Index {
     ///
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movie_index = client.index("get_documents");
     ///
     /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -329,7 +329,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movie_index = client.index("add_or_replace");
     ///
     /// let task = movie_index.add_or_replace(&[
@@ -402,7 +402,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movie_index = client.index("add_or_update");
     ///
     /// let task = movie_index.add_or_update(&[
@@ -464,7 +464,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// #
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movie_index = client.index("delete_all_documents");
     ///
     /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -508,7 +508,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// #
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let mut movies = client.index("delete_document");
     ///
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -553,7 +553,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// #
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movies = client.index("delete_documents");
     ///
     /// // add some documents
@@ -599,7 +599,7 @@ impl Index {
     ///
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// # let index = client.create_index("fetch_info", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the information of the index named "fetch_info"
@@ -657,7 +657,7 @@ impl Index {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movies = client.index("get_task");
     ///
     /// let task = movies.add_documents(&[
@@ -703,7 +703,7 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// # let index = client.create_index("get_tasks", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// let status = index.get_tasks().await.unwrap();
@@ -740,7 +740,7 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// # let index = client.create_index("get_stats", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// let stats = index.get_stats().await.unwrap();
@@ -782,7 +782,7 @@ impl Index {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movies = client.index("movies_index_wait_for_task");
     ///
     /// let task = movies.add_documents(&[
@@ -824,7 +824,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movie_index = client.index("add_documents_in_batches");
     ///
     /// let tasks = movie_index.add_documents_in_batches(&[
@@ -885,7 +885,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let movie_index = client.index("update_documents_in_batches");
     ///
     /// let tasks = movie_index.add_documents_in_batches(&[

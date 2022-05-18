@@ -44,7 +44,7 @@ impl AsRef<Key> for Key {
 /// ```
 /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
 /// # futures::executor::block_on(async move {
-/// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+/// let client = Client::new("http://localhost:7700", some("masterKey"));
 ///
 /// let key = KeyBuilder::new("My little lovely test key")
 ///   .with_action(Action::DocumentsAdd)
@@ -168,7 +168,7 @@ impl KeyBuilder {
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", some("masterKey"));
     /// let key = KeyBuilder::new("My little lovely test key")
     ///   .create(&client).await.unwrap();
     ///
