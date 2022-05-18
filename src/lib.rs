@@ -232,8 +232,3 @@ pub mod settings;
 pub mod tasks;
 /// Module that generates tenant tokens.
 mod tenant_tokens;
-
-#[cfg(feature = "sync")]
-pub(crate) type Rc<T> = std::sync::Arc<T>;
-#[cfg(not(feature = "sync"))]
-pub(crate) type Rc<T> = std::rc::Rc<T>;

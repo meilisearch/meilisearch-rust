@@ -1,7 +1,7 @@
-use crate::{client::Client, errors::Error, request::*, search::*, tasks::*, Rc};
+use crate::{client::Client, errors::Error, request::*, search::*, tasks::*};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
-use std::{collections::HashMap, fmt::Display, time::Duration};
+use std::{collections::HashMap, fmt::Display, sync::Arc, time::Duration};
 use time::OffsetDateTime;
 
 /// An index containing [Document]s.
@@ -50,7 +50,7 @@ use time::OffsetDateTime;
 /// ```
 #[derive(Debug, Clone)]
 pub struct Index {
-    pub(crate) uid: Rc<String>,
+    pub(crate) uid: Arc<String>,
     pub(crate) client: Client,
     pub(crate) primary_key: Option<String>,
     pub created_at: Option<OffsetDateTime>,
@@ -74,7 +74,7 @@ impl Index {
         let i: IndexFromSerde = serde_json::from_value(v).map_err(Error::ParseError)?;
 
         Ok(Index {
-            uid: Rc::new(i.uid),
+            uid: Arc::new(i.uid),
             client,
             created_at: i.createdAt,
             updated_at: i.updatedAt,
@@ -988,7 +988,7 @@ mod tests {
         });
 
         let idx = Index {
-            uid: Rc::new("test_from_value".to_string()),
+            uid: Arc::new("test_from_value".to_string()),
             primary_key: None,
             created_at: Some(t),
             updated_at: Some(t),
