@@ -856,7 +856,7 @@ mod tests {
             None => panic!("test_error_create_key no key to delete"),
         };
         // cleanup
-        master_client.delete_key(key).await.unwrap();
+        master_client.delete_key(key.unwrap()).await.unwrap();
     }
 
     #[meilisearch_test]
