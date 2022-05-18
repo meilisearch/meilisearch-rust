@@ -15,7 +15,7 @@ pub(crate) enum Method<T: Serialize> {
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
     url: &str,
-    apikey: Option<String>,
+    apikey: Option<&str>,
     method: Method<Input>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {

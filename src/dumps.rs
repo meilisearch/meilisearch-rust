@@ -20,7 +20,7 @@
 //! # use std::{thread::sleep, time::Duration};
 //! # futures::executor::block_on(async move {
 //! #
-//! let client = Client::new("http://localhost:7700", some("masterKey"));
+//! let client = Client::new("http://localhost:7700", Some("masterKey"));
 //!
 //! // Create a dump
 //! let dump_info = client.create_dump().await.unwrap();
@@ -79,7 +79,7 @@ impl Client {
     /// # use std::{thread::sleep, time::Duration};
     /// # futures::executor::block_on(async move {
     /// #
-    /// # let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// # let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// #
     /// let dump_info = client.create_dump().await.unwrap();
     /// assert!(matches!(dump_info.status, DumpStatus::InProgress));
@@ -88,7 +88,7 @@ impl Client {
     pub async fn create_dump(&self) -> Result<DumpInfo, Error> {
         request::<(), DumpInfo>(
             &format!("{}/dumps", self.host),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Post(()),
             202,
         )
@@ -105,7 +105,7 @@ impl Client {
     /// # use std::{thread::sleep, time::Duration};
     /// # futures::executor::block_on(async move {
     /// #
-    /// # let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// # let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// # let dump_info = client.create_dump().await.unwrap();
     /// # sleep(Duration::from_secs(5));
     /// #
@@ -115,7 +115,7 @@ impl Client {
     pub async fn get_dump_status(&self, dump_uid: impl AsRef<str>) -> Result<DumpInfo, Error> {
         request::<(), DumpInfo>(
             &format!("{}/dumps/{}/status", self.host, dump_uid.as_ref()),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Get,
             200,
         )

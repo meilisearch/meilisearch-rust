@@ -13,7 +13,6 @@ use time::OffsetDateTime;
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
 pub struct Client {
-
     pub(crate) host: Arc<String>,
     pub(crate) api_key: Arc<Option<String>>,
 }
@@ -28,13 +27,12 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// ```
     pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
         Client {
             host: Arc::new(host.into()),
             api_key: Arc::new(api_key.map(|key| key.into())),
-
         }
     }
 
@@ -46,7 +44,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     ///
     /// let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
     /// println!("{:?}", indexes);
@@ -68,7 +66,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     ///
     /// let json_indexes = client.list_all_indexes_raw().await.unwrap();
     /// println!("{:?}", json_indexes);
@@ -77,7 +75,7 @@ impl Client {
     pub async fn list_all_indexes_raw(&self) -> Result<Vec<Value>, Error> {
         let json_indexes = request::<(), Vec<Value>>(
             &format!("{}/indexes", self.host),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Get,
             200,
         )
@@ -95,7 +93,7 @@ impl Client {
     ///
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// # let index = client.create_index("get_index", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "get_index"
@@ -119,7 +117,7 @@ impl Client {
     ///
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// # let index = client.create_index("get_raw_index", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "get_raw_index"
@@ -132,7 +130,7 @@ impl Client {
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<Value, Error> {
         request::<(), Value>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Get,
             200,
         )
@@ -160,7 +158,7 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// // Create the client
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     ///
     /// // Create a new index called movies and access it
     /// let task = client.create_index("create_index", None).await.unwrap();
@@ -182,7 +180,7 @@ impl Client {
     ) -> Result<Task, Error> {
         request::<Value, Task>(
             &format!("{}/indexes", self.host),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Post(json!({
                 "uid": uid.as_ref(),
                 "primaryKey": primary_key,
@@ -197,7 +195,7 @@ impl Client {
     pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<Task, Error> {
         request::<(), Task>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Delete,
             202,
         )
@@ -222,14 +220,14 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let stats = client.get_stats().await.unwrap();
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
         request::<serde_json::Value, ClientStats>(
             &format!("{}/stats", self.host),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Get,
             200,
         )
@@ -244,7 +242,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::{Error, ErrorCode}};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let health = client.health().await.unwrap();
     /// assert_eq!(health.status, "available");
     /// # });
@@ -252,7 +250,7 @@ impl Client {
     pub async fn health(&self) -> Result<Health, Error> {
         request::<serde_json::Value, Health>(
             &format!("{}/health", self.host),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Get,
             200,
         )
@@ -267,7 +265,7 @@ impl Client {
     /// # use meilisearch_sdk::client::*;
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let health = client.is_healthy().await;
     /// assert_eq!(health, true);
     /// # });
@@ -291,7 +289,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let keys = client.get_keys().await.unwrap();
     /// assert!(keys.len() >= 2);
     /// # });
@@ -306,7 +304,7 @@ impl Client {
 
         let keys = request::<(), Keys>(
             &format!("{}/keys", self.host),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Get,
             200,
         )
@@ -326,7 +324,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// # let key = client.get_keys().await.unwrap().into_iter().find(|k| k.description.starts_with("Default Search API Key")).unwrap();
     /// let key_id = // enter your API key here, for the example we'll say we entered our search API key.
     /// # key.key;
@@ -337,7 +335,7 @@ impl Client {
     pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
         request::<(), Key>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Get,
             200,
         )
@@ -355,7 +353,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let key = KeyBuilder::new("delete_key");
     /// let key = client.create_key(key).await.unwrap();
     /// let inner_key = key.key.clone();
@@ -369,7 +367,7 @@ impl Client {
     pub async fn delete_key(&self, key: impl AsRef<str>) -> Result<(), Error> {
         request::<(), ()>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Delete,
             204,
         )
@@ -387,7 +385,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder, key::Action};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let mut key = KeyBuilder::new("create_key");
     /// key.with_index("*").with_action(Action::DocumentsAdd);
     /// let key = client.create_key(key).await.unwrap();
@@ -398,7 +396,7 @@ impl Client {
     pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
         request::<&KeyBuilder, Key>(
             &format!("{}/keys", self.host),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Post(key.as_ref()),
             201,
         )
@@ -416,7 +414,7 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let key = KeyBuilder::new("update_key");
     /// let mut key = client.create_key(key).await.unwrap();
     /// assert!(key.indexes.is_empty());
@@ -430,7 +428,7 @@ impl Client {
     pub async fn update_key(&self, key: impl AsRef<Key>) -> Result<Key, Error> {
         request::<&Key, Key>(
             &format!("{}/keys/{}", self.host, key.as_ref().key),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Patch(key.as_ref()),
             200,
         )
@@ -445,14 +443,14 @@ impl Client {
     /// # use meilisearch_sdk::{client::*};
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let version = client.get_version().await.unwrap();
     /// # });
     /// ```
     pub async fn get_version(&self) -> Result<Version, Error> {
         request::<(), Version>(
             &format!("{}/version", self.host),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Get,
             200,
         )
@@ -483,7 +481,7 @@ impl Client {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", some("masterKey"));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let movies = client.index("movies_client_wait_for_task");
     ///
     /// let task = movies.add_documents(&[
@@ -536,7 +534,7 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::*;
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new("http://localhost:7700", some("masterKey"));
+    /// # let client = client::Client::new("http://localhost:7700", Some("masterKey"));
     /// # let index = client.create_index("movies_get_task", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// let task = index.delete_all_documents().await.unwrap();
     /// let task = client.get_task(task).await.unwrap();
@@ -546,7 +544,7 @@ impl Client {
     pub async fn get_task(&self, task_id: impl AsRef<u64>) -> Result<Task, Error> {
         request::<(), Task>(
             &format!("{}/tasks/{}", self.host, task_id.as_ref()),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Get,
             200,
         )
@@ -560,7 +558,7 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::*;
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new("http://localhost:7700", some("masterKey"));
+    /// # let client = client::Client::new("http://localhost:7700", Some("masterKey"));
     /// let tasks = client.get_tasks().await.unwrap();
     /// # });
     /// ```
@@ -572,7 +570,7 @@ impl Client {
 
         let tasks = request::<(), Tasks>(
             &format!("{}/tasks", self.host),
-            self.api_key,
+            self.api_key.as_deref(),
             Method::Get,
             200,
         )
@@ -588,7 +586,7 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::*;
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new("http://localhost:7700", some("masterKey"));
+    /// # let client = client::Client::new("http://localhost:7700", Some("masterKey"));
     /// let token = client.generate_tenant_token(serde_json::json!(["*"]), None, None).unwrap();
     /// let client = client::Client::new("http://localhost:7700", Some(token));
     /// # });
@@ -599,9 +597,9 @@ impl Client {
         api_key: Option<String>,
         expires_at: Option<OffsetDateTime>,
     ) -> Result<String, Error> {
-        let self_key = match self.api_key.as_ref(){
-            Some(key)=>key,
-            None=> ""
+        let self_key = match self.api_key.as_ref() {
+            Some(key) => key,
+            None => "",
         };
         let api_key = api_key.unwrap_or_else(|| String::from(self_key));
 
@@ -660,9 +658,9 @@ mod tests {
         key::{Action, KeyBuilder},
     };
     use meilisearch_test_macro::meilisearch_test;
-    use time::OffsetDateTime;
     use mockito::mock;
     use std::mem;
+    use time::OffsetDateTime;
 
     #[meilisearch_test]
     async fn test_methods_has_qualified_version_as_header() {
@@ -673,25 +671,35 @@ mod tests {
 
         let assertions = vec![
             (
-                mock("GET", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, None, Method::Get, 200)
+                mock("GET", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, None, Method::Get, 200),
             ),
             (
-                mock("POST", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, None, Method::Post("".to_string()), 200)
+                mock("POST", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, None, Method::Post("".to_string()), 200),
             ),
             (
-                mock("DELETE", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, None, Method::Delete, 200)
+                mock("DELETE", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, None, Method::Delete, 200),
             ),
             (
-                mock("PUT", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, None, Method::Put("".to_string()), 200)
+                mock("PUT", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, None, Method::Put("".to_string()), 200),
             ),
             (
-                mock("PATCH", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, None, Method::Patch("".to_string()), 200)
-            )
+                mock("PATCH", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, None, Method::Patch("".to_string()), 200),
+            ),
         ];
 
         for (m, req) in assertions {
@@ -843,9 +851,9 @@ mod tests {
             })
         ));
 
-        let key = match client.api_key.as_ref(){
-            Some(key)=>key,
-            None=> panic!("test_error_create_key no key to delete")
+        let key = match client.api_key.as_ref() {
+            Some(key) => key,
+            None => panic!("test_error_create_key no key to delete"),
         };
         // cleanup
         master_client.delete_key(key).await.unwrap();
@@ -927,13 +935,11 @@ mod tests {
             })
         ));
 
-
         let key = match &*client.api_key {
-            Some(key)=> key,
-            None => panic!("no key on test: test error update key")
+            Some(key) => key,
+            None => panic!("no key on test: test error update key"),
         };
         master_client.delete_key(key).await.unwrap();
-
     }
 
     #[meilisearch_test]
