@@ -1,13 +1,11 @@
-use crate::{
-    errors::* 
-};
-use serde::{Serialize, Deserialize};
-use jsonwebtoken::{encode, Header, EncodingKey};
-use time::{OffsetDateTime};
+use crate::errors::*;
+use jsonwebtoken::{encode, EncodingKey, Header};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use time::OffsetDateTime;
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")] 
+#[serde(rename_all = "camelCase")]
 struct TenantTokenClaim {
     api_key_prefix: String,
     search_rules: Value,
@@ -15,21 +13,24 @@ struct TenantTokenClaim {
     exp: Option<OffsetDateTime>,
 }
 
-pub fn generate_tenant_token(search_rules: Value, api_key: impl AsRef<str>, expires_at: Option<OffsetDateTime>) -> Result<String, Error> {
-    
+pub fn generate_tenant_token(
+    search_rules: Value,
+    api_key: impl AsRef<str>,
+    expires_at: Option<OffsetDateTime>,
+) -> Result<String, Error> {
     if api_key.as_ref().chars().count() < 8 {
-        return Err(Error::TenantTokensInvalidApiKey)
+        return Err(Error::TenantTokensInvalidApiKey);
     }
 
     if expires_at.map_or(false, |expires_at| OffsetDateTime::now_utc() > expires_at) {
-        return Err(Error::TenantTokensExpiredSignature)
+        return Err(Error::TenantTokensExpiredSignature);
     }
 
     let key_prefix = api_key.as_ref().chars().take(8).collect();
     let claims = TenantTokenClaim {
         api_key_prefix: key_prefix,
         exp: expires_at,
-        search_rules
+        search_rules,
     };
 
     let token = encode(
@@ -43,9 +44,9 @@ pub fn generate_tenant_token(search_rules: Value, api_key: impl AsRef<str>, expi
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use crate::tenant_tokens::*;
-    use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
+    use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+    use serde_json::json;
     use std::collections::HashSet;
 
     const SEARCH_RULES: [&str; 1] = ["*"];
@@ -64,10 +65,14 @@ mod tests {
         let token = generate_tenant_token(json!(SEARCH_RULES), VALID_KEY, None).unwrap();
 
         let valid_key = decode::<TenantTokenClaim>(
-            &token, &DecodingKey::from_secret(VALID_KEY.as_ref()), &build_validation()
+            &token,
+            &DecodingKey::from_secret(VALID_KEY.as_ref()),
+            &build_validation(),
         );
         let invalid_key = decode::<TenantTokenClaim>(
-            &token, &DecodingKey::from_secret("not-the-same-key".as_ref()), &build_validation()
+            &token,
+            &DecodingKey::from_secret("not-the-same-key".as_ref()),
+            &build_validation(),
         );
 
         assert!(valid_key.is_ok());
@@ -88,7 +93,9 @@ mod tests {
         let token = generate_tenant_token(json!(SEARCH_RULES), VALID_KEY, Some(exp)).unwrap();
 
         let decoded = decode::<TenantTokenClaim>(
-            &token, &DecodingKey::from_secret(VALID_KEY.as_ref()), &Validation::new(Algorithm::HS256)
+            &token,
+            &DecodingKey::from_secret(VALID_KEY.as_ref()),
+            &Validation::new(Algorithm::HS256),
         );
 
         assert!(decoded.is_ok());
@@ -107,8 +114,11 @@ mod tests {
         let token = generate_tenant_token(json!(SEARCH_RULES), VALID_KEY, None).unwrap();
 
         let decoded = decode::<TenantTokenClaim>(
-            &token, &DecodingKey::from_secret(VALID_KEY.as_ref()), &build_validation()
-        ).expect("Cannot decode the token");
+            &token,
+            &DecodingKey::from_secret(VALID_KEY.as_ref()),
+            &build_validation(),
+        )
+        .expect("Cannot decode the token");
 
         assert_eq!(decoded.claims.api_key_prefix, &VALID_KEY[..8]);
         assert_eq!(decoded.claims.search_rules, json!(SEARCH_RULES));
@@ -120,8 +130,11 @@ mod tests {
         let token = generate_tenant_token(json!(SEARCH_RULES), key, None).unwrap();
 
         let decoded = decode::<TenantTokenClaim>(
-            &token, &DecodingKey::from_secret(key.as_ref()), &build_validation()
-        ).expect("Cannot decode the token");
+            &token,
+            &DecodingKey::from_secret(key.as_ref()),
+            &build_validation(),
+        )
+        .expect("Cannot decode the token");
 
         assert_eq!(decoded.claims.api_key_prefix, "Ëa1ทt9bV");
     }

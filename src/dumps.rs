@@ -88,7 +88,7 @@ impl Client {
     pub async fn create_dump(&self) -> Result<DumpInfo, Error> {
         request::<(), DumpInfo>(
             &format!("{}/dumps", self.host),
-            &self.api_key,
+            self.client.api_key,
             Method::Post(()),
             202,
         )
@@ -115,7 +115,7 @@ impl Client {
     pub async fn get_dump_status(&self, dump_uid: impl AsRef<str>) -> Result<DumpInfo, Error> {
         request::<(), DumpInfo>(
             &format!("{}/dumps/{}/status", self.host, dump_uid.as_ref()),
-            &self.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )

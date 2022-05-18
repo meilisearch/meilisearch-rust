@@ -168,7 +168,7 @@ impl Task {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string())); 
+    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[

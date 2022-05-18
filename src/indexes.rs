@@ -88,7 +88,7 @@ impl Index {
     pub async fn update(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
         request::<serde_json::Value, serde_json::Value>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Put(json!({ "primaryKey": primary_key.as_ref() })),
             200,
         )
@@ -115,7 +115,7 @@ impl Index {
     pub async fn delete(self) -> Result<Task, Error> {
         request::<(), Task>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -156,7 +156,7 @@ impl Index {
     ) -> Result<SearchResults<T>, Error> {
         request::<&Query, SearchResults<T>>(
             &format!("{}/indexes/{}/search", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(query),
             200,
         )
@@ -239,7 +239,7 @@ impl Index {
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -302,7 +302,7 @@ impl Index {
             url.push_str("attributesToRetrieve=");
             url.push_str(attributes_to_retrieve);
         }
-        request::<(), Vec<T>>(&url, &self.client.api_key, Method::Get, 200).await
+        request::<(), Vec<T>>(&url, self.client.api_key, Method::Get, 200).await
     }
 
     /// Add a list of [Document]s or replace them if they already exist.
@@ -368,7 +368,7 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], Task>(&url, &self.client.api_key, Method::Post(documents), 202).await
+        request::<&[T], Task>(&url, self.client.api_key, Method::Post(documents), 202).await
     }
 
     /// Alias for [Index::add_or_replace].
@@ -444,7 +444,7 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], Task>(&url, &self.client.api_key, Method::Put(documents), 202).await
+        request::<&[T], Task>(&url, self.client.api_key, Method::Put(documents), 202).await
     }
 
     /// Delete all documents in the index.
@@ -484,7 +484,7 @@ impl Index {
     pub async fn delete_all_documents(&self) -> Result<Task, Error> {
         request::<(), Task>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -529,7 +529,7 @@ impl Index {
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -578,7 +578,7 @@ impl Index {
                 "{}/indexes/{}/documents/delete-batch",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(uids),
             202,
         )
@@ -687,7 +687,7 @@ impl Index {
                 self.uid,
                 uid.as_ref()
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -724,7 +724,7 @@ impl Index {
 
         Ok(request::<(), AllTasks>(
             &format!("{}/indexes/{}/tasks", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -751,7 +751,7 @@ impl Index {
     pub async fn get_stats(&self) -> Result<IndexStats, Error> {
         request::<serde_json::Value, IndexStats>(
             &format!("{}/indexes/{}/stats", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )

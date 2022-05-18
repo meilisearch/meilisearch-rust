@@ -211,7 +211,7 @@ impl Index {
     pub async fn get_settings(&self) -> Result<Settings, Error> {
         request::<(), Settings>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -236,7 +236,7 @@ impl Index {
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -261,7 +261,7 @@ impl Index {
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -286,7 +286,7 @@ impl Index {
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -311,7 +311,7 @@ impl Index {
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -336,7 +336,7 @@ impl Index {
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -361,7 +361,7 @@ impl Index {
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -386,7 +386,7 @@ impl Index {
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -411,7 +411,7 @@ impl Index {
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Get,
             200,
         )
@@ -441,7 +441,7 @@ impl Index {
     pub async fn set_settings(&self, settings: &Settings) -> Result<Task, Error> {
         request::<&Settings, Task>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(settings),
             202,
         )
@@ -477,7 +477,7 @@ impl Index {
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(synonyms),
             202,
         )
@@ -509,7 +509,7 @@ impl Index {
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(
                 stop_words
                     .into_iter()
@@ -555,7 +555,7 @@ impl Index {
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(
                 ranking_rules
                     .into_iter()
@@ -592,7 +592,7 @@ impl Index {
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(
                 filterable_attributes
                     .into_iter()
@@ -629,7 +629,7 @@ impl Index {
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(
                 sortable_attributes
                     .into_iter()
@@ -665,7 +665,7 @@ impl Index {
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(distinct_attribute.as_ref().to_string()),
             202,
         )
@@ -696,7 +696,7 @@ impl Index {
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(
                 searchable_attributes
                     .into_iter()
@@ -732,7 +732,7 @@ impl Index {
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Post(
                 displayed_attributes
                     .into_iter()
@@ -763,7 +763,7 @@ impl Index {
     pub async fn reset_settings(&self) -> Result<Task, Error> {
         request::<(), Task>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -791,7 +791,7 @@ impl Index {
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -819,7 +819,7 @@ impl Index {
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -848,7 +848,7 @@ impl Index {
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -876,7 +876,7 @@ impl Index {
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -890,7 +890,7 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// # futures::executor::block_on(async move {
-   /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
+    /// let client = Client::new("http://localhost:7700", Some("masterKey".to_string()));
     /// # client.create_index("reset_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_sortable_attributes");
     ///
@@ -904,7 +904,7 @@ impl Index {
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -932,7 +932,7 @@ impl Index {
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -960,7 +960,7 @@ impl Index {
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )
@@ -988,7 +988,7 @@ impl Index {
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.api_key,
             Method::Delete,
             202,
         )

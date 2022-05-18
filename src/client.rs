@@ -76,7 +76,7 @@ impl Client {
     pub async fn list_all_indexes_raw(&self) -> Result<Vec<Value>, Error> {
         let json_indexes = request::<(), Vec<Value>>(
             &format!("{}/indexes", self.host),
-            &self.api_key,
+            self.api_key,
             Method::Get,
             200,
         )
@@ -131,7 +131,7 @@ impl Client {
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<Value, Error> {
         request::<(), Value>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            &self.api_key,
+            self.api_key,
             Method::Get,
             200,
         )
@@ -181,7 +181,7 @@ impl Client {
     ) -> Result<Task, Error> {
         request::<Value, Task>(
             &format!("{}/indexes", self.host),
-            &self.api_key,
+            self.api_key,
             Method::Post(json!({
                 "uid": uid.as_ref(),
                 "primaryKey": primary_key,
@@ -196,7 +196,7 @@ impl Client {
     pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<Task, Error> {
         request::<(), Task>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            &self.api_key,
+            self.api_key,
             Method::Delete,
             202,
         )
@@ -228,7 +228,7 @@ impl Client {
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
         request::<serde_json::Value, ClientStats>(
             &format!("{}/stats", self.host),
-            &self.api_key,
+            self.api_key,
             Method::Get,
             200,
         )
@@ -251,7 +251,7 @@ impl Client {
     pub async fn health(&self) -> Result<Health, Error> {
         request::<serde_json::Value, Health>(
             &format!("{}/health", self.host),
-            &self.api_key,
+            self.api_key,
             Method::Get,
             200,
         )
@@ -305,7 +305,7 @@ impl Client {
 
         let keys = request::<(), Keys>(
             &format!("{}/keys", self.host),
-            &self.api_key,
+            self.api_key,
             Method::Get,
             200,
         )
@@ -336,7 +336,7 @@ impl Client {
     pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
         request::<(), Key>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
-            &self.api_key,
+            self.api_key,
             Method::Get,
             200,
         )
@@ -368,7 +368,7 @@ impl Client {
     pub async fn delete_key(&self, key: impl AsRef<str>) -> Result<(), Error> {
         request::<(), ()>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
-            &self.api_key,
+            self.api_key,
             Method::Delete,
             204,
         )
@@ -397,7 +397,7 @@ impl Client {
     pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
         request::<&KeyBuilder, Key>(
             &format!("{}/keys", self.host),
-            &self.api_key,
+            self.api_key,
             Method::Post(key.as_ref()),
             201,
         )
@@ -429,7 +429,7 @@ impl Client {
     pub async fn update_key(&self, key: impl AsRef<Key>) -> Result<Key, Error> {
         request::<&Key, Key>(
             &format!("{}/keys/{}", self.host, key.as_ref().key),
-            &self.api_key,
+            self.api_key,
             Method::Patch(key.as_ref()),
             200,
         )
@@ -451,7 +451,7 @@ impl Client {
     pub async fn get_version(&self) -> Result<Version, Error> {
         request::<(), Version>(
             &format!("{}/version", self.host),
-            &self.api_key,
+            self.api_key,
             Method::Get,
             200,
         )
@@ -545,7 +545,7 @@ impl Client {
     pub async fn get_task(&self, task_id: impl AsRef<u64>) -> Result<Task, Error> {
         request::<(), Task>(
             &format!("{}/tasks/{}", self.host, task_id.as_ref()),
-            &self.api_key,
+            self.api_key,
             Method::Get,
             200,
         )
@@ -571,7 +571,7 @@ impl Client {
 
         let tasks = request::<(), Tasks>(
             &format!("{}/tasks", self.host),
-            &self.api_key,
+            self.api_key,
             Method::Get,
             200,
         )
@@ -598,9 +598,9 @@ impl Client {
         api_key: Option<String>,
         expires_at: Option<OffsetDateTime>,
     ) -> Result<String, Error> {
-        let self_key = match self.api_key.as_ref(){
-            Some(key)=>key,
-            None=> ""
+        let self_key = match self.api_key.as_ref() {
+            Some(key) => key,
+            None => "",
         };
         let api_key = api_key.unwrap_or_else(|| String::from(self_key));
 
@@ -659,9 +659,9 @@ mod tests {
         key::{Action, KeyBuilder},
     };
     use meilisearch_test_macro::meilisearch_test;
-    use time::OffsetDateTime;
     use mockito::mock;
     use std::mem;
+    use time::OffsetDateTime;
 
     #[meilisearch_test]
     async fn test_methods_has_qualified_version_as_header() {
@@ -672,25 +672,35 @@ mod tests {
 
         let assertions = vec![
             (
-                mock("GET", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, None, Method::Get, 200)
+                mock("GET", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, None, Method::Get, 200),
             ),
             (
-                mock("POST", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, None, Method::Post("".to_string()), 200)
+                mock("POST", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, None, Method::Post("".to_string()), 200),
             ),
             (
-                mock("DELETE", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, None, Method::Delete, 200)
+                mock("DELETE", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, None, Method::Delete, 200),
             ),
             (
-                mock("PUT", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, None, Method::Put("".to_string()), 200)
+                mock("PUT", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, None, Method::Put("".to_string()), 200),
             ),
             (
-                mock("PATCH", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, None, Method::Patch("".to_string()), 200)
-            )
+                mock("PATCH", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, None, Method::Patch("".to_string()), 200),
+            ),
         ];
 
         for (m, req) in assertions {
@@ -841,9 +851,9 @@ mod tests {
             })
         ));
 
-        let key = match client.api_key.as_ref(){
-            Some(key)=>key,
-            None=> panic!("test_error_create_key no key to delete")
+        let key = match client.api_key.as_ref() {
+            Some(key) => key,
+            None => panic!("test_error_create_key no key to delete"),
         };
         // cleanup
         master_client.delete_key(key).await.unwrap();
@@ -925,13 +935,11 @@ mod tests {
             })
         ));
 
-
         let key = match &*client.api_key {
-            Some(key)=> key,
-            None => panic!("no key on test: test error update key")
+            Some(key) => key,
+            None => panic!("no key on test: test error update key"),
         };
         master_client.delete_key(key).await.unwrap();
-
     }
 
     #[meilisearch_test]
