@@ -751,7 +751,7 @@ mod tests {
 
         let master_key = client.api_key.clone();
         // this key has no right
-        client.api_key = Arc::new(Option::from(key.key.clone()));
+        client.api_key = Arc::new(Some(key.key.clone()));
         // with a wrong key
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
@@ -851,12 +851,9 @@ mod tests {
             })
         ));
 
-        let key = match client.api_key.as_ref() {
-            Some(key) => key,
-            None => panic!("test_error_create_key no key to delete"),
-        };
+        
         // cleanup
-        master_client.delete_key(key.unwrap()).await.unwrap();
+        master_client.delete_key(client.api_key.as_deref().unwrap()).await.unwrap();
     }
 
     #[meilisearch_test]
@@ -935,7 +932,7 @@ mod tests {
             })
         ));
 
-        master_client.delete_key(key.unwrap()).await.unwrap();
+        master_client.delete_key(client.api_key.as_deref().unwrap()).await.unwrap();
     }
 
     #[meilisearch_test]

@@ -39,67 +39,50 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                     .send_async()
                     .await?
             }
-        }
         Method::Delete => {
+
+            let mut request = Request::delete(url)
+              .header(header::USER_AGENT, user_agent);
+            
             if let Some(key) = apikey {
                 let auth = format!("Bearer {}", key);
-                Request::delete(url)
-                    .header(header::AUTHORIZATION, auth)
-                    .header(header::USER_AGENT, user_agent)
-                    .body(())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
-            } else {
-                Request::delete(url)
-                    .header(header::USER_AGENT, user_agent)
-                    .body(())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                request = request.header(header::AUTHORIZATION, auth);
             }
+            request
+                    .body(())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
         }
         Method::Post(body) => {
-            if let Some(key) = apikey {
-                let auth = format!("Bearer {}", key);
-                Request::post(url)
-                    .header(header::AUTHORIZATION, auth)
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .header(header::USER_AGENT, user_agent)
-                    .body(to_string(&body).unwrap())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
-            } else {
-                Request::post(url)
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .header(header::USER_AGENT, user_agent)
-                    .body(to_string(&body).unwrap())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
-            }
+            
+            let mut request = Request::post(url)
+            .header(header::USER_AGENT, user_agent);
+          
+          if let Some(key) = apikey {
+              let auth = format!("Bearer {}", key);
+              request = request.header(header::AUTHORIZATION, auth);
+          }
+          request
+                  .body(to_string(&body).unwrap())
+                  .map_err(|_| crate::errors::Error::InvalidRequest)?
+                  .send_async()
+                  .await?
+
         }
         Method::Patch(body) => {
-            if let Some(key) = apikey {
-                let auth = format!("Bearer {}", key);
-                Request::patch(url)
-                    .header(header::AUTHORIZATION, auth)
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .header(header::USER_AGENT, user_agent)
-                    .body(to_string(&body).unwrap())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
-            } else {
-                Request::patch(url)
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .header(header::USER_AGENT, user_agent)
-                    .body(to_string(&body).unwrap())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
-            }
+            let mut request = Request::patch(url)
+            .header(header::USER_AGENT, user_agent);
+          
+          if let Some(key) = apikey {
+              let auth = format!("Bearer {}", key);
+              request = request.header(header::AUTHORIZATION, auth);
+          }
+          request
+                  .body(to_string(&body).unwrap())
+                  .map_err(|_| crate::errors::Error::InvalidRequest)?
+                  .send_async()
+                  .await?
         }
         Method::Put(body) => {
             if let Some(key) = apikey {
