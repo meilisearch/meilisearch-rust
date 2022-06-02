@@ -439,11 +439,11 @@ primary_field_guide_add_document_primary_key: |-
 
   let task: Task = client.index("books").add_documents(&[
     Book {
-      "reference_number": "287947".to_string(),
-      "title": "Diary of a Wimpy Kid".to_string(),
-      "author": "Jeff Kinney".to_string(),
-      "genres": ["comedy","humor"],
-      "price": 5.00
+      reference_number: "287947".to_string(),
+      title: "Diary of a Wimpy Kid".to_string(),
+      author: "Jeff Kinney".to_string(),
+      genres: vec!["comedy".to_string(),"humor".to_string()],
+      price: 5.00
     }
   ], Some("reference_number")).await.unwrap();
 getting_started_add_documents_md: |-
