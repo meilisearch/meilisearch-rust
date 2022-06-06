@@ -424,7 +424,7 @@ documents_guide_add_movie_1: |-
     }
   ], None).await.unwrap();
 primary_field_guide_update_document_primary_key: |-
-  client.index("books").update(Some("title")).await.unwrap();
+  client.index("books").update("title").await.unwrap();
 primary_field_guide_create_index_primary_key: |-
   client.create_index("books", Some("reference_number")).await.unwrap();
 primary_field_guide_add_document_primary_key: |-
