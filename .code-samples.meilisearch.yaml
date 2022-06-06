@@ -10,7 +10,7 @@ list_all_indexes_1: |-
 create_an_index_1: |-
   client.create_index("movies", Some("id")).await.unwrap();
 update_an_index_1: |-
-  client.index("movies").update(Some("movie_review_id")).await.unwrap();
+  client.index("movies").update("movie_review_id").await.unwrap();
 delete_an_index_1: |-
   client.index("movies").delete().await.unwrap();
 get_one_document_1: |-
