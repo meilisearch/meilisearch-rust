@@ -434,7 +434,7 @@ primary_field_guide_add_document_primary_key: |-
     title: String,
     author: String,
     genres: Vec<String>,
-    price: i64
+    price: f64
   }
 
   let task: Task = client.index("books").add_documents(&[
