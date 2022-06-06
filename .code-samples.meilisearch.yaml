@@ -810,12 +810,12 @@ landing_getting_started_1: |-
   }
 
   client.index("movies").add_documents(&[
-    Movie { "id": "1".to_string(), "title": "Carol".to_string() },
-    Movie { "id": "2".to_string(), "title": "Wonder Woman".to_string() },
-    Movie { "id": "3".to_string(), "title": "Life of Pi".to_string() },
-    Movie { "id": "4".to_string(), "title": "Mad Max: Fury Road".to_string() },
-    Movie { "id": "5".to_string(), "title": "Moana".to_string() },
-    Movie { "id": "6".to_string(), "title": "Philadelphia".to_string() }
+    Movie { id: "1".to_string(), title: "Carol".to_string() },
+    Movie { id: "2".to_string(), title: "Wonder Woman".to_string() },
+    Movie { id: "3".to_string(), title: "Life of Pi".to_string() },
+    Movie { id: "4".to_string(), title: "Mad Max: Fury Road".to_string() },
+    Movie { id: "5".to_string(), title: "Moana".to_string() },
+    Movie { id: "6".to_string(), title: "Philadelphia".to_string() }
   ], Some("reference_number")).await.unwrap();
 tenant_token_guide_generate_sdk_1: |-
   let api_key = "B5KdX2MY2jV6EXfUs6scSfmC...";
