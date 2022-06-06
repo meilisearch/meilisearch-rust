@@ -423,25 +423,27 @@ documents_guide_add_movie_1: |-
       title: "Amélie Poulain".to_string(),
     }
   ], None).await.unwrap();
-document_guide_create_index_primary_key: |-
-  client.create_index("movies", Some("reference_number")).await.unwrap();
-document_guide_add_document_primary_key: |-
+primary_field_guide_update_document_primary_key: |-
+  client.index("books").update("title").await.unwrap();
+primary_field_guide_create_index_primary_key: |-
+  client.create_index("books", Some("reference_number")).await.unwrap();
+primary_field_guide_add_document_primary_key: |-
   #[derive(Serialize, Deserialize)]
-  struct Movie {
-    id: String,
+  struct Book {
+    reference_number: String,
     title: String,
-    poster: String,
-    overview: String,
-    release_date: String
+    author: String,
+    genres: Vec<String>,
+    price: f64
   }
 
-  let task: Task = client.index("movies").add_documents(&[
-    Movie {
+  let task: Task = client.index("books").add_documents(&[
+    Book {
       reference_number: "287947".to_string(),
-      title: "Shazam".to_string(),
-      poster: "https://image.tmdb.org/t/p/w1280/xnopI5Xtky18MPhK40cZAGAOVeV.jpg".to_string(),
-      overview: "A boy is given the ability to become an adult superhero in times of need with a single magic word.".to_string(),
-      release_date: "2019-03-23".to_string()
+      title: "Diary of a Wimpy Kid".to_string(),
+      author: "Jeff Kinney".to_string(),
+      genres: vec!["comedy".to_string(),"humor".to_string()],
+      price: 5.00
     }
   ], Some("reference_number")).await.unwrap();
 getting_started_add_documents_md: |-
@@ -539,7 +541,7 @@ getting_started_search_md: |-
   ```
 
   [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
-getting_started_update_rankingRules: |-
+getting_started_update_ranking_rules: |-
   let ranking_rules = [
     "exactness",
     "words",
@@ -552,7 +554,7 @@ getting_started_update_rankingRules: |-
   ];
 
   client.index("movies").set_ranking_rules(&ranking_rules).await.unwrap();
-getting_started_update_searchableAttributes: |-
+getting_started_update_searchable_attributes: |-
   let searchable_attributes = [
     "title"
   ];
@@ -569,7 +571,7 @@ getting_started_synonyms: |-
   synonyms.insert(String::from("piglet"), vec![String::from("winnie")]);
 
   client.index("movies").set_synonyms(&synonyms).await.unwrap();
-getting_started_update_displayedAttributes: |-
+getting_started_update_displayed_attributes: |-
   let displayed_attributes = [
     "title",
     "overview",
@@ -615,13 +617,13 @@ getting_started_configure_settings: |-
       "geo"
     ])
   let task: Task = client.index("meteorites").set_settings(&settings).await.unwrap();
-getting_started_geoRadius: |-
+getting_started_geo_radius: |-
   let results: SearchResults<Meteorite> = client.index("meteorites").search()
     .with_filter("_geoRadius(46.9480, 7.4474, 210000)")
     .execute()
     .await
     .unwrap();
-getting_started_geoPoint: |-
+getting_started_geo_point: |-
   let results: SearchResults<Meteorite> = client.index("meteorites").search()
     .with_sort(&["_geoPoint(48.8583701, 2.2922926):asc"])
     .execute()
