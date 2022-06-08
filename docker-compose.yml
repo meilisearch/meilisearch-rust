@@ -2,8 +2,8 @@ version: "3.8"
 
 # remove this line if you don't need a volume to map your dependencies
 # Check how to cache the build
-# volumes:
-#   cargo:
+volumes:
+  cargo:
 
 services:
   package:
@@ -15,12 +15,14 @@ services:
       # See if it is usefull
       - MEILISEARCH_HOST=http://meilisearch:7700
       # - MEILISEARCH_PORT=7700
+      - CARGO_INSTALL_ROOT=/vendor/cargo
     depends_on:
       - meilisearch
     links:
       - meilisearch
     volumes:
       - ./:/home/package
+      - cargo:/vendor/cargo
 
   meilisearch:
     image: getmeili/meilisearch:latest
