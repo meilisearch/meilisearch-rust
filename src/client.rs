@@ -26,8 +26,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// ```
     pub fn new(host: impl Into<String>, api_key: impl Into<String>) -> Client {
         Client {
@@ -42,9 +45,13 @@ impl Client {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
     /// let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
     /// println!("{:?}", indexes);
@@ -64,9 +71,13 @@ impl Client {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
     /// let json_indexes = client.list_all_indexes_raw().await.unwrap();
     /// println!("{:?}", json_indexes);
@@ -90,10 +101,13 @@ impl Client {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_index", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "get_index"
@@ -114,10 +128,13 @@ impl Client {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_raw_index", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "get_raw_index"
@@ -156,9 +173,12 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
     /// // Create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
     /// // Create a new index called movies and access it
     /// let task = client.create_index("create_index", None).await.unwrap();
@@ -219,8 +239,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let stats = client.get_stats().await.unwrap();
     /// # });
     /// ```
@@ -241,8 +264,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*, errors::{Error, ErrorCode}};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let health = client.health().await.unwrap();
     /// assert_eq!(health.status, "available");
     /// # });
@@ -264,8 +290,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::client::*;
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let health = client.is_healthy().await;
     /// assert_eq!(health, true);
     /// # });
@@ -288,8 +317,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let keys = client.get_keys().await.unwrap();
     /// assert!(keys.len() >= 2);
     /// # });
@@ -323,8 +355,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let key = client.get_keys().await.unwrap().into_iter().find(|k| k.description.starts_with("Default Search API Key")).unwrap();
     /// let key_id = // enter your API key here, for the example we'll say we entered our search API key.
     /// # key.key;
@@ -352,8 +387,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let key = KeyBuilder::new("delete_key");
     /// let key = client.create_key(key).await.unwrap();
     /// let inner_key = key.key.clone();
@@ -384,8 +422,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder, key::Action};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let mut key = KeyBuilder::new("create_key");
     /// key.with_index("*").with_action(Action::DocumentsAdd);
     /// let key = client.create_key(key).await.unwrap();
@@ -413,8 +454,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let key = KeyBuilder::new("update_key");
     /// let mut key = client.create_key(key).await.unwrap();
     /// assert!(key.indexes.is_empty());
@@ -442,8 +486,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let version = client.get_version().await.unwrap();
     /// # });
     /// ```
@@ -472,6 +519,10 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// # struct Document {
     /// #    id: usize,
@@ -481,7 +532,7 @@ impl Client {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("movies_client_wait_for_task");
     ///
     /// let task = movies.add_documents(&[
@@ -533,8 +584,12 @@ impl Client {
     ///
     /// ```
     /// # use meilisearch_sdk::*;
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new("http://localhost:7700", "masterKey");
+    /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("movies_get_task", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// let task = index.delete_all_documents().await.unwrap();
     /// let task = client.get_task(task).await.unwrap();
@@ -557,8 +612,12 @@ impl Client {
     ///
     /// ```
     /// # use meilisearch_sdk::*;
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new("http://localhost:7700", "masterKey");
+    /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let tasks = client.get_tasks().await.unwrap();
     /// # });
     /// ```
@@ -585,10 +644,14 @@ impl Client {
     ///
     /// ```
     /// # use meilisearch_sdk::*;
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new("http://localhost:7700", "masterKey");
+    /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let token = client.generate_tenant_token(serde_json::json!(["*"]), None, None).unwrap();
-    /// let client = client::Client::new("http://localhost:7700", token);
+    /// let client = client::Client::new(MEILISEARCH_HOST, token);
     /// # });
     /// ```
     pub fn generate_tenant_token(
@@ -654,9 +717,9 @@ mod tests {
         key::{Action, KeyBuilder},
     };
     use meilisearch_test_macro::meilisearch_test;
-    use time::OffsetDateTime;
     use mockito::mock;
     use std::mem;
+    use time::OffsetDateTime;
 
     #[meilisearch_test]
     async fn test_methods_has_qualified_version_as_header() {
@@ -667,25 +730,35 @@ mod tests {
 
         let assertions = vec![
             (
-                mock("GET", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Get, 200)
+                mock("GET", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, "", Method::Get, 200),
             ),
             (
-                mock("POST", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Post("".to_string()), 200)
+                mock("POST", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, "", Method::Post("".to_string()), 200),
             ),
             (
-                mock("DELETE", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Delete, 200)
+                mock("DELETE", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, "", Method::Delete, 200),
             ),
             (
-                mock("PUT", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Put("".to_string()), 200)
+                mock("PUT", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, "", Method::Put("".to_string()), 200),
             ),
             (
-                mock("PATCH", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Patch("".to_string()), 200)
-            )
+                mock("PATCH", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, "", Method::Patch("".to_string()), 200),
+            ),
         ];
 
         for (m, req) in assertions {
