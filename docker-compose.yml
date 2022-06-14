@@ -12,9 +12,7 @@ services:
     stdin_open: true
     working_dir: /home/package
     environment:
-      # See if it is usefull
       - MEILISEARCH_HOST=http://meilisearch:7700
-      # - MEILISEARCH_PORT=7700
       - CARGO_INSTALL_ROOT=/vendor/cargo
     depends_on:
       - meilisearch
