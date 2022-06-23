@@ -732,14 +732,14 @@ mod tests {
 
         setup_test_index(&client, &index).await?;
 
-        let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+        let meilisearch_host = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
         let key = KeyBuilder::new("key for generate_tenant_token test")
             .with_action(Action::All)
             .with_index("*")
             .create(&client)
             .await
             .unwrap();
-        let allowed_client = Client::new(MEILISEARCH_HOST, key.key);
+        let allowed_client = Client::new(meilisearch_host, key.key);
 
         let search_rules = vec![
             json!({ "*": {}}),
@@ -753,7 +753,7 @@ mod tests {
             let token = allowed_client
                 .generate_tenant_token(rules, None, None)
                 .expect("Cannot generate tenant token.");
-            let new_client = Client::new(MEILISEARCH_HOST, token);
+            let new_client = Client::new(meilisearch_host, token);
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())
