@@ -13,7 +13,7 @@ services:
     working_dir: /home/package
     environment:
       - MEILISEARCH_HOST=http://meilisearch:7700
-      - CARGO_INSTALL_ROOT=/vendor/cargo
+      - CARGO_HOME=/vendor/cargo
     depends_on:
       - meilisearch
     links:
