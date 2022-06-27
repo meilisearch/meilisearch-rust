@@ -16,8 +16,10 @@
 //!
 //!
 //! fn main() { block_on(async move {
+//! #   let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+//! #   let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //!     // Create a client (without sending any request so that can't fail)
-//!     let client = Client::new("http://localhost:7700", "masterKey");
+//!     let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 //!
 //! #    let index = client.create_index("movies", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //!     // An index is where the documents are stored.
@@ -51,7 +53,9 @@
 //! #    genres: Vec<String>,
 //! # }
 //! # fn main() { block_on(async move {
-//! #    let client = Client::new("http://localhost:7700", "masterKey");
+//! #    let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+//! #    let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+//! #    let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 //! #    let movies = client.create_index("movies_2", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! // Meilisearch is typo-tolerant:
 //! println!("{:?}", client.index("movies_2").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
@@ -92,7 +96,9 @@
 //! #    genres: Vec<String>,
 //! # }
 //! # fn main() { block_on(async move {
-//! #    let client = Client::new("http://localhost:7700", "masterKey");
+//! #   let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+//! #   let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+//! #    let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 //! #    let movies = client.create_index("movies_3", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let search_result = client.index("movies_3")
 //!   .search()
@@ -137,7 +143,9 @@
 //! # use serde::{Serialize, Deserialize};
 //! # use futures::executor::block_on;
 //! # fn main() { block_on(async move {
-//! #    let client = Client::new("http://localhost:7700", "masterKey");
+//! #    let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+//! #    let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+//! #    let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 //! #    let movies = client.create_index("movies_4", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let filterable_attributes = [
 //!     "id",
@@ -165,7 +173,9 @@
 //! #    genres: Vec<String>,
 //! # }
 //! # fn main() { block_on(async move {
-//! # let client = Client::new("http://localhost:7700", "masterKey");
+//! # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+//! # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+//! # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 //! # let movies = client.create_index("movies_5", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! # let filterable_attributes = [
 //! #     "id",

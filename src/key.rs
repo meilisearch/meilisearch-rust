@@ -31,8 +31,12 @@ impl Key {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
     ///  let mut key = KeyBuilder::new("My little lovely test key")
     ///   .with_action(Action::DocumentsAdd)
@@ -55,8 +59,12 @@ impl Key {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
     ///  let mut key = KeyBuilder::new("My little lovely test key")
     ///   .with_action(Action::DocumentsAdd)
@@ -78,8 +86,12 @@ impl Key {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
     ///  let mut key = KeyBuilder::new("My little lovely test key")
     ///   .with_action(Action::DocumentsAdd)
@@ -102,8 +114,12 @@ impl Key {
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
     /// use time::{OffsetDateTime, Duration};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
     ///  let mut key = KeyBuilder::new("My little lovely test key")
     ///   .with_action(Action::DocumentsAdd)
@@ -126,8 +142,12 @@ impl Key {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
     ///  let mut key = KeyBuilder::new("My little lovely test key")
     ///   .with_action(Action::DocumentsAdd)
@@ -155,8 +175,12 @@ impl Key {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
     ///  let mut key = KeyBuilder::new("My little lovely test key")
     ///   .with_action(Action::DocumentsAdd)
@@ -178,8 +202,12 @@ impl Key {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let mut key = KeyBuilder::new("My little lovely test key")
     ///   .create(&client).await.unwrap();
     ///
@@ -217,8 +245,12 @@ impl AsRef<Key> for Key {
 ///
 /// ```
 /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
 /// # futures::executor::block_on(async move {
-/// let client = Client::new("http://localhost:7700", "masterKey");
+/// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 ///
 /// let key = KeyBuilder::new("My little lovely test key")
 ///   .with_action(Action::DocumentsAdd)
@@ -341,8 +373,12 @@ impl KeyBuilder {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let key = KeyBuilder::new("My little lovely test key")
     ///   .create(&client).await.unwrap();
     ///

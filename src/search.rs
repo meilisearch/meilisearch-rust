@@ -102,7 +102,11 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
-/// # let client = Client::new("http://localhost:7700", "masterKey");
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
+/// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 /// # let index = client.index("does not matter");
 /// let query = Query::new(&index)
 ///     .with_query("space")
@@ -113,7 +117,11 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
-/// # let client = Client::new("http://localhost:7700", "masterKey");
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
+/// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 /// # let index = client.index("does not matter");
 /// let query = index.search()
 ///     .with_query("space")
@@ -724,13 +732,14 @@ mod tests {
 
         setup_test_index(&client, &index).await?;
 
+        let meilisearch_host = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
         let key = KeyBuilder::new("key for generate_tenant_token test")
             .with_action(Action::All)
             .with_index("*")
             .create(&client)
             .await
             .unwrap();
-        let allowed_client = Client::new("http://localhost:7700", key.key);
+        let allowed_client = Client::new(meilisearch_host, key.key);
 
         let search_rules = vec![
             json!({ "*": {}}),
@@ -744,7 +753,7 @@ mod tests {
             let token = allowed_client
                 .generate_tenant_token(rules, None, None)
                 .expect("Cannot generate tenant token.");
-            let new_client = Client::new("http://localhost:7700", token);
+            let new_client = Client::new(meilisearch_host, token);
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())
