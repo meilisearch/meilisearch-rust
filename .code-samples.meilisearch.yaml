@@ -3,9 +3,22 @@
 # the documentation on build
 # You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
 ---
+get_all_tasks_filtering_1: |-
+get_all_tasks_filtering_2: |-
+get_all_tasks_paginating_1: |-
+get_all_tasks_paginating_2: |-
+get_pagination_settings_1: |-
+update_pagination_settings_1: |-
+reset_pagination_settings_1: |-
+get_faceting_settings_1: |-
+update_faceting_settings_1: |-
+reset_faceting_settings_1: |-
+settings_guide_faceting_1: |-
+settings_guide_pagination_1: |-
+
 get_one_index_1: |-
   let movies: Index = client.get_index("movies").await.unwrap();
-list_all_indexes_1: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>list_all_indexes_1: |-
   let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
 create_an_index_1: |-
   client.create_index("movies", Some("id")).await.unwrap();
@@ -13,7 +26,7 @@ update_an_index_1: |-
   client.index("movies").update("movie_review_id").await.unwrap();
 delete_an_index_1: |-
   client.index("movies").delete().await.unwrap();
-get_one_document_1: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>get_one_document_1: |-
   let movie: Movie = client.index("movies").get_document(String::from("25684")).await.unwrap();
 get_documents_1: |-
   let documents: Vec<Movie> = client.index("movies").get_documents(None, Some(2), None).await.unwrap();
@@ -54,9 +67,9 @@ search_post_1: |-
     .execute()
     .await
     .unwrap();
-get_task_by_index_1: |-
+PLEASE_REMOVE_ME>>>>>>>>>>>>>get_task_by_index_1: |-
   let task: Task = client.index("movies").get_task(1).await.unwrap();
-get_all_tasks_by_index_1: |-
+PLEASE_REMOVE_ME>>>>>>>>>>>>>get_all_tasks_by_index_1: |-
   let tasks: Vec<Task> = client.index("movies").get_tasks().await.unwrap();
 get_all_tasks_1: |-
   let tasks: Vec<Task> = client.get_tasks().await.unwrap();
@@ -64,7 +77,7 @@ get_task_1: |-
   let task: Task = client.get_task(1).await.unwrap();
 get_settings_1: |-
   let settings: Settings = client.index("movies").get_settings().await.unwrap();
-update_settings_1: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>update_settings_1: |-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("wolverine"), vec!["xmen", "logan"]);
   synonyms.insert(String::from("logan"), vec!["wolverine"]);
@@ -303,7 +316,7 @@ search_parameter_guide_highlight_tag_1: |-
 
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
-search_parameter_guide_matches_1: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>search_parameter_guide_matches_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("winter feast")
     .with_matches(true)
@@ -563,7 +576,7 @@ getting_started_update_searchable_attributes: |-
 getting_started_update_stop_words: |-
   let stop_words = ["the"];
   client.index("movies").set_stop_words(&stop_words).await.unwrap();
-getting_started_check_task_status: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>PLEASE_UPDATE_ME>>>>>>>>>>>>>getting_started_check_task_status: |-
   client.index("movies").get_task(0).await.unwrap();
 getting_started_synonyms: |-
   let mut synonyms = std::collections::HashMap::new();
@@ -642,7 +655,7 @@ getting_started_filtering: |-
     .execute()
     .await
     .unwrap();
-faceted_search_update_settings_1: |-
+faceted_search_PLEASE_UPDATE_ME>>>>>>>>>>>>>update_settings_1: |-
   let task: Task = client.index("movies").set_filterable_attributes(["director", "genres"]).await.unwrap();
 faceted_search_filter_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
@@ -651,7 +664,7 @@ faceted_search_filter_1: |-
     .execute()
     .await
     .unwrap();
-faceted_search_facets_distribution_1: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>faceted_search_facets_distribution_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Batman")
     .with_facets_distribution(Selectors::Some(&["genres"]))
@@ -668,7 +681,7 @@ faceted_search_walkthrough_filter_1: |-
     .unwrap();
 post_dump_1: |-
   client.create_dump().await.unwrap();
-get_dump_status_1: |-
+PLEASE_REMOVE_ME>>>>>>>>>>>>>get_dump_status_1: |-
   client.get_dump_status("20201101-110357260").await.unwrap();
 phrase_search_1: |-
   let results: SearchResults<Movie> = client.index("movies")
@@ -757,7 +770,7 @@ geosearch_guide_sort_usage_2: |-
     .unwrap();
 get_one_key_1: |-
   let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
-get_all_keys_1: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>get_all_keys_1: |-
   let keys = client.get_keys().await.unwrap();
 create_a_key_1: |-
   let mut key_options = KeyBuilder::new("Add documents: Products API key");
@@ -765,7 +778,7 @@ create_a_key_1: |-
       .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
       .with_index("products");
   let new_key = client.create_key(key_options).await.unwrap();
-update_a_key_1: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>update_a_key_1: |-
   let mut key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
   key
       .with_description("Manage documents: Products/Reviews API key".to_string())
@@ -773,7 +786,7 @@ update_a_key_1: |-
       .with_indexes(vec!["products".to_string(), "reviews".to_string()])
       .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
       .update(&client);
-delete_a_key_1: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>delete_a_key_1: |-
   let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
   client.delete_key(&key);
 authorization_header_1:
@@ -782,7 +795,7 @@ authorization_header_1:
 security_guide_search_key_1: |-
   let client = Client::new("http://localhost:7700", "apiKey");
   let result = client.index("patient_medical_records").search().execute().await.unwrap();
-security_guide_update_key_1: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>security_guide_update_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let mut key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
   key.with_indexes(vec!["doctors".to_string()]).update(&client);
@@ -796,7 +809,7 @@ security_guide_create_key_1: |-
 security_guide_list_keys_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let keys = client.get_keys().await.unwrap();
-security_guide_delete_key_1: |-
+PLEASE_UPDATE_ME>>>>>>>>>>>>>security_guide_delete_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
   client.delete_key(&key);
