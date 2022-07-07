@@ -238,7 +238,11 @@ mod request;
 pub mod search;
 /// Module containing [settings::Settings].
 pub mod settings;
+/// Module representing the [task_info::TaskInfo]s.
+pub mod task_info;
 /// Module representing the [tasks::Task]s.
 pub mod tasks;
 /// Module that generates tenant tokens.
 mod tenant_tokens;
+/// Module containing utilies functions.
+mod utils;

@@ -25,7 +25,7 @@ async fn test_get_tasks() -> Result<(), Error> {
 
   let tasks = index.get_tasks().await?;
   // The only task is the creation of the index
-  assert_eq!(status.len(), 1);
+  assert_eq!(status.results.len(), 1);
 
   index.delete()
     .await?
@@ -52,7 +52,7 @@ With this macro, all these problems are solved. See a rewrite of this test:
 async fn test_get_tasks(index: Index, client: Client) -> Result<(), Error> {
   let tasks = index.get_tasks().await?;
   // The only task is the creation of the index
-  assert_eq!(status.len(), 1);
+  assert_eq!(status.results.len(), 1);
 }
 ```
 
