@@ -9,7 +9,6 @@ use crate::{
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum TaskType {
-    ClearAll,
     Customs,
     DocumentAdditionOrUpdate {
         details: Option<DocumentAdditionOrUpdate>,
@@ -75,7 +74,7 @@ pub struct IndexDeletion {
 pub struct FailedTask {
     pub error: MeilisearchError,
     #[serde(flatten)]
-    pub task: ProcessedTask,
+    pub task: SucceededTask,
 }
 
 impl AsRef<u32> for FailedTask {
@@ -95,7 +94,7 @@ where
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ProcessedTask {
+pub struct SucceededTask {
     #[serde(deserialize_with = "deserialize_duration")]
     pub duration: Duration,
     #[serde(with = "time::serde::rfc3339")]
@@ -110,7 +109,7 @@ pub struct ProcessedTask {
     pub uid: u32,
 }
 
-impl AsRef<u32> for ProcessedTask {
+impl AsRef<u32> for SucceededTask {
     fn as_ref(&self) -> &u32 {
         &self.uid
     }
@@ -150,7 +149,7 @@ pub enum Task {
     },
     Succeeded {
         #[serde(flatten)]
-        content: ProcessedTask,
+        content: SucceededTask,
     },
 }
 
@@ -244,7 +243,7 @@ impl Task {
         match self {
             Self::Succeeded {
                 content:
-                    ProcessedTask {
+                    SucceededTask {
                         index_uid,
                         update_type: TaskType::IndexCreation { .. },
                         ..
@@ -499,7 +498,7 @@ mod test {
         assert!(matches!(
             task,
             Task::Succeeded {
-                content: ProcessedTask {
+                content: SucceededTask {
                     update_type: TaskType::DocumentAdditionOrUpdate {
                         details: Some(DocumentAdditionOrUpdate {
                             received_documents: 19547,
@@ -551,7 +550,7 @@ mod test {
 
     #[meilisearch_test]
     // TODO: failing because settings routes now uses PUT instead of POST as http method
-    async fn test_failing_update(client: Client, movies: Index) -> Result<(), Error> {
+    async fn test_failing_task(client: Client, movies: Index) -> Result<(), Error> {
         let task_info = movies.set_ranking_rules(["wrong_ranking_rule"]).await?;
 
         let task = client.get_task(task_info).await?;

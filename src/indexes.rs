@@ -735,12 +735,7 @@ impl Index {
     /// ```
     pub async fn get_task(&self, uid: impl AsRef<u32>) -> Result<Task, Error> {
         request::<(), Task>(
-            &format!(
-                "{}/indexes/{}/tasks/{}",
-                self.client.host,
-                self.uid,
-                uid.as_ref()
-            ),
+            &format!("{}/tasks/{}", self.client.host, uid.as_ref()),
             &self.client.api_key,
             Method::Get,
             200,
@@ -1088,7 +1083,6 @@ mod tests {
     // }
 
     #[meilisearch_test]
-    // TODO: failing because on document deletion the task type changed from clearAll -> documentDeletion
     async fn test_get_one_task(client: Client, index: Index) -> Result<(), Error> {
         let task = index
             .delete_all_documents()
