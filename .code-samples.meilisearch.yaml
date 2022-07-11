@@ -55,13 +55,13 @@ search_post_1: |-
     .await
     .unwrap();
 get_task_by_index_1: |-
-  let task: TaskInfo = client.index("movies").get_task(1).await.unwrap();
+  let task: Task = client.index("movies").get_task(1).await.unwrap();
 get_all_tasks_by_index_1: |-
   let tasks: TasksResults = client.index("movies").get_tasks().await.unwrap();
 get_all_tasks_1: |-
   let tasks: TasksResults = client.get_tasks().await.unwrap();
 get_task_1: |-
-  let task: TaskInfo = client.get_task(1).await.unwrap();
+  let task: Task = client.get_task(1).await.unwrap();
 get_settings_1: |-
   let settings: Settings = client.index("movies").get_settings().await.unwrap();
 update_settings_1: |-
