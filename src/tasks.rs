@@ -103,7 +103,7 @@ pub struct SucceededTask {
     pub started_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub finished_at: OffsetDateTime,
-    pub index_uid: String,
+    pub index_uid: Option<String>,
     #[serde(flatten)]
     pub update_type: TaskType,
     pub uid: u32,
@@ -120,7 +120,7 @@ impl AsRef<u32> for SucceededTask {
 pub struct EnqueuedTask {
     #[serde(with = "time::serde::rfc3339")]
     pub enqueued_at: OffsetDateTime,
-    pub index_uid: String,
+    pub index_uid: Option<String>,
     #[serde(flatten)]
     pub update_type: TaskType,
     pub uid: u32,
@@ -248,7 +248,7 @@ impl Task {
                         update_type: TaskType::IndexCreation { .. },
                         ..
                     },
-            } => Ok(client.index(index_uid)),
+            } => Ok(client.index(index_uid.unwrap())),
             _ => Err(self),
         }
     }
@@ -434,7 +434,7 @@ mod test {
             Task::Enqueued {
                 content: EnqueuedTask {
                     enqueued_at,
-                    index_uid,
+                    index_uid: Some(index_uid),
                     update_type: TaskType::DocumentAdditionOrUpdate { details: None },
                     uid: 12,
                 }

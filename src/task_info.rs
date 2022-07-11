@@ -9,7 +9,7 @@ use crate::{client::Client, errors::Error, tasks::*};
 pub struct TaskInfo {
     #[serde(with = "time::serde::rfc3339")]
     pub enqueued_at: OffsetDateTime,
-    pub index_uid: String,
+    pub index_uid: Option<String>,
     pub status: String,
     #[serde(flatten)]
     pub update_type: TaskType,
@@ -22,19 +22,9 @@ impl AsRef<u32> for TaskInfo {
     }
 }
 
-impl AsRef<str> for TaskInfo {
-    fn as_ref(&self) -> &str {
-        self.get_index_uid()
-    }
-}
-
 impl TaskInfo {
     pub fn get_task_uid(&self) -> u32 {
         self.task_uid
-    }
-
-    pub fn get_index_uid(&self) -> &str {
-        &self.index_uid
     }
 
     /// Wait until Meilisearch processes a task provided by [TaskInfo], and get its status.
@@ -131,12 +121,12 @@ mod test {
             task_info,
             TaskInfo {
                 enqueued_at,
-                index_uid,
+                index_uid: Some(index_uid),
                 task_uid: 12,
                 update_type: TaskType::DocumentAdditionOrUpdate { details: None },
-                status: _,
+                status,
             }
-        if enqueued_at == datetime && index_uid == "mieli"));
+        if enqueued_at == datetime && index_uid == "mieli" && status == "enqueued"));
     }
 
     #[meilisearch_test]

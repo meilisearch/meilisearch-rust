@@ -1093,10 +1093,42 @@ mod tests {
         let status = index.get_task(task).await?;
 
         match status {
-            Task::Enqueued { content } => assert_eq!(content.index_uid, *index.uid),
-            Task::Processing { content } => assert_eq!(content.index_uid, *index.uid),
-            Task::Failed { content } => assert_eq!(content.task.index_uid, *index.uid),
-            Task::Succeeded { content } => assert_eq!(content.index_uid, *index.uid),
+            Task::Enqueued {
+                content:
+                    EnqueuedTask {
+                        index_uid: Some(index_uid),
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            Task::Processing {
+                content:
+                    EnqueuedTask {
+                        index_uid: Some(index_uid),
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            Task::Failed {
+                content:
+                    FailedTask {
+                        task:
+                            SucceededTask {
+                                index_uid: Some(index_uid),
+                                ..
+                            },
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            Task::Succeeded {
+                content:
+                    SucceededTask {
+                        index_uid: Some(index_uid),
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            task => panic!(
+                "The task should have an index_uid that is not null {:?}",
+                task
+            ),
         }
         Ok(())
     }
