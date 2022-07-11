@@ -1080,6 +1080,7 @@ mod tests {
     }
 
     // #[meilisearch_test]
+    // TODO: when implementing the filters in get_tasks
     // async fn test_get_tasks_no_docs(index: Index) {
     //     // The at this point the only task that is supposed to exist is the creation of the index
     //     let status = index.get_tasks().await.unwrap();
@@ -1087,6 +1088,7 @@ mod tests {
     // }
 
     #[meilisearch_test]
+    // TODO: failing because on document deletion the task type changed from clearAll -> documentDeletion
     async fn test_get_one_task(client: Client, index: Index) -> Result<(), Error> {
         let task = index
             .delete_all_documents()

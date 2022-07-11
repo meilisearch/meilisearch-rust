@@ -140,10 +140,7 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_wait_for_pending_updates_with_args(
-        client: Client,
-        movies: Index,
-    ) -> Result<(), Error> {
+    async fn test_wait_for_task_with_args(client: Client, movies: Index) -> Result<(), Error> {
         let task = movies
             .add_documents(
                 &[
@@ -173,10 +170,8 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_wait_for_pending_updates_time_out(
-        client: Client,
-        movies: Index,
-    ) -> Result<(), Error> {
+    // TODO: could be a flacky test if task is to fast
+    async fn test_wait_for_task_time_out(client: Client, movies: Index) -> Result<(), Error> {
         let task_info = movies
             .add_documents(
                 &[
@@ -195,9 +190,11 @@ mod test {
             )
             .await?;
 
+        let task = client.wait_for_task(task_info, None, None).await?;
+
         let error = client
             .wait_for_task(
-                task_info,
+                task,
                 Some(Duration::from_millis(1)),
                 Some(Duration::from_nanos(1)),
             )
@@ -209,11 +206,12 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_failing_update(client: Client, movies: Index) -> Result<(), Error> {
-        let task = movies.set_ranking_rules(["wrong_ranking_rule"]).await?;
-        let status = client.wait_for_task(task, None, None).await?;
+    // TODO: failing because settings routes now uses PUT instead of POST as http method
+    async fn test_failing_task(client: Client, movies: Index) -> Result<(), Error> {
+        let task_info = movies.set_ranking_rules(["wrong_ranking_rule"]).await?;
+        let task = client.wait_for_task(task_info, None, None).await?;
 
-        let error = status.unwrap_failure();
+        let error = task.unwrap_failure();
         assert_eq!(error.error_code, ErrorCode::InvalidRankingRule);
         assert_eq!(error.error_type, ErrorType::InvalidRequest);
         Ok(())
