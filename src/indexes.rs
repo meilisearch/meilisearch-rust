@@ -93,15 +93,27 @@ impl Index {
     /// Set the primary key of the index.
     ///
     /// If you prefer, you can use the method [Index::set_primary_key], which is an alias.
-    pub async fn update(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
-        request::<serde_json::Value, serde_json::Value>(
-            &format!("{}/indexes/{}", self.client.host, self.uid),
-            &self.client.api_key,
-            Method::Put(json!({ "primaryKey": primary_key.as_ref() })),
-            200,
-        )
-        .await?;
-        Ok(())
+    pub async fn update(&self, primary_key: Option<impl AsRef<str>>) -> Result<(), Error> {
+        match &primary_key{
+            Some(key) => {
+                    request::<serde_json::Value, serde_json::Value>( &format!("{}/indexes/{}", self.client.host, self.uid),
+                    &self.client.api_key,
+                    Method::Put(json!({ "primaryKey": key.as_ref() })),
+                    200,
+                )
+                .await?;
+                Ok(())
+            }
+            None => {
+                request::<&str, serde_json::Value>( &format!("{}/indexes/{}", self.client.host, self.uid),
+                &self.client.api_key,
+                Method::Put(""),
+                200
+                )
+                .await?;
+                Ok(())
+            }
+        }
     }
 
     /// Delete the index.
@@ -632,7 +644,7 @@ impl Index {
 
     /// Alias for the [Index::update] method.
     pub async fn set_primary_key(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
-        self.update(primary_key).await
+        self.update(Some(primary_key)).await
     }
 
     /// Fetch the information of the index as a raw JSON [Index], this index should already exist.
