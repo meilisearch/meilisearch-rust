@@ -643,8 +643,8 @@ impl Index {
     }
 
     /// Alias for the [Index::update] method.
-    pub async fn set_primary_key(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
-        self.update(Some(primary_key)).await
+    pub async fn set_primary_key(&self, primary_key: Option<impl AsRef<str>>) -> Result<(), Error> {
+        self.update(primary_key).await
     }
 
     /// Fetch the information of the index as a raw JSON [Index], this index should already exist.
