@@ -93,26 +93,25 @@ impl Index {
     /// Set the primary key of the index.
     ///
     /// If you prefer, you can use the method [Index::set_primary_key], which is an alias.
-    pub async fn update(&self, primary_key: Option<impl AsRef<str>>) -> Result<(), Error> {
-        match &primary_key{
-            Some(key) => {
-                    request::<serde_json::Value, serde_json::Value>( &format!("{}/indexes/{}", self.client.host, self.uid),
-                    &self.client.api_key,
-                    Method::Put(json!({ "primaryKey": key.as_ref() })),
-                    200,
-                )
-                .await?;
-                Ok(())
-            }
-            None => {
-                request::<&str, serde_json::Value>( &format!("{}/indexes/{}", self.client.host, self.uid),
+    pub async fn update(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
+        if primary_key.as_ref().is_empty() {
+            request::<&str, serde_json::Value>(
+                &format!("{}/indexes/{}", self.client.host, self.uid),
                 &self.client.api_key,
                 Method::Put(""),
-                200
-                )
-                .await?;
-                Ok(())
-            }
+                200,
+            )
+            .await?;
+            return Ok(());
+        } else {
+            request::<serde_json::Value, serde_json::Value>(
+                &format!("{}/indexes/{}", self.client.host, self.uid),
+                &self.client.api_key,
+                Method::Put(json!({ "primaryKey": primary_key.as_ref() })),
+                200,
+            )
+            .await?;
+            return Ok(());
         }
     }
 
@@ -643,7 +642,7 @@ impl Index {
     }
 
     /// Alias for the [Index::update] method.
-    pub async fn set_primary_key(&self, primary_key: Option<impl AsRef<str>>) -> Result<(), Error> {
+    pub async fn set_primary_key(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
         self.update(primary_key).await
     }
 
