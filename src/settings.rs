@@ -1,7 +1,7 @@
 use crate::{
     errors::Error,
     indexes::Index,
-    request::{request, Method},
+    request::{request, Data, Method},
     tasks::Task,
 };
 use serde::{Deserialize, Serialize};
@@ -213,7 +213,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_settings(&self) -> Result<Settings, Error> {
-        request::<(), Settings>(
+        request::<Option<()>, (), Settings>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             &self.client.api_key,
             Method::Get,
@@ -239,7 +239,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_synonyms(&self) -> Result<HashMap<String, Vec<String>>, Error> {
-        request::<(), HashMap<String, Vec<String>>>(
+        request::<Option<()>, (), HashMap<String, Vec<String>>>(
             &format!(
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
@@ -268,7 +268,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_stop_words(&self) -> Result<Vec<String>, Error> {
-        request::<(), Vec<String>>(
+        request::<Option<()>, (), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
@@ -297,7 +297,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_ranking_rules(&self) -> Result<Vec<String>, Error> {
-        request::<(), Vec<String>>(
+        request::<Option<()>, (), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
@@ -326,7 +326,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_filterable_attributes(&self) -> Result<Vec<String>, Error> {
-        request::<(), Vec<String>>(
+        request::<Option<()>, (), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
@@ -355,7 +355,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_sortable_attributes(&self) -> Result<Vec<String>, Error> {
-        request::<(), Vec<String>>(
+        request::<Option<()>, (), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
@@ -384,7 +384,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_distinct_attribute(&self) -> Result<Option<String>, Error> {
-        request::<(), Option<String>>(
+        request::<Option<()>, (), Option<String>>(
             &format!(
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
@@ -413,7 +413,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_searchable_attributes(&self) -> Result<Vec<String>, Error> {
-        request::<(), Vec<String>>(
+        request::<Option<()>, (), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
@@ -442,7 +442,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_displayed_attributes(&self) -> Result<Vec<String>, Error> {
-        request::<(), Vec<String>>(
+        request::<Option<()>, (), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
@@ -479,10 +479,10 @@ impl Index {
     /// # });
     /// ```
     pub async fn set_settings(&self, settings: &Settings) -> Result<Task, Error> {
-        request::<&Settings, Task>(
+        request::<Option<()>, &Settings, Task>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Post(settings),
+            Method::Post(Data::NonIterable(settings)),
             202,
         )
         .await
@@ -516,13 +516,13 @@ impl Index {
         &self,
         synonyms: &HashMap<String, Vec<String>>,
     ) -> Result<Task, Error> {
-        request::<&HashMap<String, Vec<String>>, Task>(
+        request::<Option<()>, &HashMap<String, Vec<String>>, Task>(
             &format!(
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(synonyms),
+            Method::Post(Data::NonIterable(synonyms)),
             202,
         )
         .await
@@ -552,18 +552,18 @@ impl Index {
         &self,
         stop_words: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
-        request::<Vec<String>, Task>(
+        request::<Option<()>, Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Post(Data::NonIterable(
                 stop_words
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
                     .collect(),
-            ),
+            )),
             202,
         )
         .await
@@ -602,18 +602,18 @@ impl Index {
         &self,
         ranking_rules: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
-        request::<Vec<String>, Task>(
+        request::<Option<()>, Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Post(Data::NonIterable(
                 ranking_rules
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
                     .collect(),
-            ),
+            )),
             202,
         )
         .await
@@ -643,18 +643,18 @@ impl Index {
         &self,
         filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
-        request::<Vec<String>, Task>(
+        request::<Option<()>, Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Post(Data::NonIterable(
                 filterable_attributes
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
                     .collect(),
-            ),
+            )),
             202,
         )
         .await
@@ -684,18 +684,18 @@ impl Index {
         &self,
         sortable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
-        request::<Vec<String>, Task>(
+        request::<Option<()>, Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Post(Data::NonIterable(
                 sortable_attributes
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
                     .collect(),
-            ),
+            )),
             202,
         )
         .await
@@ -724,13 +724,13 @@ impl Index {
         &self,
         distinct_attribute: impl AsRef<str>,
     ) -> Result<Task, Error> {
-        request::<String, Task>(
+        request::<Option<()>, String, Task>(
             &format!(
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(distinct_attribute.as_ref().to_string()),
+            Method::Post(Data::NonIterable(distinct_attribute.as_ref().to_string())),
             202,
         )
         .await
@@ -759,18 +759,18 @@ impl Index {
         &self,
         searchable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
-        request::<Vec<String>, Task>(
+        request::<Option<()>, Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Post(Data::NonIterable(
                 searchable_attributes
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
                     .collect(),
-            ),
+            )),
             202,
         )
         .await
@@ -799,18 +799,18 @@ impl Index {
         &self,
         displayed_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<Task, Error> {
-        request::<Vec<String>, Task>(
+        request::<Option<()>, Vec<String>, Task>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Post(Data::NonIterable(
                 displayed_attributes
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
                     .collect(),
-            ),
+            )),
             202,
         )
         .await
@@ -837,7 +837,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn reset_settings(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             &self.client.api_key,
             Method::Delete,
@@ -866,7 +866,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn reset_synonyms(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!(
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
@@ -898,7 +898,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn reset_stop_words(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!(
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
@@ -931,7 +931,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn reset_ranking_rules(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!(
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
@@ -963,7 +963,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn reset_filterable_attributes(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!(
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
@@ -995,7 +995,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn reset_sortable_attributes(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!(
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
@@ -1027,7 +1027,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn reset_distinct_attribute(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!(
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
@@ -1059,7 +1059,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn reset_searchable_attributes(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!(
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
@@ -1091,7 +1091,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn reset_displayed_attributes(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid

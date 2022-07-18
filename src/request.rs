@@ -4,28 +4,50 @@ use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
 
 #[derive(Debug)]
-pub(crate) enum Method<T: Serialize> {
+pub(crate) enum Data<T, S>
+where
+    T: IntoIterator,
+    T::Item: Serialize,
+    S: Serialize,
+{
+    Iterable(T),
+    NonIterable(S),
+}
+
+#[derive(Debug)]
+pub(crate) enum Method<T, S>
+where
+    T: IntoIterator,
+    T::Item: Serialize,
+    S: Serialize,
+{
     Get,
-    Post(T),
-    Patch(T),
-    Put(T),
+    Post(Data<T, S>),
+    Patch(S),
+    Put(Data<T, S>),
     Delete,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
+pub(crate) async fn request<T, S, Output>(
     url: &str,
     apikey: &str,
-    method: Method<Input>,
+    method: Method<T, S>,
     expected_status_code: u16,
-) -> Result<Output, Error> {
+) -> Result<Output, Error>
+where
+    T: IntoIterator,
+    T::Item: Serialize,
+    S: Serialize,
+    Output: DeserializeOwned + 'static,
+{
     use isahc::http::header;
     use isahc::*;
 
     let auth = format!("Bearer {}", apikey);
     let user_agent = qualified_version();
 
-    let mut response = match &method {
+    let mut response = match method {
         Method::Get => {
             Request::get(url)
                 .header(header::AUTHORIZATION, auth)
@@ -45,11 +67,15 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 .await?
         }
         Method::Post(body) => {
+            let (content_type, body_serialized) = match body {
+                Data::Iterable(body) => ("application/x-ndjson", to_jsonlines(body)),
+                Data::NonIterable(body) => ("application/json", to_string(&body).unwrap()),
+            };
             Request::post(url)
                 .header(header::AUTHORIZATION, auth)
-                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::CONTENT_TYPE, content_type)
                 .header(header::USER_AGENT, user_agent)
-                .body(to_string(&body).unwrap())
+                .body(body_serialized)
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
                 .await?
@@ -65,11 +91,15 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 .await?
         }
         Method::Put(body) => {
+            let (content_type, body_serialized) = match body {
+                Data::Iterable(body) => ("application/x-ndjson", to_jsonlines(body)),
+                Data::NonIterable(body) => ("application/json", to_string(&body).unwrap()),
+            };
             Request::put(url)
                 .header(header::AUTHORIZATION, auth)
-                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::CONTENT_TYPE, content_type)
                 .header(header::USER_AGENT, user_agent)
-                .body(to_string(&body).unwrap())
+                .body(body_serialized)
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
                 .await?
@@ -85,22 +115,30 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
         body = "null".to_string();
     }
 
+    println!("{}", body);
     parse_response(status, expected_status_code, body)
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
+pub(crate) async fn request<T, S, Output>(
     url: &str,
     apikey: &str,
-    method: Method<Input>,
+    method: Method<T, S>,
     expected_status_code: u16,
-) -> Result<Output, Error> {
+) -> Result<Output, Error>
+where
+    T: IntoIterator,
+    T::Item: Serialize,
+    S: Serialize,
+    Output: DeserializeOwned + 'static,
+{
     use wasm_bindgen::JsValue;
     use wasm_bindgen_futures::JsFuture;
     use web_sys::{Headers, RequestInit, Response};
 
     const CONTENT_TYPE: &str = "Content-Type";
     const JSON: &str = "application/json";
+    const NDJSON: &str = "application/x-ndjson";
     let user_agent = qualified_version();
 
     // The 2 following unwraps should not be able to fail
@@ -112,7 +150,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     let mut request: RequestInit = RequestInit::new();
     request.headers(&headers);
 
-    match &method {
+    match method {
         Method::Get => {
             request.method("GET");
         }
@@ -122,17 +160,25 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
         Method::Patch(body) => {
             request.method("PATCH");
             headers.append(CONTENT_TYPE, JSON).unwrap();
-            request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
+            request.body(Some(&JsValue::from_str(&to_string(&body).unwrap())));
         }
         Method::Post(body) => {
+            let (content_type, body_serialized) = match body {
+                Data::Iterable(body) => (NDJSON, to_jsonlines(body)),
+                Data::NonIterable(body) => (JSON, to_string(&body).unwrap()),
+            };
             request.method("POST");
-            headers.append(CONTENT_TYPE, JSON).unwrap();
-            request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
+            headers.append(CONTENT_TYPE, content_type).unwrap();
+            request.body(Some(&JsValue::from_str(&body_serialized)));
         }
         Method::Put(body) => {
+            let (content_type, body_serialized) = match body {
+                Data::Iterable(body) => (NDJSON, to_jsonlines(body)),
+                Data::NonIterable(body) => (JSON, to_string(&body).unwrap()),
+            };
             request.method("PUT");
-            headers.append(CONTENT_TYPE, JSON).unwrap();
-            request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
+            headers.append(CONTENT_TYPE, content_type).unwrap();
+            request.body(Some(&JsValue::from_str(&body_serialized)));
         }
     }
 
@@ -202,4 +248,18 @@ pub fn qualified_version() -> String {
     const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
 
     format!("Meilisearch Rust (v{})", VERSION.unwrap_or("unknown"))
+}
+
+fn to_jsonlines<T>(data: T) -> String
+where
+    T: IntoIterator,
+    T::Item: Serialize,
+{
+    let mut jsonlines = data
+        .into_iter()
+        .map(|x| serde_json::to_string(&x).unwrap())
+        .collect::<Vec<String>>()
+        .join("\n");
+    jsonlines.push('\n');
+    jsonlines
 }

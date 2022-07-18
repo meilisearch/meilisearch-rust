@@ -92,10 +92,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn create_dump(&self) -> Result<DumpInfo, Error> {
-        request::<(), DumpInfo>(
+        request::<Option<()>, (), DumpInfo>(
             &format!("{}/dumps", self.host),
             &self.api_key,
-            Method::Post(()),
+            Method::Post(Data::NonIterable(())),
             202,
         )
         .await
@@ -123,7 +123,7 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_dump_status(&self, dump_uid: impl AsRef<str>) -> Result<DumpInfo, Error> {
-        request::<(), DumpInfo>(
+        request::<Option<()>, (), DumpInfo>(
             &format!("{}/dumps/{}/status", self.host, dump_uid.as_ref()),
             &self.api_key,
             Method::Get,

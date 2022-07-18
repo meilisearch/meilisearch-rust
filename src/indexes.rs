@@ -94,10 +94,12 @@ impl Index {
     ///
     /// If you prefer, you can use the method [Index::set_primary_key], which is an alias.
     pub async fn update(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
-        request::<serde_json::Value, serde_json::Value>(
+        request::<Option<()>, serde_json::Value, serde_json::Value>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Put(json!({ "primaryKey": primary_key.as_ref() })),
+            Method::Put(Data::NonIterable(
+                json!({ "primaryKey": primary_key.as_ref() }),
+            )),
             200,
         )
         .await?;
@@ -125,7 +127,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete(self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             &self.client.api_key,
             Method::Delete,
@@ -170,10 +172,10 @@ impl Index {
         &self,
         query: &Query<'_>,
     ) -> Result<SearchResults<T>, Error> {
-        request::<&Query, SearchResults<T>>(
+        request::<Option<()>, &Query, SearchResults<T>>(
             &format!("{}/indexes/{}/search", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Post(query),
+            Method::Post(Data::NonIterable(query)),
             200,
         )
         .await
@@ -258,7 +260,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_document<T: 'static + DeserializeOwned>(&self, uid: &str) -> Result<T, Error> {
-        request::<(), T>(
+        request::<Option<()>, (), T>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
@@ -330,7 +332,7 @@ impl Index {
             url.push_str("attributesToRetrieve=");
             url.push_str(attributes_to_retrieve);
         }
-        request::<(), Vec<T>>(&url, &self.client.api_key, Method::Get, 200).await
+        request::<Option<()>, (), Vec<T>>(&url, &self.client.api_key, Method::Get, 200).await
     }
 
     /// Add a list of [Document]s or replace them if they already exist.
@@ -400,7 +402,13 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], Task>(&url, &self.client.api_key, Method::Post(documents), 202).await
+        request::<&[T], (), Task>(
+            &url,
+            &self.client.api_key,
+            Method::Post(Data::Iterable(documents)),
+            202,
+        )
+        .await
     }
 
     /// Alias for [Index::add_or_replace].
@@ -480,7 +488,13 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], Task>(&url, &self.client.api_key, Method::Put(documents), 202).await
+        request::<&[T], (), Task>(
+            &url,
+            &self.client.api_key,
+            Method::Put(Data::Iterable(documents)),
+            202,
+        )
+        .await
     }
 
     /// Delete all documents in the index.
@@ -521,7 +535,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete_all_documents(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             &self.client.api_key,
             Method::Delete,
@@ -566,7 +580,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete_document<T: Display>(&self, uid: T) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
@@ -618,13 +632,13 @@ impl Index {
         &self,
         uids: &[T],
     ) -> Result<Task, Error> {
-        request::<&[T], Task>(
+        request::<&[T], (), Task>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(uids),
+            Method::Post(Data::Iterable(uids)),
             202,
         )
         .await
@@ -734,7 +748,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_task(&self, uid: impl AsRef<u64>) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!(
                 "{}/indexes/{}/tasks/{}",
                 self.client.host,
@@ -779,7 +793,7 @@ impl Index {
             results: Vec<Task>,
         }
 
-        Ok(request::<(), AllTasks>(
+        Ok(request::<Option<()>, (), AllTasks>(
             &format!("{}/indexes/{}/tasks", self.client.host, self.uid),
             &self.client.api_key,
             Method::Get,
@@ -809,7 +823,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<IndexStats, Error> {
-        request::<serde_json::Value, IndexStats>(
+        request::<Option<()>, serde_json::Value, IndexStats>(
             &format!("{}/indexes/{}/stats", self.client.host, self.uid),
             &self.client.api_key,
             Method::Get,

@@ -84,7 +84,7 @@ impl Client {
     /// # });
     /// ```
     pub async fn list_all_indexes_raw(&self) -> Result<Vec<Value>, Error> {
-        let json_indexes = request::<(), Vec<Value>>(
+        let json_indexes = request::<Option<()>, (), Vec<Value>>(
             &format!("{}/indexes", self.host),
             &self.api_key,
             Method::Get,
@@ -145,7 +145,7 @@ impl Client {
     /// ```
     /// If you use it directly from an [Index], you can use the method [Index::fetch_info], which is the equivalent method from an index.
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<Value, Error> {
-        request::<(), Value>(
+        request::<Option<()>, (), Value>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
             &self.api_key,
             Method::Get,
@@ -198,13 +198,13 @@ impl Client {
         uid: impl AsRef<str>,
         primary_key: Option<&str>,
     ) -> Result<Task, Error> {
-        request::<Value, Task>(
+        request::<Option<()>, Value, Task>(
             &format!("{}/indexes", self.host),
             &self.api_key,
-            Method::Post(json!({
+            Method::Post(Data::NonIterable(json!({
                 "uid": uid.as_ref(),
                 "primaryKey": primary_key,
-            })),
+            }))),
             202,
         )
         .await
@@ -213,7 +213,7 @@ impl Client {
     /// Delete an index from its UID.
     /// To delete an [Index], use the [Index::delete] method.
     pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
             &self.api_key,
             Method::Delete,
@@ -248,7 +248,7 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
-        request::<serde_json::Value, ClientStats>(
+        request::<Option<()>, serde_json::Value, ClientStats>(
             &format!("{}/stats", self.host),
             &self.api_key,
             Method::Get,
@@ -274,7 +274,7 @@ impl Client {
     /// # });
     /// ```
     pub async fn health(&self) -> Result<Health, Error> {
-        request::<serde_json::Value, Health>(
+        request::<Option<()>, serde_json::Value, Health>(
             &format!("{}/health", self.host),
             &self.api_key,
             Method::Get,
@@ -334,7 +334,7 @@ impl Client {
             pub inner: Vec<Key>,
         }
 
-        let keys = request::<(), Keys>(
+        let keys = request::<Option<()>, (), Keys>(
             &format!("{}/keys", self.host),
             &self.api_key,
             Method::Get,
@@ -368,7 +368,7 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
-        request::<(), Key>(
+        request::<Option<()>, (), Key>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
             &self.api_key,
             Method::Get,
@@ -403,7 +403,7 @@ impl Client {
     /// # });
     /// ```
     pub async fn delete_key(&self, key: impl AsRef<str>) -> Result<(), Error> {
-        request::<(), ()>(
+        request::<Option<()>, (), ()>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
             &self.api_key,
             Method::Delete,
@@ -435,10 +435,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
-        request::<&KeyBuilder, Key>(
+        request::<Option<()>, &KeyBuilder, Key>(
             &format!("{}/keys", self.host),
             &self.api_key,
-            Method::Post(key.as_ref()),
+            Method::Post(Data::NonIterable(key.as_ref())),
             201,
         )
         .await
@@ -470,7 +470,7 @@ impl Client {
     /// # });
     /// ```
     pub async fn update_key(&self, key: impl AsRef<Key>) -> Result<Key, Error> {
-        request::<&Key, Key>(
+        request::<Option<()>, &Key, Key>(
             &format!("{}/keys/{}", self.host, key.as_ref().key),
             &self.api_key,
             Method::Patch(key.as_ref()),
@@ -495,7 +495,7 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_version(&self) -> Result<Version, Error> {
-        request::<(), Version>(
+        request::<Option<()>, (), Version>(
             &format!("{}/version", self.host),
             &self.api_key,
             Method::Get,
@@ -597,7 +597,7 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_task(&self, task_id: impl AsRef<u64>) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<Option<()>, (), Task>(
             &format!("{}/tasks/{}", self.host, task_id.as_ref()),
             &self.api_key,
             Method::Get,
@@ -627,7 +627,7 @@ impl Client {
             pub results: Vec<Task>,
         }
 
-        let tasks = request::<(), Tasks>(
+        let tasks = request::<Option<()>, (), Tasks>(
             &format!("{}/tasks", self.host),
             &self.api_key,
             Method::Get,
@@ -733,31 +733,41 @@ mod tests {
                 mock("GET", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<String, ()>(address, "", Method::Get, 200),
+                request::<Option<()>, String, ()>(address, "", Method::Get, 200),
             ),
             (
                 mock("POST", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<String, ()>(address, "", Method::Post("".to_string()), 200),
+                request::<Option<()>, String, ()>(
+                    address,
+                    "",
+                    Method::Post(Data::NonIterable("".to_string())),
+                    200,
+                ),
             ),
             (
                 mock("DELETE", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<String, ()>(address, "", Method::Delete, 200),
+                request::<Option<()>, String, ()>(address, "", Method::Delete, 200),
             ),
             (
                 mock("PUT", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<String, ()>(address, "", Method::Put("".to_string()), 200),
+                request::<Option<()>, String, ()>(
+                    address,
+                    "",
+                    Method::Put(Data::NonIterable("".to_string())),
+                    200,
+                ),
             ),
             (
                 mock("PATCH", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<String, ()>(address, "", Method::Patch("".to_string()), 200),
+                request::<Option<()>, String, ()>(address, "", Method::Patch("".to_string()), 200),
             ),
         ];
 

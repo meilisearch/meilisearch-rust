@@ -24,7 +24,7 @@ pub enum Error {
     TenantTokensInvalidApiKey,
     /// It is not possible to generate an already expired tenant token.
     TenantTokensExpiredSignature,
-    
+
     /// When jsonwebtoken cannot generate the token successfully.
     InvalidTenantToken(jsonwebtoken::errors::Error),
 
