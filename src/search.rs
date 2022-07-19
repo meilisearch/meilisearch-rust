@@ -112,7 +112,8 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///     .with_query("space")
 ///     .with_offset(42)
 ///     .with_limit(21)
-///     .build(); // you can also execute() instead of build()
+///
+/// let res = query.execute().await?.unwrap()
 /// ```
 ///
 /// ```

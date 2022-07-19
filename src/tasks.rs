@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::time::Duration;
 use time::OffsetDateTime;
 
@@ -389,6 +389,44 @@ impl AsRef<u32> for Task {
             Self::Failed { content } => content.as_ref(),
         }
     }
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TasksQuery<'a> {
+    // Index uids array to only retrieve the tasks of the indexes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub index_uid: Option<&'a [&'a str]>,
+    // Statuses array to only retrieve the tasks with these statuses.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<&'a [&'a str]>,
+    // Types array to only retrieve the tasks with these [TaskType].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub r#type: Option<&'a [&'a str]>,
+}
+
+#[allow(missing_docs)]
+impl<'a> TasksQuery<'a> {
+    pub fn new() -> TasksQuery<'a> {
+        TasksQuery {
+            index_uid: None,
+            status: None,
+            r#type: None,
+        }
+    }
+    pub fn with_index_uid<'b>(&'b mut self, index_uid: &'a [&'a str]) -> &'b mut TasksQuery<'a> {
+        self.index_uid = Some(index_uid);
+        self
+    }
+    pub fn with_status<'b>(&'b mut self, status: &'a [&'a str]) -> &'b mut TasksQuery<'a> {
+        self.status = Some(status);
+        self
+    }
+    pub fn with_type<'b>(&'b mut self, r#type: &'a [&'a str]) -> &'b mut TasksQuery<'a> {
+        self.r#type = Some(r#type);
+        self
+    }
+    // execute
 }
 
 #[cfg(test)]
