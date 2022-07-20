@@ -610,11 +610,11 @@ getting_started_configure_settings: |-
   let settings = Settings::new()
     .with_filterable_attributes([
       "mass",
-      "geo"
+      "_geo"
     ])
     .with_sortable_attributes([
       "mass",
-      "geo"
+      "_geo"
     ])
   let task: Task = client.index("meteorites").set_settings(&settings).await.unwrap();
 getting_started_geo_radius: |-
