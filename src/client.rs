@@ -630,7 +630,7 @@ impl Client {
         let tasks = request::<(), Tasks>(
             &format!("{}/tasks", self.host),
             &self.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await?;
@@ -733,31 +733,31 @@ mod tests {
                 mock("GET", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<String, ()>(address, "", Method::Get("".to_string()), 200),
+                request::<(), ()>(address, "", Method::Get(()), 200),
             ),
             (
                 mock("POST", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<String, ()>(address, "", Method::Post("".to_string()), 200),
+                request::<(), ()>(address, "", Method::Post(()), 200),
             ),
             (
                 mock("DELETE", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<String, ()>(address, "", Method::Delete, 200),
+                request::<(), ()>(address, "", Method::Delete, 200),
             ),
             (
                 mock("PUT", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<String, ()>(address, "", Method::Put("".to_string()), 200),
+                request::<(), ()>(address, "", Method::Put(()), 200),
             ),
             (
                 mock("PATCH", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<String, ()>(address, "", Method::Patch("".to_string()), 200),
+                request::<(), ()>(address, "", Method::Patch(()), 200),
             ),
         ];
 
