@@ -24,7 +24,7 @@ pub enum Error {
     TenantTokensInvalidApiKey,
     /// It is not possible to generate an already expired tenant token.
     TenantTokensExpiredSignature,
-    
+
     /// When jsonwebtoken cannot generate the token successfully.
     InvalidTenantToken(jsonwebtoken::errors::Error),
 
@@ -34,6 +34,8 @@ pub enum Error {
     /// The http client encountered an error.
     #[cfg(target_arch = "wasm32")]
     HttpError(String),
+    // TODO: comment
+    Yaup(yaup::Error),
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -64,6 +66,12 @@ impl From<MeilisearchError> for Error {
 impl From<jsonwebtoken::errors::Error> for Error {
     fn from(error: jsonwebtoken::errors::Error) -> Error {
         Error::InvalidTenantToken(error)
+    }
+}
+
+impl From<yaup::Error> for Error {
+    fn from(error: yaup::Error) -> Error {
+        Error::Yaup(error)
     }
 }
 
@@ -185,7 +193,8 @@ impl std::fmt::Display for Error {
             Error::Timeout => write!(fmt, "A task did not succeed in time."),
             Error::TenantTokensInvalidApiKey => write!(fmt, "The provided api_key is invalid."),
             Error::TenantTokensExpiredSignature => write!(fmt, "The provided expires_at is already expired."),
-            Error::InvalidTenantToken(e) => write!(fmt, "Impossible to generate the token, jsonwebtoken encountered an error: {}", e)
+            Error::InvalidTenantToken(e) => write!(fmt, "Impossible to generate the token, jsonwebtoken encountered an error: {}", e),
+            Error::Yaup(e) => write!(fmt, "Internal Error: could not parse the query parameters: {}", e)
         }
     }
 }

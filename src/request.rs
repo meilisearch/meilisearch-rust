@@ -5,7 +5,7 @@ use serde_json::{from_str, to_string};
 
 #[derive(Debug)]
 pub(crate) enum Method<T: Serialize> {
-    Get,
+    Get(T),
     Post(T),
     Patch(T),
     Put(T),
@@ -26,7 +26,17 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     let user_agent = qualified_version();
 
     let mut response = match &method {
-        Method::Get => {
+        Method::Get(query) => {
+            let query = yaup::to_string(query)?;
+
+            let url = if query.is_empty() {
+                url.to_string()
+            } else {
+                format!("{}?{}", url, query)
+            };
+
+            dbg!(&url);
+
             Request::get(url)
                 .header(header::AUTHORIZATION, auth)
                 .header(header::USER_AGENT, user_agent)

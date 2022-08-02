@@ -76,7 +76,7 @@ impl Client {
         let json_indexes = request::<(), Vec<Value>>(
             &format!("{}/indexes", self.host),
             &self.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await?;
@@ -131,7 +131,7 @@ impl Client {
         request::<(), Value>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
             &self.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -225,10 +225,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
-        request::<serde_json::Value, ClientStats>(
+        request::<(), ClientStats>(
             &format!("{}/stats", self.host),
             &self.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -248,10 +248,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn health(&self) -> Result<Health, Error> {
-        request::<serde_json::Value, Health>(
+        request::<(), Health>(
             &format!("{}/health", self.host),
             &self.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -305,7 +305,7 @@ impl Client {
         let keys = request::<(), Keys>(
             &format!("{}/keys", self.host),
             &self.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await?;
@@ -336,7 +336,7 @@ impl Client {
         request::<(), Key>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
             &self.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -451,7 +451,7 @@ impl Client {
         request::<(), Version>(
             &format!("{}/version", self.host),
             &self.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -545,7 +545,7 @@ impl Client {
         request::<(), Task>(
             &format!("{}/tasks/{}", self.host, task_id.as_ref()),
             &self.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -654,9 +654,9 @@ mod tests {
         key::{Action, KeyBuilder},
     };
     use meilisearch_test_macro::meilisearch_test;
-    use time::OffsetDateTime;
     use mockito::mock;
     use std::mem;
+    use time::OffsetDateTime;
 
     #[meilisearch_test]
     async fn test_methods_has_qualified_version_as_header() {
@@ -667,25 +667,35 @@ mod tests {
 
         let assertions = vec![
             (
-                mock("GET", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Get, 200)
+                mock("GET", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, "", Method::Get("".to_string()), 200),
             ),
             (
-                mock("POST", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Post("".to_string()), 200)
+                mock("POST", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, "", Method::Post("".to_string()), 200),
             ),
             (
-                mock("DELETE", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Delete, 200)
+                mock("DELETE", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, "", Method::Delete, 200),
             ),
             (
-                mock("PUT", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Put("".to_string()), 200)
+                mock("PUT", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, "", Method::Put("".to_string()), 200),
             ),
             (
-                mock("PATCH", path).match_header("User-Agent", user_agent).create(),
-                request::<String, ()>(address, "", Method::Patch("".to_string()), 200)
-            )
+                mock("PATCH", path)
+                    .match_header("User-Agent", user_agent)
+                    .create(),
+                request::<String, ()>(address, "", Method::Patch("".to_string()), 200),
+            ),
         ];
 
         for (m, req) in assertions {

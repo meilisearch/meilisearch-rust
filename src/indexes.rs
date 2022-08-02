@@ -240,7 +240,7 @@ impl Index {
                 self.client.host, self.uid, uid
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -302,7 +302,7 @@ impl Index {
             url.push_str("attributesToRetrieve=");
             url.push_str(attributes_to_retrieve);
         }
-        request::<(), Vec<T>>(&url, &self.client.api_key, Method::Get, 200).await
+        request::<(), Vec<T>>(&url, &self.client.api_key, Method::Get(()), 200).await
     }
 
     /// Add a list of [Document]s or replace them if they already exist.
@@ -688,7 +688,7 @@ impl Index {
                 uid.as_ref()
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -725,7 +725,7 @@ impl Index {
         Ok(request::<(), AllTasks>(
             &format!("{}/indexes/{}/tasks", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await?
@@ -749,10 +749,10 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<IndexStats, Error> {
-        request::<serde_json::Value, IndexStats>(
+        request::<(), IndexStats>(
             &format!("{}/indexes/{}/stats", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
