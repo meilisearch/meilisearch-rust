@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
 use std::time::Duration;
 use time::OffsetDateTime;
 
@@ -394,6 +394,8 @@ impl AsRef<u32> for Task {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TasksQuery<'a> {
+    #[serde(skip_serializing)]
+    pub client: &'a Client,
     // Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub index_uid: Option<&'a [&'a str]>,
@@ -407,8 +409,9 @@ pub struct TasksQuery<'a> {
 
 #[allow(missing_docs)]
 impl<'a> TasksQuery<'a> {
-    pub fn new() -> TasksQuery<'a> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a> {
         TasksQuery {
+            client,
             index_uid: None,
             status: None,
             r#type: None,
@@ -426,7 +429,9 @@ impl<'a> TasksQuery<'a> {
         self.r#type = Some(r#type);
         self
     }
-    // execute
+    pub async fn execute(&'a self) -> Result<TasksResults, Error> {
+        self.client.execute_get_tasks(self).await
+    }
 }
 
 #[cfg(test)]
@@ -437,6 +442,7 @@ mod test {
         errors::{ErrorCode, ErrorType},
     };
     use meilisearch_test_macro::meilisearch_test;
+    use mockito::mock;
     use serde::{Deserialize, Serialize};
     use std::time::Duration;
 
@@ -583,6 +589,61 @@ mod test {
             .await?;
 
         assert!(matches!(task, Task::Succeeded { .. }));
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_no_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks";
+
+        let mock_res = mock("GET", path).with_status(200).create();
+        let _ = client.get_tasks().execute().await;
+        mock_res.assert();
+
+        // let _ = mockRes.req.await;
+        // mockRes.m.assert();
+        // assert_eq!(tasks,);
+        // assert!(matches!(tasks, TasksResults { results.. } ));
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_with_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion";
+
+        let mock_res = mock("GET", path).with_status(200).create();
+        let _ = client
+            .get_tasks()
+            .with_index_uid(&["movies", "test"])
+            .with_status(&["equeued"])
+            .with_type(&["documentDeletion"])
+            .execute()
+            .await;
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    // TODO: Will un ignore when pagination is added in TaskResults
+    #[ignore]
+    async fn test_get_tasks_with_params_2(client: Client, index: Index) -> Result<(), Error> {
+        let tasks = client
+            .get_tasks()
+            .with_index_uid(&[index.uid.as_str()])
+            .execute()
+            .await
+            .unwrap();
+
+        // let _ = mockRes.req.await;
+        // mockRes.m.assert();
+        // assert_eq!(tasks,);
+        // assert!(matches!(tasks, TasksResults { results.. } ));
+        dbg!(&tasks);
+        assert_eq!(tasks.results.len(), 1);
         Ok(())
     }
 

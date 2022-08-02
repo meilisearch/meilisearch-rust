@@ -633,29 +633,27 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
-    /// let tasks = TasksQueryBuilder::new().with_index_uid(["movies"]).execute(&client).execute();
-    ///
-    /// let tasks = client
-    ///     .get_tasks()
-    ///     .with_index_uid(["movies"])
-    ///     .execute()
-    ///     .await.unwrap();
     ///
     ///
-    /// let tasks = client.get_task().await.unwrap();
-    /// dbg!(&tasks);
+    ///
+    /// let tasks = client.get_tasks(&["get_tasks"]).with_index_uid().await.unwrap();
     /// # });
     /// ```
-    pub async fn get_tasks(&self, tasks_query: TasksQuery) -> Result<TasksResults, Error> {
-        let tasks = request::<(), TasksResults>(
+    pub fn get_tasks(&self) -> TasksQuery {
+        TasksQuery::new(self)
+    }
+
+    pub(crate) async fn execute_get_tasks(
+        &self,
+        tasks_query: &TasksQuery<'_>,
+    ) -> Result<TasksResults, Error> {
+        let tasks = request::<&TasksQuery, TasksResults>(
             &format!("{}/tasks", self.host),
             &self.api_key,
-            Method::Get,
+            Method::Get(tasks_query),
             200,
         )
         .await?;
-
-        dbg!(&tasks);
 
         Ok(tasks)
     }
@@ -793,7 +791,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_tasks(client: Client) {
-        let tasks = client.get_tasks().await.unwrap();
+        let tasks = client.get_tasks().execute().await.unwrap();
         assert!(tasks.results.len() >= 2);
     }
 
