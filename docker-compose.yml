@@ -1,0 +1,31 @@
+version: "3.8"
+
+# remove this line if you don't need a volume to map your dependencies
+# Check how to cache the build
+volumes:
+  cargo:
+
+services:
+  package:
+    image: rust:1
+    tty: true
+    stdin_open: true
+    working_dir: /home/package
+    environment:
+      - MEILISEARCH_HOST=http://meilisearch:7700
+      - CARGO_HOME=/vendor/cargo
+    depends_on:
+      - meilisearch
+    links:
+      - meilisearch
+    volumes:
+      - ./:/home/package
+      - cargo:/vendor/cargo
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    ports:
+      - "7700"
+    environment:
+      - MEILI_MASTER_KEY=masterKey
+      - MEILI_NO_ANALYTICS=true

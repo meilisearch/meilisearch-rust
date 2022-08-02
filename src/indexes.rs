@@ -12,8 +12,12 @@ use time::OffsetDateTime;
 /// See the [Client::create_index] method.
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
 /// # futures::executor::block_on(async move {
-/// let client = Client::new("http://localhost:7700", "masterKey");
+/// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 ///
 /// // get the index called movies or create it if it does not exist
 /// let movies = client
@@ -36,8 +40,12 @@ use time::OffsetDateTime;
 /// Or, if you know the index already exist remotely you can create an `Index` with the [Client::index] function.
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
 /// # futures::executor::block_on(async move {
-/// let client = Client::new("http://localhost:7700", "masterKey");
+/// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 ///
 /// // use the implicit index creation if the index already exist or
 /// // Meilisearch would be able to create the index if it does not exist during:
@@ -102,8 +110,12 @@ impl Index {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("delete", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "movies" and delete it
@@ -131,6 +143,10 @@ impl Index {
     /// use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
     ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
@@ -138,7 +154,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("execute_query");
     ///
     /// // add some documents
@@ -172,6 +188,10 @@ impl Index {
     /// use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
     ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
@@ -179,7 +199,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let mut movies = client.index("search");
     ///
     /// // add some documents
@@ -210,6 +230,10 @@ impl Index {
     ///
     /// # use meilisearch_sdk::{client::*, indexes::*};
     ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
     /// struct Movie {
@@ -219,7 +243,7 @@ impl Index {
     ///
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("get_document");
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
@@ -259,6 +283,10 @@ impl Index {
     /// use serde::{Serialize, Deserialize};
     ///
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
@@ -269,7 +297,7 @@ impl Index {
     ///
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("get_documents");
     ///
     /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -322,6 +350,10 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///    name: String,
@@ -329,7 +361,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("add_or_replace");
     ///
     /// let task = movie_index.add_or_replace(&[
@@ -395,6 +427,10 @@ impl Index {
     /// # use meilisearch_sdk::client::*;
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///    name: String,
@@ -402,7 +438,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("add_or_update");
     ///
     /// let task = movie_index.add_or_update(&[
@@ -455,6 +491,9 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
     /// #    name: String,
@@ -464,7 +503,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// #
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("delete_all_documents");
     ///
     /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -499,6 +538,9 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::client::*;
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
     /// #    name: String,
@@ -508,7 +550,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// #
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let mut movies = client.index("delete_document");
     ///
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -544,6 +586,9 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::client::*;
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
     /// #    name: String,
@@ -553,7 +598,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// #
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("delete_documents");
     ///
     /// // add some documents
@@ -596,10 +641,13 @@ impl Index {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("fetch_info", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the information of the index named "fetch_info"
@@ -622,10 +670,13 @@ impl Index {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_primary_key", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the primary key of the index named "movies"
@@ -648,6 +699,9 @@ impl Index {
     /// # use std::time::Duration;
     /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// # struct Document {
     /// #    id: usize,
@@ -657,7 +711,7 @@ impl Index {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("get_task");
     ///
     /// let task = movies.add_documents(&[
@@ -702,8 +756,11 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_tasks", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// let status = index.get_tasks().await.unwrap();
@@ -739,8 +796,11 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_stats", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// let stats = index.get_stats().await.unwrap();
@@ -773,6 +833,9 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// # struct Document {
     /// #    id: usize,
@@ -782,7 +845,7 @@ impl Index {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("movies_index_wait_for_task");
     ///
     /// let task = movies.add_documents(&[
@@ -817,6 +880,10 @@ impl Index {
     /// use serde::{Serialize, Deserialize};
     /// use meilisearch_sdk::client::*;
     ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
@@ -824,7 +891,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("add_documents_in_batches");
     ///
     /// let tasks = movie_index.add_documents_in_batches(&[
@@ -878,6 +945,10 @@ impl Index {
     /// use serde::{Serialize, Deserialize};
     /// use meilisearch_sdk::client::*;
     ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
     /// struct Movie {
     ///     name: String,
@@ -885,7 +956,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("update_documents_in_batches");
     ///
     /// let tasks = movie_index.add_documents_in_batches(&[

@@ -20,7 +20,10 @@
 //! # use std::{thread::sleep, time::Duration};
 //! # futures::executor::block_on(async move {
 //! #
-//! let client = Client::new("http://localhost:7700", "masterKey");
+//! # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+//! # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+//! #
+//! let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 //!
 //! // Create a dump
 //! let dump_info = client.create_dump().await.unwrap();
@@ -79,7 +82,10 @@ impl Client {
     /// # use std::{thread::sleep, time::Duration};
     /// # futures::executor::block_on(async move {
     /// #
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// #
     /// let dump_info = client.create_dump().await.unwrap();
     /// assert!(matches!(dump_info.status, DumpStatus::InProgress));
@@ -103,9 +109,13 @@ impl Client {
     /// # use meilisearch_sdk::{client::*, errors::*, dumps::*};
     /// # use futures_await_test::async_test;
     /// # use std::{thread::sleep, time::Duration};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
     /// #
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let dump_info = client.create_dump().await.unwrap();
     /// # sleep(Duration::from_secs(5));
     /// #
