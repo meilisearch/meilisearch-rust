@@ -729,7 +729,7 @@ impl Index {
     ///    Task::Succeeded { content } => content.uid,
     /// };
     ///
-    /// assert_eq!(task.get_uid(), from_index);
+    /// assert_eq!(task.get_task_uid(), from_index);
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -758,13 +758,9 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_tasks", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    /// let status = index.get_tasks().await.unwrap();
-    /// assert!(status.results.len() == 1); // the index was created
+    /// let tasks = index.get_tasks().await.unwrap();
     ///
-    /// index.set_ranking_rules(["wrong_ranking_rule"]).await.unwrap();
-    ///
-    /// let status = index.get_tasks().await.unwrap();
-    /// assert!(status.results.len() == 2);
+    /// assert!(tasks.results.len() > 0);
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
