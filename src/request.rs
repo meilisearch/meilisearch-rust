@@ -35,8 +35,6 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 format!("{}?{}", url, query)
             };
 
-            dbg!(&url);
-
             Request::get(url)
                 .header(header::AUTHORIZATION, auth)
                 .header(header::USER_AGENT, user_agent)
