@@ -433,18 +433,6 @@ impl Client {
     /// let mut key = KeyBuilder::new("create_key");
     /// key.with_index("*").with_action(Action::DocumentsAdd);
     /// let key = client.create_key(key).await.unwrap();
-    /// # // Method 2
-    /// let key = client.create_key("create_key")
-    ///     .with_index("*")
-    ///     .with_action(Action::DocumentsAdd)
-    ///     .execute()
-    ///     .await.unwrap();
-    /// # // Method 3
-    /// let key = KeyBuilder::new("My little lovely test key")
-    ///   .create(&client).await.unwrap();
-    ///
-    ///
-    ///
     /// assert_eq!(key.description, "create_key");
     /// # client.delete_key(key).await.unwrap();
     /// # });
