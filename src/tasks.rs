@@ -34,8 +34,8 @@ pub enum TaskType {
 pub struct TasksResults {
     pub results: Vec<Task>,
     pub limit: u32,
-    pub from: u32,
-    pub next: u32,
+    pub from: Option<u32>,
+    pub next: Option<u32>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -620,22 +620,15 @@ mod test {
     }
 
     #[meilisearch_test]
-    // TODO: Will un ignore when pagination is added in TaskResults
-    #[ignore]
-    async fn test_get_tasks_with_params_2(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
         let tasks = client
             .get_tasks()
-            .with_index_uid(&[index.uid.as_str()])
+            .with_index_uid(&["no_name"])
             .execute()
             .await
             .unwrap();
 
-        // let _ = mockRes.req.await;
-        // mockRes.m.assert();
-        // assert_eq!(tasks,);
-        // assert!(matches!(tasks, TasksResults { results.. } ));
-        dbg!(&tasks);
-        assert_eq!(tasks.results.len(), 1);
+        assert_eq!(tasks.results.len(), 0);
         Ok(())
     }
 

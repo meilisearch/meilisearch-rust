@@ -624,7 +624,7 @@ impl Client {
     ///
     ///
     ///
-    /// let tasks = client.get_tasks(&["get_tasks"]).with_index_uid().await.unwrap();
+    /// let tasks = client.get_tasks().with_index_uid(&["get_tasks"]).execute().await.unwrap();
     /// # });
     /// ```
     pub fn get_tasks(&self) -> TasksQuery {
