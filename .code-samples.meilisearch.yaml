@@ -330,7 +330,7 @@ settings_guide_stop_words_1: |-
       "an"
     ]);
 
-  let task = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_filterable_attributes_1: |-
   let settings = Settings::new()
     .with_filterable_attributes([
@@ -352,7 +352,7 @@ settings_guide_ranking_rules_1: |-
       "rank:desc",
     ]);
 
-  let task = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_distinct_1: |-
   let settings = Settings::new()
     .with_distinct_attribute("product_id");
