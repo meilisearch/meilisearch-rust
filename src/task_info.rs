@@ -164,7 +164,6 @@ mod test {
     }
 
     #[meilisearch_test]
-    // TODO: failing because settings routes now uses PUT instead of POST as http method
     async fn test_failing_task(client: Client, movies: Index) -> Result<(), Error> {
         let task_info = movies.set_ranking_rules(["wrong_ranking_rule"]).await?;
         let task = client.wait_for_task(task_info, None, None).await?;
