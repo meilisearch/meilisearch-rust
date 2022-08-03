@@ -34,7 +34,7 @@ pub enum Error {
     /// The http client encountered an error.
     #[cfg(target_arch = "wasm32")]
     HttpError(String),
-    // TODO: comment
+    // The library formating the query parameters encountered an error.
     Yaup(yaup::Error),
 }
 
