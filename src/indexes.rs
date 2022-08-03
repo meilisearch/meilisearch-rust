@@ -769,13 +769,13 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
-        Ok(request::<(), TasksResults>(
+        request::<(), TasksResults>(
             &format!("{}/tasks", self.client.host),
             &self.client.api_key,
             Method::Get(()),
             200,
         )
-        .await?)
+        .await
     }
 
     /// Get stats of an index.
