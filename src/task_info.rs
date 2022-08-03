@@ -131,37 +131,6 @@ mod test {
 
     #[meilisearch_test]
     async fn test_wait_for_task_with_args(client: Client, movies: Index) -> Result<(), Error> {
-        let task = movies
-            .add_documents(
-                &[
-                    Document {
-                        id: 0,
-                        kind: "title".into(),
-                        value: "The Social Network".to_string(),
-                    },
-                    Document {
-                        id: 1,
-                        kind: "title".into(),
-                        value: "Harry Potter and the Sorcerer's Stone".to_string(),
-                    },
-                ],
-                None,
-            )
-            .await?
-            .wait_for_completion(
-                &client,
-                Some(Duration::from_millis(1)),
-                Some(Duration::from_millis(6000)),
-            )
-            .await?;
-
-        assert!(matches!(task, Task::Succeeded { .. }));
-        Ok(())
-    }
-
-    #[meilisearch_test]
-    // TODO: could be a flacky test if task is to fast
-    async fn test_wait_for_task_time_out(client: Client, movies: Index) -> Result<(), Error> {
         let task_info = movies
             .add_documents(
                 &[
@@ -180,18 +149,17 @@ mod test {
             )
             .await?;
 
-        let task = client.wait_for_task(task_info, None, None).await?;
-
-        let error = client
-            .wait_for_task(
-                task,
+        let task = client
+            .get_task(task_info)
+            .await?
+            .wait_for_completion(
+                &client,
                 Some(Duration::from_millis(1)),
-                Some(Duration::from_nanos(1)),
+                Some(Duration::from_millis(6000)),
             )
-            .await
-            .unwrap_err();
+            .await?;
 
-        assert!(matches!(error, Error::Timeout));
+        assert!(matches!(task, Task::Succeeded { .. }));
         Ok(())
     }
 

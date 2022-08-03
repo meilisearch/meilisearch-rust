@@ -1,4 +1,4 @@
-use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::time::Duration;
 use time::OffsetDateTime;
 
@@ -560,7 +560,7 @@ mod test {
 
     #[meilisearch_test]
     async fn test_wait_for_task_with_args(client: Client, movies: Index) -> Result<(), Error> {
-        let task_info = movies
+        let task = movies
             .add_documents(
                 &[
                     Document {
@@ -576,10 +576,6 @@ mod test {
                 ],
                 None,
             )
-            .await?;
-
-        let task = client
-            .get_task(task_info)
             .await?
             .wait_for_completion(
                 &client,
@@ -602,10 +598,6 @@ mod test {
         let _ = client.get_tasks().execute().await;
         mock_res.assert();
 
-        // let _ = mockRes.req.await;
-        // mockRes.m.assert();
-        // assert_eq!(tasks,);
-        // assert!(matches!(tasks, TasksResults { results.. } ));
         Ok(())
     }
 
