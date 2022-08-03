@@ -97,7 +97,7 @@ impl Index {
         request::<serde_json::Value, serde_json::Value>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Put(json!({ "primaryKey": primary_key.as_ref() })),
+            Method::Patch(json!({ "primaryKey": primary_key.as_ref() })),
             200,
         )
         .await?;
