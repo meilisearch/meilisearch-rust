@@ -216,7 +216,7 @@ impl Index {
         request::<(), Settings>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -245,7 +245,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -274,7 +274,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -303,7 +303,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -332,7 +332,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -361,7 +361,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -390,7 +390,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -419,7 +419,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -448,7 +448,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await

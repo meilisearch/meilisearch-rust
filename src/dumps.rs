@@ -126,7 +126,7 @@ impl Client {
         request::<(), DumpInfo>(
             &format!("{}/dumps/{}/status", self.host, dump_uid.as_ref()),
             &self.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
