@@ -6,7 +6,7 @@ use crate::{client::Client, errors::Error};
 /// Represent a [meilisearch key](https://docs.meilisearch.com/reference/api/keys.html#returned-fields)
 /// You can get a [Key] from the [Client::get_key] method.
 /// Or you can create a [Key] with the [KeyBuilder::create] or [Client::create_key] methods.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Key {
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -50,122 +50,6 @@ impl Key {
     /// ```
     pub fn with_description(&mut self, desc: impl AsRef<str>) -> &mut Self {
         self.description = desc.as_ref().to_string();
-        self
-    }
-
-    /// Add a set of actions the [Key] will be able to execute.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
-    /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
-    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-    /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
-    ///  let mut key = KeyBuilder::new("My little lovely test key")
-    ///   .with_action(Action::DocumentsAdd)
-    ///   .with_index("*")
-    ///   .create(&client).await.unwrap();
-    ///
-    /// key.with_actions([Action::DocumentsGet, Action::DocumentsDelete]);
-    /// # client.delete_key(key).await.unwrap();
-    /// # });
-    /// ```
-    pub fn with_actions(&mut self, actions: impl IntoIterator<Item = Action>) -> &mut Self {
-        self.actions.extend(actions);
-        self
-    }
-
-    /// Add one action the [Key] will be able to execute.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
-    /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
-    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-    /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
-    ///  let mut key = KeyBuilder::new("My little lovely test key")
-    ///   .with_action(Action::DocumentsAdd)
-    ///   .with_index("*")
-    ///   .create(&client).await.unwrap();
-    ///
-    /// key.with_action(Action::DocumentsGet);
-    /// # client.delete_key(key).await.unwrap();
-    /// # });
-    /// ```
-    pub fn with_action(&mut self, action: Action) -> &mut Self {
-        self.actions.push(action);
-        self
-    }
-
-    /// Update the expiration date of the [Key].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
-    /// use time::{OffsetDateTime, Duration};
-    /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
-    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-    /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
-    ///  let mut key = KeyBuilder::new("My little lovely test key")
-    ///   .with_action(Action::DocumentsAdd)
-    ///   .with_index("*")
-    ///   .create(&client).await.unwrap();
-    ///
-    /// // update the epiry date of the key to two weeks from now
-    /// key.with_expires_at(OffsetDateTime::now_utc() + Duration::WEEK * 2);
-    /// # client.delete_key(key).await.unwrap();
-    /// # });
-    /// ```
-    pub fn with_expires_at(&mut self, expires_at: OffsetDateTime) -> &mut Self {
-        self.expires_at = Some(expires_at);
-        self
-    }
-
-    /// Update the indexes the [Key] can manage.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
-    /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
-    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-    /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
-    ///  let mut key = KeyBuilder::new("My little lovely test key")
-    ///   .with_action(Action::DocumentsAdd)
-    ///   .with_index("*")
-    ///   .create(&client).await.unwrap();
-    ///
-    /// key.with_indexes(vec!["test", "movies"]);
-    /// # client.delete_key(key).await.unwrap();
-    /// # });
-    /// ```
-    pub fn with_indexes(
-        &mut self,
-        indexes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> &mut Self {
-        self.indexes = indexes
-            .into_iter()
-            .map(|index| index.as_ref().to_string())
-            .collect();
         self
     }
 
@@ -235,6 +119,52 @@ impl AsRef<str> for Key {
 impl AsRef<Key> for Key {
     fn as_ref(&self) -> &Key {
         self
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct KeysQuery<'a> {
+    #[serde(skip_serializing)]
+    pub client: &'a Client,
+    /// The number of documents to skip.
+    /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
+    /// This is helpful for pagination.
+    ///
+    /// Example: If you want to skip the first document, set offset to `1`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub offset: Option<usize>,
+    /// The maximum number of documents returned.
+    /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.
+    /// This is helpful for pagination.
+    ///
+    /// Example: If you don't want to get more than two documents, set limit to `2`.
+    /// Default: `20`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<usize>,
+}
+
+impl<'a> KeysQuery<'a> {
+    pub fn new(client: &'a Client) -> KeysQuery<'a> {
+        KeysQuery {
+            client,
+            offset: None,
+            limit: None,
+        }
+    }
+
+    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut KeysQuery<'a> {
+        self.offset = Some(offset);
+        self
+    }
+    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut KeysQuery<'a> {
+        self.limit = Some(limit);
+        self
+    }
+
+    /// Execute the query and fetch the results.
+    pub async fn execute(&'a self) -> Result<KeysResults, Error> {
+        self.client.execute_get_keys(self).await
     }
 }
 
@@ -367,6 +297,8 @@ impl KeyBuilder {
         self
     }
 
+    // TODO: with_description
+
     /// Create a [Key] from the builder.
     ///
     /// # Example
@@ -386,9 +318,10 @@ impl KeyBuilder {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn create(&self, client: &Client) -> Result<Key, Error> {
+    pub async fn execute(&self, client: &Client) -> Result<Key, Error> {
         client.create_key(self).await
     }
+    // TODO: create update
 }
 
 impl AsRef<KeyBuilder> for KeyBuilder {
@@ -447,4 +380,11 @@ pub enum Action {
     /// Provides access to the [get Meilisearch version](https://docs.meilisearch.com/reference/api/version.md#get-version-of-meilisearch) endpoint.
     #[serde(rename = "version")]
     Version,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct KeysResults {
+    pub results: Vec<Key>,
+    pub limit: u32,
+    pub offset: u32,
 }

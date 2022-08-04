@@ -1,7 +1,7 @@
 use crate::{
     errors::*,
     indexes::*,
-    key::{Key, KeyBuilder},
+    key::{Key, KeyBuilder, KeysQuery, KeysResults},
     request::*,
     task_info::TaskInfo,
     tasks::*,
@@ -309,6 +309,9 @@ impl Client {
         }
     }
 
+    pub fn get_keys(&self) -> KeysQuery {
+        KeysQuery::new(self)
+    }
     /// Get the API [Key]s from Meilisearch.
     /// See the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
     ///
@@ -328,23 +331,16 @@ impl Client {
     /// assert!(keys.len() >= 2);
     /// # });
     /// ```
-    pub async fn get_keys(&self) -> Result<Vec<Key>, Error> {
-        #[derive(Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        pub struct Keys {
-            #[serde(rename = "results")]
-            pub inner: Vec<Key>,
-        }
-
-        let keys = request::<(), Keys>(
+    pub async fn execute_get_keys(&self, keys_query: &KeysQuery<'_>) -> Result<KeysResults, Error> {
+        let keys = request::<&KeysQuery, KeysResults>(
             &format!("{}/keys", self.host),
             &self.api_key,
-            Method::Get(()),
+            Method::Get(keys_query),
             200,
         )
         .await?;
 
-        Ok(keys.inner)
+        Ok(keys)
     }
 
     /// Get one API [Key] from Meilisearch.
