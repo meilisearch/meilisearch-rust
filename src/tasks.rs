@@ -398,13 +398,13 @@ pub struct TasksQuery<'a> {
     pub client: &'a Client,
     // Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub index_uid: Option<&'a [&'a str]>,
+    pub index_uid: Option<Vec<&'a str>>,
     // Statuses array to only retrieve the tasks with these statuses.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<&'a [&'a str]>,
+    pub status: Option<Vec<&'a str>>,
     // Types array to only retrieve the tasks with these [TaskType].
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<&'a [&'a str]>,
+    pub r#type: Option<Vec<&'a str>>,
 }
 
 #[allow(missing_docs)]
@@ -417,16 +417,25 @@ impl<'a> TasksQuery<'a> {
             r#type: None,
         }
     }
-    pub fn with_index_uid<'b>(&'b mut self, index_uid: &'a [&'a str]) -> &'b mut TasksQuery<'a> {
-        self.index_uid = Some(index_uid);
+    pub fn with_index_uid<'b>(
+        &'b mut self,
+        index_uid: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.index_uid = Some(index_uid.into_iter().collect());
         self
     }
-    pub fn with_status<'b>(&'b mut self, status: &'a [&'a str]) -> &'b mut TasksQuery<'a> {
-        self.status = Some(status);
+    pub fn with_status<'b>(
+        &'b mut self,
+        status: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.status = Some(status.into_iter().collect());
         self
     }
-    pub fn with_type<'b>(&'b mut self, r#type: &'a [&'a str]) -> &'b mut TasksQuery<'a> {
-        self.r#type = Some(r#type);
+    pub fn with_type<'b>(
+        &'b mut self,
+        r#type: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.r#type = Some(r#type.into_iter().collect());
         self
     }
     pub async fn execute(&'a self) -> Result<TasksResults, Error> {
@@ -610,9 +619,9 @@ mod test {
         let mock_res = mock("GET", path).with_status(200).create();
         let _ = client
             .get_tasks()
-            .with_index_uid(&["movies", "test"])
-            .with_status(&["equeued"])
-            .with_type(&["documentDeletion"])
+            .with_index_uid(["movies", "test"])
+            .with_status(["equeued"])
+            .with_type(["documentDeletion"])
             .execute()
             .await;
         mock_res.assert();
@@ -623,7 +632,7 @@ mod test {
     async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
         let tasks = client
             .get_tasks()
-            .with_index_uid(&["no_name"])
+            .with_index_uid(["no_name"])
             .execute()
             .await
             .unwrap();

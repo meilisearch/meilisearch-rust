@@ -621,10 +621,11 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
+    /// let tasks = client.get_tasks().with_index_uid(["get_tasks"]).execute().await.unwrap();
     ///
-    ///
-    ///
-    /// let tasks = client.get_tasks().with_index_uid(&["get_tasks"]).execute().await.unwrap();
+    /// assert!(tasks.results.len() > 0);
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
     /// # });
     /// ```
     pub fn get_tasks(&self) -> TasksQuery {
