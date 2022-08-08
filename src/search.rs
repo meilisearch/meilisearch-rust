@@ -734,10 +734,10 @@ mod tests {
         setup_test_index(&client, &index).await?;
 
         let meilisearch_host = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
-        let key = KeyBuilder::new("key for generate_tenant_token test")
+        let key = KeyBuilder::new()
             .with_action(Action::All)
             .with_index("*")
-            .create(&client)
+            .execute(&client)
             .await
             .unwrap();
         let allowed_client = Client::new(meilisearch_host, key.key);

@@ -13,7 +13,8 @@ pub struct Key {
     pub actions: Vec<Action>,
     #[serde(skip_serializing, with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
-    pub description: String,
+    pub description: Option<String>,
+    pub name: Option<String>,
     #[serde(with = "time::serde::rfc3339::option")]
     pub expires_at: Option<OffsetDateTime>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -49,11 +50,11 @@ impl Key {
     /// # });
     /// ```
     pub fn with_description(&mut self, desc: impl AsRef<str>) -> &mut Self {
-        self.description = desc.as_ref().to_string();
+        self.description = Some(desc.as_ref().to_string());
         self
     }
 
-    /// Add one index the [Key] can manage.
+    /// Update the name of the key.
     ///
     /// # Example
     ///
@@ -71,12 +72,13 @@ impl Key {
     ///   .with_index("*")
     ///   .create(&client).await.unwrap();
     ///
-    /// key.with_index("test");
+    /// key.with_name("lovely key");
+    /// # assert_eq!(key.name, "lovely key".to_string());
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub fn with_index(&mut self, index: impl AsRef<str>) -> &mut Self {
-        self.indexes.push(index.as_ref().to_string());
+    pub fn with_name(&mut self, desc: impl AsRef<str>) -> &mut Self {
+        self.name = Some(desc.as_ref().to_string());
         self
     }
 
@@ -195,7 +197,7 @@ impl<'a> KeysQuery<'a> {
 #[serde(rename_all = "camelCase")]
 pub struct KeyBuilder {
     pub actions: Vec<Action>,
-    pub description: String,
+    pub description: Option<String>,
     #[serde(with = "time::serde::rfc3339::option")]
     pub expires_at: Option<OffsetDateTime>,
     pub indexes: Vec<String>,
@@ -210,10 +212,10 @@ impl KeyBuilder {
     /// # use meilisearch_sdk::{key::KeyBuilder};
     /// let builder = KeyBuilder::new("My little lovely test key");
     /// ```
-    pub fn new(description: impl AsRef<str>) -> KeyBuilder {
+    pub fn new() -> KeyBuilder {
         Self {
             actions: Vec::new(),
-            description: description.as_ref().to_string(),
+            description: None,
             expires_at: None,
             indexes: Vec::new(),
         }
@@ -321,7 +323,6 @@ impl KeyBuilder {
     pub async fn execute(&self, client: &Client) -> Result<Key, Error> {
         client.create_key(self).await
     }
-    // TODO: create update
 }
 
 impl AsRef<KeyBuilder> for KeyBuilder {
