@@ -758,20 +758,28 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_tasks", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    /// let tasks = index.get_tasks().await.unwrap();
+    /// let tasks = index.get_tasks().execute().await.unwrap();
     ///
     /// assert!(tasks.results.len() > 0);
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    /// TODO: how to pass a tasks_query?
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
-        request::<(), TasksResults>(
-            &format!("{}/tasks", self.client.host),
-            &self.client.api_key,
-            Method::Get(()),
-            200,
-        )
-        .await
+        let mut query = TasksQuery::new(&self.client);
+
+        query.with_index_uid([self.uid.as_str()]);
+
+        self.client.get_tasks(&query).await
+
+        // pub async fn get_tasks(
+        //     &self,
+        //     mut tasks_query: &mut TasksQuery<'_>,
+        // ) -> Result<TasksResults, Error> {
+        //     tasks_query.with_index_uid([self.uid.as_str()]);
+
+        //     self.client.get_tasks(&tasks_query).await
+        // }
     }
 
     /// Get stats of an index.

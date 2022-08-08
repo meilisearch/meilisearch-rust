@@ -270,7 +270,7 @@ impl Task {
     /// # let task = client.create_index("unwrap_failure", None).await.unwrap();
     /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    ///
+    /// // TODO: fails until http method are implemented
     /// let task = index.set_ranking_rules(["wrong_ranking_rule"])
     ///   .await
     ///   .unwrap()
@@ -398,13 +398,19 @@ pub struct TasksQuery<'a> {
     pub client: &'a Client,
     // Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub index_uid: Option<&'a [&'a str]>,
+    pub index_uid: Option<Vec<&'a str>>,
     // Statuses array to only retrieve the tasks with these statuses.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<&'a [&'a str]>,
+    pub status: Option<Vec<&'a str>>,
     // Types array to only retrieve the tasks with these [TaskType].
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<&'a [&'a str]>,
+    pub r#type: Option<Vec<&'a str>>,
+    // Maximum number of tasks to return
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+    // The if og the first task uid that should be returned
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub from: Option<u32>,
 }
 
 #[allow(missing_docs)]
@@ -415,22 +421,42 @@ impl<'a> TasksQuery<'a> {
             index_uid: None,
             status: None,
             r#type: None,
+            limit: None,
+            from: None,
         }
     }
-    pub fn with_index_uid<'b>(&'b mut self, index_uid: &'a [&'a str]) -> &'b mut TasksQuery<'a> {
-        self.index_uid = Some(index_uid);
+    pub fn with_index_uid<'b>(
+        &'b mut self,
+        index_uid: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.index_uid = Some(index_uid.into_iter().collect());
         self
     }
-    pub fn with_status<'b>(&'b mut self, status: &'a [&'a str]) -> &'b mut TasksQuery<'a> {
-        self.status = Some(status);
+    pub fn with_status<'b>(
+        &'b mut self,
+        status: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.status = Some(status.into_iter().collect());
         self
     }
-    pub fn with_type<'b>(&'b mut self, r#type: &'a [&'a str]) -> &'b mut TasksQuery<'a> {
-        self.r#type = Some(r#type);
+    pub fn with_type<'b>(
+        &'b mut self,
+        r#type: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.r#type = Some(r#type.into_iter().collect());
         self
     }
+    pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a> {
+        self.limit = Some(limit);
+        self
+    }
+    pub fn with_from<'b>(&'b mut self, from: u32) -> &'b mut TasksQuery<'a> {
+        self.from = Some(from);
+        self
+    }
+
     pub async fn execute(&'a self) -> Result<TasksResults, Error> {
-        self.client.execute_get_tasks(self).await
+        self.client.get_tasks(self).await
     }
 }
 
@@ -595,7 +621,8 @@ mod test {
         let path = "/tasks";
 
         let mock_res = mock("GET", path).with_status(200).create();
-        let _ = client.get_tasks().execute().await;
+        let query = TasksQuery::new(&client);
+        let _ = client.get_tasks(&query).await;
         mock_res.assert();
 
         Ok(())
@@ -605,28 +632,51 @@ mod test {
     async fn test_get_tasks_with_params() -> Result<(), Error> {
         let mock_server_url = &mockito::server_url();
         let client = Client::new(mock_server_url, "masterKey");
+        let path =
+            "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion&limit=0&from=1";
+
+        let mock_res = mock("GET", path).with_status(200).create();
+
+        let mut query = TasksQuery::new(&client);
+        query
+            .with_index_uid(["movies", "test"])
+            .with_status(["equeued"])
+            .with_type(["documentDeletion"])
+            .with_from(1)
+            .with_limit(0);
+
+        let _ = client.get_tasks(&query).await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
         let path = "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion";
 
         let mock_res = mock("GET", path).with_status(200).create();
-        let _ = client
-            .get_tasks()
-            .with_index_uid(&["movies", "test"])
-            .with_status(&["equeued"])
-            .with_type(&["documentDeletion"])
+
+        let mut query = TasksQuery::new(&client);
+        let _ = query
+            .with_index_uid(["movies", "test"])
+            .with_status(["equeued"])
+            .with_type(["documentDeletion"])
             .execute()
             .await;
+
+        // let _ = client.get_tasks(&query).await;
         mock_res.assert();
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
-        let tasks = client
-            .get_tasks()
-            .with_index_uid(&["no_name"])
-            .execute()
-            .await
-            .unwrap();
+        let mut query = TasksQuery::new(&client);
+        query.with_index_uid(["no_name"]);
+        let tasks = client.get_tasks(&query).await.unwrap();
 
         assert_eq!(tasks.results.len(), 0);
         Ok(())

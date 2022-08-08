@@ -4,7 +4,7 @@ use crate::{
     key::{Key, KeyBuilder},
     request::*,
     task_info::TaskInfo,
-    tasks::*,
+    tasks::{Task, TasksQuery, TasksResults},
     utils::async_sleep,
 };
 use serde::Deserialize;
@@ -621,20 +621,15 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
+    /// let mut query = tasks::TasksQuery::new(&client);
+    /// query.with_index_uid(["get_tasks"]);
+    /// let tasks = client.get_tasks(&query).await.unwrap();
     ///
-    ///
-    ///
-    /// let tasks = client.get_tasks().with_index_uid(&["get_tasks"]).execute().await.unwrap();
+    /// assert!(tasks.results.len() > 0);
+    /// # client.index("get_tasks").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn get_tasks(&self) -> TasksQuery {
-        TasksQuery::new(self)
-    }
-
-    pub(crate) async fn execute_get_tasks(
-        &self,
-        tasks_query: &TasksQuery<'_>,
-    ) -> Result<TasksResults, Error> {
+    pub async fn get_tasks(&self, tasks_query: &TasksQuery<'_>) -> Result<TasksResults, Error> {
         let tasks = request::<&TasksQuery, TasksResults>(
             &format!("{}/tasks", self.host),
             &self.api_key,
@@ -779,7 +774,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_tasks(client: Client) {
-        let tasks = client.get_tasks().execute().await.unwrap();
+        let query = TasksQuery::new(&client);
+        let tasks = client.get_tasks(&query).await.unwrap();
         assert!(tasks.results.len() >= 2);
     }
 
