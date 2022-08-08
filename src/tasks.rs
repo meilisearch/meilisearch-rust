@@ -439,7 +439,7 @@ impl<'a> TasksQuery<'a> {
         self
     }
     pub async fn execute(&'a self) -> Result<TasksResults, Error> {
-        self.client.execute_get_tasks(self).await
+        self.client.get_tasks(self).await
     }
 }
 
@@ -604,7 +604,8 @@ mod test {
         let path = "/tasks";
 
         let mock_res = mock("GET", path).with_status(200).create();
-        let _ = client.get_tasks().execute().await;
+        let query = TasksQuery::new(&client);
+        let _ = client.get_tasks(&query).await;
         mock_res.assert();
 
         Ok(())
@@ -617,25 +618,45 @@ mod test {
         let path = "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion";
 
         let mock_res = mock("GET", path).with_status(200).create();
-        let _ = client
-            .get_tasks()
+
+        let mut query = TasksQuery::new(&client);
+        query
+            .with_index_uid(["movies", "test"])
+            .with_status(["equeued"])
+            .with_type(["documentDeletion"]);
+
+        let _ = client.get_tasks(&query).await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion";
+
+        let mock_res = mock("GET", path).with_status(200).create();
+
+        let mut query = TasksQuery::new(&client);
+        let _ = query
             .with_index_uid(["movies", "test"])
             .with_status(["equeued"])
             .with_type(["documentDeletion"])
             .execute()
             .await;
+
+        // let _ = client.get_tasks(&query).await;
         mock_res.assert();
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
-        let tasks = client
-            .get_tasks()
-            .with_index_uid(["no_name"])
-            .execute()
-            .await
-            .unwrap();
+        let mut query = TasksQuery::new(&client);
+        query.with_index_uid(["no_name"]);
+        let tasks = client.get_tasks(&query).await.unwrap();
 
         assert_eq!(tasks.results.len(), 0);
         Ok(())

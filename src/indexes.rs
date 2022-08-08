@@ -764,12 +764,22 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn get_tasks(&self) -> TasksQuery {
-        let mut task = self.client.get_tasks();
+    /// TODO: how to pass a tasks_query?
+    pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
+        let mut query = TasksQuery::new(&self.client);
 
-        task.with_index_uid([self.uid.as_str()]);
+        query.with_index_uid([self.uid.as_str()]);
 
-        task
+        self.client.get_tasks(&query).await
+
+        // pub async fn get_tasks(
+        //     &self,
+        //     mut tasks_query: &mut TasksQuery<'_>,
+        // ) -> Result<TasksResults, Error> {
+        //     tasks_query.with_index_uid([self.uid.as_str()]);
+
+        //     self.client.get_tasks(&tasks_query).await
+        // }
     }
 
     /// Get stats of an index.
