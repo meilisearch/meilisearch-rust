@@ -270,7 +270,7 @@ impl Task {
     /// # let task = client.create_index("unwrap_failure", None).await.unwrap();
     /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    ///
+    /// // TODO: fails until http method are implemented
     /// let task = index.set_ranking_rules(["wrong_ranking_rule"])
     ///   .await
     ///   .unwrap()
