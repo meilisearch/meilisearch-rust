@@ -405,6 +405,12 @@ pub struct TasksQuery<'a> {
     // Types array to only retrieve the tasks with these [TaskType].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<Vec<&'a str>>,
+    // Maximum number of tasks to return
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+    // The if og the first task uid that should be returned
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub from: Option<u32>,
 }
 
 #[allow(missing_docs)]
@@ -415,6 +421,8 @@ impl<'a> TasksQuery<'a> {
             index_uid: None,
             status: None,
             r#type: None,
+            limit: None,
+            from: None,
         }
     }
     pub fn with_index_uid<'b>(
@@ -438,6 +446,15 @@ impl<'a> TasksQuery<'a> {
         self.r#type = Some(r#type.into_iter().collect());
         self
     }
+    pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a> {
+        self.limit = Some(limit);
+        self
+    }
+    pub fn with_from<'b>(&'b mut self, from: u32) -> &'b mut TasksQuery<'a> {
+        self.from = Some(from);
+        self
+    }
+
     pub async fn execute(&'a self) -> Result<TasksResults, Error> {
         self.client.get_tasks(self).await
     }
@@ -615,7 +632,8 @@ mod test {
     async fn test_get_tasks_with_params() -> Result<(), Error> {
         let mock_server_url = &mockito::server_url();
         let client = Client::new(mock_server_url, "masterKey");
-        let path = "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion";
+        let path =
+            "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion&limit=0&from=1";
 
         let mock_res = mock("GET", path).with_status(200).create();
 
@@ -623,7 +641,9 @@ mod test {
         query
             .with_index_uid(["movies", "test"])
             .with_status(["equeued"])
-            .with_type(["documentDeletion"]);
+            .with_type(["documentDeletion"])
+            .with_from(1)
+            .with_limit(0);
 
         let _ = client.get_tasks(&query).await;
 

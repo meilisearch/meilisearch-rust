@@ -4,7 +4,7 @@ use crate::{
     key::{Key, KeyBuilder},
     request::*,
     task_info::TaskInfo,
-    tasks::*,
+    tasks::{Task, TasksQuery, TasksResults},
     utils::async_sleep,
 };
 use serde::Deserialize;
@@ -621,13 +621,12 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
-    /// let query = TasksQuery::new();
-    /// query.with_index_uid(["get_tasks"])
+    /// let mut query = tasks::TasksQuery::new(&client);
+    /// query.with_index_uid(["get_tasks"]);
     /// let tasks = client.get_tasks(&query).await.unwrap();
     ///
     /// assert!(tasks.results.len() > 0);
-    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-    /// # });
+    /// # client.index("get_tasks").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_tasks(&self, tasks_query: &TasksQuery<'_>) -> Result<TasksResults, Error> {
