@@ -456,7 +456,7 @@ impl<'a> TasksQuery<'a> {
     }
 
     pub async fn execute(&'a self) -> Result<TasksResults, Error> {
-        self.client.get_tasks(self).await
+        self.client.get_tasks_with(self).await
     }
 }
 
@@ -621,8 +621,7 @@ mod test {
         let path = "/tasks";
 
         let mock_res = mock("GET", path).with_status(200).create();
-        let query = TasksQuery::new(&client);
-        let _ = client.get_tasks(&query).await;
+        let _ = client.get_tasks().await;
         mock_res.assert();
 
         Ok(())
@@ -645,7 +644,7 @@ mod test {
             .with_from(1)
             .with_limit(0);
 
-        let _ = client.get_tasks(&query).await;
+        let _ = client.get_tasks_with(&query).await;
 
         mock_res.assert();
         Ok(())
@@ -676,7 +675,19 @@ mod test {
     async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
         let mut query = TasksQuery::new(&client);
         query.with_index_uid(["no_name"]);
-        let tasks = client.get_tasks(&query).await.unwrap();
+        let tasks = client.get_tasks_with(&query).await.unwrap();
+
+        assert_eq!(tasks.results.len(), 0);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_with_execute(client: Client) -> Result<(), Error> {
+        let tasks = TasksQuery::new(&client)
+            .with_index_uid(["no_name"])
+            .execute()
+            .await
+            .unwrap();
 
         assert_eq!(tasks.results.len(), 0);
         Ok(())
