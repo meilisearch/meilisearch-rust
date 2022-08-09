@@ -309,9 +309,6 @@ impl Client {
         }
     }
 
-    pub fn get_keys(&self) -> KeysQuery {
-        KeysQuery::new(self)
-    }
     /// Get the API [Key]s from Meilisearch.
     /// See the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
     ///
@@ -332,11 +329,23 @@ impl Client {
     /// # });
     /// ```
     /// TODO: hidden
-    pub async fn execute_get_keys(&self, keys_query: &KeysQuery<'_>) -> Result<KeysResults, Error> {
+    pub async fn get_keys_with(&self, keys_query: &KeysQuery<'_>) -> Result<KeysResults, Error> {
         let keys = request::<&KeysQuery, KeysResults>(
             &format!("{}/keys", self.host),
             &self.api_key,
             Method::Get(keys_query),
+            200,
+        )
+        .await?;
+
+        Ok(keys)
+    }
+
+    pub async fn get_keys(&self) -> Result<KeysResults, Error> {
+        let keys = request::<(), KeysResults>(
+            &format!("{}/keys", self.host),
+            &self.api_key,
+            Method::Get(()),
             200,
         )
         .await?;
@@ -475,9 +484,9 @@ impl Client {
     /// ```
     pub async fn update_key(&self, key: impl AsRef<Key>) -> Result<Key, Error> {
         request::<&Key, Key>(
-            &format!("{}/keys/{}", self.host, key.as_ref().key),
+            &format!("{}/keys/{}", self.host, key.identifier),
             &self.api_key,
-            Method::Patch(key.as_ref()),
+            Method::Patch(key.as_ref()), // name and description
             200,
         )
         .await

@@ -21,6 +21,8 @@ pub struct Key {
     pub indexes: Vec<String>,
     #[serde(skip_serializing)]
     pub key: String,
+    #[serde(skip_serializing)]
+    pub uid: String,
     #[serde(skip_serializing, with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
 }
@@ -108,6 +110,38 @@ impl Key {
     /// # });
     /// ```
     pub async fn update(&self, client: &Client) -> Result<Key, Error> {
+        // only send description and name
+        let updated = KeyUpdater::new(self);
+        client.update_key(self).await
+    }
+
+    // client.delete_key("1")
+    pub async fn delete(&self, client: &Client) -> Result<Key, Error> {
+        client.delete_key(self).await
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct KeyUpdater {
+    pub description: Option<String>,
+    pub name: Option<String>,
+    #[serde(skip_serializing)]
+    pub identifier: String,
+}
+
+impl KeyUpdater {
+    pub fn new(key: &Key) -> KeyUpdater {
+        KeyUpdater {
+            description: key.description,
+            name: key.name,
+            identifier: key.uid,
+        }
+    }
+
+    pub async fn update(&self, client: &Client) -> Result<Key, Error> {
+        // only send description and name
+        let updated = KeyUpdater::new(self);
         client.update_key(self).await
     }
 }
@@ -320,6 +354,7 @@ impl KeyBuilder {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
+    /// TODO: create ?
     pub async fn execute(&self, client: &Client) -> Result<Key, Error> {
         client.create_key(self).await
     }
