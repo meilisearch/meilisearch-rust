@@ -618,7 +618,7 @@ impl Client {
         .await
     }
 
-    /// Get all tasks from the server.
+    /// Get all tasks with query parameters from the server.
     ///
     /// # Example
     ///
@@ -632,18 +632,52 @@ impl Client {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
     /// let mut query = tasks::TasksQuery::new(&client);
-    /// query.with_index_uid(["get_tasks"]);
-    /// let tasks = client.get_tasks(&query).await.unwrap();
+    /// query.with_index_uid(["get_tasks_with"]);
+    /// let tasks = client.get_tasks_with(&query).await.unwrap();
+    ///
+    /// assert!(tasks.results.len() > 0);
+    /// # client.index("get_tasks_with").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_tasks_with(
+        &self,
+        tasks_query: &TasksQuery<'_>,
+    ) -> Result<TasksResults, Error> {
+        let tasks = request::<&TasksQuery, TasksResults>(
+            &format!("{}/tasks", self.host),
+            &self.api_key,
+            Method::Get(tasks_query),
+            200,
+        )
+        .await?;
+
+        Ok(tasks)
+    }
+
+    /// Get all tasks from the server.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::*;
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///
+    /// let tasks = client.get_tasks().await.unwrap();
     ///
     /// assert!(tasks.results.len() > 0);
     /// # client.index("get_tasks").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_tasks(&self, tasks_query: &TasksQuery<'_>) -> Result<TasksResults, Error> {
-        let tasks = request::<&TasksQuery, TasksResults>(
+    pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
+        let tasks = request::<(), TasksResults>(
             &format!("{}/tasks", self.host),
             &self.api_key,
-            Method::Get(tasks_query),
+            Method::Get(()),
             200,
         )
         .await?;
@@ -784,8 +818,14 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_tasks(client: Client) {
+        let tasks = client.get_tasks().await.unwrap();
+        assert!(tasks.results.len() >= 2);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_with_params(client: Client) {
         let query = TasksQuery::new(&client);
-        let tasks = client.get_tasks(&query).await.unwrap();
+        let tasks = client.get_tasks_with(&query).await.unwrap();
         assert!(tasks.results.len() >= 2);
     }
 

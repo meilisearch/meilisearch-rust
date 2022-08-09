@@ -758,28 +758,50 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_tasks", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    /// let tasks = index.get_tasks().execute().await.unwrap();
+    /// let tasks = index.get_tasks().await.unwrap();
     ///
     /// assert!(tasks.results.len() > 0);
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    /// TODO: how to pass a tasks_query?
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
         let mut query = TasksQuery::new(&self.client);
-
         query.with_index_uid([self.uid.as_str()]);
 
-        self.client.get_tasks(&query).await
+        self.client.get_tasks_with(&query).await
+    }
 
-        // pub async fn get_tasks(
-        //     &self,
-        //     mut tasks_query: &mut TasksQuery<'_>,
-        // ) -> Result<TasksResults, Error> {
-        //     tasks_query.with_index_uid([self.uid.as_str()]);
+    /// Get the status of all tasks in a given index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let index = client.create_index("get_tasks_with", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    ///
+    /// let mut query = TasksQuery::new(&client);
+    /// query.with_index_uid(["none_existant"]);
+    /// let tasks = index.get_tasks_with(&query).await.unwrap();
+    ///
+    /// assert!(tasks.results.len() > 0);
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_tasks_with(
+        &self,
+        tasks_query: &TasksQuery<'_>,
+    ) -> Result<TasksResults, Error> {
+        let mut query = tasks_query.clone();
+        query.with_index_uid([self.uid.as_str()]);
 
-        //     self.client.get_tasks(&tasks_query).await
-        // }
+        self.client.get_tasks_with(&query).await
     }
 
     /// Get stats of an index.
@@ -1077,14 +1099,6 @@ mod tests {
         assert!(index.created_at.is_some());
         assert!(index.primary_key.is_none());
     }
-
-    // #[meilisearch_test]
-    // TODO: when implementing the filters in get_tasks
-    // async fn test_get_tasks_no_docs(index: Index) {
-    //     // The at this point the only task that is supposed to exist is the creation of the index
-    //     let status = index.get_tasks().await.unwrap();
-    //     assert_eq!(status.results.len(), 1);
-    // }
 
     #[meilisearch_test]
     async fn test_get_one_task(client: Client, index: Index) -> Result<(), Error> {
