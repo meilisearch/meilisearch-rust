@@ -408,7 +408,7 @@ pub struct TasksQuery<'a> {
     // Maximum number of tasks to return
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
-    // The if og the first task uid that should be returned
+    // The first task uid that should be returned
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<u32>,
 }
