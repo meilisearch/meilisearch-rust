@@ -458,7 +458,6 @@ impl Client {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    ///
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let name = "create_key".to_string();
     /// let mut key = KeyBuilder::new();
@@ -653,12 +652,11 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
     /// let mut query = tasks::TasksQuery::new(&client);
     /// query.with_index_uid(["get_tasks_with"]);
     /// let tasks = client.get_tasks_with(&query).await.unwrap();
     ///
-    /// assert!(tasks.results.len() > 0);
+    /// # assert!(tasks.results.len() > 0);
     /// # client.index("get_tasks_with").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -689,10 +687,9 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
     /// let tasks = client.get_tasks().await.unwrap();
     ///
-    /// assert!(tasks.results.len() > 0);
+    /// # assert!(tasks.results.len() > 0);
     /// # client.index("get_tasks").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
