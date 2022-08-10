@@ -287,18 +287,79 @@ impl KeysQuery {
         }
     }
 
-    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut KeysQuery<'a> {
+    /// Specify the offset.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{key::KeysQuery, key::Action, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///  let mut keys = KeysQuery::new()
+    ///   .with_offset(1)
+    ///   .execute(&client).await.unwrap();
+    ///
+    /// # assert_eq!(keys.results.len(), 1);
+    /// # });
+    /// ```
+    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut KeysQuery {
         self.offset = Some(offset);
         self
     }
-    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut KeysQuery<'a> {
+
+    /// Specify the maximum number of keys to return.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{key::KeysQuery, key::Action, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///  let mut keys = KeysQuery::new()
+    ///   .with_limit(1)
+    ///   .execute(&client).await.unwrap();
+    ///
+    /// # assert_eq!(keys.results.len(), 1);
+    /// # });
+    /// ```
+    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut KeysQuery {
         self.limit = Some(limit);
         self
     }
 
-    /// Execute the query and fetch the results.
-    pub async fn execute(&'a self) -> Result<KeysResults, Error> {
-        self.client.get_keys_with(self).await
+    /// Execute the update of a Key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{key::KeyBuilder, key::KeyUpdater, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let description = "My little lovely test key".to_string();
+    /// let key = KeyBuilder::new()
+    ///   .execute(&client).await.unwrap();
+    ///
+    /// let mut key_update = KeyUpdater::new(&key.key);
+    /// key_update.with_description(&description).execute(&client).await;
+    ///
+    /// assert_eq!(key_update.description, Some(description));
+    /// # client.delete_key(key).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn execute(&self, client: &Client) -> Result<KeysResults, Error> {
+        client.get_keys_with(self).await
     }
 }
 
@@ -459,7 +520,7 @@ impl KeyBuilder {
         self
     }
 
-    /// Update the name of the key.
+    /// Add a name to the key.
     ///
     /// # Example
     ///
@@ -509,7 +570,6 @@ impl KeyBuilder {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    /// TODO: create ?
     pub async fn execute(&self, client: &Client) -> Result<Key, Error> {
         client.create_key(self).await
     }
