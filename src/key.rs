@@ -185,7 +185,6 @@ impl KeyUpdater {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
     ///  let mut new_key = KeyBuilder::new()
     ///     .execute(&client)
     ///     .await
