@@ -281,7 +281,7 @@ impl AsRef<KeyUpdater> for KeyUpdater {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct KeysQuery {
     /// The number of documents to skip.
@@ -302,11 +302,16 @@ pub struct KeysQuery {
 }
 
 impl KeysQuery {
+    /// Create a [KeysQuery] with only a description.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{key::KeysQuery};
+    /// let builder = KeysQuery::new();
+    /// ```
     pub fn new() -> KeysQuery {
-        KeysQuery {
-            offset: None,
-            limit: None,
-        }
+        Self::default()
     }
 
     /// Specify the offset.
@@ -328,7 +333,7 @@ impl KeysQuery {
     /// # assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
-    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut KeysQuery {
+    pub fn with_offset(&mut self, offset: usize) -> &mut KeysQuery {
         self.offset = Some(offset);
         self
     }
@@ -352,7 +357,7 @@ impl KeysQuery {
     /// # assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
-    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut KeysQuery {
+    pub fn with_limit(&mut self, limit: usize) -> &mut KeysQuery {
         self.limit = Some(limit);
         self
     }
@@ -403,11 +408,13 @@ impl KeysQuery {
 /// # client.delete_key(key).await.unwrap();
 /// # });
 /// ```
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct KeyBuilder {
     pub actions: Vec<Action>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,
@@ -417,7 +424,7 @@ pub struct KeyBuilder {
 }
 
 impl KeyBuilder {
-    /// Create a [KeyBuilder] with only a description.
+    /// Create a [KeyBuilder].
     ///
     /// # Example
     ///
@@ -426,14 +433,7 @@ impl KeyBuilder {
     /// let builder = KeyBuilder::new();
     /// ```
     pub fn new() -> KeyBuilder {
-        Self {
-            actions: Vec::new(),
-            description: None,
-            name: None,
-            expires_at: None,
-            uid: None,
-            indexes: Vec::new(),
-        }
+        Self::default()
     }
 
     /// Declare a set of actions the [Key] will be able to execute.
