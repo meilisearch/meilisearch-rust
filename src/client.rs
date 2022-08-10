@@ -1,7 +1,7 @@
 use crate::{
     errors::*,
     indexes::*,
-    key::{Key, KeyBuilder, KeysQuery, KeysResults},
+    key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
     request::*,
     task_info::TaskInfo,
     tasks::{Task, TasksQuery, TasksResults},
@@ -309,6 +309,40 @@ impl Client {
         }
     }
 
+    /// Get the API [Key]s from Meilisearch with parameters.
+    /// See the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
+    ///
+    /// See also [Client::create_key] and [Client::get_key].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeysQuery};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let mut query = KeysQuery::new();
+    /// query.with_limit(1);
+    /// let keys = client.get_keys_with(&query).await.unwrap();
+    ///
+    /// assert_eq!(keys.results.len(), 1);
+    /// # });
+    /// ```
+    pub async fn get_keys_with(&self, keys_query: &KeysQuery) -> Result<KeysResults, Error> {
+        let keys = request::<&KeysQuery, KeysResults>(
+            &format!("{}/keys", self.host),
+            &self.api_key,
+            Method::Get(keys_query),
+            200,
+        )
+        .await?;
+
+        Ok(keys)
+    }
+
     /// Get the API [Key]s from Meilisearch.
     /// See the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
     ///
@@ -324,26 +358,12 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let mut query = KeysQuery::new();
-    /// query.with_limit(1);
-    /// let keys = client.get_keys_with(&query).await.unwrap();
+    /// let keys = client.get_keys().await.unwrap();
     ///
-    /// assert_eq!(keys.results.len(), 1);
+    /// dbg!(&keys);
+    /// assert_eq!(keys.results.len(), 2);
     /// # });
     /// ```
-    /// TODO: hidden
-    pub async fn get_keys_with(&self, keys_query: &KeysQuery<'_>) -> Result<KeysResults, Error> {
-        let keys = request::<&KeysQuery, KeysResults>(
-            &format!("{}/keys", self.host),
-            &self.api_key,
-            Method::Get(keys_query),
-            200,
-        )
-        .await?;
-
-        Ok(keys)
-    }
-
     pub async fn get_keys(&self) -> Result<KeysResults, Error> {
         let keys = request::<(), KeysResults>(
             &format!("{}/keys", self.host),
@@ -371,11 +391,13 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// # let key = client.get_keys().await.unwrap().into_iter().find(|k| k.description.starts_with("Default Search API Key")).unwrap();
+    /// # let key = client.get_keys().await.unwrap().results.into_iter()
+    ///     .find(|k| k.name.as_ref().map_or(false, |name| name.starts_with("Default Search API Key")));
     /// let key_id = // enter your API key here, for the example we'll say we entered our search API key.
-    /// # key.key;
+    /// # key.unwrap().key;
     /// let key = client.get_key(key_id).await.unwrap();
-    /// assert_eq!(key.description, "Default Search API Key (Use it to search from the frontend)");
+    ///
+    /// assert_eq!(key.name, Some("Default Search API Key".to_string()));
     /// # });
     /// ```
     pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
@@ -403,14 +425,14 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let key = KeyBuilder::new("delete_key");
+    /// let key = KeyBuilder::new();
     /// let key = client.create_key(key).await.unwrap();
     /// let inner_key = key.key.clone();
     ///
     /// client.delete_key(key).await.unwrap();
     ///
     /// let keys = client.get_keys().await.unwrap();
-    /// assert!(keys.iter().all(|key| key.key != inner_key));
+    /// assert!(keys.results.iter().all(|key| key.key != inner_key));
     /// # });
     /// ```
     pub async fn delete_key(&self, key: impl AsRef<str>) -> Result<(), Error> {
@@ -439,18 +461,17 @@ impl Client {
     /// # futures::executor::block_on(async move {
     ///
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let mut key = KeyBuilder::new("create_key");
-    /// key.with_index("*").with_action(Action::DocumentsAdd);
+    /// let name = "create_key".to_string();
+    /// let mut key = KeyBuilder::new();
+    /// key.with_name(&name);
+    ///
     /// let key = client.create_key(key).await.unwrap();
-    /// assert_eq!(key.description, "create_key");
+    ///
+    /// assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
     pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
-        KeyBuilder::new(self)
-    }
-
-    pub async fn execute_create_key() -> Blabla {
         request::<&KeyBuilder, Key>(
             &format!("{}/keys", self.host),
             &self.api_key,
@@ -468,26 +489,27 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder, key::KeyUpdater};
     /// #
     /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let key = KeyBuilder::new("update_key");
-    /// let mut key = client.create_key(key).await.unwrap();
-    /// assert!(key.indexes.is_empty());
+    /// let new_key = KeyBuilder::new();
+    /// let name = "my name".to_string();
+    /// let mut new_key = client.create_key(new_key).await.unwrap();
+    /// let mut key_update = KeyUpdater::new(new_key);
+    /// key_update.with_name(&name);
     ///
-    /// key.indexes = vec!["*".to_string()];
-    /// let key = client.update_key(key).await.unwrap();
-    /// assert_eq!(key.indexes, vec!["*"]);
+    /// let key = client.update_key(key_update).await.unwrap();
+    /// assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn update_key(&self, key: impl AsRef<Key>) -> Result<Key, Error> {
-        request::<&Key, Key>(
-            &format!("{}/keys/{}", self.host, key.identifier),
+    pub async fn update_key(&self, key: impl AsRef<KeyUpdater>) -> Result<Key, Error> {
+        request::<&KeyUpdater, Key>(
+            &format!("{}/keys/{}", self.host, key.as_ref().key),
             &self.api_key,
             Method::Patch(key.as_ref()), // name and description
             200,
@@ -834,7 +856,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_keys(client: Client) {
-        let keys = client.get_keys().execute().await.unwrap();
+        let keys = client.get_keys().await.unwrap();
         assert!(keys.results.len() >= 2);
         assert!(keys.results.iter().any(|k| k.description
             != Some("Default Search API Key (Use it to search from the frontend)".to_string())));
@@ -844,17 +866,17 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_delete_key(client: Client, description: String) {
+    async fn test_delete_key(client: Client) {
         let key = KeyBuilder::new();
         let key = client.create_key(key).await.unwrap();
 
         client.delete_key(&key).await.unwrap();
-        let keys = client.get_keys().execute().await.unwrap();
+        let keys = client.get_keys().await.unwrap();
         assert!(keys.results.iter().all(|k| k.key != key.key));
     }
 
     #[meilisearch_test]
-    async fn test_error_delete_key(mut client: Client, description: String) {
+    async fn test_error_delete_key(mut client: Client) {
         // ==> accessing a key that does not exist
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
@@ -905,6 +927,7 @@ mod tests {
         let mut key = KeyBuilder::new();
         key.with_action(Action::DocumentsAdd)
             .with_expires_at(expires_at.clone())
+            .with_description(&description)
             .with_index("*");
         let key = client.create_key(key).await.unwrap();
 
@@ -921,7 +944,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_create_key(mut client: Client, description: String) {
+    async fn test_error_create_key(mut client: Client) {
         // ==> Invalid index name
         /* TODO: uncomment once meilisearch fix this bug: https://github.com/meilisearch/meilisearch/issues/2158
         let mut key = KeyBuilder::new();
@@ -964,25 +987,23 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_update_key(client: Client, description: String) {
-        let expires_at = OffsetDateTime::now_utc() + time::Duration::HOUR;
         let key = KeyBuilder::new();
         let mut key = client.create_key(key).await.unwrap();
 
-        let description = "new description";
-        let name = "new name";
-        key.with_description(description);
-        key.with_name(name);
+        let name = "new name".to_string();
+        key.with_description(&description);
+        key.with_name(&name);
 
-        let key = client.update_key(key).await.unwrap();
+        let key = key.update(&client).await.unwrap();
 
-        assert_eq!(key.description, Some(description.to_string()));
-        assert_eq!(key.indexes, vec!["*".to_string()]);
+        assert_eq!(key.description, Some(description));
+        assert_eq!(key.name, Some(name));
 
         client.delete_key(key).await.unwrap();
     }
 
     #[meilisearch_test]
-    async fn test_error_update_key(mut client: Client, description: String) {
+    async fn test_error_update_key(mut client: Client) {
         let key = KeyBuilder::new();
         let key = client.create_key(key).await.unwrap();
 
@@ -1009,7 +1030,7 @@ mod tests {
         let master_client = client.clone();
         client.api_key = Arc::new(no_right_key.key.clone());
 
-        let error = client.update_key(key).await.unwrap_err();
+        let error = key.update(&client).await.unwrap_err();
 
         assert!(matches!(
             error,
