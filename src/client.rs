@@ -360,7 +360,6 @@ impl Client {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let keys = client.get_keys().await.unwrap();
     ///
-    /// dbg!(&keys);
     /// assert_eq!(keys.results.len(), 2);
     /// # });
     /// ```
