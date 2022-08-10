@@ -113,7 +113,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///     .with_offset(42)
 ///     .with_limit(21)
 ///
-/// let res = query.execute().await?.unwrap()
+/// let res = query.execute().await?.unwrap();
 /// ```
 ///
 /// ```

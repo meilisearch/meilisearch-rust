@@ -403,12 +403,12 @@ pub struct TasksQuery<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<Vec<&'a str>>,
     // Types array to only retrieve the tasks with these [TaskType].
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<Vec<&'a str>>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
+    pub task_type: Option<Vec<&'a str>>,
     // Maximum number of tasks to return
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
-    // The if og the first task uid that should be returned
+    // The first task uid that should be returned
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<u32>,
 }
@@ -420,7 +420,7 @@ impl<'a> TasksQuery<'a> {
             client,
             index_uid: None,
             status: None,
-            r#type: None,
+            task_type: None,
             limit: None,
             from: None,
         }
@@ -441,9 +441,9 @@ impl<'a> TasksQuery<'a> {
     }
     pub fn with_type<'b>(
         &'b mut self,
-        r#type: impl IntoIterator<Item = &'a str>,
+        task_type: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a> {
-        self.r#type = Some(r#type.into_iter().collect());
+        self.task_type = Some(task_type.into_iter().collect());
         self
     }
     pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a> {
