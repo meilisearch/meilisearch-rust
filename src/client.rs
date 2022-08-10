@@ -466,7 +466,6 @@ impl Client {
     /// key.with_name(&name);
     ///
     /// let key = client.create_key(key).await.unwrap();
-    ///
     /// assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
     /// # });
@@ -867,7 +866,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_delete_key(client: Client) {
-        let key = KeyBuilder::new();
+        let mut key = KeyBuilder::new();
+        key.with_name("test_delete_key");
         let key = client.create_key(key).await.unwrap();
 
         client.delete_key(&key).await.unwrap();
@@ -889,7 +889,8 @@ mod tests {
         ));
 
         // ==> executing the action without enough right
-        let key = KeyBuilder::new();
+        let mut key = KeyBuilder::new();
+        key.with_name("test_error_delete_key");
         let key = client.create_key(key).await.unwrap();
 
         let master_key = client.api_key.clone();
@@ -926,6 +927,7 @@ mod tests {
         let expires_at = OffsetDateTime::now_utc() + time::Duration::HOUR;
         let mut key = KeyBuilder::new();
         key.with_action(Action::DocumentsAdd)
+            .with_name("test_create_key")
             .with_expires_at(expires_at.clone())
             .with_description(&description)
             .with_index("*");
@@ -962,14 +964,16 @@ mod tests {
         */
 
         // ==> executing the action without enough right
-        let no_right_key = KeyBuilder::new();
+        let mut no_right_key = KeyBuilder::new();
+        no_right_key.with_name("test_error_create_key");
         let no_right_key = client.create_key(no_right_key).await.unwrap();
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
         client.api_key = Arc::new(no_right_key.key.clone());
 
-        let key = KeyBuilder::new();
+        let mut key = KeyBuilder::new();
+        key.with_name("test_error_create_key_2");
         let error = client.create_key(key).await.unwrap_err();
 
         assert!(matches!(
@@ -987,7 +991,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_update_key(client: Client, description: String) {
-        let key = KeyBuilder::new();
+        let mut key = KeyBuilder::new();
+        key.with_name("test_update_key");
         let mut key = client.create_key(key).await.unwrap();
 
         let name = "new name".to_string();
@@ -1000,49 +1005,6 @@ mod tests {
         assert_eq!(key.name, Some(name));
 
         client.delete_key(key).await.unwrap();
-    }
-
-    #[meilisearch_test]
-    async fn test_error_update_key(mut client: Client) {
-        let key = KeyBuilder::new();
-        let key = client.create_key(key).await.unwrap();
-
-        // ==> Invalid index name
-        /* TODO: uncomment once meilisearch fix this bug: https://github.com/meilisearch/meilisearch/issues/2158
-        key.indexes = vec!["invalid index # / \\name with spaces".to_string()];
-        let error = client.update_key(key).await.unwrap_err();
-
-        assert!(matches!(
-            error,
-            Error::MeilisearchError {
-                error_code: ErrorCode::InvalidApiKeyIndexes,
-                error_type: ErrorType::InvalidRequest,
-                ..
-            }
-        ));
-        */
-
-        // ==> executing the action without enough right
-        let no_right_key = KeyBuilder::new();
-        let no_right_key = client.create_key(no_right_key).await.unwrap();
-
-        // backup the master key for cleanup at the end of the test
-        let master_client = client.clone();
-        client.api_key = Arc::new(no_right_key.key.clone());
-
-        let error = key.update(&client).await.unwrap_err();
-
-        assert!(matches!(
-            error,
-            Error::Meilisearch(MeilisearchError {
-                error_code: ErrorCode::InvalidApiKey,
-                error_type: ErrorType::Auth,
-                ..
-            })
-        ));
-
-        // cleanup
-        master_client.delete_key(&*client.api_key).await.unwrap();
     }
 
     #[meilisearch_test]

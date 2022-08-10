@@ -241,8 +241,30 @@ impl KeyUpdater {
         self
     }
 
+    /// Update a Key using the [KeyUpdater].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{key::KeyBuilder, key::KeyUpdater, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let description = "My little lovely test key".to_string();
+    /// let key = KeyBuilder::new()
+    ///   .execute(&client).await.unwrap();
+    ///
+    /// let mut key_update = KeyUpdater::new(&key.key);
+    /// key_update.with_description(&description).execute(&client).await;
+    ///
+    /// assert_eq!(key_update.description, Some(description));
+    /// # client.delete_key(key).await.unwrap();
+    /// # });
+    /// ```
     pub async fn execute(&self, client: &Client) -> Result<Key, Error> {
-        // only send description and name
         client.update_key(self).await
     }
 }
@@ -335,27 +357,23 @@ impl KeysQuery {
         self
     }
 
-    /// Execute the update of a Key.
+    /// Get [Key]'s.
     ///
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{key::KeyBuilder, key::KeyUpdater, client::Client};
+    /// # use meilisearch_sdk::{key::KeysQuery, key::Action, client::Client};
     /// #
     /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let description = "My little lovely test key".to_string();
-    /// let key = KeyBuilder::new()
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///  let mut keys = KeysQuery::new()
+    ///   .with_limit(1)
     ///   .execute(&client).await.unwrap();
     ///
-    /// let mut key_update = KeyUpdater::new(&key.key);
-    /// key_update.with_description(&description).execute(&client).await;
-    ///
-    /// assert_eq!(key_update.description, Some(description));
-    /// # client.delete_key(key).await.unwrap();
+    /// # assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
     pub async fn execute(&self, client: &Client) -> Result<KeysResults, Error> {
@@ -467,6 +485,8 @@ impl KeyBuilder {
     /// # use meilisearch_sdk::{key::KeyBuilder};
     /// let mut builder = KeyBuilder::new();
     /// builder.with_indexes(vec!["test", "movies"]);
+    ///
+    /// assert_eq!(vec!["test", "movies"], builder.indexes);
     /// ```
     pub fn with_indexes(
         &mut self,
@@ -535,11 +555,9 @@ impl KeyBuilder {
     ///  let name = "lovely key".to_string();
     ///
     ///  let mut key = KeyBuilder::new()
-    ///   .with_action(Action::DocumentsAdd)
-    ///   .with_index("*")
     ///   .execute(&client).await.unwrap();
+    ///  key.with_name(&name);
     ///
-    /// key.with_name(&name);
     /// # assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
     /// # });
