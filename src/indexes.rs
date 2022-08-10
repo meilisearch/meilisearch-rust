@@ -1053,6 +1053,40 @@ pub struct IndexStats {
     pub field_distribution: HashMap<String, usize>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct IndexesResults {
+    pub results: Vec<Index>,
+    pub limit: u32,
+    pub offset: u32,
+    pub total: u32,
+}
+
+impl IndexesResults {
+    /// Internal Function to create an [Index] from `serde_json::Value` and [Client]
+    pub(crate) fn from_value(v: serde_json::Value, client: Client) -> Result<Index, Error> {
+        #[derive(Deserialize, Debug)]
+        #[allow(non_snake_case)]
+        struct IndexFromSerde {
+            uid: String,
+            #[serde(with = "time::serde::rfc3339::option")]
+            updatedAt: Option<OffsetDateTime>,
+            #[serde(with = "time::serde::rfc3339::option")]
+            createdAt: Option<OffsetDateTime>,
+            primaryKey: Option<String>,
+        }
+
+        let i: IndexFromSerde = serde_json::from_value(v).map_err(Error::ParseError)?;
+
+        Ok(Index {
+            uid: Arc::new(i.uid),
+            client,
+            created_at: i.createdAt,
+            updated_at: i.updatedAt,
+            primary_key: i.primaryKey,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

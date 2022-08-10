@@ -55,13 +55,15 @@ impl Client {
     /// // create the client
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
-    /// let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
+    /// let indexes: IndexesResults = client.list_all_indexes().await.unwrap();
     /// println!("{:?}", indexes);
     /// # });
     /// ```
-    pub async fn list_all_indexes(&self) -> Result<Vec<Index>, Error> {
-        self.list_all_indexes_raw()
-            .await?
+    pub async fn list_all_indexes(&self) -> Result<IndexesResults, Error> {
+        let raw_indexes = self.list_all_indexes_raw().await?;
+        let indexes = IndexesResults::from_value(raw_indexes);
+        indexes
+            .results
             .into_iter()
             .map(|index| Index::from_value(index, self.clone()))
             .collect()
@@ -85,8 +87,8 @@ impl Client {
     /// println!("{:?}", json_indexes);
     /// # });
     /// ```
-    pub async fn list_all_indexes_raw(&self) -> Result<Vec<Value>, Error> {
-        let json_indexes = request::<(), Vec<Value>>(
+    pub async fn list_all_indexes_raw(&self) -> Result<Value, Error> {
+        let json_indexes = request::<(), Value>(
             &format!("{}/indexes", self.host),
             &self.api_key,
             Method::Get(()),
@@ -225,7 +227,7 @@ impl Client {
     }
 
     /// Alias for [Client::list_all_indexes].
-    pub async fn get_indexes(&self) -> Result<Vec<Index>, Error> {
+    pub async fn get_indexes(&self) -> Result<IndexesResults, Error> {
         self.list_all_indexes().await
     }
 
