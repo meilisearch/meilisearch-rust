@@ -40,14 +40,14 @@ impl Key {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
-    ///  let mut key = KeyBuilder::new("My little lovely test key")
+    /// let description = "My not so little lovely test key".to_string();
+    /// let mut key = KeyBuilder::new()
     ///   .with_action(Action::DocumentsAdd)
     ///   .with_index("*")
-    ///   .create(&client).await.unwrap();
+    ///   .with_description(&description)
+    ///   .execute(&client).await.unwrap();
     ///
-    /// key.with_description("My not so little lovely test key");
-    /// # assert_eq!(key.description, "My not so little lovely test key".to_string());
+    /// # assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -68,14 +68,14 @@ impl Key {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
-    ///  let mut key = KeyBuilder::new("My little lovely test key")
+    ///  let name = "lovely key".to_string();
+    ///  let mut key = KeyBuilder::new()
     ///   .with_action(Action::DocumentsAdd)
     ///   .with_index("*")
-    ///   .create(&client).await.unwrap();
+    ///   .execute(&client).await.unwrap();
     ///
-    /// key.with_name("lovely key");
-    /// # assert_eq!(key.name, "lovely key".to_string());
+    ///  key.with_name(&name);
+    /// # assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -96,53 +96,50 @@ impl Key {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let mut key = KeyBuilder::new("My little lovely test key")
-    ///   .create(&client).await.unwrap();
-    ///
-    /// # assert_eq!(key.description, "My little lovely test key");
-    ///
-    /// key.with_description("My not so little lovely test key");
+    /// let mut key = KeyBuilder::new()
+    ///   .execute(&client).await.unwrap();
+    /// let description = "My not so little lovely test key".to_string();
+    /// key.with_description(&description);
     /// let key = key.update(&client).await.unwrap();
     ///
-    /// # assert_eq!(key.description, "My not so little lovely test key".to_string());
-    ///
+    /// # assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
     pub async fn update(&self, client: &Client) -> Result<Key, Error> {
         // only send description and name
-        let updated = KeyUpdater::new(self);
-        client.update_key(self).await
-    }
+        let mut key_update = KeyUpdater::new(self);
 
-    // client.delete_key("1")
-    pub async fn delete(&self, client: &Client) -> Result<Key, Error> {
-        client.delete_key(self).await
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct KeyUpdater {
-    pub description: Option<String>,
-    pub name: Option<String>,
-    #[serde(skip_serializing)]
-    pub identifier: String,
-}
-
-impl KeyUpdater {
-    pub fn new(key: &Key) -> KeyUpdater {
-        KeyUpdater {
-            description: key.description,
-            name: key.name,
-            identifier: key.uid,
+        if let Some(ref description) = self.description {
+            key_update.with_description(description);
         }
+        if let Some(ref name) = self.name {
+            key_update.with_name(name);
+        }
+
+        key_update.execute(client).await
     }
 
-    pub async fn update(&self, client: &Client) -> Result<Key, Error> {
-        // only send description and name
-        let updated = KeyUpdater::new(self);
-        client.update_key(self).await
+    /// Delete the [Key].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let mut key = KeyBuilder::new()
+    ///   .execute(&client).await.unwrap();
+    ///
+    /// client.delete_key(key).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn delete(&self, client: &Client) -> Result<(), Error> {
+        client.delete_key(self).await
     }
 }
 
@@ -158,11 +155,113 @@ impl AsRef<Key> for Key {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct KeyUpdater {
+    pub description: Option<String>,
+    pub name: Option<String>,
+    #[serde(skip_serializing)]
+    pub key: String,
+}
+
+impl KeyUpdater {
+    pub fn new(key_or_uid: impl AsRef<str>) -> KeyUpdater {
+        KeyUpdater {
+            description: None,
+            name: None,
+            key: key_or_uid.as_ref().to_string(),
+        }
+    }
+
+    /// Update the description of the key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client, key::KeyUpdater};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///
+    ///  let mut new_key = KeyBuilder::new()
+    ///     .execute(&client)
+    ///     .await
+    ///     .unwrap();
+    ///
+    /// let description = "My not so little lovely test key".to_string();
+    /// let mut key_update = KeyUpdater::new(new_key)
+    ///     .with_description(&description)
+    ///     .execute(&client)
+    ///     .await
+    ///     .unwrap();
+    ///
+    /// # assert_eq!(key_update.description, Some(description));
+    /// # client.delete_key(key_update).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_description(&mut self, desc: impl AsRef<str>) -> &mut Self {
+        self.description = Some(desc.as_ref().to_string());
+        self
+    }
+
+    /// Update the name of the key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client, key::KeyUpdater};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///  let mut new_key = KeyBuilder::new()
+    ///     .execute(&client)
+    ///     .await
+    ///     .unwrap();
+    ///
+    /// let name = "lovely key".to_string();
+    ///
+    /// let mut key_update = KeyUpdater::new(new_key)
+    ///     .with_name(&name)
+    ///     .execute(&client)
+    ///     .await
+    ///     .unwrap();
+    ///
+    /// # assert_eq!(key_update.name, Some(name));
+    /// # client.delete_key(key_update).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_name(&mut self, desc: impl AsRef<str>) -> &mut Self {
+        self.name = Some(desc.as_ref().to_string());
+        self
+    }
+
+    pub async fn execute(&self, client: &Client) -> Result<Key, Error> {
+        // only send description and name
+        client.update_key(self).await
+    }
+}
+
+impl AsRef<str> for KeyUpdater {
+    fn as_ref(&self) -> &str {
+        &self.key
+    }
+}
+
+impl AsRef<KeyUpdater> for KeyUpdater {
+    fn as_ref(&self) -> &KeyUpdater {
+        self
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct KeysQuery<'a> {
-    #[serde(skip_serializing)]
-    pub client: &'a Client,
+pub struct KeysQuery {
     /// The number of documents to skip.
     /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
     /// This is helpful for pagination.
@@ -180,10 +279,9 @@ pub struct KeysQuery<'a> {
     pub limit: Option<usize>,
 }
 
-impl<'a> KeysQuery<'a> {
-    pub fn new(client: &'a Client) -> KeysQuery<'a> {
+impl KeysQuery {
+    pub fn new() -> KeysQuery {
         KeysQuery {
-            client,
             offset: None,
             limit: None,
         }
@@ -200,7 +298,7 @@ impl<'a> KeysQuery<'a> {
 
     /// Execute the query and fetch the results.
     pub async fn execute(&'a self) -> Result<KeysResults, Error> {
-        self.client.execute_get_keys(self).await
+        self.client.get_keys_with(self).await
     }
 }
 
@@ -217,13 +315,12 @@ impl<'a> KeysQuery<'a> {
 /// #
 /// # futures::executor::block_on(async move {
 /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+/// let description = "My little lovely test key".to_string();
+/// let key = KeyBuilder::new()
+///   .with_description(&description)
+///   .execute(&client).await.unwrap();
 ///
-/// let key = KeyBuilder::new("My little lovely test key")
-///   .with_action(Action::DocumentsAdd)
-///   .with_index("*")
-///   .create(&client).await.unwrap();
-///
-/// assert_eq!(key.description, "My little lovely test key");
+/// assert_eq!(key.description, Some(description));
 /// # client.delete_key(key).await.unwrap();
 /// # });
 /// ```
@@ -232,6 +329,7 @@ impl<'a> KeysQuery<'a> {
 pub struct KeyBuilder {
     pub actions: Vec<Action>,
     pub description: Option<String>,
+    pub name: Option<String>,
     #[serde(with = "time::serde::rfc3339::option")]
     pub expires_at: Option<OffsetDateTime>,
     pub indexes: Vec<String>,
@@ -244,12 +342,13 @@ impl KeyBuilder {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder};
-    /// let builder = KeyBuilder::new("My little lovely test key");
+    /// let builder = KeyBuilder::new();
     /// ```
     pub fn new() -> KeyBuilder {
         Self {
             actions: Vec::new(),
             description: None,
+            name: None,
             expires_at: None,
             indexes: Vec::new(),
         }
@@ -261,7 +360,7 @@ impl KeyBuilder {
     ///
     /// ```
     /// # use meilisearch_sdk::key::{KeyBuilder, Action};
-    /// let mut builder = KeyBuilder::new("My little lovely test key");
+    /// let mut builder = KeyBuilder::new();
     /// builder.with_actions(vec![Action::Search, Action::DocumentsAdd]);
     /// ```
     pub fn with_actions(&mut self, actions: impl IntoIterator<Item = Action>) -> &mut Self {
@@ -275,7 +374,7 @@ impl KeyBuilder {
     ///
     /// ```
     /// # use meilisearch_sdk::key::{KeyBuilder, Action};
-    /// let mut builder = KeyBuilder::new("My little lovely test key");
+    /// let mut builder = KeyBuilder::new();
     /// builder.with_action(Action::DocumentsAdd);
     /// ```
     pub fn with_action(&mut self, action: Action) -> &mut Self {
@@ -290,7 +389,7 @@ impl KeyBuilder {
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder};
     /// use time::{OffsetDateTime, Duration};
-    /// let mut builder = KeyBuilder::new("My little lovely test key");
+    /// let mut builder = KeyBuilder::new();
     /// // create a key that expires in two weeks from now
     /// builder.with_expires_at(OffsetDateTime::now_utc() + Duration::WEEK * 2);
     /// ```
@@ -305,7 +404,7 @@ impl KeyBuilder {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder};
-    /// let mut builder = KeyBuilder::new("My little lovely test key");
+    /// let mut builder = KeyBuilder::new();
     /// builder.with_indexes(vec!["test", "movies"]);
     /// ```
     pub fn with_indexes(
@@ -325,7 +424,7 @@ impl KeyBuilder {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder};
-    /// let mut builder = KeyBuilder::new("My little lovely test key");
+    /// let mut builder = KeyBuilder::new();
     /// builder.with_index("test");
     /// ```
     pub fn with_index(&mut self, index: impl AsRef<str>) -> &mut Self {
@@ -333,7 +432,61 @@ impl KeyBuilder {
         self
     }
 
-    // TODO: with_description
+    /// Add a description to the key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///  let description = "My not so little lovely test key".to_string();
+    ///
+    ///  let mut key = KeyBuilder::new()
+    ///   .with_description(&description)
+    ///   .execute(&client).await.unwrap();
+    ///
+    /// # assert_eq!(key.description, Some(description));
+    /// # client.delete_key(key).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_description(&mut self, desc: impl AsRef<str>) -> &mut Self {
+        self.description = Some(desc.as_ref().to_string());
+        self
+    }
+
+    /// Update the name of the key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{key::KeyBuilder, key::Action, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///  let name = "lovely key".to_string();
+    ///
+    ///  let mut key = KeyBuilder::new()
+    ///   .with_action(Action::DocumentsAdd)
+    ///   .with_index("*")
+    ///   .execute(&client).await.unwrap();
+    ///
+    /// key.with_name(&name);
+    /// # assert_eq!(key.name, Some(name));
+    /// # client.delete_key(key).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_name(&mut self, desc: impl AsRef<str>) -> &mut Self {
+        self.name = Some(desc.as_ref().to_string());
+        self
+    }
 
     /// Create a [Key] from the builder.
     ///
@@ -347,10 +500,12 @@ impl KeyBuilder {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let key = KeyBuilder::new("My little lovely test key")
-    ///   .create(&client).await.unwrap();
+    /// let description = "My little lovely test key".to_string();
+    /// let key = KeyBuilder::new()
+    ///    .with_description(&description)
+    ///   .execute(&client).await.unwrap();
     ///
-    /// assert_eq!(key.description, "My little lovely test key");
+    /// assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -384,7 +539,7 @@ pub enum Action {
     #[serde(rename = "documents.delete")]
     DocumentsDelete,
     /// Provides access to the [create index](https://docs.meilisearch.com/reference/api/indexes.md#create-an-index) endpoint.
-    #[serde(rename = "indexes.create")]
+    #[serde(rename = "indexes.execute")]
     IndexesCreate,
     /// Provides access to the [get one index](https://docs.meilisearch.com/reference/api/indexes.md#get-one-index) and [list all indexes](https://docs.meilisearch.com/reference/api/indexes.md#list-all-indexes) endpoints. **Non-authorized `indexes` will be omitted from the response**.
     #[serde(rename = "indexes.get")]
@@ -408,7 +563,7 @@ pub enum Action {
     #[serde(rename = "stats.get")]
     StatsGet,
     /// Provides access to the [create dump](https://docs.meilisearch.com/reference/api/dump.md#create-a-dump) endpoint. **Not restricted by `indexes`.**
-    #[serde(rename = "dumps.create")]
+    #[serde(rename = "dumps.execute")]
     DumpsCreate,
     /// Provides access to the [get dump status](https://docs.meilisearch.com/reference/api/dump.md#get-dump-status) endpoint. **Not restricted by `indexes`.**
     #[serde(rename = "dumps.get")]

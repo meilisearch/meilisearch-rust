@@ -324,8 +324,11 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let keys = client.get_keys().await.unwrap();
-    /// assert!(keys.len() >= 2);
+    /// let mut query = KeysQuery::new();
+    /// query.with_limit(1);
+    /// let keys = client.get_keys_with(&query).await.unwrap();
+    ///
+    /// assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
     /// TODO: hidden
