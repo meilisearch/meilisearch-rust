@@ -1,4 +1,4 @@
-use crate::{client::Client, errors::Error, request::*, search::*, tasks::*};
+use crate::{client::Client, errors::Error, request::*, search::*, task_info::TaskInfo, tasks::*};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, fmt::Display, sync::Arc, time::Duration};
@@ -124,8 +124,8 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete(self) -> Result<Task, Error> {
-        request::<(), Task>(
+    pub async fn delete(self) -> Result<TaskInfo, Error> {
+        request::<(), TaskInfo>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             &self.client.api_key,
             Method::Delete,
@@ -391,7 +391,7 @@ impl Index {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
-    ) -> Result<Task, Error> {
+    ) -> Result<TaskInfo, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -400,7 +400,7 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], Task>(&url, &self.client.api_key, Method::Post(documents), 202).await
+        request::<&[T], TaskInfo>(&url, &self.client.api_key, Method::Post(documents), 202).await
     }
 
     /// Alias for [Index::add_or_replace].
@@ -408,7 +408,7 @@ impl Index {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
-    ) -> Result<Task, Error> {
+    ) -> Result<TaskInfo, Error> {
         self.add_or_replace(documents, primary_key).await
     }
 
@@ -469,7 +469,7 @@ impl Index {
         &self,
         documents: &[T],
         primary_key: Option<impl AsRef<str>>,
-    ) -> Result<Task, Error> {
+    ) -> Result<TaskInfo, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -480,7 +480,7 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], Task>(&url, &self.client.api_key, Method::Put(documents), 202).await
+        request::<&[T], TaskInfo>(&url, &self.client.api_key, Method::Put(documents), 202).await
     }
 
     /// Delete all documents in the index.
@@ -520,8 +520,8 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_all_documents(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+    pub async fn delete_all_documents(&self) -> Result<TaskInfo, Error> {
+        request::<(), TaskInfo>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             &self.client.api_key,
             Method::Delete,
@@ -565,8 +565,8 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_document<T: Display>(&self, uid: T) -> Result<Task, Error> {
-        request::<(), Task>(
+    pub async fn delete_document<T: Display>(&self, uid: T) -> Result<TaskInfo, Error> {
+        request::<(), TaskInfo>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
@@ -617,8 +617,8 @@ impl Index {
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
         &self,
         uids: &[T],
-    ) -> Result<Task, Error> {
-        request::<&[T], Task>(
+    ) -> Result<TaskInfo, Error> {
+        request::<&[T], TaskInfo>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
                 self.client.host, self.uid
@@ -729,18 +729,13 @@ impl Index {
     ///    Task::Succeeded { content } => content.uid,
     /// };
     ///
-    /// assert_eq!(task.get_uid(), from_index);
+    /// assert_eq!(task.get_task_uid(), from_index);
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_task(&self, uid: impl AsRef<u64>) -> Result<Task, Error> {
+    pub async fn get_task(&self, uid: impl AsRef<u32>) -> Result<Task, Error> {
         request::<(), Task>(
-            &format!(
-                "{}/indexes/{}/tasks/{}",
-                self.client.host,
-                self.uid,
-                uid.as_ref()
-            ),
+            &format!("{}/tasks/{}", self.client.host, uid.as_ref()),
             &self.client.api_key,
             Method::Get(()),
             200,
@@ -763,30 +758,50 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_tasks", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    /// let status = index.get_tasks().await.unwrap();
-    /// assert!(status.len() == 1); // the index was created
+    /// let tasks = index.get_tasks().await.unwrap();
     ///
-    /// index.set_ranking_rules(["wrong_ranking_rule"]).await.unwrap();
-    ///
-    /// let status = index.get_tasks().await.unwrap();
-    /// assert!(status.len() == 2);
+    /// assert!(tasks.results.len() > 0);
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_tasks(&self) -> Result<Vec<Task>, Error> {
-        #[derive(Deserialize)]
-        struct AllTasks {
-            results: Vec<Task>,
-        }
+    pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
+        let mut query = TasksQuery::new(&self.client);
+        query.with_index_uid([self.uid.as_str()]);
 
-        Ok(request::<(), AllTasks>(
-            &format!("{}/indexes/{}/tasks", self.client.host, self.uid),
-            &self.client.api_key,
-            Method::Get(()),
-            200,
-        )
-        .await?
-        .results)
+        self.client.get_tasks_with(&query).await
+    }
+
+    /// Get the status of all tasks in a given index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let index = client.create_index("get_tasks_with", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    ///
+    /// let mut query = TasksQuery::new(&client);
+    /// query.with_index_uid(["none_existant"]);
+    /// let tasks = index.get_tasks_with(&query).await.unwrap();
+    ///
+    /// assert!(tasks.results.len() > 0);
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_tasks_with(
+        &self,
+        tasks_query: &TasksQuery<'_>,
+    ) -> Result<TasksResults, Error> {
+        let mut query = tasks_query.clone();
+        query.with_index_uid([self.uid.as_str()]);
+
+        self.client.get_tasks_with(&query).await
     }
 
     /// Get stats of an index.
@@ -861,7 +876,7 @@ impl Index {
     /// ```
     pub async fn wait_for_task(
         &self,
-        task_id: impl AsRef<u64>,
+        task_id: impl AsRef<u32>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
     ) -> Result<Task, Error> {
@@ -925,7 +940,7 @@ impl Index {
         documents: &[T],
         batch_size: Option<usize>,
         primary_key: Option<&str>,
-    ) -> Result<Vec<Task>, Error> {
+    ) -> Result<Vec<TaskInfo>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
             task.push(self.add_documents(document_batch, primary_key).await?);
@@ -1015,7 +1030,7 @@ impl Index {
         documents: &[T],
         batch_size: Option<usize>,
         primary_key: Option<&str>,
-    ) -> Result<Vec<Task>, Error> {
+    ) -> Result<Vec<TaskInfo>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
             task.push(self.add_or_update(document_batch, primary_key).await?);
@@ -1086,13 +1101,6 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks_no_docs(index: Index) {
-        // The at this point the only task that is supposed to exist is the creation of the index
-        let status = index.get_tasks().await.unwrap();
-        assert_eq!(status.len(), 1);
-    }
-
-    #[meilisearch_test]
     async fn test_get_one_task(client: Client, index: Index) -> Result<(), Error> {
         let task = index
             .delete_all_documents()
@@ -1103,10 +1111,42 @@ mod tests {
         let status = index.get_task(task).await?;
 
         match status {
-            Task::Enqueued { content } => assert_eq!(content.index_uid, *index.uid),
-            Task::Processing { content } => assert_eq!(content.index_uid, *index.uid),
-            Task::Failed { content } => assert_eq!(content.task.index_uid, *index.uid),
-            Task::Succeeded { content } => assert_eq!(content.index_uid, *index.uid),
+            Task::Enqueued {
+                content:
+                    EnqueuedTask {
+                        index_uid: Some(index_uid),
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            Task::Processing {
+                content:
+                    EnqueuedTask {
+                        index_uid: Some(index_uid),
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            Task::Failed {
+                content:
+                    FailedTask {
+                        task:
+                            SucceededTask {
+                                index_uid: Some(index_uid),
+                                ..
+                            },
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            Task::Succeeded {
+                content:
+                    SucceededTask {
+                        index_uid: Some(index_uid),
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            task => panic!(
+                "The task should have an index_uid that is not null {:?}",
+                task
+            ),
         }
         Ok(())
     }

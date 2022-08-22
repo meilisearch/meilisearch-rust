@@ -3,7 +3,9 @@ use crate::{
     indexes::*,
     key::{Key, KeyBuilder},
     request::*,
-    tasks::{async_sleep, Task},
+    task_info::TaskInfo,
+    tasks::{Task, TasksQuery, TasksResults},
+    utils::async_sleep,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -197,8 +199,8 @@ impl Client {
         &self,
         uid: impl AsRef<str>,
         primary_key: Option<&str>,
-    ) -> Result<Task, Error> {
-        request::<Value, Task>(
+    ) -> Result<TaskInfo, Error> {
+        request::<Value, TaskInfo>(
             &format!("{}/indexes", self.host),
             &self.api_key,
             Method::Post(json!({
@@ -212,8 +214,8 @@ impl Client {
 
     /// Delete an index from its UID.
     /// To delete an [Index], use the [Index::delete] method.
-    pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<Task, Error> {
-        request::<(), Task>(
+    pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo, Error> {
+        request::<(), TaskInfo>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
             &self.api_key,
             Method::Delete,
@@ -430,6 +432,7 @@ impl Client {
     /// let mut key = KeyBuilder::new("create_key");
     /// key.with_index("*").with_action(Action::DocumentsAdd);
     /// let key = client.create_key(key).await.unwrap();
+    ///
     /// assert_eq!(key.description, "create_key");
     /// # client.delete_key(key).await.unwrap();
     /// # });
@@ -511,7 +514,7 @@ impl Client {
     ///
     /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
     ///
-    /// See also [Index::wait_for_task, Task::wait_for_completion].
+    /// See also [Index::wait_for_task, Task::wait_for_completion, TaskInfo::wait_for_completion].
     ///
     /// # Example
     ///
@@ -548,7 +551,7 @@ impl Client {
     /// ```
     pub async fn wait_for_task(
         &self,
-        task_id: impl AsRef<u64>,
+        task_id: impl AsRef<u32>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
     ) -> Result<Task, Error> {
@@ -560,7 +563,6 @@ impl Client {
 
         while timeout > elapsed_time {
             task_result = self.get_task(&task_id).await;
-
             match task_result {
                 Ok(status) => match status {
                     Task::Failed { .. } | Task::Succeeded { .. } => {
@@ -596,7 +598,7 @@ impl Client {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_task(&self, task_id: impl AsRef<u64>) -> Result<Task, Error> {
+    pub async fn get_task(&self, task_id: impl AsRef<u32>) -> Result<Task, Error> {
         request::<(), Task>(
             &format!("{}/tasks/{}", self.host, task_id.as_ref()),
             &self.api_key,
@@ -604,6 +606,41 @@ impl Client {
             200,
         )
         .await
+    }
+
+    /// Get all tasks with query parameters from the server.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::*;
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let mut query = tasks::TasksQuery::new(&client);
+    /// query.with_index_uid(["get_tasks_with"]);
+    /// let tasks = client.get_tasks_with(&query).await.unwrap();
+    ///
+    /// # assert!(tasks.results.len() > 0);
+    /// # client.index("get_tasks_with").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_tasks_with(
+        &self,
+        tasks_query: &TasksQuery<'_>,
+    ) -> Result<TasksResults, Error> {
+        let tasks = request::<&TasksQuery, TasksResults>(
+            &format!("{}/tasks", self.host),
+            &self.api_key,
+            Method::Get(tasks_query),
+            200,
+        )
+        .await?;
+
+        Ok(tasks)
     }
 
     /// Get all tasks from the server.
@@ -619,15 +656,13 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let tasks = client.get_tasks().await.unwrap();
+    ///
+    /// # assert!(tasks.results.len() > 0);
+    /// # client.index("get_tasks").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_tasks(&self) -> Result<Vec<Task>, Error> {
-        #[derive(Deserialize)]
-        struct Tasks {
-            pub results: Vec<Task>,
-        }
-
-        let tasks = request::<(), Tasks>(
+    pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
+        let tasks = request::<(), TasksResults>(
             &format!("{}/tasks", self.host),
             &self.api_key,
             Method::Get(()),
@@ -635,7 +670,7 @@ impl Client {
         )
         .await?;
 
-        Ok(tasks.results)
+        Ok(tasks)
     }
 
     /// Generates a new tenant token.
@@ -767,6 +802,19 @@ mod tests {
             m.assert();
             mem::drop(m);
         }
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks(client: Client) {
+        let tasks = client.get_tasks().await.unwrap();
+        assert!(tasks.results.len() >= 2);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_with_params(client: Client) {
+        let query = TasksQuery::new(&client);
+        let tasks = client.get_tasks_with(&query).await.unwrap();
+        assert!(tasks.results.len() >= 2);
     }
 
     #[meilisearch_test]
