@@ -482,7 +482,7 @@ impl Index {
         request::<&Settings, TaskInfo>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Post(settings),
+            Method::Patch(settings),
             202,
         )
         .await
@@ -522,7 +522,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(synonyms),
+            Method::Put(synonyms),
             202,
         )
         .await
@@ -558,7 +558,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Put(
                 stop_words
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
@@ -608,7 +608,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Put(
                 ranking_rules
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
@@ -649,7 +649,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Put(
                 filterable_attributes
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
@@ -690,7 +690,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Put(
                 sortable_attributes
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
@@ -730,7 +730,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(distinct_attribute.as_ref().to_string()),
+            Method::Put(distinct_attribute.as_ref().to_string()),
             202,
         )
         .await
@@ -765,7 +765,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Put(
                 searchable_attributes
                     .into_iter()
                     .map(|v| v.as_ref().to_string())
@@ -805,7 +805,7 @@ impl Index {
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(
+            Method::Put(
                 displayed_attributes
                     .into_iter()
                     .map(|v| v.as_ref().to_string())

@@ -43,7 +43,7 @@ use serde::Deserialize;
 
 /// The status of a dump.\
 /// Contained in [`DumpInfo`].
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum DumpStatus {
     /// Dump creation is in progress.
