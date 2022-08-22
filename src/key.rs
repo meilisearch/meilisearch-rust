@@ -240,7 +240,7 @@ impl KeyUpdater {
         self
     }
 
-    /// Update a Key using the [KeyUpdater].
+    /// Update a [Key] using the [KeyUpdater].
     ///
     /// # Example
     ///
@@ -259,7 +259,7 @@ impl KeyUpdater {
     /// let mut key_update = KeyUpdater::new(&key.key);
     /// key_update.with_description(&description).execute(&client).await;
     ///
-    /// assert_eq!(key_update.description, Some(description));
+    /// # assert_eq!(key_update.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -403,7 +403,7 @@ impl KeysQuery {
 ///   .with_description(&description)
 ///   .execute(&client).await.unwrap();
 ///
-/// assert_eq!(key.description, Some(description));
+/// # assert_eq!(key.description, Some(description));
 /// # client.delete_key(key).await.unwrap();
 /// # });
 /// ```
@@ -625,7 +625,7 @@ impl KeyBuilder {
     ///    .with_description(&description)
     ///   .execute(&client).await.unwrap();
     ///
-    /// assert_eq!(key.description, Some(description));
+    /// # assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
