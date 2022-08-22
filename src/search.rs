@@ -3,7 +3,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct MatchRange {
     pub start: usize,
     pub length: usize,
