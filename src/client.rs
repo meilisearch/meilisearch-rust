@@ -394,8 +394,7 @@ impl Client {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let key = client.get_keys().await.unwrap().results.into_iter()
     ///     .find(|k| k.name.as_ref().map_or(false, |name| name.starts_with("Default Search API Key")));
-    /// let key_id = // enter your API key here, for the example we'll say we entered our search API key.
-    /// # key.unwrap().key;
+    /// let key_id = key.unwrap().key // enter your API key here, for the example we use the search API key.
     /// let key = client.get_key(key_id).await.unwrap();
     ///
     /// assert_eq!(key.name, Some("Default Search API Key".to_string()));
