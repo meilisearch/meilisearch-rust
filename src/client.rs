@@ -497,6 +497,7 @@ impl Client {
     /// let new_key = KeyBuilder::new();
     /// let name = "my name".to_string();
     /// let mut new_key = client.create_key(new_key).await.unwrap();
+    /// // TODO: Can i directly update the key using new_key
     /// let mut key_update = KeyUpdater::new(new_key);
     /// key_update.with_name(&name);
     ///
