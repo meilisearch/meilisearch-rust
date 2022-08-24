@@ -1,4 +1,12 @@
-use crate::{client::Client, errors::Error, request::*, search::*, task_info::TaskInfo, tasks::*};
+use crate::{
+    client::Client,
+    documents::{DocumentsQuery, DocumentsResults},
+    errors::Error,
+    request::*,
+    search::*,
+    task_info::TaskInfo,
+    tasks::*,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
 use time::OffsetDateTime;
@@ -346,34 +354,32 @@ impl Index {
     /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// // retrieve movies (you have to put some movies in the index before)
-    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
+    /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
     ///
-    /// assert!(movies.len() > 0);
+    /// assert!(movies.results.len() > 0);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_documents<T: DeserializeOwned + 'static>(
         &self,
-        offset: Option<usize>,
-        limit: Option<usize>,
-        attributes_to_retrieve: Option<&str>,
-    ) -> Result<Vec<T>, Error> {
-        let mut url = format!("{}/indexes/{}/documents?", self.client.host, self.uid);
-        if let Some(offset) = offset {
-            url.push_str("offset=");
-            url.push_str(offset.to_string().as_str());
-            url.push('&');
-        }
-        if let Some(limit) = limit {
-            url.push_str("limit=");
-            url.push_str(limit.to_string().as_str());
-            url.push('&');
-        }
-        if let Some(attributes_to_retrieve) = attributes_to_retrieve {
-            url.push_str("attributesToRetrieve=");
-            url.push_str(attributes_to_retrieve);
-        }
-        request::<(), Vec<T>>(&url, &self.client.api_key, Method::Get(()), 200).await
+    ) -> Result<DocumentsResults<T>, Error> {
+        let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
+
+        request::<(), DocumentsResults<T>>(&url, &self.client.api_key, Method::Get(()), 200).await
+    }
+
+    pub async fn get_documents_with<T: DeserializeOwned + 'static>(
+        &self,
+        documents_query: &DocumentsQuery<'_>,
+    ) -> Result<DocumentsResults<T>, Error> {
+        let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
+        request::<&DocumentsQuery, DocumentsResults<T>>(
+            &url,
+            &self.client.api_key,
+            Method::Get(&documents_query),
+            200,
+        )
+        .await
     }
 
     /// Add a list of [Document]s or replace them if they already exist.
@@ -425,7 +431,7 @@ impl Index {
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
-    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
+    /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
     /// assert!(movies.len() >= 3);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -503,7 +509,7 @@ impl Index {
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
-    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
+    /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
     /// assert!(movies.len() >= 3);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -558,8 +564,8 @@ impl Index {
     ///   .wait_for_completion(&client, None, None)
     ///   .await
     ///   .unwrap();
-    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
-    /// assert_eq!(movies.len(), 0);
+    /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
+    /// assert_eq!(movies.results.len(), 0);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -977,8 +983,8 @@ impl Index {
     ///
     /// client.wait_for_task(tasks.last().unwrap(), None, None).await.unwrap();
     ///
-    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
-    /// assert!(movies.len() >= 3);
+    /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
+    /// assert!(movies.results.len() >= 3);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None,
     /// None).await.unwrap();
     /// # });
@@ -1042,8 +1048,8 @@ impl Index {
     ///
     /// client.wait_for_task(tasks.last().unwrap(), None, None).await.unwrap();
     ///
-    /// let movies = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
-    /// assert!(movies.len() >= 3);
+    /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
+    /// assert!(movies.results.len() >= 3);
     ///
     /// let updated_movies = [
     ///  Movie {
@@ -1064,10 +1070,10 @@ impl Index {
     ///
     /// client.wait_for_task(tasks.last().unwrap(), None, None).await.unwrap();
     ///
-    /// let movies_updated = movie_index.get_documents::<Movie>(None, None, None).await.unwrap();
-    /// assert!(movies_updated.len() >= 3);
+    /// let movies_updated = movie_index.get_documents::<Movie>().await.unwrap();
+    /// assert!(movies_updated.results.len() >= 3);
     ///
-    /// assert!(&movies_updated[..] == &updated_movies[..]);
+    /// assert!(&movies_updated.results[..] == &updated_movies[..]);
     ///
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None,
     /// None).await.unwrap();
@@ -1479,6 +1485,40 @@ mod tests {
         assert!(index.updated_at.is_some());
         assert!(index.created_at.is_some());
         assert!(index.primary_key.is_none());
+    }
+
+    #[meilisearch_test]
+    async fn test_get_documents(index: Index) {
+        #[derive(Debug, Serialize, Deserialize, PartialEq)]
+        struct Object {
+            id: usize,
+            value: String,
+            kind: String,
+        }
+        let res = index.get_documents::<Object>().await.unwrap();
+
+        assert_eq!(res.limit, 20)
+    }
+
+    #[meilisearch_test]
+    async fn test_get_documents_with(index: Index) {
+        #[derive(Debug, Serialize, Deserialize, PartialEq)]
+        struct Object {
+            id: usize,
+            value: String,
+            kind: String,
+        }
+
+        let mut documents_query = DocumentsQuery::new(&index);
+        documents_query.with_limit(1).with_offset(2);
+
+        let res = index
+            .get_documents_with::<Object>(&documents_query)
+            .await
+            .unwrap();
+
+        assert_eq!(res.limit, 1);
+        assert_eq!(res.offset, 2);
     }
 
     #[meilisearch_test]
