@@ -38,8 +38,6 @@ pub struct SearchResults<T> {
     pub estimated_nb_hits: usize,
     /// Distribution of the given facets
     pub facets_distribution: Option<HashMap<String, HashMap<String, usize>>>,
-    /// Whether facet_distribution is exhaustive
-    pub exhaustive_facets_count: Option<bool>,
     /// Processing time of the query
     pub processing_time_ms: usize,
     /// Query originating the response
