@@ -1168,8 +1168,8 @@ mod tests {
     async fn test_list_all_indexes_raw(client: Client) {
         let all_indexes_raw = client.list_all_indexes_raw().await.unwrap();
 
-        assert_eq!(all_indexes_raw["limit"].as_u64().unwrap() as u32, 20);
-        assert_eq!(all_indexes_raw["offset"].as_u64().unwrap() as u32, 0);
+        assert_eq!(all_indexes_raw["limit"], json!(20));
+        assert_eq!(all_indexes_raw["offset"], json!(0));
     }
 
     #[meilisearch_test]
