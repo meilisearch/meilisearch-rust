@@ -110,7 +110,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// }
 ///
 /// # futures::executor::block_on(async move {
-/// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+/// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 /// # let index = client
 /// #  .create_index("search_query_builder", None)
 /// #  .await
