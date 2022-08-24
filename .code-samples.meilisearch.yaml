@@ -654,11 +654,11 @@ faceted_search_filter_1: |-
 faceted_search_facets_distribution_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Batman")
-    .with_facets_distribution(Selectors::Some(&["genres"]))
+    .with_facets(Selectors::Some(&["genres"]))
     .execute()
     .await
     .unwrap();
-  let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
+  let genres: &HashMap<String, usize> = results.facet_distribution.unwrap().get("genres").unwrap();
 faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("thriller")
