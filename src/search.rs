@@ -111,7 +111,14 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// # futures::executor::block_on(async move {
 /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-/// # let index = client.create_index("search_query_builder", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+/// # let index = client
+/// #  .create_index("search_query_builder", None)
+/// #  .await
+/// #  .unwrap()
+/// #  .wait_for_completion(&client, None, None)
+/// #  .await.unwrap()
+/// #  .try_make_index(&client)
+/// #  .unwrap();
 ///
 /// let mut res = Query::new(&index)
 ///     .with_query("space")
@@ -133,7 +140,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
 /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-/// # let index = client.index("does_not_matter");
+/// # let index = client.index("search_query_builder_build");
 /// let query = index.search()
 ///     .with_query("space")
 ///     .with_offset(42)
