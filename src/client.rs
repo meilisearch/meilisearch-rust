@@ -845,18 +845,15 @@ mod tests {
     async fn test_get_tasks_with_params(client: Client) {
         let query = TasksQuery::new(&client);
         let tasks = client.get_tasks_with(&query).await.unwrap();
+
         assert!(tasks.results.len() >= 2);
     }
 
     #[meilisearch_test]
     async fn test_get_keys(client: Client) {
         let keys = client.get_keys().await.unwrap();
+
         assert!(keys.results.len() >= 2);
-        assert!(keys.results.iter().any(|k| k.description
-            != Some("Default Search API Key (Use it to search from the frontend)".to_string())));
-        assert!(keys.results.iter().any(
-            |k| k.description != Some("Default Admin API Key (Use it for all other operations. Caution! Do not use it on a public frontend)".to_string())
-        ));
     }
 
     #[meilisearch_test]
