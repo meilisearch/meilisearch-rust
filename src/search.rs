@@ -35,9 +35,7 @@ pub struct SearchResults<T> {
     /// Number of results returned
     pub limit: usize,
     /// Total number of matches
-    pub nb_hits: usize,
-    /// Whether nb_hits is exhaustive
-    pub exhaustive_nb_hits: bool,
+    pub estimated_nb_hits: usize,
     /// Distribution of the given facets
     pub facets_distribution: Option<HashMap<String, HashMap<String, usize>>>,
     /// Whether facet_distribution is exhaustive
