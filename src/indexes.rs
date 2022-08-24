@@ -101,9 +101,42 @@ impl Index {
         })
     }
 
-    /// Set the primary key of the index.
+    /// Update an [Index].
     ///
-    /// If you prefer, you can use the method [Index::set_primary_key], which is an alias.
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::{Task, SucceededTask}};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let mut index = client
+    /// #   .create_index("index_update", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// # // Once the task finished, we try to create an `Index` out of it
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///
+    /// index.primary_key = Some("special_id".to_string());
+    /// let task = index.update()
+    ///   .await
+    ///   .unwrap()
+    ///   .wait_for_completion(&client, None, None)
+    ///   .await
+    ///   .unwrap();
+    ///
+    /// let index = client.get_index("index_update").await.unwrap();
+    /// assert_eq!(index.primary_key, Some("special_id".to_string()));
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
     pub async fn update(&self) -> Result<TaskInfo, Error> {
         let mut index_update = IndexUpdater::new(self, &self.client);
 
@@ -640,8 +673,6 @@ impl Index {
         .await
     }
 
-    // let mut index = Index::new(uid, client);
-    // index.set_primary_key(primary_key)
     /// Alias for the [Index::update] method.
     pub async fn set_primary_key(
         &mut self,

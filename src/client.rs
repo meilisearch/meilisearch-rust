@@ -99,7 +99,6 @@ impl Client {
     /// let indexes: IndexesResults = client.list_all_indexes_with(&query).await.unwrap();
     ///
     /// assert_eq!(indexes.limit, 1);
-    /// // TODO: ALIAS
     /// # });
     /// ```
     pub async fn list_all_indexes_with(
@@ -304,9 +303,25 @@ impl Client {
         self.list_all_indexes().await
     }
 
+    /// Alias for [Client::list_all_indexes_with].
+    pub async fn get_indexes_with(
+        &self,
+        indexes_query: &IndexesQuery<'_>,
+    ) -> Result<IndexesResults, Error> {
+        self.list_all_indexes_with(&indexes_query).await
+    }
+
     /// Alias for [Client::list_all_indexes_raw].
     pub async fn get_indexes_raw(&self) -> Result<Value, Error> {
         self.list_all_indexes_raw().await
+    }
+
+    /// Alias for [Client::list_all_indexes_raw_with].
+    pub async fn get_indexes_raw_with(
+        &self,
+        indexes_query: &IndexesQuery<'_>,
+    ) -> Result<Value, Error> {
+        self.list_all_indexes_raw_with(&indexes_query).await
     }
 
     /// Get stats of all indexes.
@@ -1133,7 +1148,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_list_all_indexes(client: Client, index: Index) {
         let all_indexes = client.list_all_indexes().await.unwrap();
-        // TODO: Check total, limit, offset
+
         assert_eq!(all_indexes.limit, 20);
         assert_eq!(all_indexes.offset, 0);
         assert!(all_indexes.results.iter().any(|idx| idx.uid == index.uid));
