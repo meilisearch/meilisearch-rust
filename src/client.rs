@@ -57,7 +57,7 @@ impl Client {
         Ok(indexes_results)
     }
 
-    /// List all [Index]es and returns values as instances of [Index].
+    /// List all [Index]es with query parameters and returns values as instances of [Index].
     ///
     /// # Example
     ///
@@ -94,9 +94,12 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// // create the client
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let mut query = IndexesQuery::new(&client);
+    /// query.with_limit(1);
+    /// let indexes: IndexesResults = client.list_all_indexes_with(&query).await.unwrap();
     ///
-    /// let indexes: IndexesResults = client.list_all_indexes().await.unwrap();
-    /// println!("{:?}", indexes);
+    /// assert_eq!(indexes.limit, 1);
+    /// // TODO: ALIAS
     /// # });
     /// ```
     pub async fn list_all_indexes_with(
@@ -139,7 +142,7 @@ impl Client {
         Ok(json_indexes)
     }
 
-    /// List all [Index]es and returns as Json.
+    /// List all [Index]es with query parameters and returns as Json.
     ///
     /// # Example
     ///
@@ -153,7 +156,10 @@ impl Client {
     /// // create the client
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
-    /// let json_indexes = client.list_all_indexes_raw().await.unwrap();
+    /// let mut query = IndexesQuery::new(&client);
+    /// query.with_limit(1);
+    /// let json_indexes = client.list_all_indexes_raw_with(&query).await.unwrap();
+    ///
     /// println!("{:?}", json_indexes);
     /// # });
     /// ```
@@ -564,7 +570,6 @@ impl Client {
     /// let new_key = KeyBuilder::new();
     /// let name = "my name".to_string();
     /// let mut new_key = client.create_key(new_key).await.unwrap();
-    /// // TODO: Can i directly update the key using new_key
     /// let mut key_update = KeyUpdater::new(new_key);
     /// key_update.with_name(&name);
     ///
@@ -1129,19 +1134,38 @@ mod tests {
     async fn test_list_all_indexes(client: Client, index: Index) {
         let all_indexes = client.list_all_indexes().await.unwrap();
         // TODO: Check total, limit, offset
-        assert!(all_indexes.results.len() > 0);
+        assert_eq!(all_indexes.limit, 20);
+        assert_eq!(all_indexes.offset, 0);
         assert!(all_indexes.results.iter().any(|idx| idx.uid == index.uid));
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes_raw(client: Client, index: Index) {
+    async fn test_list_all_indexes_with_params(client: Client, index: Index) {
+        let mut query = IndexesQuery::new(&client);
+        query.with_limit(1);
+        let all_indexes = client.list_all_indexes_with(&query).await.unwrap();
+
+        assert_eq!(all_indexes.limit, 1);
+        assert_eq!(all_indexes.offset, 0);
+        assert!(all_indexes.results.iter().any(|idx| idx.uid == index.uid));
+    }
+
+    #[meilisearch_test]
+    async fn test_list_all_indexes_raw(client: Client) {
         let all_indexes_raw = client.list_all_indexes_raw().await.unwrap();
-        let raw_indexes = all_indexes_raw["results"].as_array().unwrap();
-        // TODO: Check total, limit, offset
-        assert!(raw_indexes.len() > 0);
-        assert!(raw_indexes
-            .iter()
-            .any(|idx| idx["uid"] == json!(index.uid.to_string())));
+
+        assert_eq!(all_indexes_raw["limit"].as_u64().unwrap() as u32, 20);
+        assert_eq!(all_indexes_raw["offset"].as_u64().unwrap() as u32, 0);
+    }
+
+    #[meilisearch_test]
+    async fn test_list_all_indexes_raw_with_params(client: Client) {
+        let mut query = IndexesQuery::new(&client);
+        query.with_limit(1);
+        let all_indexes_raw = client.list_all_indexes_raw_with(&query).await.unwrap();
+
+        assert_eq!(all_indexes_raw["limit"].as_u64().unwrap() as u32, 1);
+        assert_eq!(all_indexes_raw["offset"].as_u64().unwrap() as u32, 0);
     }
 
     #[meilisearch_test]
