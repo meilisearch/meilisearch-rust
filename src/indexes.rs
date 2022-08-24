@@ -1062,34 +1062,41 @@ impl AsRef<str> for Index {
     }
 }
 
-// An [IndexUpdater] used to update the specifics of an index
+/// An [IndexUpdater] used to update the specifics of an index
 ///
 /// # Example
 ///
 /// ```
-/// # use meilisearch_sdk::{client::*, indexes::*, task_info::*};
+/// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::{Task, SucceededTask}};
 /// #
 /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
 /// # futures::executor::block_on(async move {
 /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-///  // let index = client
-///  //   .create_index("index_query_builder", None)
-///  //   .await
-///  //   .unwrap()
-///  //   .wait_for_completion(&client, None, None)
-///  //   .await
-///  //   .unwrap()
-///  //   // Once the task finished, we try to create an `Index` out of it
-///  //   .try_make_index(&client)
-///  //   .unwrap();
-///  //  dbg!(&index);
+/// # let index = client
+/// #   .create_index("index_updater", None)
+/// #   .await
+/// #   .unwrap()
+/// #   .wait_for_completion(&client, None, None)
+/// #   .await
+/// #   .unwrap()
+/// # // Once the task finished, we try to create an `Index` out of it
+/// #   .try_make_index(&client)
+/// #   .unwrap();
 ///
-///  let task: TaskInfo = IndexUpdater::new("index_query_builder", &client).execute().await.unwrap();
-///   dbg!(&task);
+/// let task = IndexUpdater::new("index_updater", &client)
+///   .with_primary_key("special_id")
+///   .execute()
+///   .await
+///   .unwrap()
+///   .wait_for_completion(&client, None, None)
+///   .await
+///   .unwrap();
 ///
-/// # // index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+/// let index = client.get_index("index_updater").await.unwrap();
+/// assert_eq!(index.primary_key, Some("special_id".to_string()));
+/// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 /// # });
 /// ```
 #[derive(Debug, Serialize, Clone)]
@@ -1110,12 +1117,85 @@ impl<'a> IndexUpdater<'a> {
             uid: uid.as_ref().to_string(),
         }
     }
-
+    /// Define the new primary_key to set on the [Index]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::{Task, SucceededTask}};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let index = client
+    /// #   .create_index("index_updater_with_primary_key", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// # // Once the task finished, we try to create an `Index` out of it
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///
+    /// let task = IndexUpdater::new("index_updater_with_primary_key", &client)
+    ///   .with_primary_key("special_id")
+    ///   .execute()
+    ///   .await
+    ///   .unwrap()
+    ///   .wait_for_completion(&client, None, None)
+    ///   .await
+    ///   .unwrap();
+    ///
+    /// let index = client.get_index("index_updater_with_primary_key").await.unwrap();
+    /// assert_eq!(index.primary_key, Some("special_id".to_string()));
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
     pub fn with_primary_key(&mut self, primary_key: impl AsRef<str>) -> &mut Self {
         self.primary_key = Some(primary_key.as_ref().to_string());
         self
     }
 
+    /// Execute the update of an [Index] using the [IndexUpdater]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::{Task, SucceededTask}};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let index = client
+    /// #   .create_index("index_updater_execute", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// # // Once the task finished, we try to create an `Index` out of it
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///
+    /// let task = IndexUpdater::new("index_updater_execute", &client)
+    ///   .with_primary_key("special_id")
+    ///   .execute()
+    ///   .await
+    ///   .unwrap()
+    ///   .wait_for_completion(&client, None, None)
+    ///   .await
+    ///   .unwrap();
+    ///
+    /// let index = client.get_index("index_updater_execute").await.unwrap();
+    /// assert_eq!(index.primary_key, Some("special_id".to_string()));
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
     pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
         request::<&IndexUpdater, TaskInfo>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
