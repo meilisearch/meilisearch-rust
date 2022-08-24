@@ -49,7 +49,7 @@ impl Client {
             offset: value["offset"].as_u64().unwrap() as u32,
             total: value["total"].as_u64().unwrap() as u32,
             results: raw_indexes
-                .into_iter()
+                .iter()
                 .map(|raw_index| Index::from_value(raw_index.clone(), self.clone()))
                 .collect::<Result<_, _>>()?,
         };
@@ -105,7 +105,7 @@ impl Client {
         &self,
         indexes_query: &IndexesQuery<'_>,
     ) -> Result<IndexesResults, Error> {
-        let value = self.list_all_indexes_raw_with(&indexes_query).await?;
+        let value = self.list_all_indexes_raw_with(indexes_query).await?;
         let indexes_results = self.parse_indexes_results_from_value(value)?;
 
         Ok(indexes_results)
@@ -308,7 +308,7 @@ impl Client {
         &self,
         indexes_query: &IndexesQuery<'_>,
     ) -> Result<IndexesResults, Error> {
-        self.list_all_indexes_with(&indexes_query).await
+        self.list_all_indexes_with(indexes_query).await
     }
 
     /// Alias for [Client::list_all_indexes_raw].
@@ -321,7 +321,7 @@ impl Client {
         &self,
         indexes_query: &IndexesQuery<'_>,
     ) -> Result<Value, Error> {
-        self.list_all_indexes_raw_with(&indexes_query).await
+        self.list_all_indexes_raw_with(indexes_query).await
     }
 
     /// Get stats of all indexes.
@@ -1155,14 +1155,13 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes_with_params(client: Client, index: Index) {
+    async fn test_list_all_indexes_with_params(client: Client) {
         let mut query = IndexesQuery::new(&client);
         query.with_limit(1);
         let all_indexes = client.list_all_indexes_with(&query).await.unwrap();
 
         assert_eq!(all_indexes.limit, 1);
         assert_eq!(all_indexes.offset, 0);
-        assert!(all_indexes.results.iter().any(|idx| idx.uid == index.uid));
     }
 
     #[meilisearch_test]
