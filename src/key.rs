@@ -259,7 +259,7 @@ impl KeyUpdater {
     /// let mut key_update = KeyUpdater::new(&key.key);
     /// key_update.with_description(&description).execute(&client).await;
     ///
-    /// # assert_eq!(key_update.description, Some(description));
+    /// assert_eq!(key_update.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
