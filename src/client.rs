@@ -1178,8 +1178,8 @@ mod tests {
         query.with_limit(1);
         let all_indexes_raw = client.list_all_indexes_raw_with(&query).await.unwrap();
 
-        assert_eq!(all_indexes_raw["limit"].as_u64().unwrap() as u32, 1);
-        assert_eq!(all_indexes_raw["offset"].as_u64().unwrap() as u32, 0);
+        assert_eq!(all_indexes_raw["limit"], json!(1));
+        assert_eq!(all_indexes_raw["offset"], json!(0));
     }
 
     #[meilisearch_test]
