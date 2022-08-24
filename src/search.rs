@@ -20,8 +20,8 @@ pub struct SearchResult<T> {
     #[serde(rename = "_formatted")]
     pub formatted_result: Option<Map<String, Value>>,
     /// The object that contains information about the matches.
-    #[serde(rename = "_matchesInfo")]
-    pub matches_info: Option<HashMap<String, Vec<MatchRange>>>,
+    #[serde(rename = "_matchesPosition")]
+    pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -696,10 +696,10 @@ mod tests {
         query.with_query("dolor text");
         query.with_show_matches_position(true);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
-        assert_eq!(results.hits[0].matches_info.as_ref().unwrap().len(), 2);
+        assert_eq!(results.hits[0].matches_position.as_ref().unwrap().len(), 2);
         assert_eq!(
             results.hits[0]
-                .matches_info
+                .matches_position
                 .as_ref()
                 .unwrap()
                 .get("value")

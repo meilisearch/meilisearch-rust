@@ -312,7 +312,7 @@ search_parameter_guide_matches_1: |-
     .unwrap();
 
   // Get the matches info
-  let matched_info: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_info.as_ref().unwrap()).collect();
+  let matched_info: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_position.as_ref().unwrap()).collect();
 settings_guide_synonyms_1: |-
   let mut synonyms = HashMap::new();
   synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
