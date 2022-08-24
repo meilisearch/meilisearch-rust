@@ -306,7 +306,7 @@ search_parameter_guide_highlight_tag_1: |-
 search_parameter_guide_matches_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("winter feast")
-    .with_matches(true)
+    .with_show_matches_position(true)
     .execute()
     .await
     .unwrap();

@@ -212,7 +212,7 @@ pub struct Query<'a> {
     ///
     /// Default: `false`
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub matches: Option<bool>,
+    pub show_matches_position: Option<bool>,
 }
 
 #[allow(missing_docs)]
@@ -233,7 +233,7 @@ impl<'a> Query<'a> {
             attributes_to_highlight: None,
             highlight_pre_tag: None,
             highlight_post_tag: None,
-            matches: None,
+            show_matches_position: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut Query<'a> {
@@ -306,8 +306,11 @@ impl<'a> Query<'a> {
         self.highlight_post_tag = Some(highlight_post_tag);
         self
     }
-    pub fn with_matches<'b>(&'b mut self, matches: bool) -> &'b mut Query<'a> {
-        self.matches = Some(matches);
+    pub fn with_show_matches_position<'b>(
+        &'b mut self,
+        show_matches_position: bool,
+    ) -> &'b mut Query<'a> {
+        self.show_matches_position = Some(show_matches_position);
         self
     }
     pub fn build(&mut self) -> Query<'a> {
@@ -686,12 +689,12 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_matches(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_show_matches_position(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = Query::new(&index);
         query.with_query("dolor text");
-        query.with_matches(true);
+        query.with_show_matches_position(true);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(results.hits[0].matches_info.as_ref().unwrap().len(), 2);
         assert_eq!(
