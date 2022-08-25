@@ -259,7 +259,7 @@ impl KeyUpdater {
     /// let mut key_update = KeyUpdater::new(&key.key);
     /// key_update.with_description(&description).execute(&client).await;
     ///
-    /// # assert_eq!(key_update.description, Some(description));
+    /// assert_eq!(key_update.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -690,16 +690,15 @@ pub enum Action {
     /// Provides access to the [get Meilisearch version](https://docs.meilisearch.com/reference/api/version.md#get-version-of-meilisearch) endpoint.
     #[serde(rename = "version")]
     Version,
-    // Provides access to the [get Key](https://docs.meilisearch.com/reference/api/keys.html#get-one-key) and [get Keys](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys) endpoints.
+    /// Provides access to the [get Key](https://docs.meilisearch.com/reference/api/keys.html#get-one-key) and [get Keys](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys) endpoints.
     #[serde(rename = "keys.get")]
     KeyGet,
-    // Provides access to the [create key](https://docs.meilisearch.com/reference/api/keys.html#create-a-key) endpoint.
+    /// Provides access to the [create key](https://docs.meilisearch.com/reference/api/keys.html#create-a-key) endpoint.
     #[serde(rename = "keys.create")]
     KeyCreate,
-    // Provides access to the [update key](https://docs.meilisearch.com/reference/api/keys.html#update-a-key) endpoint.
+    /// Provides access to the [update key](https://docs.meilisearch.com/reference/api/keys.html#update-a-key) endpoint.
     #[serde(rename = "keys.update")]
-    KeyUpdate,
-    // Provides access to the [delete key](https://docs.meilisearch.com/reference/api/keys.html#delete-a-key) endpoint.
+    /// Provides access to the [delete key](https://docs.meilisearch.com/reference/api/keys.html#delete-a-key) endpoint.
     #[serde(rename = "keys.delete")]
     KeyDelete,
 }
