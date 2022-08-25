@@ -967,7 +967,6 @@ mod tests {
     #[meilisearch_test]
 
     async fn test_error_delete_key(mut client: Client, name: String) {
-
         // ==> accessing a key that does not exist
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
@@ -984,7 +983,6 @@ mod tests {
 
         key.with_name(&name);
         let key = client.create_key(key).await.unwrap();
-
         let master_key = client.api_key.clone();
         // this key has no right
         client.api_key = Arc::new(key.key.clone());
