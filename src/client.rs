@@ -1149,12 +1149,11 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes(client: Client, index: Index) {
+    async fn test_list_all_indexes(client: Client) {
         let all_indexes = client.list_all_indexes().await.unwrap();
 
-        assert_eq!(all_indexes.limit, 1000);
+        assert_eq!(all_indexes.limit, 20);
         assert_eq!(all_indexes.offset, 0);
-        assert!(all_indexes.results.iter().any(|idx| idx.uid == index.uid));
     }
 
     #[meilisearch_test]
