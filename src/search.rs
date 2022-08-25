@@ -641,7 +641,7 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: "(ꈍᴗꈍ)consectetur adipiscing elit, sed do eiusmod(ꈍᴗꈍ)".to_string(),
+                value: "(ꈍᴗꈍ) sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)".to_string(),
                 kind: "text".to_string(),
                 nested: Nested {
                     child: "first".to_string()
