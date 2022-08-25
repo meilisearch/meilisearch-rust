@@ -329,7 +329,7 @@ impl KeysQuery {
     ///   .with_offset(1)
     ///   .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(keys.results.len(), 1);
+    /// # assert_eq!(keys.offset, 1);
     /// # });
     /// ```
     pub fn with_offset(&mut self, offset: usize) -> &mut KeysQuery {

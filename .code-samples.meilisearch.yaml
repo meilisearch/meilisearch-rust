@@ -306,13 +306,13 @@ search_parameter_guide_highlight_tag_1: |-
 search_parameter_guide_matches_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("winter feast")
-    .with_matches(true)
+    .with_show_matches_position(true)
     .execute()
     .await
     .unwrap();
 
   // Get the matches info
-  let matched_info: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_info.as_ref().unwrap()).collect();
+  let matched_info: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_position.as_ref().unwrap()).collect();
 settings_guide_synonyms_1: |-
   let mut synonyms = HashMap::new();
   synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
@@ -654,11 +654,11 @@ faceted_search_filter_1: |-
 faceted_search_facets_distribution_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Batman")
-    .with_facets_distribution(Selectors::Some(&["genres"]))
+    .with_facets(Selectors::Some(&["genres"]))
     .execute()
     .await
     .unwrap();
-  let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
+  let genres: &HashMap<String, usize> = results.facet_distribution.unwrap().get("genres").unwrap();
 faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("thriller")
