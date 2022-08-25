@@ -376,7 +376,7 @@ impl Index {
         request::<&DocumentsQuery, DocumentsResults<T>>(
             &url,
             &self.client.api_key,
-            Method::Get(&documents_query),
+            Method::Get(documents_query),
             200,
         )
         .await
