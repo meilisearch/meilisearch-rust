@@ -41,7 +41,23 @@ impl Client {
         }
     }
 
-    /// List all [Index]es and returns values as instances of [Index].
+    fn parse_indexes_results_from_value(&self, value: Value) -> Result<IndexesResults, Error> {
+        let raw_indexes = value["results"].as_array().unwrap();
+
+        let indexes_results = IndexesResults {
+            limit: value["limit"].as_u64().unwrap() as u32,
+            offset: value["offset"].as_u64().unwrap() as u32,
+            total: value["total"].as_u64().unwrap() as u32,
+            results: raw_indexes
+                .iter()
+                .map(|raw_index| Index::from_value(raw_index.clone(), self.clone()))
+                .collect::<Result<_, _>>()?,
+        };
+
+        Ok(indexes_results)
+    }
+
+    /// List all [Index]es with query parameters and returns values as instances of [Index].
     ///
     /// # Example
     ///
@@ -55,16 +71,44 @@ impl Client {
     /// // create the client
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
-    /// let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
+    /// let indexes: IndexesResults = client.list_all_indexes().await.unwrap();
     /// println!("{:?}", indexes);
     /// # });
     /// ```
-    pub async fn list_all_indexes(&self) -> Result<Vec<Index>, Error> {
-        self.list_all_indexes_raw()
-            .await?
-            .into_iter()
-            .map(|index| Index::from_value(index, self.clone()))
-            .collect()
+    pub async fn list_all_indexes(&self) -> Result<IndexesResults, Error> {
+        let value = self.list_all_indexes_raw().await?;
+        let indexes_results = self.parse_indexes_results_from_value(value)?;
+        Ok(indexes_results)
+    }
+
+    /// List all [Index]es and returns values as instances of [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// // create the client
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let mut query = IndexesQuery::new(&client);
+    /// query.with_limit(1);
+    /// let indexes: IndexesResults = client.list_all_indexes_with(&query).await.unwrap();
+    ///
+    /// assert_eq!(indexes.limit, 1);
+    /// # });
+    /// ```
+    pub async fn list_all_indexes_with(
+        &self,
+        indexes_query: &IndexesQuery<'_>,
+    ) -> Result<IndexesResults, Error> {
+        let value = self.list_all_indexes_raw_with(indexes_query).await?;
+        let indexes_results = self.parse_indexes_results_from_value(value)?;
+
+        Ok(indexes_results)
     }
 
     /// List all [Index]es and returns as Json.
@@ -85,11 +129,47 @@ impl Client {
     /// println!("{:?}", json_indexes);
     /// # });
     /// ```
-    pub async fn list_all_indexes_raw(&self) -> Result<Vec<Value>, Error> {
-        let json_indexes = request::<(), Vec<Value>>(
+    pub async fn list_all_indexes_raw(&self) -> Result<Value, Error> {
+        let json_indexes = request::<(), Value>(
             &format!("{}/indexes", self.host),
             &self.api_key,
             Method::Get(()),
+            200,
+        )
+        .await?;
+
+        Ok(json_indexes)
+    }
+
+    /// List all [Index]es with query parameters and returns as Json.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// // create the client
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///
+    /// let mut query = IndexesQuery::new(&client);
+    /// query.with_limit(1);
+    /// let json_indexes = client.list_all_indexes_raw_with(&query).await.unwrap();
+    ///
+    /// println!("{:?}", json_indexes);
+    /// # });
+    /// ```
+    pub async fn list_all_indexes_raw_with(
+        &self,
+        indexes_query: &IndexesQuery<'_>,
+    ) -> Result<Value, Error> {
+        let json_indexes = request::<&IndexesQuery, Value>(
+            &format!("{}/indexes", self.host),
+            &self.api_key,
+            Method::Get(indexes_query),
             200,
         )
         .await?;
@@ -158,13 +238,7 @@ impl Client {
 
     /// Create a corresponding object of an [Index] without any check or doing an HTTP call.
     pub fn index(&self, uid: impl Into<String>) -> Index {
-        Index {
-            uid: Arc::new(uid.into()),
-            client: self.clone(),
-            primary_key: None,
-            created_at: None,
-            updated_at: None,
-        }
+        Index::new(uid, self.clone())
     }
 
     /// Create an [Index].
@@ -225,13 +299,29 @@ impl Client {
     }
 
     /// Alias for [Client::list_all_indexes].
-    pub async fn get_indexes(&self) -> Result<Vec<Index>, Error> {
+    pub async fn get_indexes(&self) -> Result<IndexesResults, Error> {
         self.list_all_indexes().await
     }
 
+    /// Alias for [Client::list_all_indexes_with].
+    pub async fn get_indexes_with(
+        &self,
+        indexes_query: &IndexesQuery<'_>,
+    ) -> Result<IndexesResults, Error> {
+        self.list_all_indexes_with(indexes_query).await
+    }
+
     /// Alias for [Client::list_all_indexes_raw].
-    pub async fn get_indexes_raw(&self) -> Result<Vec<Value>, Error> {
+    pub async fn get_indexes_raw(&self) -> Result<Value, Error> {
         self.list_all_indexes_raw().await
+    }
+
+    /// Alias for [Client::list_all_indexes_raw_with].
+    pub async fn get_indexes_raw_with(
+        &self,
+        indexes_query: &IndexesQuery<'_>,
+    ) -> Result<Value, Error> {
+        self.list_all_indexes_raw_with(indexes_query).await
     }
 
     /// Get stats of all indexes.
@@ -873,6 +963,7 @@ mod tests {
     }
 
     #[meilisearch_test]
+
     async fn test_error_delete_key(mut client: Client, name: String) {
         // ==> accessing a key that does not exist
         let error = client.delete_key("invalid_key").await.unwrap_err();
@@ -887,9 +978,9 @@ mod tests {
 
         // ==> executing the action without enough right
         let mut key = KeyBuilder::new();
+
         key.with_name(&name);
         let key = client.create_key(key).await.unwrap();
-
         let master_key = client.api_key.clone();
         // this key has no right
         client.api_key = Arc::new(key.key.clone());
@@ -1058,19 +1149,39 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes(client: Client, index: Index) {
+    async fn test_list_all_indexes(client: Client) {
         let all_indexes = client.list_all_indexes().await.unwrap();
-        assert!(all_indexes.len() > 0);
-        assert!(all_indexes.iter().any(|idx| idx.uid == index.uid));
+
+        assert_eq!(all_indexes.limit, 20);
+        assert_eq!(all_indexes.offset, 0);
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes_raw(client: Client, index: Index) {
+    async fn test_list_all_indexes_with_params(client: Client) {
+        let mut query = IndexesQuery::new(&client);
+        query.with_limit(1);
+        let all_indexes = client.list_all_indexes_with(&query).await.unwrap();
+
+        assert_eq!(all_indexes.limit, 1);
+        assert_eq!(all_indexes.offset, 0);
+    }
+
+    #[meilisearch_test]
+    async fn test_list_all_indexes_raw(client: Client) {
         let all_indexes_raw = client.list_all_indexes_raw().await.unwrap();
-        assert!(all_indexes_raw.len() > 0);
-        assert!(all_indexes_raw
-            .iter()
-            .any(|idx| idx["uid"] == json!(index.uid.to_string())));
+
+        assert_eq!(all_indexes_raw["limit"], json!(20));
+        assert_eq!(all_indexes_raw["offset"], json!(0));
+    }
+
+    #[meilisearch_test]
+    async fn test_list_all_indexes_raw_with_params(client: Client) {
+        let mut query = IndexesQuery::new(&client);
+        query.with_limit(1);
+        let all_indexes_raw = client.list_all_indexes_raw_with(&query).await.unwrap();
+
+        assert_eq!(all_indexes_raw["limit"], json!(1));
+        assert_eq!(all_indexes_raw["offset"], json!(0));
     }
 
     #[meilisearch_test]
