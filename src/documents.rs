@@ -1,11 +1,5 @@
-// TODO: remove unused
-use crate::{
-    client::Client, errors::Error, indexes::Index, request::*, search::*, task_info::TaskInfo,
-    tasks::*,
-};
+use crate::{errors::Error, indexes::Index};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display, time::Duration};
-use time::OffsetDateTime;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct DocumentsResults<T> {
@@ -96,7 +90,24 @@ impl<'a> DocumentsQuery<'a> {
         self
     }
 
-    // TODO: add doc
+    /// Specify the fields to return in the documents.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///
+    /// let index = client.index("documents_query_offset");
+    ///
+    /// let mut documents_query = DocumentsQuery::new(&index);
+    ///
+    /// documents_query.with_fields(["title"]);
+    /// ```
     pub fn with_fields(
         &mut self,
         fields: impl IntoIterator<Item = &'a str>,
@@ -105,7 +116,24 @@ impl<'a> DocumentsQuery<'a> {
         self
     }
 
-    // TODO: add doc
+    /// Specify the limit.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///
+    /// let index = client.index("documents_query_offset");
+    ///
+    /// let mut documents_query = DocumentsQuery::new(&index);
+    ///
+    /// documents_query.with_offset(1).execute().await.unwrap();
+    /// ```
     pub async fn execute<T: DeserializeOwned + 'static>(
         &self,
     ) -> Result<DocumentsResults<T>, Error> {
@@ -122,7 +150,7 @@ mod tests {
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct MyObject {
-        id: usize,
+        id: Option<usize>,
         kind: String,
     }
 
@@ -131,19 +159,19 @@ mod tests {
             .add_documents(
                 &[
                     MyObject {
-                        id: 0,
+                        id: Some(0),
                         kind: "text".into(),
                     },
                     MyObject {
-                        id: 1,
+                        id: Some(1),
                         kind: "text".into(),
                     },
                     MyObject {
-                        id: 2,
+                        id: Some(2),
                         kind: "title".into(),
                     },
                     MyObject {
-                        id: 3,
+                        id: Some(3),
                         kind: "title".into(),
                     },
                 ],
@@ -157,7 +185,8 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_documents_with_execute(_client: Client, index: Index) -> Result<(), Error> {
+    async fn test_get_documents_with_execute(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
         // let documents = index.get_documents(None, None, None).await.unwrap();
         let documents = DocumentsQuery::new(&index)
             .with_limit(1)
@@ -167,9 +196,28 @@ mod tests {
             .await
             .unwrap();
 
-        dbg!(&documents);
         assert_eq!(documents.limit, 1);
         assert_eq!(documents.offset, 1);
+        assert_eq!(documents.results.len(), 1);
+
+        Ok(())
+    }
+    #[meilisearch_test]
+    async fn test_get_documents_with_only_one_param(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        // let documents = index.get_documents(None, None, None).await.unwrap();
+        let documents = DocumentsQuery::new(&index)
+            .with_limit(1)
+            .execute::<MyObject>()
+            .await
+            .unwrap();
+
+        assert_eq!(documents.limit, 1);
+        assert_eq!(documents.offset, 0);
+        assert_eq!(documents.results.len(), 1);
 
         Ok(())
     }

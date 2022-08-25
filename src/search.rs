@@ -356,7 +356,6 @@ mod tests {
         child: String,
     }
 
-    // TODO: change name of `Document` to avoid confusion
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
         id: usize,
