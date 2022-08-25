@@ -101,7 +101,6 @@ impl<'a> DocumentsQuery<'a> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
     /// let index = client.index("documents_query_offset");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
@@ -122,17 +121,26 @@ impl<'a> DocumentsQuery<'a> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// # use serde::{Deserialize, Serialize};
     /// #
     /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     ///
-    /// let index = client.index("documents_query_offset");
+    /// # futures::executor::block_on(async move {
+    /// # let index = client.create_index("documents_query_execute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// struct MyObject {
+    ///     id: Option<usize>,
+    ///     kind: String,
+    /// }
+    /// let index = client.index("documents_query_execute");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
     ///
-    /// documents_query.with_offset(1).execute().await.unwrap();
+    /// documents_query.with_offset(1).execute::<MyObject>().await.unwrap();
+    /// # });
     /// ```
     pub async fn execute<T: DeserializeOwned + 'static>(
         &self,
