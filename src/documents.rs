@@ -140,6 +140,7 @@ impl<'a> DocumentsQuery<'a> {
     /// let mut documents_query = DocumentsQuery::new(&index);
     ///
     /// documents_query.with_offset(1).execute::<MyObject>().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn execute<T: DeserializeOwned + 'static>(

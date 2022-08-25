@@ -432,7 +432,7 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
     /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
-    /// assert!(movies.len() >= 3);
+    /// assert!(movies.results.len() >= 3);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -510,7 +510,7 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
     /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
-    /// assert!(movies.len() >= 3);
+    /// assert!(movies.results.len() >= 3);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
