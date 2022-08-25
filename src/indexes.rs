@@ -1,7 +1,6 @@
-use crate::{client::Client, errors::Error, request::*, search::*, tasks::*};
+use crate::{client::Client, errors::Error, request::*, search::*, task_info::TaskInfo, tasks::*};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::json;
-use std::{collections::HashMap, fmt::Display, sync::Arc, time::Duration};
+use std::{collections::HashMap, fmt::Display, time::Duration};
 use time::OffsetDateTime;
 
 /// An index containing [Document]s.
@@ -12,8 +11,12 @@ use time::OffsetDateTime;
 /// See the [Client::create_index] method.
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
 /// # futures::executor::block_on(async move {
-/// let client = Client::new("http://localhost:7700", "masterKey");
+/// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 ///
 /// // get the index called movies or create it if it does not exist
 /// let movies = client
@@ -33,33 +36,49 @@ use time::OffsetDateTime;
 /// # });
 /// ```
 ///
-/// Or, if you know the index already exist remotely you can create an `Index` with the [Client::index] function.
+/// Or, if you know the index already exist remotely you can create an [Index] with its builder.
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
 /// # futures::executor::block_on(async move {
-/// let client = Client::new("http://localhost:7700", "masterKey");
+/// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 ///
-/// // use the implicit index creation if the index already exist or
 /// // Meilisearch would be able to create the index if it does not exist during:
 /// // - the documents addition (add and update routes)
 /// // - the settings update
-/// let movies = client.index("index");
+/// let movies = Index::new("movies", client);
 ///
-/// // do something with the index
+/// assert_eq!(movies.uid, "movies");
 /// # });
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Index {
-    pub(crate) uid: Arc<String>,
-    pub(crate) client: Client,
-    pub(crate) primary_key: Option<String>,
-    pub created_at: Option<OffsetDateTime>,
+    #[serde(skip_serializing)]
+    pub client: Client,
+    pub uid: String,
+    #[serde(with = "time::serde::rfc3339::option")]
     pub updated_at: Option<OffsetDateTime>,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub created_at: Option<OffsetDateTime>,
+    pub primary_key: Option<String>,
 }
 
 impl Index {
+    pub fn new(uid: impl Into<String>, client: Client) -> Index {
+        Index {
+            uid: uid.into(),
+            client,
+            primary_key: None,
+            created_at: None,
+            updated_at: None,
+        }
+    }
     /// Internal Function to create an [Index] from `serde_json::Value` and [Client]
-    pub(crate) fn from_value(v: serde_json::Value, client: Client) -> Result<Index, Error> {
+    pub(crate) fn from_value(raw_index: serde_json::Value, client: Client) -> Result<Index, Error> {
         #[derive(Deserialize, Debug)]
         #[allow(non_snake_case)]
         struct IndexFromSerde {
@@ -71,10 +90,10 @@ impl Index {
             primaryKey: Option<String>,
         }
 
-        let i: IndexFromSerde = serde_json::from_value(v).map_err(Error::ParseError)?;
+        let i: IndexFromSerde = serde_json::from_value(raw_index).map_err(Error::ParseError)?;
 
         Ok(Index {
-            uid: Arc::new(i.uid),
+            uid: i.uid,
             client,
             created_at: i.createdAt,
             updated_at: i.updatedAt,
@@ -82,18 +101,50 @@ impl Index {
         })
     }
 
-    /// Set the primary key of the index.
+    /// Update an [Index].
     ///
-    /// If you prefer, you can use the method [Index::set_primary_key], which is an alias.
-    pub async fn update(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
-        request::<serde_json::Value, serde_json::Value>(
-            &format!("{}/indexes/{}", self.client.host, self.uid),
-            &self.client.api_key,
-            Method::Put(json!({ "primaryKey": primary_key.as_ref() })),
-            200,
-        )
-        .await?;
-        Ok(())
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::{Task, SucceededTask}};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let mut index = client
+    /// #   .create_index("index_update", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// # // Once the task finished, we try to create an `Index` out of it
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///
+    /// index.primary_key = Some("special_id".to_string());
+    /// let task = index.update()
+    ///   .await
+    ///   .unwrap()
+    ///   .wait_for_completion(&client, None, None)
+    ///   .await
+    ///   .unwrap();
+    ///
+    /// let index = client.get_index("index_update").await.unwrap();
+    /// assert_eq!(index.primary_key, Some("special_id".to_string()));
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn update(&self) -> Result<TaskInfo, Error> {
+        let mut index_update = IndexUpdater::new(self, &self.client);
+
+        if let Some(ref primary_key) = self.primary_key {
+            index_update.with_primary_key(primary_key);
+        }
+
+        index_update.execute().await
     }
 
     /// Delete the index.
@@ -102,8 +153,12 @@ impl Index {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("delete", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the index named "movies" and delete it
@@ -112,8 +167,8 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete(self) -> Result<Task, Error> {
-        request::<(), Task>(
+    pub async fn delete(self) -> Result<TaskInfo, Error> {
+        request::<(), TaskInfo>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             &self.client.api_key,
             Method::Delete,
@@ -131,6 +186,10 @@ impl Index {
     /// use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
     ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
@@ -138,7 +197,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("execute_query");
     ///
     /// // add some documents
@@ -172,6 +231,10 @@ impl Index {
     /// use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
     ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
@@ -179,7 +242,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let mut movies = client.index("search");
     ///
     /// // add some documents
@@ -210,6 +273,10 @@ impl Index {
     ///
     /// # use meilisearch_sdk::{client::*, indexes::*};
     ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
     /// struct Movie {
@@ -219,7 +286,7 @@ impl Index {
     ///
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("get_document");
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
@@ -240,7 +307,7 @@ impl Index {
                 self.client.host, self.uid, uid
             ),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -259,6 +326,10 @@ impl Index {
     /// use serde::{Serialize, Deserialize};
     ///
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     ///
     /// #[derive(Serialize, Deserialize, Debug)]
     /// # #[derive(PartialEq)]
@@ -269,7 +340,7 @@ impl Index {
     ///
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("get_documents");
     ///
     /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -302,7 +373,7 @@ impl Index {
             url.push_str("attributesToRetrieve=");
             url.push_str(attributes_to_retrieve);
         }
-        request::<(), Vec<T>>(&url, &self.client.api_key, Method::Get, 200).await
+        request::<(), Vec<T>>(&url, &self.client.api_key, Method::Get(()), 200).await
     }
 
     /// Add a list of [Document]s or replace them if they already exist.
@@ -322,6 +393,10 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///    name: String,
@@ -329,7 +404,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("add_or_replace");
     ///
     /// let task = movie_index.add_or_replace(&[
@@ -359,7 +434,7 @@ impl Index {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
-    ) -> Result<Task, Error> {
+    ) -> Result<TaskInfo, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -368,7 +443,7 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], Task>(&url, &self.client.api_key, Method::Post(documents), 202).await
+        request::<&[T], TaskInfo>(&url, &self.client.api_key, Method::Post(documents), 202).await
     }
 
     /// Alias for [Index::add_or_replace].
@@ -376,7 +451,7 @@ impl Index {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
-    ) -> Result<Task, Error> {
+    ) -> Result<TaskInfo, Error> {
         self.add_or_replace(documents, primary_key).await
     }
 
@@ -395,6 +470,10 @@ impl Index {
     /// # use meilisearch_sdk::client::*;
     /// # use std::thread::sleep;
     /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///    name: String,
@@ -402,7 +481,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("add_or_update");
     ///
     /// let task = movie_index.add_or_update(&[
@@ -433,7 +512,7 @@ impl Index {
         &self,
         documents: &[T],
         primary_key: Option<impl AsRef<str>>,
-    ) -> Result<Task, Error> {
+    ) -> Result<TaskInfo, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -444,7 +523,7 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], Task>(&url, &self.client.api_key, Method::Put(documents), 202).await
+        request::<&[T], TaskInfo>(&url, &self.client.api_key, Method::Put(documents), 202).await
     }
 
     /// Delete all documents in the index.
@@ -455,6 +534,9 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
     /// #    name: String,
@@ -464,7 +546,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// #
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("delete_all_documents");
     ///
     /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -481,8 +563,8 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_all_documents(&self) -> Result<Task, Error> {
-        request::<(), Task>(
+    pub async fn delete_all_documents(&self) -> Result<TaskInfo, Error> {
+        request::<(), TaskInfo>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             &self.client.api_key,
             Method::Delete,
@@ -499,6 +581,9 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::client::*;
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
     /// #    name: String,
@@ -508,7 +593,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// #
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let mut movies = client.index("delete_document");
     ///
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -523,8 +608,8 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_document<T: Display>(&self, uid: T) -> Result<Task, Error> {
-        request::<(), Task>(
+    pub async fn delete_document<T: Display>(&self, uid: T) -> Result<TaskInfo, Error> {
+        request::<(), TaskInfo>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
@@ -544,6 +629,9 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::client::*;
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
     /// #    name: String,
@@ -553,7 +641,7 @@ impl Index {
     /// #
     /// # futures::executor::block_on(async move {
     /// #
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("delete_documents");
     ///
     /// // add some documents
@@ -572,8 +660,8 @@ impl Index {
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
         &self,
         uids: &[T],
-    ) -> Result<Task, Error> {
-        request::<&[T], Task>(
+    ) -> Result<TaskInfo, Error> {
+        request::<&[T], TaskInfo>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
                 self.client.host, self.uid
@@ -586,8 +674,13 @@ impl Index {
     }
 
     /// Alias for the [Index::update] method.
-    pub async fn set_primary_key(&self, primary_key: impl AsRef<str>) -> Result<(), Error> {
-        self.update(primary_key).await
+    pub async fn set_primary_key(
+        &mut self,
+        primary_key: impl AsRef<str>,
+    ) -> Result<TaskInfo, Error> {
+        self.primary_key = Some(primary_key.as_ref().to_string());
+
+        self.update().await
     }
 
     /// Fetch the information of the index as a raw JSON [Index], this index should already exist.
@@ -596,10 +689,13 @@ impl Index {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("fetch_info", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the information of the index named "fetch_info"
@@ -611,7 +707,7 @@ impl Index {
     /// ```
     /// If you use it directly from the [Client], you can use the method [Client::get_raw_index], which is the equivalent method from the client.
     pub async fn fetch_info(&mut self) -> Result<(), Error> {
-        let v = self.client.get_raw_index(self.uid.as_ref()).await?;
+        let v = self.client.get_raw_index(&self.uid).await?;
         *self = Index::from_value(v, self.client.clone())?;
         Ok(())
     }
@@ -622,10 +718,13 @@ impl Index {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_primary_key", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the primary key of the index named "movies"
@@ -648,6 +747,9 @@ impl Index {
     /// # use std::time::Duration;
     /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// # struct Document {
     /// #    id: usize,
@@ -657,7 +759,7 @@ impl Index {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("get_task");
     ///
     /// let task = movies.add_documents(&[
@@ -675,20 +777,15 @@ impl Index {
     ///    Task::Succeeded { content } => content.uid,
     /// };
     ///
-    /// assert_eq!(task.get_uid(), from_index);
+    /// assert_eq!(task.get_task_uid(), from_index);
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_task(&self, uid: impl AsRef<u64>) -> Result<Task, Error> {
+    pub async fn get_task(&self, uid: impl AsRef<u32>) -> Result<Task, Error> {
         request::<(), Task>(
-            &format!(
-                "{}/indexes/{}/tasks/{}",
-                self.client.host,
-                self.uid,
-                uid.as_ref()
-            ),
+            &format!("{}/tasks/{}", self.client.host, uid.as_ref()),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -702,34 +799,57 @@ impl Index {
     /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_tasks", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    /// let status = index.get_tasks().await.unwrap();
-    /// assert!(status.len() == 1); // the index was created
+    /// let tasks = index.get_tasks().await.unwrap();
     ///
-    /// index.set_ranking_rules(["wrong_ranking_rule"]).await.unwrap();
-    ///
-    /// let status = index.get_tasks().await.unwrap();
-    /// assert!(status.len() == 2);
+    /// assert!(tasks.results.len() > 0);
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_tasks(&self) -> Result<Vec<Task>, Error> {
-        #[derive(Deserialize)]
-        struct AllTasks {
-            results: Vec<Task>,
-        }
+    pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
+        let mut query = TasksQuery::new(&self.client);
+        query.with_index_uid([self.uid.as_str()]);
 
-        Ok(request::<(), AllTasks>(
-            &format!("{}/indexes/{}/tasks", self.client.host, self.uid),
-            &self.client.api_key,
-            Method::Get,
-            200,
-        )
-        .await?
-        .results)
+        self.client.get_tasks_with(&query).await
+    }
+
+    /// Get the status of all tasks in a given index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let index = client.create_index("get_tasks_with", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    ///
+    /// let mut query = TasksQuery::new(&client);
+    /// query.with_index_uid(["none_existant"]);
+    /// let tasks = index.get_tasks_with(&query).await.unwrap();
+    ///
+    /// assert!(tasks.results.len() > 0);
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_tasks_with(
+        &self,
+        tasks_query: &TasksQuery<'_>,
+    ) -> Result<TasksResults, Error> {
+        let mut query = tasks_query.clone();
+        query.with_index_uid([self.uid.as_str()]);
+
+        self.client.get_tasks_with(&query).await
     }
 
     /// Get stats of an index.
@@ -739,8 +859,11 @@ impl Index {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_stats", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// let stats = index.get_stats().await.unwrap();
@@ -749,10 +872,10 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<IndexStats, Error> {
-        request::<serde_json::Value, IndexStats>(
+        request::<(), IndexStats>(
             &format!("{}/indexes/{}/stats", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Get,
+            Method::Get(()),
             200,
         )
         .await
@@ -773,6 +896,9 @@ impl Index {
     /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// # struct Document {
     /// #    id: usize,
@@ -782,7 +908,7 @@ impl Index {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("movies_index_wait_for_task");
     ///
     /// let task = movies.add_documents(&[
@@ -798,7 +924,7 @@ impl Index {
     /// ```
     pub async fn wait_for_task(
         &self,
-        task_id: impl AsRef<u64>,
+        task_id: impl AsRef<u32>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
     ) -> Result<Task, Error> {
@@ -817,6 +943,10 @@ impl Index {
     /// use serde::{Serialize, Deserialize};
     /// use meilisearch_sdk::client::*;
     ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
@@ -824,7 +954,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("add_documents_in_batches");
     ///
     /// let tasks = movie_index.add_documents_in_batches(&[
@@ -858,7 +988,7 @@ impl Index {
         documents: &[T],
         batch_size: Option<usize>,
         primary_key: Option<&str>,
-    ) -> Result<Vec<Task>, Error> {
+    ) -> Result<Vec<TaskInfo>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
             task.push(self.add_documents(document_batch, primary_key).await?);
@@ -878,6 +1008,10 @@ impl Index {
     /// use serde::{Serialize, Deserialize};
     /// use meilisearch_sdk::client::*;
     ///
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
     /// #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
     /// struct Movie {
     ///     name: String,
@@ -885,7 +1019,7 @@ impl Index {
     /// }
     ///
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movie_index = client.index("update_documents_in_batches");
     ///
     /// let tasks = movie_index.add_documents_in_batches(&[
@@ -944,7 +1078,7 @@ impl Index {
         documents: &[T],
         batch_size: Option<usize>,
         primary_key: Option<&str>,
-    ) -> Result<Vec<Task>, Error> {
+    ) -> Result<Vec<TaskInfo>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
             task.push(self.add_or_update(document_batch, primary_key).await?);
@@ -959,6 +1093,163 @@ impl AsRef<str> for Index {
     }
 }
 
+/// An [IndexUpdater] used to update the specifics of an index
+///
+/// # Example
+///
+/// ```
+/// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::{Task, SucceededTask}};
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
+/// # futures::executor::block_on(async move {
+/// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+/// # let index = client
+/// #   .create_index("index_updater", None)
+/// #   .await
+/// #   .unwrap()
+/// #   .wait_for_completion(&client, None, None)
+/// #   .await
+/// #   .unwrap()
+/// # // Once the task finished, we try to create an `Index` out of it
+/// #   .try_make_index(&client)
+/// #   .unwrap();
+///
+/// let task = IndexUpdater::new("index_updater", &client)
+///   .with_primary_key("special_id")
+///   .execute()
+///   .await
+///   .unwrap()
+///   .wait_for_completion(&client, None, None)
+///   .await
+///   .unwrap();
+///
+/// let index = client.get_index("index_updater").await.unwrap();
+/// assert_eq!(index.primary_key, Some("special_id".to_string()));
+/// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+/// # });
+/// ```
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexUpdater<'a> {
+    #[serde(skip)]
+    pub client: &'a Client,
+    #[serde(skip_serializing)]
+    pub uid: String,
+    pub primary_key: Option<String>,
+}
+
+impl<'a> IndexUpdater<'a> {
+    pub fn new(uid: impl AsRef<str>, client: &Client) -> IndexUpdater {
+        IndexUpdater {
+            client,
+            primary_key: None,
+            uid: uid.as_ref().to_string(),
+        }
+    }
+    /// Define the new primary_key to set on the [Index]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::{Task, SucceededTask}};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let index = client
+    /// #   .create_index("index_updater_with_primary_key", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// # // Once the task finished, we try to create an `Index` out of it
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///
+    /// let task = IndexUpdater::new("index_updater_with_primary_key", &client)
+    ///   .with_primary_key("special_id")
+    ///   .execute()
+    ///   .await
+    ///   .unwrap()
+    ///   .wait_for_completion(&client, None, None)
+    ///   .await
+    ///   .unwrap();
+    ///
+    /// let index = client.get_index("index_updater_with_primary_key").await.unwrap();
+    /// assert_eq!(index.primary_key, Some("special_id".to_string()));
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_primary_key(&mut self, primary_key: impl AsRef<str>) -> &mut Self {
+        self.primary_key = Some(primary_key.as_ref().to_string());
+        self
+    }
+
+    /// Execute the update of an [Index] using the [IndexUpdater]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::{Task, SucceededTask}};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let index = client
+    /// #   .create_index("index_updater_execute", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// # // Once the task finished, we try to create an `Index` out of it
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///
+    /// let task = IndexUpdater::new("index_updater_execute", &client)
+    ///   .with_primary_key("special_id")
+    ///   .execute()
+    ///   .await
+    ///   .unwrap()
+    ///   .wait_for_completion(&client, None, None)
+    ///   .await
+    ///   .unwrap();
+    ///
+    /// let index = client.get_index("index_updater_execute").await.unwrap();
+    /// assert_eq!(index.primary_key, Some("special_id".to_string()));
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
+        request::<&IndexUpdater, TaskInfo>(
+            &format!("{}/indexes/{}", self.client.host, self.uid),
+            &self.client.api_key,
+            Method::Patch(self),
+            202,
+        )
+        .await
+    }
+}
+
+impl AsRef<str> for IndexUpdater<'_> {
+    fn as_ref(&self) -> &str {
+        &self.uid
+    }
+}
+
+impl<'a> AsRef<IndexUpdater<'a>> for IndexUpdater<'a> {
+    fn as_ref(&self) -> &IndexUpdater<'a> {
+        self
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStats {
@@ -967,11 +1258,187 @@ pub struct IndexStats {
     pub field_distribution: HashMap<String, usize>,
 }
 
+// An [IndexesQuery] containing filter and pagination parameters when searching for [Index]es
+///
+/// # Example
+///
+/// ```
+/// # use meilisearch_sdk::{client::*, indexes::*};
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
+/// # futures::executor::block_on(async move {
+/// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+/// # let index = client
+/// #   .create_index("index_query_builder", None)
+/// #   .await
+/// #   .unwrap()
+/// #   .wait_for_completion(&client, None, None)
+/// #   .await
+/// #   .unwrap()
+/// #   // Once the task finished, we try to create an `Index` out of it
+/// #   .try_make_index(&client)
+/// #   .unwrap();
+///  let mut indexes = IndexesQuery::new(&client)
+///   .with_limit(1)
+///   .execute().await.unwrap();
+///
+/// # assert_eq!(indexes.results.len(), 1);
+/// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+/// # });
+/// ```
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexesQuery<'a> {
+    #[serde(skip_serializing)]
+    pub client: &'a Client,
+    /// The number of [Index]es to skip.
+    /// If the value of the parameter `offset` is `n`, the `n` first indexes will not be returned.
+    /// This is helpful for pagination.
+    ///
+    /// Example: If you want to skip the first index, set offset to `1`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub offset: Option<usize>,
+
+    /// The maximum number of [Index]es returned.
+    /// If the value of the parameter `limit` is `n`, there will never be more than `n` indexes in the response.
+    /// This is helpful for pagination.
+    ///
+    /// Example: If you don't want to get more than two indexes, set limit to `2`.
+    /// Default: `20`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<usize>,
+}
+
+impl<'a> IndexesQuery<'a> {
+    pub fn new(client: &Client) -> IndexesQuery {
+        IndexesQuery {
+            client,
+            offset: None,
+            limit: None,
+        }
+    }
+
+    /// Specify the offset.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let index = client
+    /// #   .create_index("index_query_with_offset", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   // Once the task finished, we try to create an `Index` out of it
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///
+    ///  let mut indexes = IndexesQuery::new(&client)
+    ///   .with_offset(1)
+    ///   .execute().await.unwrap();
+    ///
+    /// # assert_eq!(indexes.offset, 1);
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_offset(&mut self, offset: usize) -> &mut IndexesQuery<'a> {
+        self.offset = Some(offset);
+        self
+    }
+
+    /// Specify the maximum number of [Index]es to return.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let index = client
+    /// #   .create_index("index_query_with_limit", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   // Once the task finished, we try to create an `Index` out of it
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///  let mut indexes = IndexesQuery::new(&client)
+    ///   .with_limit(1)
+    ///   .execute().await.unwrap();
+    ///
+    /// # assert_eq!(indexes.results.len(), 1);
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_limit(&mut self, limit: usize) -> &mut IndexesQuery<'a> {
+        self.limit = Some(limit);
+        self
+    }
+    /// Get [Index]es.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{indexes::IndexesQuery, client::Client};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let index = client
+    /// #   .create_index("index_query_with_execute", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   // Once the task finished, we try to create an `Index` out of it
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///  let mut indexes = IndexesQuery::new(&client)
+    ///   .with_limit(1)
+    ///   .execute().await.unwrap();
+    ///
+    /// # assert_eq!(indexes.results.len(), 1);
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn execute(&self) -> Result<IndexesResults, Error> {
+        self.client.list_all_indexes_with(self).await
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IndexesResults {
+    pub results: Vec<Index>,
+    pub limit: u32,
+    pub offset: u32,
+    pub total: u32,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     use meilisearch_test_macro::meilisearch_test;
+    use serde_json::json;
 
     #[meilisearch_test]
     async fn test_from_value(client: Client) {
@@ -988,7 +1455,7 @@ mod tests {
         });
 
         let idx = Index {
-            uid: Arc::new("test_from_value".to_string()),
+            uid: "test_from_value".to_string(),
             primary_key: None,
             created_at: Some(t),
             updated_at: Some(t),
@@ -1015,13 +1482,6 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks_no_docs(index: Index) {
-        // The at this point the only task that is supposed to exist is the creation of the index
-        let status = index.get_tasks().await.unwrap();
-        assert_eq!(status.len(), 1);
-    }
-
-    #[meilisearch_test]
     async fn test_get_one_task(client: Client, index: Index) -> Result<(), Error> {
         let task = index
             .delete_all_documents()
@@ -1032,10 +1492,42 @@ mod tests {
         let status = index.get_task(task).await?;
 
         match status {
-            Task::Enqueued { content } => assert_eq!(content.index_uid, *index.uid),
-            Task::Processing { content } => assert_eq!(content.index_uid, *index.uid),
-            Task::Failed { content } => assert_eq!(content.task.index_uid, *index.uid),
-            Task::Succeeded { content } => assert_eq!(content.index_uid, *index.uid),
+            Task::Enqueued {
+                content:
+                    EnqueuedTask {
+                        index_uid: Some(index_uid),
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            Task::Processing {
+                content:
+                    EnqueuedTask {
+                        index_uid: Some(index_uid),
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            Task::Failed {
+                content:
+                    FailedTask {
+                        task:
+                            SucceededTask {
+                                index_uid: Some(index_uid),
+                                ..
+                            },
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            Task::Succeeded {
+                content:
+                    SucceededTask {
+                        index_uid: Some(index_uid),
+                        ..
+                    },
+            } => assert_eq!(index_uid, *index.uid),
+            task => panic!(
+                "The task should have an index_uid that is not null {:?}",
+                task
+            ),
         }
         Ok(())
     }

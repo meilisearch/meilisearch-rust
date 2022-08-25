@@ -102,7 +102,7 @@ struct Movie {
 
 fn main() { block_on(async move {
     // Create a client (without sending any request so that can't fail)
-    let client = Client::new("http://localhost:7700", "masterKey");
+    let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 
     // An index is where the documents are stored.
     let movies = client.index("movies");
@@ -224,7 +224,7 @@ Json output:
   ],
   "offset": 0,
   "limit": 20,
-  "nbHits": 1,
+  "estimatedTotalHits": 1,
   "processingTimeMs": 0,
   "query": "wonder"
 }

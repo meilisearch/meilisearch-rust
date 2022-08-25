@@ -3,7 +3,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct MatchRange {
     pub start: usize,
     pub length: usize,
@@ -20,8 +20,8 @@ pub struct SearchResult<T> {
     #[serde(rename = "_formatted")]
     pub formatted_result: Option<Map<String, Value>>,
     /// The object that contains information about the matches.
-    #[serde(rename = "_matchesInfo")]
-    pub matches_info: Option<HashMap<String, Vec<MatchRange>>>,
+    #[serde(rename = "_matchesPosition")]
+    pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -35,13 +35,9 @@ pub struct SearchResults<T> {
     /// Number of results returned
     pub limit: usize,
     /// Total number of matches
-    pub nb_hits: usize,
-    /// Whether nb_hits is exhaustive
-    pub exhaustive_nb_hits: bool,
+    pub estimated_total_hits: usize,
     /// Distribution of the given facets
-    pub facets_distribution: Option<HashMap<String, HashMap<String, usize>>>,
-    /// Whether facet_distribution is exhaustive
-    pub exhaustive_facets_count: Option<bool>,
+    pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
     /// Processing time of the query
     pub processing_time_ms: usize,
     /// Query originating the response
@@ -101,20 +97,50 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// # Examples
 ///
 /// ```
+/// use serde::{Serialize, Deserialize};
 /// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
-/// # let client = Client::new("http://localhost:7700", "masterKey");
-/// # let index = client.index("does not matter");
-/// let query = Query::new(&index)
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
+/// #[derive(Serialize, Deserialize, Debug)]
+/// struct Movie {
+///     name: String,
+///     description: String,
+/// }
+///
+/// # futures::executor::block_on(async move {
+/// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+/// # let index = client
+/// #  .create_index("search_query_builder", None)
+/// #  .await
+/// #  .unwrap()
+/// #  .wait_for_completion(&client, None, None)
+/// #  .await.unwrap()
+/// #  .try_make_index(&client)
+/// #  .unwrap();
+///
+/// let mut res = Query::new(&index)
 ///     .with_query("space")
 ///     .with_offset(42)
 ///     .with_limit(21)
-///     .build(); // you can also execute() instead of build()
+///     .execute::<Movie>()
+///     .await
+///     .unwrap();
+///
+/// assert_eq!(res.limit, 21);
+/// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+/// # });
 /// ```
 ///
 /// ```
 /// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
-/// # let client = Client::new("http://localhost:7700", "masterKey");
-/// # let index = client.index("does not matter");
+/// #
+/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
+/// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+/// # let index = client.index("search_query_builder_build");
 /// let query = index.search()
 ///     .with_query("space")
 ///     .with_offset(42)
@@ -155,7 +181,7 @@ pub struct Query<'a> {
     /// Default: all attributes found in the documents.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
-    pub facets_distribution: Option<Selectors<&'a [&'a str]>>,
+    pub facets: Option<Selectors<&'a [&'a str]>>,
     /// Attributes to sort.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sort: Option<&'a [&'a str]>,
@@ -207,7 +233,7 @@ pub struct Query<'a> {
     ///
     /// Default: `false`
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub matches: Option<bool>,
+    pub show_matches_position: Option<bool>,
 }
 
 #[allow(missing_docs)]
@@ -220,7 +246,7 @@ impl<'a> Query<'a> {
             limit: None,
             filter: None,
             sort: None,
-            facets_distribution: None,
+            facets: None,
             attributes_to_retrieve: None,
             attributes_to_crop: None,
             crop_length: None,
@@ -228,13 +254,14 @@ impl<'a> Query<'a> {
             attributes_to_highlight: None,
             highlight_pre_tag: None,
             highlight_post_tag: None,
-            matches: None,
+            show_matches_position: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut Query<'a> {
         self.query = Some(query);
         self
     }
+
     pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut Query<'a> {
         self.offset = Some(offset);
         self
@@ -247,11 +274,8 @@ impl<'a> Query<'a> {
         self.filter = Some(filter);
         self
     }
-    pub fn with_facets_distribution<'b>(
-        &'b mut self,
-        facets_distribution: Selectors<&'a [&'a str]>,
-    ) -> &'b mut Query<'a> {
-        self.facets_distribution = Some(facets_distribution);
+    pub fn with_facets<'b>(&'b mut self, facets: Selectors<&'a [&'a str]>) -> &'b mut Query<'a> {
+        self.facets = Some(facets);
         self
     }
     pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut Query<'a> {
@@ -301,8 +325,11 @@ impl<'a> Query<'a> {
         self.highlight_post_tag = Some(highlight_post_tag);
         self
     }
-    pub fn with_matches<'b>(&'b mut self, matches: bool) -> &'b mut Query<'a> {
-        self.matches = Some(matches);
+    pub fn with_show_matches_position<'b>(
+        &'b mut self,
+        show_matches_position: bool,
+    ) -> &'b mut Query<'a> {
+        self.show_matches_position = Some(show_matches_position);
         self
     }
     pub fn build(&mut self) -> Query<'a> {
@@ -365,6 +392,19 @@ mod tests {
         t1.wait_for_completion(client, None, None).await?;
         t0.wait_for_completion(client, None, None).await?;
 
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_builder(_client: Client, index: Index) -> Result<(), Error> {
+        let mut query = Query::new(&index);
+        query.with_query("space").with_offset(42).with_limit(21);
+
+        let res = query.execute::<Document>().await.unwrap();
+
+        assert_eq!(res.query, "space".to_string());
+        assert_eq!(res.limit, 21);
+        assert_eq!(res.offset, 42);
         Ok(())
     }
 
@@ -442,11 +482,11 @@ mod tests {
         setup_test_index(&client, &index).await?;
 
         let mut query = Query::new(&index);
-        query.with_facets_distribution(Selectors::All);
+        query.with_facets(Selectors::All);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             results
-                .facets_distribution
+                .facet_distribution
                 .unwrap()
                 .get("kind")
                 .unwrap()
@@ -456,11 +496,11 @@ mod tests {
         );
 
         let mut query = Query::new(&index);
-        query.with_facets_distribution(Selectors::Some(&["kind"]));
+        query.with_facets(Selectors::Some(&["kind"]));
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
             results
-                .facets_distribution
+                .facet_distribution
                 .clone()
                 .unwrap()
                 .get("kind")
@@ -471,7 +511,7 @@ mod tests {
         );
         assert_eq!(
             results
-                .facets_distribution
+                .facet_distribution
                 .unwrap()
                 .get("kind")
                 .unwrap()
@@ -681,17 +721,17 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_matches(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_show_matches_position(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = Query::new(&index);
         query.with_query("dolor text");
-        query.with_matches(true);
+        query.with_show_matches_position(true);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
-        assert_eq!(results.hits[0].matches_info.as_ref().unwrap().len(), 2);
+        assert_eq!(results.hits[0].matches_position.as_ref().unwrap().len(), 2);
         assert_eq!(
             results.hits[0]
-                .matches_info
+                .matches_position
                 .as_ref()
                 .unwrap()
                 .get("value")
@@ -711,6 +751,7 @@ mod tests {
         let mut query = Query::new(&index);
         query.with_query("harry \"of Fire\"");
         let results: SearchResults<Document> = index.execute_query(&query).await?;
+
         assert_eq!(results.hits.len(), 1);
         Ok(())
     }
@@ -724,13 +765,14 @@ mod tests {
 
         setup_test_index(&client, &index).await?;
 
-        let key = KeyBuilder::new("key for generate_tenant_token test")
+        let meilisearch_host = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+        let key = KeyBuilder::new()
             .with_action(Action::All)
             .with_index("*")
-            .create(&client)
+            .execute(&client)
             .await
             .unwrap();
-        let allowed_client = Client::new("http://localhost:7700", key.key);
+        let allowed_client = Client::new(meilisearch_host, key.key);
 
         let search_rules = vec![
             json!({ "*": {}}),
@@ -744,7 +786,7 @@ mod tests {
             let token = allowed_client
                 .generate_tenant_token(rules, None, None)
                 .expect("Cannot generate tenant token.");
-            let new_client = Client::new("http://localhost:7700", token);
+            let new_client = Client::new(meilisearch_host, token);
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())
