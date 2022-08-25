@@ -33,7 +33,7 @@ pub fn generate_tenant_token(
     }
 
     let claims = TenantTokenClaim {
-        api_key_uid: api_key_uid.clone(),
+        api_key_uid,
         exp: expires_at,
         search_rules,
     };
