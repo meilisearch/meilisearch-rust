@@ -259,7 +259,7 @@ impl KeyUpdater {
     /// let mut key_update = KeyUpdater::new(&key.key);
     /// key_update.with_description(&description).execute(&client).await;
     ///
-    /// # assert_eq!(key_update.description, Some(description));
+    /// assert_eq!(key_update.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -329,7 +329,7 @@ impl KeysQuery {
     ///   .with_offset(1)
     ///   .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(keys.results.len(), 1);
+    /// # assert_eq!(keys.offset, 1);
     /// # });
     /// ```
     pub fn with_offset(&mut self, offset: usize) -> &mut KeysQuery {
@@ -658,7 +658,7 @@ pub enum Action {
     #[serde(rename = "documents.delete")]
     DocumentsDelete,
     /// Provides access to the [create index](https://docs.meilisearch.com/reference/api/indexes.md#create-an-index) endpoint.
-    #[serde(rename = "indexes.execute")]
+    #[serde(rename = "indexes.create")]
     IndexesCreate,
     /// Provides access to the [get one index](https://docs.meilisearch.com/reference/api/indexes.md#get-one-index) and [list all indexes](https://docs.meilisearch.com/reference/api/indexes.md#list-all-indexes) endpoints. **Non-authorized `indexes` will be omitted from the response**.
     #[serde(rename = "indexes.get")]
@@ -682,7 +682,7 @@ pub enum Action {
     #[serde(rename = "stats.get")]
     StatsGet,
     /// Provides access to the [create dump](https://docs.meilisearch.com/reference/api/dump.md#create-a-dump) endpoint. **Not restricted by `indexes`.**
-    #[serde(rename = "dumps.execute")]
+    #[serde(rename = "dumps.create")]
     DumpsCreate,
     /// Provides access to the [get dump status](https://docs.meilisearch.com/reference/api/dump.md#get-dump-status) endpoint. **Not restricted by `indexes`.**
     #[serde(rename = "dumps.get")]
@@ -690,16 +690,16 @@ pub enum Action {
     /// Provides access to the [get Meilisearch version](https://docs.meilisearch.com/reference/api/version.md#get-version-of-meilisearch) endpoint.
     #[serde(rename = "version")]
     Version,
-    // Provides access to the [get Key](https://docs.meilisearch.com/reference/api/keys.html#get-one-key) and [get Keys](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys) endpoints.
+    /// Provides access to the [get Key](https://docs.meilisearch.com/reference/api/keys.html#get-one-key) and [get Keys](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys) endpoints.
     #[serde(rename = "keys.get")]
     KeyGet,
-    // Provides access to the [create key](https://docs.meilisearch.com/reference/api/keys.html#create-a-key) endpoint.
+    /// Provides access to the [create key](https://docs.meilisearch.com/reference/api/keys.html#create-a-key) endpoint.
     #[serde(rename = "keys.create")]
     KeyCreate,
-    // Provides access to the [update key](https://docs.meilisearch.com/reference/api/keys.html#update-a-key) endpoint.
+    /// Provides access to the [update key](https://docs.meilisearch.com/reference/api/keys.html#update-a-key) endpoint.
     #[serde(rename = "keys.update")]
     KeyUpdate,
-    // Provides access to the [delete key](https://docs.meilisearch.com/reference/api/keys.html#delete-a-key) endpoint.
+    /// Provides access to the [delete key](https://docs.meilisearch.com/reference/api/keys.html#delete-a-key) endpoint.
     #[serde(rename = "keys.delete")]
     KeyDelete,
 }

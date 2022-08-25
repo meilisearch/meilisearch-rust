@@ -1353,7 +1353,7 @@ impl<'a> IndexesQuery<'a> {
     ///   .with_offset(1)
     ///   .execute().await.unwrap();
     ///
-    /// # assert_eq!(indexes.results.len(), 0);
+    /// # assert_eq!(indexes.offset, 1);
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -1409,7 +1409,7 @@ impl<'a> IndexesQuery<'a> {
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let index = client
-    /// #   .create_index("index_query_with_limit", None)
+    /// #   .create_index("index_query_with_execute", None)
     /// #   .await
     /// #   .unwrap()
     /// #   .wait_for_completion(&client, None, None)

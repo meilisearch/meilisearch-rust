@@ -597,7 +597,7 @@ impl Client {
         request::<&KeyUpdater, Key>(
             &format!("{}/keys/{}", self.host, key.as_ref().key),
             &self.api_key,
-            Method::Patch(key.as_ref()), // name and description
+            Method::Patch(key.as_ref()),
             200,
         )
         .await
@@ -935,33 +935,36 @@ mod tests {
     async fn test_get_tasks_with_params(client: Client) {
         let query = TasksQuery::new(&client);
         let tasks = client.get_tasks_with(&query).await.unwrap();
+
         assert!(tasks.results.len() >= 2);
     }
 
     #[meilisearch_test]
     async fn test_get_keys(client: Client) {
         let keys = client.get_keys().await.unwrap();
+
         assert!(keys.results.len() >= 2);
-        assert!(keys.results.iter().any(|k| k.description
-            != Some("Default Search API Key (Use it to search from the frontend)".to_string())));
-        assert!(keys.results.iter().any(
-            |k| k.description != Some("Default Admin API Key (Use it for all other operations. Caution! Do not use it on a public frontend)".to_string())
-        ));
     }
 
     #[meilisearch_test]
-    async fn test_delete_key(client: Client) {
+    async fn test_delete_key(client: Client, name: String) {
         let mut key = KeyBuilder::new();
-        key.with_name("test_delete_key");
+        key.with_name(&name);
         let key = client.create_key(key).await.unwrap();
 
         client.delete_key(&key).await.unwrap();
-        let keys = client.get_keys().await.unwrap();
+        let keys = KeysQuery::new()
+            .with_limit(10000)
+            .execute(&client)
+            .await
+            .unwrap();
+
         assert!(keys.results.iter().all(|k| k.key != key.key));
     }
 
     #[meilisearch_test]
-    async fn test_error_delete_key(mut client: Client) {
+
+    async fn test_error_delete_key(mut client: Client, name: String) {
         // ==> accessing a key that does not exist
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
@@ -975,9 +978,9 @@ mod tests {
 
         // ==> executing the action without enough right
         let mut key = KeyBuilder::new();
-        key.with_name("test_error_delete_key");
-        let key = client.create_key(key).await.unwrap();
 
+        key.with_name(&name);
+        let key = client.create_key(key).await.unwrap();
         let master_key = client.api_key.clone();
         // this key has no right
         client.api_key = Arc::new(key.key.clone());
@@ -1008,18 +1011,18 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_create_key(client: Client, description: String) {
+    async fn test_create_key(client: Client, name: String) {
         let expires_at = OffsetDateTime::now_utc() + time::Duration::HOUR;
         let mut key = KeyBuilder::new();
         key.with_action(Action::DocumentsAdd)
-            .with_name("test_create_key")
+            .with_name(&name)
             .with_expires_at(expires_at.clone())
-            .with_description(&description)
+            .with_description("a description")
             .with_index("*");
         let key = client.create_key(key).await.unwrap();
 
         assert_eq!(key.actions, vec![Action::DocumentsAdd]);
-        assert_eq!(&key.description, &Some(description));
+        assert_eq!(&key.name, &Some(name));
         // We can't compare the two timestamp directly because of some nanoseconds imprecision with the floats
         assert_eq!(
             key.expires_at.unwrap().unix_timestamp(),
@@ -1031,7 +1034,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_create_key(mut client: Client) {
+    async fn test_error_create_key(mut client: Client, name: String) {
         // ==> Invalid index name
         /* TODO: uncomment once meilisearch fix this bug: https://github.com/meilisearch/meilisearch/issues/2158
         let mut key = KeyBuilder::new();
@@ -1050,7 +1053,7 @@ mod tests {
 
         // ==> executing the action without enough right
         let mut no_right_key = KeyBuilder::new();
-        no_right_key.with_name("test_error_create_key");
+        no_right_key.with_name(&format!("{name}_1"));
         let no_right_key = client.create_key(no_right_key).await.unwrap();
 
         // backup the master key for cleanup at the end of the test
@@ -1058,7 +1061,7 @@ mod tests {
         client.api_key = Arc::new(no_right_key.key.clone());
 
         let mut key = KeyBuilder::new();
-        key.with_name("test_error_create_key_2");
+        key.with_name(format!("{name}_2"));
         let error = client.create_key(key).await.unwrap_err();
 
         assert!(matches!(
@@ -1146,12 +1149,11 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes(client: Client, index: Index) {
+    async fn test_list_all_indexes(client: Client) {
         let all_indexes = client.list_all_indexes().await.unwrap();
 
         assert_eq!(all_indexes.limit, 20);
         assert_eq!(all_indexes.offset, 0);
-        assert!(all_indexes.results.iter().any(|idx| idx.uid == index.uid));
     }
 
     #[meilisearch_test]
@@ -1168,8 +1170,8 @@ mod tests {
     async fn test_list_all_indexes_raw(client: Client) {
         let all_indexes_raw = client.list_all_indexes_raw().await.unwrap();
 
-        assert_eq!(all_indexes_raw["limit"].as_u64().unwrap() as u32, 20);
-        assert_eq!(all_indexes_raw["offset"].as_u64().unwrap() as u32, 0);
+        assert_eq!(all_indexes_raw["limit"], json!(20));
+        assert_eq!(all_indexes_raw["offset"], json!(0));
     }
 
     #[meilisearch_test]
@@ -1178,8 +1180,8 @@ mod tests {
         query.with_limit(1);
         let all_indexes_raw = client.list_all_indexes_raw_with(&query).await.unwrap();
 
-        assert_eq!(all_indexes_raw["limit"].as_u64().unwrap() as u32, 1);
-        assert_eq!(all_indexes_raw["offset"].as_u64().unwrap() as u32, 0);
+        assert_eq!(all_indexes_raw["limit"], json!(1));
+        assert_eq!(all_indexes_raw["offset"], json!(0));
     }
 
     #[meilisearch_test]
