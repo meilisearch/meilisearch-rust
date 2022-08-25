@@ -946,8 +946,6 @@ mod tests {
         assert!(keys.results.len() >= 2);
     }
 
-    }
-
     #[meilisearch_test]
     async fn test_delete_key(client: Client, name: String) {
         let mut key = KeyBuilder::new();
