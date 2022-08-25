@@ -666,7 +666,6 @@ mod tests {
         query.with_highlight_post_tag(" ⊂(´• ω •`⊂)");
 
         let results: SearchResults<Document> = index.execute_query(&query).await?;
-        dbg!(&results);
         assert_eq!(
             &Document {
                 id: 2,
@@ -784,9 +783,10 @@ mod tests {
 
         for rules in search_rules {
             let token = allowed_client
-                .generate_tenant_token(rules, None, None)
+                .generate_tenant_token(key.uid.clone(), rules, None, None)
                 .expect("Cannot generate tenant token.");
-            let new_client = Client::new(meilisearch_host, token);
+
+            let new_client = Client::new(meilisearch_host, token.clone());
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())

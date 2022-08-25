@@ -806,19 +806,21 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let token = client.generate_tenant_token(serde_json::json!(["*"]), None, None).unwrap();
+    /// let api_key_uid = "76cf8b87-fd12-4688-ad34-260d930ca4f4".to_string();
+    /// let token = client.generate_tenant_token(api_key_uid, serde_json::json!(["*"]), None, None).unwrap();
     /// let client = client::Client::new(MEILISEARCH_HOST, token);
     /// # });
     /// ```
     pub fn generate_tenant_token(
         &self,
+        api_key_uid: String,
         search_rules: serde_json::Value,
         api_key: Option<&str>,
         expires_at: Option<OffsetDateTime>,
     ) -> Result<String, Error> {
         let api_key = api_key.unwrap_or(&self.api_key);
 
-        crate::tenant_tokens::generate_tenant_token(search_rules, api_key, expires_at)
+        crate::tenant_tokens::generate_tenant_token(api_key_uid, search_rules, api_key, expires_at)
     }
 }
 
