@@ -597,7 +597,7 @@ impl Client {
         request::<&KeyUpdater, Key>(
             &format!("{}/keys/{}", self.host, key.as_ref().key),
             &self.api_key,
-            Method::Patch(key.as_ref()), // name and description
+            Method::Patch(key.as_ref()),
             200,
         )
         .await

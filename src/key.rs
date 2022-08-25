@@ -329,7 +329,7 @@ impl KeysQuery {
     ///   .with_offset(1)
     ///   .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(keys.results.len(), 1);
+    /// # assert_eq!(keys.offset, 1);
     /// # });
     /// ```
     pub fn with_offset(&mut self, offset: usize) -> &mut KeysQuery {
@@ -658,7 +658,7 @@ pub enum Action {
     #[serde(rename = "documents.delete")]
     DocumentsDelete,
     /// Provides access to the [create index](https://docs.meilisearch.com/reference/api/indexes.md#create-an-index) endpoint.
-    #[serde(rename = "indexes.execute")]
+    #[serde(rename = "indexes.create")]
     IndexesCreate,
     /// Provides access to the [get one index](https://docs.meilisearch.com/reference/api/indexes.md#get-one-index) and [list all indexes](https://docs.meilisearch.com/reference/api/indexes.md#list-all-indexes) endpoints. **Non-authorized `indexes` will be omitted from the response**.
     #[serde(rename = "indexes.get")]
@@ -682,7 +682,7 @@ pub enum Action {
     #[serde(rename = "stats.get")]
     StatsGet,
     /// Provides access to the [create dump](https://docs.meilisearch.com/reference/api/dump.md#create-a-dump) endpoint. **Not restricted by `indexes`.**
-    #[serde(rename = "dumps.execute")]
+    #[serde(rename = "dumps.create")]
     DumpsCreate,
     /// Provides access to the [get dump status](https://docs.meilisearch.com/reference/api/dump.md#get-dump-status) endpoint. **Not restricted by `indexes`.**
     #[serde(rename = "dumps.get")]
