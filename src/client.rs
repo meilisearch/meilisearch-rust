@@ -742,6 +742,7 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///
     /// let mut query = tasks::TasksQuery::new(&client);
     /// query.with_index_uid(["get_tasks_with"]);
     /// let tasks = client.get_tasks_with(&query).await.unwrap();
