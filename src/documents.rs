@@ -38,6 +38,8 @@ pub struct DocumentsQuery<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
 
+    /// The fields that should appear in the documents. By default all of the fields are present.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
 }
 
