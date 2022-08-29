@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TenantTokenClaim {
+struct TenantTokenClaim {
     api_key_uid: String,
     search_rules: Value,
     #[serde(with = "time::serde::timestamp::option")]
