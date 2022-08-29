@@ -285,40 +285,51 @@ impl Index {
     /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// #[derive(Serialize, Deserialize, Debug)]
-    /// # #[derive(PartialEq)]
+    /// #[derive(Serialize, Debug)]
     /// struct Movie {
     ///    name: String,
     ///    description: String,
+    ///    age: Option<usize>
+    /// }
+    ///
+    /// #[derive(Deserialize, Debug)]
+    /// # #[derive(PartialEq)]
+    /// struct ReturnedMovie {
+    ///    name: String,
+    ///    description: String
     /// }
     ///
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("get_document");
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage."), age: Some(1)}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// // retrieve a document (you have to put the document in the index before)
-    /// let interstellar = movies.get_document::<Movie>("Interstellar").await.unwrap();
+    /// let interstellar = movies.get_document::<ReturnedMovie>("Interstellar", Some(["name", "description"].to_vec())).await.unwrap();
     ///
-    /// assert_eq!(interstellar, Movie {
+    /// assert_eq!(interstellar, ReturnedMovie {
     ///     name: String::from("Interstellar"),
-    ///     description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")
+    ///     description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage."),
     /// });
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_document<T: 'static + DeserializeOwned>(&self, uid: &str) -> Result<T, Error> {
-        request::<(), T>(
-            &format!(
-                "{}/indexes/{}/documents/{}",
-                self.client.host, self.uid, uid
-            ),
-            &self.client.api_key,
-            Method::Get(()),
-            200,
-        )
-        .await
+    pub async fn get_document<T: 'static + DeserializeOwned>(
+        &self,
+        document_id: &str,
+        fields: Option<Vec<&str>>,
+    ) -> Result<T, Error> {
+        let mut url = format!(
+            "{}/indexes/{}/documents/{}?",
+            self.client.host, self.uid, document_id
+        );
+
+        if let Some(fields) = fields {
+            url.push_str("fields=");
+            url.push_str(fields.join(",").as_str());
+        }
+        request::<(), T>(&url, &self.client.api_key, Method::Get(()), 200).await
     }
 
     /// Get [Document]s by batch.
