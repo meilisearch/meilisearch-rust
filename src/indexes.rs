@@ -292,8 +292,7 @@ impl Index {
     ///    age: Option<usize>
     /// }
     ///
-    /// #[derive(Deserialize, Debug)]
-    /// # #[derive(PartialEq)]
+    /// #[derive(Deserialize, Debug, PartialEq)]
     /// struct ReturnedMovie {
     ///    name: String,
     ///    description: String
