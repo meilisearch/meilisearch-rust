@@ -407,6 +407,7 @@ impl Index {
     pub async fn get_documents_with<T: DeserializeOwned + 'static>(
         &self,
         documents_query: &DocumentsQuery<'_>,
+    ) -> Result<DocumentsResults<T>, Error> {
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
         request::<&DocumentsQuery, DocumentsResults<T>>(
             &url,
@@ -467,7 +468,7 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
     /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
-    /// assert!(movies.len() >= 3);
+    /// assert!(movies.results.len() >= 3);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -545,7 +546,7 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
     /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
-    /// assert!(movies.len() >= 3);
+    /// assert!(movies.results.len() >= 3);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```

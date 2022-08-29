@@ -481,9 +481,10 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let key = client.get_keys().await.unwrap().results.into_iter()
-    ///     .find(|k| k.name.as_ref().map_or(false, |name| name.starts_with("Default Search API Key")));
-    /// let key_id = key.unwrap().key; // enter your API key here, for the example we use the search API key.
-    /// let key = client.get_key(key_id).await.unwrap();
+    ///     .find(|k| k.name.as_ref().map_or(false, |name| name.starts_with("Default Search API Key")))
+    ///     .unwrap();
+    ///
+    /// let key = client.get_key(key).await.unwrap();
     ///
     /// assert_eq!(key.name, Some("Default Search API Key".to_string()));
     /// # });
@@ -741,12 +742,10 @@ impl Client {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///
     /// let mut query = tasks::TasksQuery::new(&client);
     /// query.with_index_uid(["get_tasks_with"]);
     /// let tasks = client.get_tasks_with(&query).await.unwrap();
-    ///
-    /// # assert!(tasks.results.len() > 0);
-    /// # client.index("get_tasks_with").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_tasks_with(
