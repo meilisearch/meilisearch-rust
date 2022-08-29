@@ -668,8 +668,6 @@ faceted_search_walkthrough_filter_1: |-
     .unwrap();
 post_dump_1: |-
   client.create_dump().await.unwrap();
-get_dump_status_1: |-
-  client.get_dump_status("20201101-110357260").await.unwrap();
 phrase_search_1: |-
   let results: SearchResults<Movie> = client.index("movies")
     .search()

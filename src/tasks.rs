@@ -28,6 +28,9 @@ pub enum TaskType {
     SettingsUpdate {
         details: Option<Settings>,
     },
+    DumpCreation {
+        details: Option<DumpCreation>,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -67,6 +70,12 @@ pub struct IndexUpdate {
 #[serde(rename_all = "camelCase")]
 pub struct IndexDeletion {
     pub deleted_documents: Option<usize>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DumpCreation {
+    pub dump_uid: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
