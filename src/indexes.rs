@@ -370,10 +370,8 @@ impl Index {
 
         request::<(), DocumentsResults<T>>(&url, &self.client.api_key, Method::Get(()), 200).await
     }
+
     /// Get [Document]s by batch with parameters.
-    ///
-    /// # Example
-    ///
     /// ```
     /// use serde::{Serialize, Deserialize};
     ///
@@ -409,7 +407,6 @@ impl Index {
     pub async fn get_documents_with<T: DeserializeOwned + 'static>(
         &self,
         documents_query: &DocumentsQuery<'_>,
-    ) -> Result<DocumentsResults<T>, Error> {
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
         request::<&DocumentsQuery, DocumentsResults<T>>(
             &url,
