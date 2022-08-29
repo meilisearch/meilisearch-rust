@@ -3,15 +3,6 @@
 # the documentation on build
 # You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
 ---
-get_pagination_settings_1: |-
-update_pagination_settings_1: |-
-reset_pagination_settings_1: |-
-get_faceting_settings_1: |-
-update_faceting_settings_1: |-
-reset_faceting_settings_1: |-
-settings_guide_faceting_1: |-
-settings_guide_pagination_1: |-
-
 get_one_index_1: |-
   let movies: Index = client.get_index("movies").await.unwrap();
 list_all_indexes_1: |-
@@ -25,7 +16,7 @@ update_an_index_1: |-
 delete_an_index_1: |-
   client.index("movies").delete().await.unwrap();
 get_one_document_1: |-
-  let movie: Movie = client.index("movies").get_document(String::from("25684")).await.unwrap();
+  let movie: Movie = client.index("movies").get_document(String::from("25684"), ["id", "title", "poster", "release_date"].to_vec()).await.unwrap();
 get_documents_1: |-
   let documents: Vec<Movie> = client.index("movies").get_documents(None, Some(2), None).await.unwrap();
 add_or_replace_documents_1: |-
@@ -98,7 +89,8 @@ get_task_1: |-
   let task: Task = client.get_task(1).await.unwrap();
 get_settings_1: |-
   let settings: Settings = client.index("movies").get_settings().await.unwrap();
-PLEASE_UPDATE_ME>>>>>>>>>>>>>update_settings_1: |-
+# Cannot be updated until API faceting and pagination are added
+update_settings_1: |-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("wolverine"), vec!["xmen", "logan"]);
   synonyms.insert(String::from("logan"), vec!["wolverine"]);
@@ -676,7 +668,7 @@ getting_started_filtering: |-
     .execute()
     .await
     .unwrap();
-faceted_search_PLEASE_UPDATE_ME>>>>>>>>>>>>>update_settings_1: |-
+faceted_search_update_settings_1: |-
   let task: TaskInfo = client.index("movies").set_filterable_attributes(["director", "genres"]).await.unwrap();
 faceted_search_filter_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
