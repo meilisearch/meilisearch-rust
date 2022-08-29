@@ -55,8 +55,7 @@ impl<'a> DocumentsQuery<'a> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
-    /// let index = client.index("documents_query_offset");
+    /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
     ///
@@ -78,12 +77,11 @@ impl<'a> DocumentsQuery<'a> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    ///
-    /// let index = client.index("documents_query_offset");
+    /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
     ///
-    /// documents_query.with_offset(1);
+    /// documents_query.with_limit(1);
     /// ```
     pub fn with_limit(&mut self, limit: usize) -> &mut DocumentsQuery<'a> {
         self.limit = Some(limit);
@@ -101,7 +99,7 @@ impl<'a> DocumentsQuery<'a> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let index = client.index("documents_query_offset");
+    /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
     ///
@@ -115,7 +113,7 @@ impl<'a> DocumentsQuery<'a> {
         self
     }
 
-    /// Specify the limit.
+    /// Execute the get documents query.
     ///
     /// # Example
     ///
