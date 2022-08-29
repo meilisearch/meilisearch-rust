@@ -323,11 +323,6 @@ impl Index {
 
     /// Get [Document]s by batch.
     ///
-    /// Using the optional parameters offset and limit, you can browse through all your documents.
-    /// If None, offset will be set to 0, limit to 20, and all attributes will be retrieved.
-    ///
-    /// *Note: Documents are ordered by Meilisearch depending on the hash of their id.*
-    ///
     /// # Example
     ///
     /// ```
@@ -367,7 +362,42 @@ impl Index {
 
         request::<(), DocumentsResults<T>>(&url, &self.client.api_key, Method::Get(()), 200).await
     }
-
+    /// Get [Document]s by batch with parameters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// # #[derive(PartialEq)]
+    /// struct Movie {
+    ///    name: String,
+    ///    description: String,
+    /// }
+    ///
+    ///
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let movie_index = client.index("get_documents");
+    ///
+    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let mut query = DocumentsQuery::new(&movie_index);
+    /// query.with_limit(1);
+    /// // retrieve movies (you have to put some movies in the index before)
+    /// let movies = movie_index.get_documents_with::<Movie>(&query).await.unwrap();
+    ///
+    /// assert!(movies.results.len() == 1);
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
     pub async fn get_documents_with<T: DeserializeOwned + 'static>(
         &self,
         documents_query: &DocumentsQuery<'_>,
