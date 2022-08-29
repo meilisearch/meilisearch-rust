@@ -1,6 +1,6 @@
 use crate::{
     client::Client,
-    documents::{DocumentsQuery, DocumentsResults},
+    documents::{DocumentQuery, DocumentsQuery, DocumentsResults},
     errors::Error,
     request::*,
     search::*,
@@ -320,16 +320,14 @@ impl Index {
         document_id: &str,
         fields: Option<Vec<&str>>,
     ) -> Result<T, Error> {
-        let mut url = format!(
-            "{}/indexes/{}/documents/{}?",
+        let url = format!(
+            "{}/indexes/{}/documents/{}",
             self.client.host, self.uid, document_id
         );
 
-        if let Some(fields) = fields {
-            url.push_str("fields=");
-            url.push_str(fields.join(",").as_str());
-        }
-        request::<(), T>(&url, &self.client.api_key, Method::Get(()), 200).await
+        let query = DocumentQuery { fields };
+
+        request::<&DocumentQuery, T>(&url, &self.client.api_key, Method::Get(&query), 200).await
     }
 
     /// Get [Document]s by batch.
