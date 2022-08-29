@@ -10,6 +10,13 @@ pub struct DocumentsResults<T> {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct DocumentQuery<'a> {
+    /// The fields that should appear in the documents. By default all of the fields are present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fields: Option<Vec<&'a str>>,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct DocumentsQuery<'a> {
     #[serde(skip_serializing)]
     pub index: &'a Index,
