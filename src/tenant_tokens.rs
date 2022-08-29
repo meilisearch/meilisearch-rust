@@ -3,6 +3,7 @@ use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use time::OffsetDateTime;
+#[cfg(not(target_arch = "wasm32"))]
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
