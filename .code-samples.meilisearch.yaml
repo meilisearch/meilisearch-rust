@@ -16,7 +16,11 @@ update_an_index_1: |-
 delete_an_index_1: |-
   client.index("movies").delete().await.unwrap();
 get_one_document_1: |-
-  let movie: Movie = client.index("movies").get_document(String::from("25684"), ["id", "title", "poster", "release_date"].to_vec()).await.unwrap();
+  let document_query = DocumentQuery::new(&index)
+    .with_fields(["id", "title", "poster", "release_date"])
+    .execute::<Movie>("25684")
+    .await
+    .unwrap()
 get_documents_1: |-
   let documents: Vec<Movie> = client.index("movies").get_documents(None, Some(2), None).await.unwrap();
 add_or_replace_documents_1: |-
