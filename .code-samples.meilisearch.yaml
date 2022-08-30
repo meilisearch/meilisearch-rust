@@ -6,7 +6,9 @@
 get_one_index_1: |-
   let movies: Index = client.get_index("movies").await.unwrap();
 list_all_indexes_1: |-
-  let indexes: IndexesResults = client.list_all_indexes().await.unwrap();
+  let mut indexes = IndexesQuery::new(&client)
+    .with_limit(3)
+    .execute().await.unwrap();
 create_an_index_1: |-
   client.create_index("movies", Some("id")).await.unwrap();
 update_an_index_1: |-
@@ -14,7 +16,11 @@ update_an_index_1: |-
 delete_an_index_1: |-
   client.index("movies").delete().await.unwrap();
 get_one_document_1: |-
-  let movie: Movie = client.index("movies").get_document(String::from("25684")).await.unwrap();
+  let document_query = DocumentQuery::new(&index)
+    .with_fields(["id", "title", "poster", "release_date"])
+    .execute::<Movie>("25684")
+    .await
+    .unwrap()
 get_documents_1: |-
   let documents: Vec<Movie> = client.index("movies").get_documents(None, Some(2), None).await.unwrap();
 add_or_replace_documents_1: |-
@@ -54,16 +60,40 @@ search_post_1: |-
     .execute()
     .await
     .unwrap();
-get_task_by_index_1: |-
-  let task: Task = client.index("movies").get_task(1).await.unwrap();
-get_all_tasks_by_index_1: |-
-  let tasks: TasksResults = client.index("movies").get_tasks().await.unwrap();
 get_all_tasks_1: |-
   let tasks: TasksResults = client.get_tasks().await.unwrap();
+get_all_tasks_filtering_1: |-
+  let mut query = TasksQuery::new(&client)
+      .with_index_uid(["movies"])
+      .execute()
+      .await
+      .unwrap();
+get_all_tasks_filtering_2: |-
+  let mut query = TasksQuery::new(&client)
+      .with_status(["succeeded", "failed"])
+      .with_type(["documentAdditionOrUpdate"])
+      .execute()
+      .await
+      .unwrap();
+get_all_tasks_paginating_1: |-
+  let mut query = TasksQuery::new(&client)
+      .with_limit(2)
+      .with_from(10)
+      .execute()
+      .await
+      .unwrap();
+get_all_tasks_paginating_2: |-
+  let mut query = TasksQuery::new(&client)
+      .with_limit(2)
+      .from(8)
+      .execute()
+      .await
+      .unwrap();
 get_task_1: |-
   let task: Task = client.get_task(1).await.unwrap();
 get_settings_1: |-
   let settings: Settings = client.index("movies").get_settings().await.unwrap();
+# Cannot be updated until API faceting and pagination are added
 update_settings_1: |-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("wolverine"), vec!["xmen", "logan"]);
@@ -303,7 +333,7 @@ search_parameter_guide_highlight_tag_1: |-
 
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
-search_parameter_guide_matches_1: |-
+search_parameter_guide_show_matches_position_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("winter feast")
     .with_show_matches_position(true)
@@ -312,7 +342,7 @@ search_parameter_guide_matches_1: |-
     .unwrap();
 
   // Get the matches info
-  let matched_info: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_position.as_ref().unwrap()).collect();
+  let matches_position: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_position.as_ref().unwrap()).collect();
 settings_guide_synonyms_1: |-
   let mut synonyms = HashMap::new();
   synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
@@ -564,7 +594,7 @@ getting_started_update_stop_words: |-
   let stop_words = ["the"];
   client.index("movies").set_stop_words(&stop_words).await.unwrap();
 getting_started_check_task_status: |-
-  client.index("movies").get_task(0).await.unwrap();
+  client.get_task(0).await.unwrap();
 getting_started_synonyms: |-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("winnie"), vec![String::from("piglet")]);
@@ -651,7 +681,7 @@ faceted_search_filter_1: |-
     .execute()
     .await
     .unwrap();
-faceted_search_facets_distribution_1: |-
+faceted_search_facets_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Batman")
     .with_facets(Selectors::Some(&["genres"]))
@@ -754,9 +784,9 @@ geosearch_guide_sort_usage_2: |-
     .await
     .unwrap();
 get_one_key_1: |-
-  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+  let key = client.get_key("6062abda-a5aa-4414-ac91-ecd7944c0f8d").await.unwrap();
 get_all_keys_1: |-
-  let keys = client.get_keys().await.unwrap();
+  let mut query = KeysQuery::new().with_limit(3).execute(&client).await.unwrap();
 create_a_key_1: |-
   let mut key_options = KeyBuilder::new("Add documents: Products API key");
   key_options.with_action(Action::DocumentsAdd)
@@ -764,16 +794,16 @@ create_a_key_1: |-
       .with_index("products");
   let new_key = client.create_key(key_options).await.unwrap();
 update_a_key_1: |-
-  let mut key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+  let mut key = client.get_key("6062abda-a5aa-4414-ac91-ecd7944c0f8d").await.unwrap();
   key
       .with_description("Manage documents: Products/Reviews API key".to_string())
-      .with_actions(vec![Action::DocumentsAdd, Action::DocumentsDelete])
-      .with_indexes(vec!["products".to_string(), "reviews".to_string()])
-      .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
-      .update(&client);
+      .with_name("Products/Reviews API key".to_string())
+      .update(&client)
+      .await
+      .unwrap();
 delete_a_key_1: |-
-  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
-  client.delete_key(&key);
+  let key = client.get_key("6062abda-a5aa-4414-ac91-ecd7944c0f8d").await.unwrap();
+  client.delete_key(&key).await?;
 authorization_header_1:
   let client = Client::new("http://localhost:7700", "masterKey");
   let keys = client.get_keys().await.unwrap();
@@ -782,8 +812,8 @@ security_guide_search_key_1: |-
   let result = client.index("patient_medical_records").search().execute().await.unwrap();
 security_guide_update_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
-  let mut key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
-  key.with_indexes(vec!["doctors".to_string()]).update(&client);
+  let mut key = client.get_key("74c9c733-3368-4738-bbe5-1d18a5fecb37").await.unwrap();
+  key.with_description("Default Search API key".to_string()).update(&client);
 security_guide_create_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let mut key_options = KeyBuilder::new("Search patient records key");
@@ -796,8 +826,8 @@ security_guide_list_keys_1: |-
   let keys = client.get_keys().await.unwrap();
 security_guide_delete_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
-  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
-  client.delete_key(&key);
+  let key = client.get_key("ac5cd97d-5a4b-4226-a868-2d0eb6d197ab").await.unwrap();
+  client.delete_key(&key).await?;
 landing_getting_started_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
 
