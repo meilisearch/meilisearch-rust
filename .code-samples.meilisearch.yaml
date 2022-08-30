@@ -74,7 +74,7 @@ get_all_tasks_filtering_2: |-
 get_all_tasks_paginating_1: |-
   let mut query = TasksQuery::new(&client)
       .with_limit(2)
-      .from(10)
+      .with_from(10)
       .execute()
       .await
       .unwrap();
