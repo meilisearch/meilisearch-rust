@@ -36,6 +36,10 @@ pub enum Error {
     HttpError(String),
     // The library formating the query parameters encountered an error.
     Yaup(yaup::Error),
+    // The library validating the format of an uuid.
+    Uuid(uuid::Error),
+    // Error thrown in case the version of the Uuid is not v4.
+    InvalidUuid4Version,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -72,6 +76,12 @@ impl From<jsonwebtoken::errors::Error> for Error {
 impl From<yaup::Error> for Error {
     fn from(error: yaup::Error) -> Error {
         Error::Yaup(error)
+    }
+}
+
+impl From<uuid::Error> for Error {
+    fn from(error: uuid::Error) -> Error {
+        Error::Uuid(error)
     }
 }
 
@@ -194,7 +204,9 @@ impl std::fmt::Display for Error {
             Error::TenantTokensInvalidApiKey => write!(fmt, "The provided api_key is invalid."),
             Error::TenantTokensExpiredSignature => write!(fmt, "The provided expires_at is already expired."),
             Error::InvalidTenantToken(e) => write!(fmt, "Impossible to generate the token, jsonwebtoken encountered an error: {}", e),
-            Error::Yaup(e) => write!(fmt, "Internal Error: could not parse the query parameters: {}", e)
+            Error::Yaup(e) => write!(fmt, "Internal Error: could not parse the query parameters: {}", e),
+            Error::Uuid(e) => write!(fmt, "The uid of the token has bit an uuid4 format: {}", e),
+            Error::InvalidUuid4Version => write!(fmt, "The uid provided to the token is not of version uuidv4")
         }
     }
 }
