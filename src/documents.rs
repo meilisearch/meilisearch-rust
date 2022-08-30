@@ -11,9 +11,87 @@ pub struct DocumentsResults<T> {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct DocumentQuery<'a> {
+    #[serde(skip_serializing)]
+    pub index: &'a Index,
+
     /// The fields that should appear in the documents. By default all of the fields are present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
+}
+
+impl<'a> DocumentQuery<'a> {
+    pub fn new(index: &Index) -> DocumentQuery {
+        DocumentQuery {
+            index,
+            fields: None,
+        }
+    }
+
+    /// Specify the fields to return in the document.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let index = client.index("document_query_with_fields");
+    /// let mut document_query = DocumentQuery::new(&index);
+    ///
+    /// document_query.with_fields(["title"]);
+    /// ```
+    pub fn with_fields(
+        &mut self,
+        fields: impl IntoIterator<Item = &'a str>,
+    ) -> &mut DocumentQuery<'a> {
+        self.fields = Some(fields.into_iter().collect());
+        self
+    }
+
+    /// Execute the get document query.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// # use serde::{Deserialize, Serialize};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///
+    /// # futures::executor::block_on(async move {
+    /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// struct MyObject {
+    ///     id: String,
+    ///     kind: String,
+    /// }
+    /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// struct MyObjectReduced {
+    ///     id: String,
+    /// }
+    ///
+    /// # let index = client.index("document_query_execute");
+    /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let document = DocumentQuery::new(&index).with_fields(["id"]).execute::<MyObjectReduced>("1").await.unwrap();
+    ///
+    /// assert_eq!(
+    ///    document,
+    ///    MyObjectReduced { id: "1".to_string() }
+    /// );
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    pub async fn execute<T: DeserializeOwned + 'static>(
+        &self,
+        document_id: &str,
+    ) -> Result<T, Error> {
+        self.index.get_document_with::<T>(document_id, self).await
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -144,9 +222,13 @@ impl<'a> DocumentsQuery<'a> {
     /// }
     /// let index = client.index("documents_query_execute");
     ///
-    /// let mut documents_query = DocumentsQuery::new(&index);
+    /// let document = DocumentsQuery::new(&index)
+    ///   .with_offset(1)
+    ///   .execute::<MyObject>()
+    ///   .await
+    ///   .unwrap();
     ///
-    /// documents_query.with_offset(1).execute::<MyObject>().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn execute<T: DeserializeOwned + 'static>(
