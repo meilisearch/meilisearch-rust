@@ -810,6 +810,7 @@ impl Client {
     /// let client = client::Client::new(MEILISEARCH_HOST, token);
     /// # });
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn generate_tenant_token(
         &self,
         api_key_uid: String,
