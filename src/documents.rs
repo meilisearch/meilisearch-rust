@@ -222,9 +222,11 @@ impl<'a> DocumentsQuery<'a> {
     /// }
     /// let index = client.index("documents_query_execute");
     ///
-    /// let mut documents_query = DocumentsQuery::new(&index);
-    ///
-    /// documents_query.with_offset(1).execute::<MyObject>().await.unwrap();
+    /// let document = DocumentsQuery::new(&index)
+    ///   .with_offset(1)
+    ///   .execute::<MyObject>()
+    ///   .await
+    ///   .unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
