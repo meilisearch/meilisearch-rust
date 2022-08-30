@@ -8,21 +8,33 @@ get_one_index_1: |-
 list_all_indexes_1: |-
   let mut indexes = IndexesQuery::new(&client)
     .with_limit(3)
-    .execute().await.unwrap();
+    .execute()
+    .await
+    .unwrap();
 create_an_index_1: |-
   client.create_index("movies", Some("id")).await.unwrap();
 update_an_index_1: |-
-  client.index("movies").update("movie_review_id").await.unwrap();
+  let task = IndexUpdater::new("movies", &client)
+    .with_primary_key("movie_review_id")
+    .execute()
+    .await
+    .unwrap();
 delete_an_index_1: |-
   client.index("movies").delete().await.unwrap();
 get_one_document_1: |-
-  let document_query = DocumentQuery::new(&index)
+  let index = client.index("movies");
+  let document = DocumentQuery::new(&index)
     .with_fields(["id", "title", "poster", "release_date"])
     .execute::<Movie>("25684")
     .await
-    .unwrap()
+    .unwrap();
 get_documents_1: |-
-  let documents: Vec<Movie> = client.index("movies").get_documents(None, Some(2), None).await.unwrap();
+  let index = client.index("movies");
+  let documents: DocumentsResults = DocumentsQuery::new(&index)
+    .with_limit(2)
+    .execute::<Movies>()
+    .await
+    .unwrap();
 add_or_replace_documents_1: |-
   let task: TaskInfo = client.index("movies").add_or_replace(&[
     Movie {
@@ -454,7 +466,11 @@ documents_guide_add_movie_1: |-
     }
   ], None).await.unwrap();
 primary_field_guide_update_document_primary_key: |-
-  client.index("books").update("title").await.unwrap();
+  let task = IndexUpdater::new("books", &client)
+    .with_primary_key("title")
+    .execute()
+    .await
+    .unwrap();
 primary_field_guide_create_index_primary_key: |-
   client.create_index("books", Some("reference_number")).await.unwrap();
 primary_field_guide_add_document_primary_key: |-
@@ -786,12 +802,17 @@ geosearch_guide_sort_usage_2: |-
 get_one_key_1: |-
   let key = client.get_key("6062abda-a5aa-4414-ac91-ecd7944c0f8d").await.unwrap();
 get_all_keys_1: |-
-  let mut query = KeysQuery::new().with_limit(3).execute(&client).await.unwrap();
+  let mut query = KeysQuery::new()
+    .with_limit(3)
+    .execute(&client)
+    .await
+    .unwrap();
 create_a_key_1: |-
   let mut key_options = KeyBuilder::new("Add documents: Products API key");
-  key_options.with_action(Action::DocumentsAdd)
-      .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
-      .with_index("products");
+  key_options
+    .with_action(Action::DocumentsAdd)
+    .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
+    .with_index("products");
   let new_key = client.create_key(key_options).await.unwrap();
 update_a_key_1: |-
   let mut key = client.get_key("6062abda-a5aa-4414-ac91-ecd7944c0f8d").await.unwrap();
@@ -817,9 +838,10 @@ security_guide_update_key_1: |-
 security_guide_create_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let mut key_options = KeyBuilder::new("Search patient records key");
-  key_options.with_action(Action::Search)
-      .with_expires_at(time::macros::datetime!(2023 - 01 - 01 00:00:00 UTC))
-      .with_index("patient_medical_records");
+  key_options
+    .with_action(Action::Search)
+    .with_expires_at(time::macros::datetime!(2023 - 01 - 01 00:00:00 UTC))
+    .with_index("patient_medical_records");
   let new_key = client.create_key(key_options).await.unwrap();
 security_guide_list_keys_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
@@ -847,10 +869,11 @@ landing_getting_started_1: |-
   ], Some("reference_number")).await.unwrap();
 tenant_token_guide_generate_sdk_1: |-
   let api_key = "B5KdX2MY2jV6EXfUs6scSfmC...";
+  let api_key_uid = "6062abda-a5aa-4414-ac91-ecd7944c0f8d";
   let expires_at = time::macros::datetime!(2025 - 12 - 20 00:00:00 UTC);
   let search_rules = json!({ "patient_medical_records": { "filter": "user_id = 1" } });
 
-  let token = client.generate_tenant_token(search_rules, api_key, expires_at).unwrap();
+  let token = client.generate_tenant_token(api_key_uid, search_rules, api_key, expires_at).unwrap();
 tenant_token_guide_search_sdk_1: |-
   let front_end_client = Client::new("http://127.0.0.1:7700", token);
   let results: SearchResults<Patient> = front_end_client.index("patient_medical_records")
