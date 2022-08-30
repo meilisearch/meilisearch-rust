@@ -366,13 +366,8 @@ impl Index {
             self.client.host, self.uid, document_id
         );
 
-        request::<&DocumentQuery, T>(
-            &url,
-            &self.client.api_key,
-            Method::Get(&document_query),
-            200,
-        )
-        .await
+        request::<&DocumentQuery, T>(&url, &self.client.api_key, Method::Get(document_query), 200)
+            .await
     }
 
     /// Get [Document]s by batch.
