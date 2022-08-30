@@ -144,9 +144,7 @@ impl<'a> DocumentsQuery<'a> {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let index = client.index("my_index");
     ///
-    /// let mut documents_query = DocumentsQuery::new(&index);
-    ///
-    /// documents_query.with_offset(1);
+    /// let mut documents_query = DocumentsQuery::new(&index).with_offset(1);
     /// ```
     pub fn with_offset(&mut self, offset: usize) -> &mut DocumentsQuery<'a> {
         self.offset = Some(offset);
