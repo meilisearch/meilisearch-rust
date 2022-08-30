@@ -227,6 +227,7 @@ impl<'a> DocumentsQuery<'a> {
     ///   .execute::<MyObject>()
     ///   .await
     ///   .unwrap();
+    ///
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
