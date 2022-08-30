@@ -285,29 +285,21 @@ impl Index {
     /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// #[derive(Serialize, Debug)]
+    /// #[derive(Serialize, Deserialize, Debug, PartialEq)]
     /// struct Movie {
-    ///    name: String,
-    ///    description: String,
-    ///    age: Option<usize>
-    /// }
-    ///
-    /// #[derive(Deserialize, Debug, PartialEq)]
-    /// struct ReturnedMovie {
     ///    name: String,
     ///    description: String
     /// }
     ///
-    ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// let movies = client.index("get_document");
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage."), age: Some(1)}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// // retrieve a document (you have to put the document in the index before)
-    /// let interstellar = movies.get_document::<ReturnedMovie>("Interstellar", Some(["name", "description"].to_vec())).await.unwrap();
+    /// let interstellar = movies.get_document::<Movie>("Interstellar").await.unwrap();
     ///
-    /// assert_eq!(interstellar, ReturnedMovie {
+    /// assert_eq!(interstellar, Movie {
     ///     name: String::from("Interstellar"),
     ///     description: String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage."),
     /// });
@@ -317,16 +309,70 @@ impl Index {
     pub async fn get_document<T: 'static + DeserializeOwned>(
         &self,
         document_id: &str,
-        fields: Option<Vec<&str>>,
     ) -> Result<T, Error> {
         let url = format!(
             "{}/indexes/{}/documents/{}",
             self.client.host, self.uid, document_id
         );
 
-        let query = DocumentQuery { fields };
+        request::<(), T>(&url, &self.client.api_key, Method::Get(()), 200).await
+    }
 
-        request::<&DocumentQuery, T>(&url, &self.client.api_key, Method::Get(&query), 200).await
+    /// Get one document with parameters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// # use serde::{Deserialize, Serialize};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    ///
+    /// # futures::executor::block_on(async move {
+    /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// struct MyObject {
+    ///     id: String,
+    ///     kind: String,
+    /// }
+    /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// struct MyObjectReduced {
+    ///     id: String,
+    /// }
+    ///
+    /// # let index = client.index("document_query_execute");
+    /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let mut document_query = DocumentQuery::new(&index);
+    /// document_query.with_fields(["id"]);
+    ///
+    /// let document = index.get_document_with::<MyObjectReduced>("1", &document_query).await.unwrap();
+    ///
+    /// assert_eq!(
+    ///    document,
+    ///    MyObjectReduced { id: "1".to_string() }
+    /// );
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    pub async fn get_document_with<T: 'static + DeserializeOwned>(
+        &self,
+        document_id: &str,
+        document_query: &DocumentQuery<'_>,
+    ) -> Result<T, Error> {
+        let url = format!(
+            "{}/indexes/{}/documents/{}",
+            self.client.host, self.uid, document_id
+        );
+
+        request::<&DocumentQuery, T>(
+            &url,
+            &self.client.api_key,
+            Method::Get(&document_query),
+            200,
+        )
+        .await
     }
 
     /// Get [Document]s by batch.
@@ -388,6 +434,10 @@ impl Index {
     ///    description: String,
     /// }
     ///
+    /// #[derive(Deserialize, Debug, PartialEq)]
+    /// struct ReturnedMovie {
+    ///    name: String,
+    /// }
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
@@ -397,8 +447,9 @@ impl Index {
     ///
     /// let mut query = DocumentsQuery::new(&movie_index);
     /// query.with_limit(1);
+    /// query.with_fields(["name"]);
     /// // retrieve movies (you have to put some movies in the index before)
-    /// let movies = movie_index.get_documents_with::<Movie>(&query).await.unwrap();
+    /// let movies = movie_index.get_documents_with::<ReturnedMovie>(&query).await.unwrap();
     ///
     /// assert!(movies.results.len() == 1);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
