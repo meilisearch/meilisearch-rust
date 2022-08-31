@@ -3,8 +3,6 @@
 # the documentation on build
 # You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
 ---
-getting_started_typo_tolerance: |-
-
 get_one_index_1: |-
   let movies: Index = client.get_index("movies").await.unwrap();
 list_all_indexes_1: |-
