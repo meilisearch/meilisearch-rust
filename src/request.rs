@@ -5,7 +5,7 @@ use serde_json::{from_str, to_string};
 
 #[derive(Debug)]
 pub(crate) enum Method<T: Serialize> {
-    Get,
+    Get(T),
     Post(T),
     Patch(T),
     Put(T),
@@ -26,7 +26,15 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     let user_agent = qualified_version();
 
     let mut response = match &method {
-        Method::Get => {
+        Method::Get(query) => {
+            let query = yaup::to_string(query)?;
+
+            let url = if query.is_empty() {
+                url.to_string()
+            } else {
+                format!("{}?{}", url, query)
+            };
+
             Request::get(url)
                 .header(header::AUTHORIZATION, auth)
                 .header(header::USER_AGENT, user_agent)
@@ -104,7 +112,7 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     let user_agent = qualified_version();
 
     // The 2 following unwraps should not be able to fail
-
+    let mut mut_url = url.clone().to_string();
     let headers = Headers::new().unwrap();
     headers.append("Authorization: Bearer", apikey).unwrap();
     headers.append("User-Agent", &user_agent).unwrap();
@@ -113,7 +121,15 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     request.headers(&headers);
 
     match &method {
-        Method::Get => {
+        Method::Get(query) => {
+            let query = yaup::to_string(query)?;
+
+            mut_url = if query.is_empty() {
+                mut_url.to_string()
+            } else {
+                format!("{}?{}", mut_url, query)
+            };
+
             request.method("GET");
         }
         Method::Delete => {
@@ -137,13 +153,14 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     }
 
     let window = web_sys::window().unwrap(); // TODO remove this unwrap
-    let response = match JsFuture::from(window.fetch_with_str_and_init(url, &request)).await {
-        Ok(response) => Response::from(response),
-        Err(e) => {
-            error!("Network error: {:?}", e);
-            return Err(Error::UnreachableServer);
-        }
-    };
+    let response =
+        match JsFuture::from(window.fetch_with_str_and_init(mut_url.as_str(), &request)).await {
+            Ok(response) => Response::from(response),
+            Err(e) => {
+                error!("Network error: {:?}", e);
+                return Err(Error::UnreachableServer);
+            }
+        };
     let status = response.status() as u16;
     let text = match response.text() {
         Ok(text) => match JsFuture::from(text).await {

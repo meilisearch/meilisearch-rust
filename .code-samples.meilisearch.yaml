@@ -8,19 +8,37 @@ getting_started_typo_tolerance: |-
 get_one_index_1: |-
   let movies: Index = client.get_index("movies").await.unwrap();
 list_all_indexes_1: |-
-  let indexes: Vec<Index> = client.list_all_indexes().await.unwrap();
+  let mut indexes = IndexesQuery::new(&client)
+    .with_limit(3)
+    .execute()
+    .await
+    .unwrap();
 create_an_index_1: |-
   client.create_index("movies", Some("id")).await.unwrap();
 update_an_index_1: |-
-  client.index("movies").update("movie_review_id").await.unwrap();
+  let task = IndexUpdater::new("movies", &client)
+    .with_primary_key("movie_review_id")
+    .execute()
+    .await
+    .unwrap();
 delete_an_index_1: |-
   client.index("movies").delete().await.unwrap();
 get_one_document_1: |-
-  let movie: Movie = client.index("movies").get_document(String::from("25684")).await.unwrap();
+  let index = client.index("movies");
+  let document = DocumentQuery::new(&index)
+    .with_fields(["id", "title", "poster", "release_date"])
+    .execute::<Movie>("25684")
+    .await
+    .unwrap();
 get_documents_1: |-
-  let documents: Vec<Movie> = client.index("movies").get_documents(None, Some(2), None).await.unwrap();
+  let index = client.index("movies");
+  let documents: DocumentsResults = DocumentsQuery::new(&index)
+    .with_limit(2)
+    .execute::<Movies>()
+    .await
+    .unwrap();
 add_or_replace_documents_1: |-
-  let task: Task = client.index("movies").add_or_replace(&[
+  let task: TaskInfo = client.index("movies").add_or_replace(&[
     Movie {
       id: 287947,
       title: "Shazam".to_string(),
@@ -37,18 +55,18 @@ add_or_update_documents_1: |-
     title: String
   }
 
-  let task: Task = client.index("movies").add_or_update(&[
+  let task: TaskInfo = client.index("movies").add_or_update(&[
     IncompleteMovie {
       id: 287947,
       title: "Shazam ⚡️".to_string()
     }
   ], None).await.unwrap();
 delete_all_documents_1: |-
-  let task: Task = client.index("movies").delete_all_documents().await.unwrap();
+  let task: TaskInfo = client.index("movies").delete_all_documents().await.unwrap();
 delete_one_document_1: |-
-  let task: Task = client.index("movies").delete_document(25684).await.unwrap();
+  let task: TaskInfo = client.index("movies").delete_document(25684).await.unwrap();
 delete_documents_1: |-
-  let task: Task = client.index("movies").delete_documents(&[23488, 153738, 437035, 363869]).await.unwrap();
+  let task: TaskInfo = client.index("movies").delete_documents(&[23488, 153738, 437035, 363869]).await.unwrap();
 search_post_1: |-
   let results: SearchResults<Movie> = client.index("movies")
     .search()
@@ -56,16 +74,40 @@ search_post_1: |-
     .execute()
     .await
     .unwrap();
-get_task_by_index_1: |-
-  let task: Task = client.index("movies").get_task(1).await.unwrap();
-get_all_tasks_by_index_1: |-
-  let tasks: Vec<Task> = client.index("movies").get_tasks().await.unwrap();
 get_all_tasks_1: |-
-  let tasks: Vec<Task> = client.get_tasks().await.unwrap();
+  let tasks: TasksResults = client.get_tasks().await.unwrap();
+get_all_tasks_filtering_1: |-
+  let mut query = TasksQuery::new(&client)
+      .with_index_uid(["movies"])
+      .execute()
+      .await
+      .unwrap();
+get_all_tasks_filtering_2: |-
+  let mut query = TasksQuery::new(&client)
+      .with_status(["succeeded", "failed"])
+      .with_type(["documentAdditionOrUpdate"])
+      .execute()
+      .await
+      .unwrap();
+get_all_tasks_paginating_1: |-
+  let mut query = TasksQuery::new(&client)
+      .with_limit(2)
+      .with_from(10)
+      .execute()
+      .await
+      .unwrap();
+get_all_tasks_paginating_2: |-
+  let mut query = TasksQuery::new(&client)
+      .with_limit(2)
+      .from(8)
+      .execute()
+      .await
+      .unwrap();
 get_task_1: |-
   let task: Task = client.get_task(1).await.unwrap();
 get_settings_1: |-
   let settings: Settings = client.index("movies").get_settings().await.unwrap();
+# Cannot be updated until API faceting and pagination are added
 update_settings_1: |-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("wolverine"), vec!["xmen", "logan"]);
@@ -105,9 +147,9 @@ update_settings_1: |-
     ])
     .with_synonyms(synonyms);
 
-  let task: Task = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_settings(&settings).await.unwrap();
 reset_settings_1: |-
-  let task: Task = client.index("movies").reset_settings().await.unwrap();
+  let task: TaskInfo = client.index("movies").reset_settings().await.unwrap();
 get_synonyms_1: |-
   let synonyms: HashMap<String, Vec<String>> = client.index("movies").get_synonyms().await.unwrap();
 update_synonyms_1: |-
@@ -116,16 +158,16 @@ update_synonyms_1: |-
   synonyms.insert(String::from("logan"), vec![String::from("xmen"), String::from("wolverine")]);
   synonyms.insert(String::from("wow"), vec![String::from("world of warcraft")]);
 
-  let task: Task = client.index("movies").set_synonyms(&synonyms).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_synonyms(&synonyms).await.unwrap();
 reset_synonyms_1: |-
-  let task: Task = client.index("movies").reset_synonyms().await.unwrap();
+  let task: TaskInfo = client.index("movies").reset_synonyms().await.unwrap();
 get_stop_words_1: |-
   let stop_words: Vec<String> = client.index("movies").get_stop_words().await.unwrap();
 update_stop_words_1: |-
   let stop_words = ["of", "the", "to"];
-  let task: Task = client.index("movies").set_stop_words(&stop_words).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_stop_words(&stop_words).await.unwrap();
 reset_stop_words_1: |-
-  let task: Task = client.index("movies").reset_stop_words().await.unwrap();
+  let task: TaskInfo = client.index("movies").reset_stop_words().await.unwrap();
 get_ranking_rules_1: |-
   let ranking_rules: Vec<String> = client.index("movies").get_ranking_rules().await.unwrap();
 update_ranking_rules_1: |-
@@ -140,15 +182,15 @@ update_ranking_rules_1: |-
     "rank:desc",
   ];
 
-  let task: Task = client.index("movies").set_ranking_rules(&ranking_rules).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_ranking_rules(&ranking_rules).await.unwrap();
 reset_ranking_rules_1: |-
-  let task: Task = client.index("movies").reset_ranking_rules().await.unwrap();
+  let task: TaskInfo = client.index("movies").reset_ranking_rules().await.unwrap();
 get_distinct_attribute_1: |-
   let distinct_attribute: Option<String> = client.index("shoes").get_distinct_attribute().await.unwrap();
 update_distinct_attribute_1: |-
-  let task: Task = client.index("shoes").set_distinct_attribute("skuid").await.unwrap();
+  let task: TaskInfo = client.index("shoes").set_distinct_attribute("skuid").await.unwrap();
 reset_distinct_attribute_1: |-
-  let task: Task = client.index("shoes").reset_distinct_attribute().await.unwrap();
+  let task: TaskInfo = client.index("shoes").reset_distinct_attribute().await.unwrap();
 get_searchable_attributes_1: |-
   let searchable_attributes: Vec<String> = client.index("movies").get_searchable_attributes().await.unwrap();
 update_searchable_attributes_1: |-
@@ -158,9 +200,9 @@ update_searchable_attributes_1: |-
     "genres"
   ];
 
-  let task: Task = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
 reset_searchable_attributes_1: |-
-  let task: Task = client.index("movies").reset_searchable_attributes().await.unwrap();
+  let task: TaskInfo = client.index("movies").reset_searchable_attributes().await.unwrap();
 get_filterable_attributes_1: |-
   let filterable_attributes: Vec<String> = client.index("movies").get_filterable_attributes().await.unwrap();
 update_filterable_attributes_1: |-
@@ -169,9 +211,9 @@ update_filterable_attributes_1: |-
     "director"
   ];
 
-  let task: Task = client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_filterable_attributes(&filterable_attributes).await.unwrap();
 reset_filterable_attributes_1: |-
-  let task: Task = client.index("movies").reset_filterable_attributes().await.unwrap();
+  let task: TaskInfo = client.index("movies").reset_filterable_attributes().await.unwrap();
 get_displayed_attributes_1: |-
   let displayed_attributes: Vec<String> = client.index("movies").get_displayed_attributes().await.unwrap();
 update_displayed_attributes_1: |-
@@ -182,9 +224,9 @@ update_displayed_attributes_1: |-
     "release_date"
   ];
 
-  let task: Task = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
 reset_displayed_attributes_1: |-
-  let task: Task = client.index("movies").reset_displayed_attributes().await.unwrap();
+  let task: TaskInfo = client.index("movies").reset_displayed_attributes().await.unwrap();
 get_index_stats_1: |-
   let stats: IndexStats = client.index("movies").get_stats().await.unwrap();
 get_indexes_stats_1: |-
@@ -195,7 +237,7 @@ get_health_1: |-
 get_version_1: |-
   let version: Version = client.get_version().await.unwrap();
 distinct_attribute_guide_1: |-
-  let task: Task = client.index("jackets").set_distinct_attribute("product_id").await.unwrap();
+  let task: TaskInfo = client.index("jackets").set_distinct_attribute("product_id").await.unwrap();
 field_properties_guide_searchable_1: |-
   let searchable_attributes = [
     "title",
@@ -203,7 +245,7 @@ field_properties_guide_searchable_1: |-
     "genres"
   ];
 
-  let task: Task = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_searchable_attributes(&searchable_attributes).await.unwrap();
 field_properties_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
@@ -212,7 +254,7 @@ field_properties_guide_displayed_1: |-
     "release_date"
   ];
 
-  let task: Task = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_displayed_attributes(&displayed_attributes).await.unwrap();
 filtering_guide_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Avengers")
@@ -305,16 +347,16 @@ search_parameter_guide_highlight_tag_1: |-
 
   // Get the formatted results
   let formatted_results: Vec<&Movie> = results.hits.iter().map(|r| r.formatted_result.as_ref().unwrap()).collect();
-search_parameter_guide_matches_1: |-
+search_parameter_guide_show_matches_position_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("winter feast")
-    .with_matches(true)
+    .with_show_matches_position(true)
     .execute()
     .await
     .unwrap();
 
   // Get the matches info
-  let matched_info: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_info.as_ref().unwrap()).collect();
+  let matches_position: Vec<&HashMap<String, Vec<MatchRange>>> = results.hits.iter().map(|r| r.matches_position.as_ref().unwrap()).collect();
 settings_guide_synonyms_1: |-
   let mut synonyms = HashMap::new();
   synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
@@ -332,7 +374,7 @@ settings_guide_stop_words_1: |-
       "an"
     ]);
 
-  let task = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_filterable_attributes_1: |-
   let settings = Settings::new()
     .with_filterable_attributes([
@@ -340,7 +382,7 @@ settings_guide_filterable_attributes_1: |-
       "genres"
     ]);
 
-  let task: Task = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_ranking_rules_1: |-
   let settings = Settings::new()
     .with_ranking_rules([
@@ -354,12 +396,12 @@ settings_guide_ranking_rules_1: |-
       "rank:desc",
     ]);
 
-  let task = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_distinct_1: |-
   let settings = Settings::new()
     .with_distinct_attribute("product_id");
 
-  let task: Task = client.index("jackets").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("jackets").set_settings(&settings).await.unwrap();
 settings_guide_searchable_1: |-
   let settings = Settings::new()
     .with_searchable_attributes([
@@ -368,7 +410,7 @@ settings_guide_searchable_1: |-
       "genres"
     ]);
 
-  let task: Task = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_displayed_1: |-
   let settings = Settings::new()
     .with_displayed_attributes([
@@ -378,7 +420,7 @@ settings_guide_displayed_1: |-
       "release_date"
     ]);
 
-  let task: Task = client.index("movies").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_settings(&settings).await.unwrap();
 settings_guide_sortable_1: |-
   let settings = Settings::new()
     .with_sortable_attributes([
@@ -386,7 +428,7 @@ settings_guide_sortable_1: |-
       "price"
     ]);
 
-  let task: Task = client.index("books").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("books").set_settings(&settings).await.unwrap();
 add_movies_json_1: |-
   use meilisearch_sdk::{
     indexes::*,
@@ -419,14 +461,18 @@ documents_guide_add_movie_1: |-
   }
 
   // Add a document to our index
-  let task: Task = client.index("movies").add_documents(&[
+  let task: TaskInfo = client.index("movies").add_documents(&[
     IncompleteMovie {
       id: "123sq178".to_string(),
       title: "Amélie Poulain".to_string(),
     }
   ], None).await.unwrap();
 primary_field_guide_update_document_primary_key: |-
-  client.index("books").update("title").await.unwrap();
+  let task = IndexUpdater::new("books", &client)
+    .with_primary_key("title")
+    .execute()
+    .await
+    .unwrap();
 primary_field_guide_create_index_primary_key: |-
   client.create_index("books", Some("reference_number")).await.unwrap();
 primary_field_guide_add_document_primary_key: |-
@@ -439,7 +485,7 @@ primary_field_guide_add_document_primary_key: |-
     price: f64
   }
 
-  let task: Task = client.index("books").add_documents(&[
+  let task: TaskInfo = client.index("books").add_documents(&[
     Book {
       reference_number: "287947".to_string(),
       title: "Diary of a Wimpy Kid".to_string(),
@@ -451,7 +497,7 @@ primary_field_guide_add_document_primary_key: |-
 getting_started_add_documents_md: |-
   ```toml
     [dependencies]
-    meilisearch-sdk = "0.17"
+    meilisearch-sdk = "0.18"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
@@ -566,7 +612,7 @@ getting_started_update_stop_words: |-
   let stop_words = ["the"];
   client.index("movies").set_stop_words(&stop_words).await.unwrap();
 getting_started_check_task_status: |-
-  client.index("movies").get_task(0).await.unwrap();
+  client.get_task(0).await.unwrap();
 getting_started_synonyms: |-
   let mut synonyms = std::collections::HashMap::new();
   synonyms.insert(String::from("winnie"), vec![String::from("piglet")]);
@@ -618,7 +664,7 @@ getting_started_configure_settings: |-
       "mass",
       "_geo"
     ])
-  let task: Task = client.index("meteorites").set_settings(&settings).await.unwrap();
+  let task: TaskInfo = client.index("meteorites").set_settings(&settings).await.unwrap();
 getting_started_geo_radius: |-
   let results: SearchResults<Meteorite> = client.index("meteorites").search()
     .with_filter("_geoRadius(46.9480, 7.4474, 210000)")
@@ -645,7 +691,7 @@ getting_started_filtering: |-
     .await
     .unwrap();
 faceted_search_update_settings_1: |-
-  let task: Task = client.index("movies").set_filterable_attributes(["director", "genres"]).await.unwrap();
+  let task: TaskInfo = client.index("movies").set_filterable_attributes(["director", "genres"]).await.unwrap();
 faceted_search_filter_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("thriller")
@@ -653,14 +699,14 @@ faceted_search_filter_1: |-
     .execute()
     .await
     .unwrap();
-faceted_search_facets_distribution_1: |-
+faceted_search_facets_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("Batman")
-    .with_facets_distribution(Selectors::Some(&["genres"]))
+    .with_facets(Selectors::Some(&["genres"]))
     .execute()
     .await
     .unwrap();
-  let genres: &HashMap<String, usize> = results.facets_distribution.unwrap().get("genres").unwrap();
+  let genres: &HashMap<String, usize> = results.facet_distribution.unwrap().get("genres").unwrap();
 faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = client.index("movies").search()
     .with_query("thriller")
@@ -670,8 +716,6 @@ faceted_search_walkthrough_filter_1: |-
     .unwrap();
 post_dump_1: |-
   client.create_dump().await.unwrap();
-get_dump_status_1: |-
-  client.get_dump_status("20201101-110357260").await.unwrap();
 phrase_search_1: |-
   let results: SearchResults<Movie> = client.index("movies")
     .search()
@@ -685,7 +729,7 @@ sorting_guide_update_sortable_attributes_1: |-
     "price"
   ];
 
-  let task: Task = client.index("books").set_sortable_attributes(&sortable_attributes).await.unwrap();
+  let task: TaskInfo = client.index("books").set_sortable_attributes(&sortable_attributes).await.unwrap();
 sorting_guide_update_ranking_rules_1: |-
   let ranking_rules = [
     "words",
@@ -696,7 +740,7 @@ sorting_guide_update_ranking_rules_1: |-
     "exactness"
   ];
 
-  let task: Task = client.index("books").set_ranking_rules(&ranking_rules).await.unwrap();
+  let task: TaskInfo = client.index("books").set_ranking_rules(&ranking_rules).await.unwrap();
 sorting_guide_sort_parameter_1: |-
   let results: SearchResults<Books> = client.index("books").search()
     .with_query("science fiction")
@@ -719,9 +763,9 @@ update_sortable_attributes_1: |-
     "author"
   ];
 
-  let task: Task = client.index("books").set_sortable_attributes(&sortable_attributes).await.unwrap();
+  let task: TaskInfo = client.index("books").set_sortable_attributes(&sortable_attributes).await.unwrap();
 reset_sortable_attributes_1: |-
-  let task: Task = client.index("books").reset_sortable_attributes().await.unwrap();
+  let task: TaskInfo = client.index("books").reset_sortable_attributes().await.unwrap();
 search_parameter_guide_sort_1: |-
   let results: SearchResults<Books> = client.index("books").search()
     .with_query("science fiction")
@@ -730,7 +774,7 @@ search_parameter_guide_sort_1: |-
     .await
     .unwrap();
 geosearch_guide_filter_settings_1: |-
-  let task: Task = client.index("restaurants").set_filterable_attributes(&["_geo"]).await.unwrap();
+  let task: TaskInfo = client.index("restaurants").set_filterable_attributes(&["_geo"]).await.unwrap();
 geosearch_guide_filter_usage_1: |-
   let results: SearchResults<Restaurant> = client.index("restaurants").search()
     .with_filter("_geoRadius(45.472735, 9.184019, 2000)")
@@ -744,7 +788,7 @@ geosearch_guide_filter_usage_2: |-
     .await
     .unwrap();
 geosearch_guide_sort_settings_1: |-
-  let task: Task = client.index("restaurants").set_sortable_attributes(&["_geo"]).await.unwrap();
+  let task: TaskInfo = client.index("restaurants").set_sortable_attributes(&["_geo"]).await.unwrap();
 geosearch_guide_sort_usage_1: |-
   let results: SearchResults<Restaurant> = client.index("restaurants").search()
     .with_sort(&["_geoPoint(48.8561446, 2.2978204):asc"])
@@ -758,26 +802,31 @@ geosearch_guide_sort_usage_2: |-
     .await
     .unwrap();
 get_one_key_1: |-
-  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+  let key = client.get_key("6062abda-a5aa-4414-ac91-ecd7944c0f8d").await.unwrap();
 get_all_keys_1: |-
-  let keys = client.get_keys().await.unwrap();
+  let mut query = KeysQuery::new()
+    .with_limit(3)
+    .execute(&client)
+    .await
+    .unwrap();
 create_a_key_1: |-
   let mut key_options = KeyBuilder::new("Add documents: Products API key");
-  key_options.with_action(Action::DocumentsAdd)
-      .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
-      .with_index("products");
+  key_options
+    .with_action(Action::DocumentsAdd)
+    .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
+    .with_index("products");
   let new_key = client.create_key(key_options).await.unwrap();
 update_a_key_1: |-
-  let mut key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
+  let mut key = client.get_key("6062abda-a5aa-4414-ac91-ecd7944c0f8d").await.unwrap();
   key
       .with_description("Manage documents: Products/Reviews API key".to_string())
-      .with_actions(vec![Action::DocumentsAdd, Action::DocumentsDelete])
-      .with_indexes(vec!["products".to_string(), "reviews".to_string()])
-      .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
-      .update(&client);
+      .with_name("Products/Reviews API key".to_string())
+      .update(&client)
+      .await
+      .unwrap();
 delete_a_key_1: |-
-  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
-  client.delete_key(&key);
+  let key = client.get_key("6062abda-a5aa-4414-ac91-ecd7944c0f8d").await.unwrap();
+  client.delete_key(&key).await?;
 authorization_header_1:
   let client = Client::new("http://localhost:7700", "masterKey");
   let keys = client.get_keys().await.unwrap();
@@ -786,22 +835,23 @@ security_guide_search_key_1: |-
   let result = client.index("patient_medical_records").search().execute().await.unwrap();
 security_guide_update_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
-  let mut key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
-  key.with_indexes(vec!["doctors".to_string()]).update(&client);
+  let mut key = client.get_key("74c9c733-3368-4738-bbe5-1d18a5fecb37").await.unwrap();
+  key.with_description("Default Search API key".to_string()).update(&client);
 security_guide_create_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let mut key_options = KeyBuilder::new("Search patient records key");
-  key_options.with_action(Action::Search)
-      .with_expires_at(time::macros::datetime!(2023 - 01 - 01 00:00:00 UTC))
-      .with_index("patient_medical_records");
+  key_options
+    .with_action(Action::Search)
+    .with_expires_at(time::macros::datetime!(2023 - 01 - 01 00:00:00 UTC))
+    .with_index("patient_medical_records");
   let new_key = client.create_key(key_options).await.unwrap();
 security_guide_list_keys_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
   let keys = client.get_keys().await.unwrap();
 security_guide_delete_key_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
-  let key = client.get_key("d0552b41536279a0ad88bd595327b96f01176a60c2243e906c52ac02375f9bc4").await.unwrap();
-  client.delete_key(&key);
+  let key = client.get_key("ac5cd97d-5a4b-4226-a868-2d0eb6d197ab").await.unwrap();
+  client.delete_key(&key).await?;
 landing_getting_started_1: |-
   let client = Client::new("http://localhost:7700", "masterKey");
 
@@ -821,10 +871,11 @@ landing_getting_started_1: |-
   ], Some("reference_number")).await.unwrap();
 tenant_token_guide_generate_sdk_1: |-
   let api_key = "B5KdX2MY2jV6EXfUs6scSfmC...";
+  let api_key_uid = "6062abda-a5aa-4414-ac91-ecd7944c0f8d";
   let expires_at = time::macros::datetime!(2025 - 12 - 20 00:00:00 UTC);
   let search_rules = json!({ "patient_medical_records": { "filter": "user_id = 1" } });
 
-  let token = client.generate_tenant_token(search_rules, api_key, expires_at).unwrap();
+  let token = client.generate_tenant_token(api_key_uid, search_rules, api_key, expires_at).unwrap();
 tenant_token_guide_search_sdk_1: |-
   let front_end_client = Client::new("http://localhost:7700", token);
   let results: SearchResults<Patient> = front_end_client.index("patient_medical_records")
