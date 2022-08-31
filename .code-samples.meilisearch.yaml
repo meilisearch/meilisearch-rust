@@ -875,7 +875,7 @@ tenant_token_guide_generate_sdk_1: |-
 
   let token = client.generate_tenant_token(api_key_uid, search_rules, api_key, expires_at).unwrap();
 tenant_token_guide_search_sdk_1: |-
-  let front_end_client = Client::new("http://127.0.0.1:7700", token);
+  let front_end_client = Client::new("http://localhost:7700", token);
   let results: SearchResults<Patient> = front_end_client.index("patient_medical_records")
     .search()
     .with_query("blood test")
