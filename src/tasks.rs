@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::time::Duration;
 use time::OffsetDateTime;
 
@@ -9,20 +9,41 @@ use crate::{
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum TaskType {
-    ClearAll,
     Customs,
-    DocumentAddition { details: Option<DocumentAddition> },
-    DocumentPartial { details: Option<DocumentAddition> },
-    DocumentDeletion { details: Option<DocumentDeletion> },
-    IndexCreation { details: Option<IndexCreation> },
-    IndexUpdate { details: Option<IndexUpdate> },
-    IndexDeletion { details: Option<IndexDeletion> },
-    SettingsUpdate { details: Option<Settings> },
+    DocumentAdditionOrUpdate {
+        details: Option<DocumentAdditionOrUpdate>,
+    },
+    DocumentDeletion {
+        details: Option<DocumentDeletion>,
+    },
+    IndexCreation {
+        details: Option<IndexCreation>,
+    },
+    IndexUpdate {
+        details: Option<IndexUpdate>,
+    },
+    IndexDeletion {
+        details: Option<IndexDeletion>,
+    },
+    SettingsUpdate {
+        details: Option<Settings>,
+    },
+    DumpCreation {
+        details: Option<DumpCreation>,
+    },
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TasksResults {
+    pub results: Vec<Task>,
+    pub limit: u32,
+    pub from: Option<u32>,
+    pub next: Option<u32>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct DocumentAddition {
+pub struct DocumentAdditionOrUpdate {
     pub indexed_documents: Option<usize>,
     pub received_documents: usize,
 }
@@ -51,16 +72,22 @@ pub struct IndexDeletion {
     pub deleted_documents: Option<usize>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DumpCreation {
+    pub dump_uid: Option<String>,
+}
+
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FailedTask {
     pub error: MeilisearchError,
     #[serde(flatten)]
-    pub task: ProcessedTask,
+    pub task: SucceededTask,
 }
 
-impl AsRef<u64> for FailedTask {
-    fn as_ref(&self) -> &u64 {
+impl AsRef<u32> for FailedTask {
+    fn as_ref(&self) -> &u32 {
         &self.task.uid
     }
 }
@@ -76,7 +103,7 @@ where
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ProcessedTask {
+pub struct SucceededTask {
     #[serde(deserialize_with = "deserialize_duration")]
     pub duration: Duration,
     #[serde(with = "time::serde::rfc3339")]
@@ -85,14 +112,14 @@ pub struct ProcessedTask {
     pub started_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub finished_at: OffsetDateTime,
-    pub index_uid: String,
+    pub index_uid: Option<String>,
     #[serde(flatten)]
     pub update_type: TaskType,
-    pub uid: u64,
+    pub uid: u32,
 }
 
-impl AsRef<u64> for ProcessedTask {
-    fn as_ref(&self) -> &u64 {
+impl AsRef<u32> for SucceededTask {
+    fn as_ref(&self) -> &u32 {
         &self.uid
     }
 }
@@ -102,14 +129,14 @@ impl AsRef<u64> for ProcessedTask {
 pub struct EnqueuedTask {
     #[serde(with = "time::serde::rfc3339")]
     pub enqueued_at: OffsetDateTime,
-    pub index_uid: String,
+    pub index_uid: Option<String>,
     #[serde(flatten)]
     pub update_type: TaskType,
-    pub uid: u64,
+    pub uid: u32,
 }
 
-impl AsRef<u64> for EnqueuedTask {
-    fn as_ref(&self) -> &u64 {
+impl AsRef<u32> for EnqueuedTask {
+    fn as_ref(&self) -> &u32 {
         &self.uid
     }
 }
@@ -131,12 +158,12 @@ pub enum Task {
     },
     Succeeded {
         #[serde(flatten)]
-        content: ProcessedTask,
+        content: SucceededTask,
     },
 }
 
 impl Task {
-    pub fn get_uid(&self) -> u64 {
+    pub fn get_uid(&self) -> u32 {
         match self {
             Self::Enqueued { content } | Self::Processing { content } => *content.as_ref(),
             Self::Failed { content } => *content.as_ref(),
@@ -225,12 +252,12 @@ impl Task {
         match self {
             Self::Succeeded {
                 content:
-                    ProcessedTask {
+                    SucceededTask {
                         index_uid,
                         update_type: TaskType::IndexCreation { .. },
                         ..
                     },
-            } => Ok(client.index(index_uid)),
+            } => Ok(client.index(index_uid.unwrap())),
             _ => Err(self),
         }
     }
@@ -251,7 +278,6 @@ impl Task {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # let task = client.create_index("unwrap_failure", None).await.unwrap();
     /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
-    ///
     ///
     /// let task = index.set_ranking_rules(["wrong_ranking_rule"])
     ///   .await
@@ -303,6 +329,7 @@ impl Task {
     /// assert!(task.is_failure());
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
+    /// ```
     pub fn is_failure(&self) -> bool {
         matches!(self, Self::Failed { .. })
     }
@@ -330,6 +357,7 @@ impl Task {
     /// assert!(task.is_success());
     /// # task.try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
+    /// ```
     pub fn is_success(&self) -> bool {
         matches!(self, Self::Succeeded { .. })
     }
@@ -337,8 +365,9 @@ impl Task {
     /// Returns `true` if the [Task] is pending ([Self::Enqueued] or [Self::Processing]).
     ///
     /// # Example
-    ///
-    /// ```
+    /// ```no_run
+    /// # // The test is not run because it checks for an enqueued or processed status
+    /// # // and the task might already be processed when checking the status after the get_task call
     /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
@@ -346,21 +375,22 @@ impl Task {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// let task = client
+    /// let task_info = client
     ///   .create_index("is_pending", None)
     ///   .await
     ///   .unwrap();
-    ///
+    /// let task = client.get_task(task_info).await.unwrap();
     /// assert!(task.is_pending());
     /// # task.wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
+    /// ```
     pub fn is_pending(&self) -> bool {
         matches!(self, Self::Enqueued { .. } | Self::Processing { .. })
     }
 }
 
-impl AsRef<u64> for Task {
-    fn as_ref(&self) -> &u64 {
+impl AsRef<u32> for Task {
+    fn as_ref(&self) -> &u32 {
         match self {
             Self::Enqueued { content } | Self::Processing { content } => content.as_ref(),
             Self::Succeeded { content } => content.as_ref(),
@@ -369,32 +399,73 @@ impl AsRef<u64> for Task {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn async_sleep(interval: Duration) {
-    let (sender, receiver) = futures::channel::oneshot::channel::<()>();
-    std::thread::spawn(move || {
-        std::thread::sleep(interval);
-        let _ = sender.send(());
-    });
-    let _ = receiver.await;
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TasksQuery<'a> {
+    #[serde(skip_serializing)]
+    pub client: &'a Client,
+    // Index uids array to only retrieve the tasks of the indexes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub index_uid: Option<Vec<&'a str>>,
+    // Statuses array to only retrieve the tasks with these statuses.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<Vec<&'a str>>,
+    // Types array to only retrieve the tasks with these [TaskType].
+    #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
+    pub task_type: Option<Vec<&'a str>>,
+    // Maximum number of tasks to return
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+    // The first task uid that should be returned
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub from: Option<u32>,
 }
 
-#[cfg(target_arch = "wasm32")]
-pub(crate) async fn async_sleep(interval: Duration) {
-    use std::convert::TryInto;
-    use wasm_bindgen_futures::JsFuture;
+#[allow(missing_docs)]
+impl<'a> TasksQuery<'a> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a> {
+        TasksQuery {
+            client,
+            index_uid: None,
+            status: None,
+            task_type: None,
+            limit: None,
+            from: None,
+        }
+    }
+    pub fn with_index_uid<'b>(
+        &'b mut self,
+        index_uid: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.index_uid = Some(index_uid.into_iter().collect());
+        self
+    }
+    pub fn with_status<'b>(
+        &'b mut self,
+        status: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.status = Some(status.into_iter().collect());
+        self
+    }
+    pub fn with_type<'b>(
+        &'b mut self,
+        task_type: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.task_type = Some(task_type.into_iter().collect());
+        self
+    }
+    pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a> {
+        self.limit = Some(limit);
+        self
+    }
+    pub fn with_from<'b>(&'b mut self, from: u32) -> &'b mut TasksQuery<'a> {
+        self.from = Some(from);
+        self
+    }
 
-    JsFuture::from(js_sys::Promise::new(&mut |yes, _| {
-        web_sys::window()
-            .unwrap()
-            .set_timeout_with_callback_and_timeout_and_arguments_0(
-                &yes,
-                interval.as_millis().try_into().unwrap(),
-            )
-            .unwrap();
-    }))
-    .await
-    .unwrap();
+    pub async fn execute(&'a self) -> Result<TasksResults, Error> {
+        self.client.get_tasks_with(self).await
+    }
 }
 
 #[cfg(test)]
@@ -405,8 +476,9 @@ mod test {
         errors::{ErrorCode, ErrorType},
     };
     use meilisearch_test_macro::meilisearch_test;
+    use mockito::mock;
     use serde::{Deserialize, Serialize};
-    use std::time::{self, Duration};
+    use std::time::Duration;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -429,7 +501,7 @@ mod test {
   "enqueuedAt": "2022-02-03T13:02:38.369634Z",
   "indexUid": "mieli",
   "status": "enqueued",
-  "type": "documentAddition",
+  "type": "documentAdditionOrUpdate",
   "uid": 12
 }"#,
         )
@@ -440,8 +512,8 @@ mod test {
             Task::Enqueued {
                 content: EnqueuedTask {
                     enqueued_at,
-                    index_uid,
-                    update_type: TaskType::DocumentAddition { details: None },
+                    index_uid: Some(index_uid),
+                    update_type: TaskType::DocumentAdditionOrUpdate { details: None },
                     uid: 12,
                 }
             }
@@ -460,7 +532,7 @@ mod test {
   "indexUid": "mieli",
   "startedAt": "2022-02-03T15:17:02.812338Z",
   "status": "processing",
-  "type": "documentAddition",
+  "type": "documentAdditionOrUpdate",
   "uid": 14
 }"#,
         )
@@ -470,8 +542,8 @@ mod test {
             task,
             Task::Processing {
                 content: EnqueuedTask {
-                    update_type: TaskType::DocumentAddition {
-                        details: Some(DocumentAddition {
+                    update_type: TaskType::DocumentAdditionOrUpdate {
+                        details: Some(DocumentAdditionOrUpdate {
                             received_documents: 19547,
                             indexed_documents: None,
                         })
@@ -495,7 +567,7 @@ mod test {
   "indexUid": "mieli",
   "startedAt": "2022-02-03T15:17:02.812338Z",
   "status": "succeeded",
-  "type": "documentAddition",
+  "type": "documentAdditionOrUpdate",
   "uid": 14
 }"#,
         )
@@ -504,9 +576,9 @@ mod test {
         assert!(matches!(
             task,
             Task::Succeeded {
-                content: ProcessedTask {
-                    update_type: TaskType::DocumentAddition {
-                        details: Some(DocumentAddition {
+                content: SucceededTask {
+                    update_type: TaskType::DocumentAdditionOrUpdate {
+                        details: Some(DocumentAdditionOrUpdate {
                             received_documents: 19547,
                             indexed_documents: Some(19546),
                         })
@@ -521,11 +593,8 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_wait_for_pending_updates_with_args(
-        client: Client,
-        movies: Index,
-    ) -> Result<(), Error> {
-        let status = movies
+    async fn test_wait_for_task_with_args(client: Client, movies: Index) -> Result<(), Error> {
+        let task = movies
             .add_documents(
                 &[
                     Document {
@@ -549,62 +618,97 @@ mod test {
             )
             .await?;
 
-        assert!(matches!(status, Task::Succeeded { .. }));
+        assert!(matches!(task, Task::Succeeded { .. }));
         Ok(())
     }
 
     #[meilisearch_test]
-    async fn test_wait_for_pending_updates_time_out(
-        client: Client,
-        movies: Index,
-    ) -> Result<(), Error> {
-        let task = movies
-            .add_documents(
-                &[
-                    Document {
-                        id: 0,
-                        kind: "title".into(),
-                        value: "The Social Network".to_string(),
-                    },
-                    Document {
-                        id: 1,
-                        kind: "title".into(),
-                        value: "Harry Potter and the Sorcerer's Stone".to_string(),
-                    },
-                ],
-                None,
-            )
-            .await?;
+    async fn test_get_tasks_no_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks";
 
-        let error = client
-            .wait_for_task(
-                task,
-                Some(Duration::from_millis(1)),
-                Some(Duration::from_nanos(1)),
-            )
+        let mock_res = mock("GET", path).with_status(200).create();
+        let _ = client.get_tasks().await;
+        mock_res.assert();
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_with_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path =
+            "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion&limit=0&from=1";
+
+        let mock_res = mock("GET", path).with_status(200).create();
+
+        let mut query = TasksQuery::new(&client);
+        query
+            .with_index_uid(["movies", "test"])
+            .with_status(["equeued"])
+            .with_type(["documentDeletion"])
+            .with_from(1)
+            .with_limit(0);
+
+        let _ = client.get_tasks_with(&query).await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion";
+
+        let mock_res = mock("GET", path).with_status(200).create();
+
+        let mut query = TasksQuery::new(&client);
+        let _ = query
+            .with_index_uid(["movies", "test"])
+            .with_status(["equeued"])
+            .with_type(["documentDeletion"])
+            .execute()
+            .await;
+
+        // let _ = client.get_tasks(&query).await;
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
+        let mut query = TasksQuery::new(&client);
+        query.with_index_uid(["no_name"]);
+        let tasks = client.get_tasks_with(&query).await.unwrap();
+
+        assert_eq!(tasks.results.len(), 0);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_with_execute(client: Client) -> Result<(), Error> {
+        let tasks = TasksQuery::new(&client)
+            .with_index_uid(["no_name"])
+            .execute()
             .await
-            .unwrap_err();
+            .unwrap();
 
-        assert!(matches!(error, Error::Timeout));
+        assert_eq!(tasks.results.len(), 0);
         Ok(())
     }
 
     #[meilisearch_test]
-    async fn test_async_sleep() {
-        let sleep_duration = time::Duration::from_millis(10);
-        let now = time::Instant::now();
+    async fn test_failing_task(client: Client, movies: Index) -> Result<(), Error> {
+        let task_info = movies.set_ranking_rules(["wrong_ranking_rule"]).await?;
 
-        async_sleep(sleep_duration).await;
+        let task = client.get_task(task_info).await?;
+        let task = client.wait_for_task(task, None, None).await?;
 
-        assert!(now.elapsed() >= sleep_duration);
-    }
-
-    #[meilisearch_test]
-    async fn test_failing_update(client: Client, movies: Index) -> Result<(), Error> {
-        let task = movies.set_ranking_rules(["wrong_ranking_rule"]).await?;
-        let status = client.wait_for_task(task, None, None).await?;
-
-        let error = status.unwrap_failure();
+        let error = task.unwrap_failure();
         assert_eq!(error.error_code, ErrorCode::InvalidRankingRule);
         assert_eq!(error.error_type, ErrorType::InvalidRequest);
         Ok(())
