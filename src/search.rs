@@ -779,10 +779,12 @@ mod tests {
     async fn test_matching_strategy_all(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
-        query.with_query("harry Styles");
-        query.with_matching_strategy(MatchingStrategies::ALL);
-        let results: SearchResults<Document> = index.execute_query(&query).await?;
+        let results = Query::new(&index)
+            .with_query("Harry Styles")
+            .with_matching_strategy(MatchingStrategies::ALL)
+            .execute::<Document>()
+            .await
+            .unwrap();
 
         assert_eq!(results.hits.len(), 0);
         Ok(())
@@ -792,10 +794,12 @@ mod tests {
     async fn test_matching_strategy_left(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
-        query.with_query("Harry Styles");
-        query.with_matching_strategy(MatchingStrategies::LAST);
-        let results: SearchResults<Document> = index.execute_query(&query).await?;
+        let results = Query::new(&index)
+            .with_query("Harry Styles")
+            .with_matching_strategy(MatchingStrategies::LAST)
+            .execute::<Document>()
+            .await
+            .unwrap();
 
         assert_eq!(results.hits.len(), 7);
         Ok(())
