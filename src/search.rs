@@ -9,6 +9,14 @@ pub struct MatchRange {
     pub length: usize,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub enum MatchingStrategies {
+    #[serde(rename = "all")]
+    ALL,
+    #[serde(rename = "last")]
+    LAST,
+}
+
 /// A single result.
 /// Contains the complete object, optionally the formatted object, and optionally an object that contains information about the matches.
 #[derive(Deserialize, Debug)]
@@ -234,6 +242,10 @@ pub struct Query<'a> {
     /// Default: `false`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_matches_position: Option<bool>,
+
+    /// Defines the strategy on how to handle queries containing multiple words.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub matching_strategy: Option<MatchingStrategies>,
 }
 
 #[allow(missing_docs)]
@@ -255,6 +267,7 @@ impl<'a> Query<'a> {
             highlight_pre_tag: None,
             highlight_post_tag: None,
             show_matches_position: None,
+            matching_strategy: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut Query<'a> {
@@ -330,6 +343,13 @@ impl<'a> Query<'a> {
         show_matches_position: bool,
     ) -> &'b mut Query<'a> {
         self.show_matches_position = Some(show_matches_position);
+        self
+    }
+    pub fn with_matching_strategy<'b>(
+        &'b mut self,
+        matching_strategy: MatchingStrategies,
+    ) -> &'b mut Query<'a> {
+        self.matching_strategy = Some(matching_strategy);
         self
     }
     pub fn build(&mut self) -> Query<'a> {
@@ -752,6 +772,36 @@ mod tests {
         let results: SearchResults<Document> = index.execute_query(&query).await?;
 
         assert_eq!(results.hits.len(), 1);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_matching_strategy_all(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results = Query::new(&index)
+            .with_query("Harry Styles")
+            .with_matching_strategy(MatchingStrategies::ALL)
+            .execute::<Document>()
+            .await
+            .unwrap();
+
+        assert_eq!(results.hits.len(), 0);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_matching_strategy_left(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results = Query::new(&index)
+            .with_query("Harry Styles")
+            .with_matching_strategy(MatchingStrategies::LAST)
+            .execute::<Document>()
+            .await
+            .unwrap();
+
+        assert_eq!(results.hits.len(), 7);
         Ok(())
     }
 
