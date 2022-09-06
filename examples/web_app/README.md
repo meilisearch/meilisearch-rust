@@ -11,7 +11,7 @@ The Rust source files are compiled into WebAssembly and so can be readable by th
 If you only want to check if this example compiles, you can run:
 
 ```console
-cargo build --example web_app
+cargo build
 ```
 
 ## Building
@@ -23,7 +23,7 @@ curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 ```
 
 ```console
-wasm-pack build examples/web_app/ --target=web --no-typescript
+wasm-pack build . --target=web --no-typescript
 ```
 
 The compiled files will be stored in the `examples/web_app/pkg` folder.

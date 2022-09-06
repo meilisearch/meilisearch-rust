@@ -113,7 +113,9 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     // The 2 following unwraps should not be able to fail
     let mut mut_url = url.clone().to_string();
     let headers = Headers::new().unwrap();
-    headers.append("Authorization: Bearer", apikey).unwrap();
+    headers
+        .append("Authorization", format!("Bearer {}", apikey).as_str())
+        .unwrap();
     headers
         .append("X-Meilisearch-Client", qualified_version().as_str())
         .unwrap();
