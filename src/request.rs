@@ -114,6 +114,9 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     let mut mut_url = url.clone().to_string();
     let headers = Headers::new().unwrap();
     headers.append("Authorization: Bearer", apikey).unwrap();
+    headers
+        .append("X-Meilisearch-Client", qualified_version().as_str())
+        .unwrap();
 
     let mut request: RequestInit = RequestInit::new();
     request.headers(&headers);
@@ -122,10 +125,8 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
         Method::Get(query) => {
             let query = yaup::to_string(query)?;
 
-            mut_url = if query.is_empty() {
-                mut_url.to_string()
-            } else {
-                format!("{}?{}", mut_url, query)
+            if !query.is_empty() {
+                mut_url = format!("{}?{}", mut_url, query);
             };
 
             request.method("GET");
