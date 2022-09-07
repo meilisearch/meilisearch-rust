@@ -109,13 +109,16 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 
     const CONTENT_TYPE: &str = "Content-Type";
     const JSON: &str = "application/json";
-    let user_agent = qualified_version();
 
     // The 2 following unwraps should not be able to fail
     let mut mut_url = url.clone().to_string();
     let headers = Headers::new().unwrap();
-    headers.append("Authorization: Bearer", apikey).unwrap();
-    headers.append("User-Agent", &user_agent).unwrap();
+    headers
+        .append("Authorization", format!("Bearer {}", apikey).as_str())
+        .unwrap();
+    headers
+        .append("X-Meilisearch-Client", qualified_version().as_str())
+        .unwrap();
 
     let mut request: RequestInit = RequestInit::new();
     request.headers(&headers);
@@ -124,10 +127,8 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
         Method::Get(query) => {
             let query = yaup::to_string(query)?;
 
-            mut_url = if query.is_empty() {
-                mut_url.to_string()
-            } else {
-                format!("{}?{}", mut_url, query)
+            if !query.is_empty() {
+                mut_url = format!("{}?{}", mut_url, query);
             };
 
             request.method("GET");
