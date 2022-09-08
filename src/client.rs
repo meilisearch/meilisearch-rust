@@ -9,7 +9,7 @@ use crate::{
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, time::Duration};
 use time::OffsetDateTime;
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
