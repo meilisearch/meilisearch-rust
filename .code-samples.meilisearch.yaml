@@ -748,7 +748,7 @@ primary_field_guide_add_document_primary_key: |-
 getting_started_add_documents_md: |-
   ```toml
     [dependencies]
-    meilisearch-sdk = "0.18"
+    meilisearch-sdk = "0.19"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
@@ -1208,9 +1208,9 @@ delete_a_key_1: |-
 authorization_header_1:
   let client = Client::new("http://localhost:7700", "masterKey");
   let keys = client
-    .get_keys()
-    .await
-    .unwrap();
+  .get_keys()
+  .await
+  .unwrap();
 security_guide_search_key_1: |-
   let client = Client::new("http://localhost:7700", "apiKey");
   let result = client.index("patient_medical_records")
