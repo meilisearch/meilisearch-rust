@@ -3,32 +3,40 @@ use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use time::OffsetDateTime;
+#[cfg(not(target_arch = "wasm32"))]
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[cfg(not(target_arch = "wasm32"))]
 #[serde(rename_all = "camelCase")]
 struct TenantTokenClaim {
-    api_key_prefix: String,
+    api_key_uid: String,
     search_rules: Value,
     #[serde(with = "time::serde::timestamp::option")]
     exp: Option<OffsetDateTime>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn generate_tenant_token(
+    api_key_uid: String,
     search_rules: Value,
     api_key: impl AsRef<str>,
     expires_at: Option<OffsetDateTime>,
 ) -> Result<String, Error> {
-    if api_key.as_ref().chars().count() < 8 {
-        return Err(Error::TenantTokensInvalidApiKey);
+    // Validate uuid format
+    let uid = Uuid::try_parse(&api_key_uid)?;
+
+    // Validate uuid version
+    if uid.get_version_num() != 4 {
+        return Err(Error::InvalidUuid4Version);
     }
 
     if expires_at.map_or(false, |expires_at| OffsetDateTime::now_utc() > expires_at) {
         return Err(Error::TenantTokensExpiredSignature);
     }
 
-    let key_prefix = api_key.as_ref().chars().take(8).collect();
     let claims = TenantTokenClaim {
-        api_key_prefix: key_prefix,
+        api_key_uid,
         exp: expires_at,
         search_rules,
     };
@@ -62,7 +70,9 @@ mod tests {
 
     #[test]
     fn test_generate_token_with_given_key() {
-        let token = generate_tenant_token(json!(SEARCH_RULES), VALID_KEY, None).unwrap();
+        let api_key_uid = "76cf8b87-fd12-4688-ad34-260d930ca4f4".to_string();
+        let token =
+            generate_tenant_token(api_key_uid, json!(SEARCH_RULES), VALID_KEY, None).unwrap();
 
         let valid_key = decode::<TenantTokenClaim>(
             &token,
@@ -80,17 +90,20 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_token_without_key() {
+    fn test_generate_token_without_uid() {
+        let api_key_uid = "".to_string();
         let key = String::from("");
-        let token = generate_tenant_token(json!(SEARCH_RULES), &key, None);
+        let token = generate_tenant_token(api_key_uid, json!(SEARCH_RULES), &key, None);
 
         assert!(token.is_err());
     }
 
     #[test]
     fn test_generate_token_with_expiration() {
+        let api_key_uid = "76cf8b87-fd12-4688-ad34-260d930ca4f4".to_string();
         let exp = OffsetDateTime::now_utc() + time::Duration::HOUR;
-        let token = generate_tenant_token(json!(SEARCH_RULES), VALID_KEY, Some(exp)).unwrap();
+        let token =
+            generate_tenant_token(api_key_uid, json!(SEARCH_RULES), VALID_KEY, Some(exp)).unwrap();
 
         let decoded = decode::<TenantTokenClaim>(
             &token,
@@ -103,15 +116,19 @@ mod tests {
 
     #[test]
     fn test_generate_token_with_expires_at_in_the_past() {
+        let api_key_uid = "76cf8b87-fd12-4688-ad34-260d930ca4f4".to_string();
         let exp = OffsetDateTime::now_utc() - time::Duration::HOUR;
-        let token = generate_tenant_token(json!(SEARCH_RULES), VALID_KEY, Some(exp));
+        let token = generate_tenant_token(api_key_uid, json!(SEARCH_RULES), VALID_KEY, Some(exp));
 
         assert!(token.is_err());
     }
 
     #[test]
     fn test_generate_token_contains_claims() {
-        let token = generate_tenant_token(json!(SEARCH_RULES), VALID_KEY, None).unwrap();
+        let api_key_uid = "76cf8b87-fd12-4688-ad34-260d930ca4f4".to_string();
+        let token =
+            generate_tenant_token(api_key_uid.clone(), json!(SEARCH_RULES), VALID_KEY, None)
+                .unwrap();
 
         let decoded = decode::<TenantTokenClaim>(
             &token,
@@ -120,14 +137,16 @@ mod tests {
         )
         .expect("Cannot decode the token");
 
-        assert_eq!(decoded.claims.api_key_prefix, &VALID_KEY[..8]);
+        assert_eq!(decoded.claims.api_key_uid, api_key_uid);
         assert_eq!(decoded.claims.search_rules, json!(SEARCH_RULES));
     }
 
     #[test]
     fn test_generate_token_with_multi_byte_chars() {
+        let api_key_uid = "76cf8b87-fd12-4688-ad34-260d930ca4f4".to_string();
         let key = "Ëa1ทt9bVcL-vãUทtP3OpXW5qPc%bWH5ทvw09";
-        let token = generate_tenant_token(json!(SEARCH_RULES), key, None).unwrap();
+        let token =
+            generate_tenant_token(api_key_uid.clone(), json!(SEARCH_RULES), key, None).unwrap();
 
         let decoded = decode::<TenantTokenClaim>(
             &token,
@@ -136,6 +155,24 @@ mod tests {
         )
         .expect("Cannot decode the token");
 
-        assert_eq!(decoded.claims.api_key_prefix, "Ëa1ทt9bV");
+        assert_eq!(decoded.claims.api_key_uid, api_key_uid);
+    }
+
+    #[test]
+    fn test_generate_token_with_wrongly_formated_uid() {
+        let api_key_uid = "xxx".to_string();
+        let key = "Ëa1ทt9bVcL-vãUทtP3OpXW5qPc%bWH5ทvw09";
+        let token = generate_tenant_token(api_key_uid.clone(), json!(SEARCH_RULES), key, None);
+
+        assert!(token.is_err());
+    }
+
+    #[test]
+    fn test_generate_token_with_wrong_uid_version() {
+        let api_key_uid = "6a11eb96-2485-11ed-861d-0242ac120002".to_string();
+        let key = "Ëa1ทt9bVcL-vãUทtP3OpXW5qPc%bWH5ทvw09";
+        let token = generate_tenant_token(api_key_uid.clone(), json!(SEARCH_RULES), key, None);
+
+        assert!(token.is_err());
     }
 }

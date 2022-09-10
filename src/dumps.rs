@@ -15,7 +15,7 @@
 //! # Example
 //!
 //! ```no_run
-//! # use meilisearch_sdk::{client::*, errors::*, dumps::*};
+//! # use meilisearch_sdk::{client::*, errors::*, dumps::*, dumps::*, task_info::*, tasks::*};
 //! # use futures_await_test::async_test;
 //! # use std::{thread::sleep, time::Duration};
 //! # futures::executor::block_on(async move {
@@ -26,46 +26,18 @@
 //! let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
 //!
 //! // Create a dump
-//! let dump_info = client.create_dump().await.unwrap();
-//! assert!(matches!(dump_info.status, DumpStatus::InProgress));
-//!
-//! // Wait for Meilisearch to proceed
-//! sleep(Duration::from_secs(5));
-//!
-//! // Check the status of the dump
-//! let dump_info = client.get_dump_status(&dump_info.uid).await.unwrap();
-//! assert!(matches!(dump_info.status, DumpStatus::Done));
+//! let task_info = client.create_dump().await.unwrap();
+//! assert!(matches!(
+//!    task_info,
+//!    TaskInfo {
+//!        update_type: TaskType::DumpCreation { .. },
+//!        ..
+//!    }
+//!));
 //! # });
 //! ```
 
-use crate::{client::Client, errors::Error, request::*};
-use serde::Deserialize;
-
-/// The status of a dump.\
-/// Contained in [`DumpInfo`].
-#[derive(Debug, Deserialize, Clone, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum DumpStatus {
-    /// Dump creation is in progress.
-    Done,
-    /// Dump creation is in progress.
-    InProgress,
-    /// An error occured during dump process, and the task was aborted.
-    Failed,
-}
-
-/// Limited informations about a dump.\
-/// Can be obtained with [create_dump](Client::create_dump) and [get_dump_status](Client::get_dump_status) methods.
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct DumpInfo {
-    pub uid: String,
-    pub status: DumpStatus,
-    pub error: Option<serde_json::Value>,
-    pub started_at: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub finished_at: Option<String>,
-}
+use crate::{client::Client, errors::Error, request::*, task_info::TaskInfo};
 
 /// Dump related methods.\
 /// See the [dumps](crate::dumps) module.
@@ -77,7 +49,7 @@ impl Client {
     /// # Example
     ///
     /// ```no_run
-    /// # use meilisearch_sdk::{client::*, errors::*, dumps::*};
+    /// # use meilisearch_sdk::{client::*, errors::*, dumps::*, dumps::*, task_info::*, tasks::*};
     /// # use futures_await_test::async_test;
     /// # use std::{thread::sleep, time::Duration};
     /// # futures::executor::block_on(async move {
@@ -87,12 +59,18 @@ impl Client {
     /// #
     /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// #
-    /// let dump_info = client.create_dump().await.unwrap();
-    /// assert!(matches!(dump_info.status, DumpStatus::InProgress));
+    /// let task_info = client.create_dump().await.unwrap();
+    /// assert!(matches!(
+    ///    task_info,
+    ///    TaskInfo {
+    ///        update_type: TaskType::DumpCreation { .. },
+    ///        ..
+    ///    }
+    /// ));
     /// # });
     /// ```
-    pub async fn create_dump(&self) -> Result<DumpInfo, Error> {
-        request::<Option<()>, (), DumpInfo>(
+    pub async fn create_dump(&self) -> Result<TaskInfo, Error> {
+        request::<Option<()>, (), TaskInfo>(
             &format!("{}/dumps", self.host),
             &self.api_key,
             Method::Post(Data::NonIterable(())),
@@ -100,72 +78,47 @@ impl Client {
         )
         .await
     }
-
-    /// Get the status of a dump creation process using [the uid](DumpInfo::uid) returned after calling the [dump creation method](Client::create_dump).
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use meilisearch_sdk::{client::*, errors::*, dumps::*};
-    /// # use futures_await_test::async_test;
-    /// # use std::{thread::sleep, time::Duration};
-    /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
-    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-    /// #
-    /// # futures::executor::block_on(async move {
-    /// #
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
-    /// # let dump_info = client.create_dump().await.unwrap();
-    /// # sleep(Duration::from_secs(5));
-    /// #
-    /// let dump_info = client.get_dump_status(&dump_info.uid).await.unwrap();
-    /// # });
-    /// ```
-    pub async fn get_dump_status(&self, dump_uid: impl AsRef<str>) -> Result<DumpInfo, Error> {
-        request::<Option<()>, (), DumpInfo>(
-            &format!("{}/dumps/{}/status", self.host, dump_uid.as_ref()),
-            &self.api_key,
-            Method::Get,
-            200,
-        )
-        .await
-    }
 }
 
 /// Alias for [create_dump](Client::create_dump).
-pub async fn create_dump(client: &Client) -> Result<DumpInfo, Error> {
+pub async fn create_dump(client: &Client) -> Result<TaskInfo, Error> {
     client.create_dump().await
-}
-
-/// Alias for [get_dump_status](Client::get_dump_status).
-pub async fn get_dump_status(
-    client: &Client,
-    dump_uid: impl AsRef<str>,
-) -> Result<DumpInfo, Error> {
-    client.get_dump_status(dump_uid).await
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::client::*;
+    use crate::{client::*, tasks::*};
     use meilisearch_test_macro::meilisearch_test;
-    use std::{thread::sleep, time::Duration};
+    use std::time::Duration;
 
     #[meilisearch_test]
-    async fn test_dumps(client: Client) {
-        // Create a dump
-        let dump_info = client.create_dump().await.unwrap();
-        assert!(matches!(dump_info.status, DumpStatus::InProgress));
+    async fn test_dumps_success_creation(client: Client) -> Result<(), Error> {
+        let task = client
+            .create_dump()
+            .await?
+            .wait_for_completion(
+                &client,
+                Some(Duration::from_millis(1)),
+                Some(Duration::from_millis(6000)),
+            )
+            .await?;
 
-        // Wait for Meilisearch to do the dump
-        sleep(Duration::from_secs(5));
+        assert!(matches!(task, Task::Succeeded { .. }));
+        Ok(())
+    }
 
-        // Assert that the dump was successful
-        let new_dump_info = client.get_dump_status(&dump_info.uid).await.unwrap();
-        assert!(matches!(new_dump_info.status, DumpStatus::Done));
-        assert!(new_dump_info.finished_at.is_some());
-        assert!(new_dump_info.started_at.is_some());
+    #[meilisearch_test]
+    async fn test_dumps_correct_update_type(client: Client) -> Result<(), Error> {
+        let task_info = client.create_dump().await.unwrap();
+
+        assert!(matches!(
+            task_info,
+            TaskInfo {
+                update_type: TaskType::DumpCreation { .. },
+                ..
+            }
+        ));
+        Ok(())
     }
 }

@@ -21,9 +21,9 @@ where
     T::Item: Serialize,
     S: Serialize,
 {
-    Get,
+    Get(S),
     Post(Data<T, S>),
-    Patch(S),
+    Patch(Data<T, S>),
     Put(Data<T, S>),
     Delete,
 }
@@ -48,7 +48,15 @@ where
     let user_agent = qualified_version();
 
     let mut response = match method {
-        Method::Get => {
+        Method::Get(query) => {
+            let query = yaup::to_string(&query)?;
+
+            let url = if query.is_empty() {
+                url.to_string()
+            } else {
+                format!("{}?{}", url, query)
+            };
+
             Request::get(url)
                 .header(header::AUTHORIZATION, auth)
                 .header(header::USER_AGENT, user_agent)
@@ -81,11 +89,15 @@ where
                 .await?
         }
         Method::Patch(body) => {
+            let (content_type, body_serialized) = match body {
+                Data::Iterable(body) => ("application/x-ndjson", to_jsonlines(body)),
+                Data::NonIterable(body) => ("application/json", to_string(&body).unwrap()),
+            };
             Request::patch(url)
                 .header(header::AUTHORIZATION, auth)
-                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::CONTENT_TYPE, content_type)
                 .header(header::USER_AGENT, user_agent)
-                .body(to_string(&body).unwrap())
+                .body(body_serialized)
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
                 .await?
@@ -115,57 +127,62 @@ where
         body = "null".to_string();
     }
 
-    println!("{}", body);
     parse_response(status, expected_status_code, body)
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) async fn request<T, S, Output>(
+pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
     url: &str,
     apikey: &str,
-    method: Method<T, S>,
+    method: Method<Input>,
     expected_status_code: u16,
-) -> Result<Output, Error>
-where
-    T: IntoIterator,
-    T::Item: Serialize,
-    S: Serialize,
-    Output: DeserializeOwned + 'static,
-{
+) -> Result<Output, Error> {
     use wasm_bindgen::JsValue;
     use wasm_bindgen_futures::JsFuture;
     use web_sys::{Headers, RequestInit, Response};
 
     const CONTENT_TYPE: &str = "Content-Type";
     const JSON: &str = "application/json";
-    const NDJSON: &str = "application/x-ndjson";
-    let user_agent = qualified_version();
 
     // The 2 following unwraps should not be able to fail
-
+    let mut mut_url = url.clone().to_string();
     let headers = Headers::new().unwrap();
-    headers.append("Authorization: Bearer", apikey).unwrap();
-    headers.append("User-Agent", &user_agent).unwrap();
+    headers
+        .append("Authorization", format!("Bearer {}", apikey).as_str())
+        .unwrap();
+    headers
+        .append("X-Meilisearch-Client", qualified_version().as_str())
+        .unwrap();
 
     let mut request: RequestInit = RequestInit::new();
     request.headers(&headers);
 
-    match method {
-        Method::Get => {
+    match &method {
+        Method::Get(query) => {
+            let query = yaup::to_string(query)?;
+
+            if !query.is_empty() {
+                mut_url = format!("{}?{}", mut_url, query);
+            };
+
             request.method("GET");
         }
         Method::Delete => {
             request.method("DELETE");
         }
         Method::Patch(body) => {
+            let (content_type, body_serialized) = match body {
+                Data::Iterable(body) => ("application/x-ndjson", to_jsonlines(body)),
+                Data::NonIterable(body) => ("application/json", to_string(&body).unwrap()),
+            };
             request.method("PATCH");
-            headers.append(CONTENT_TYPE, JSON).unwrap();
-            request.body(Some(&JsValue::from_str(&to_string(&body).unwrap())));
+            headers.append(CONTENT_TYPE, content_type).unwrap();
+            request.body(Some(&JsValue::from_str(&body_serialized)));
         }
         Method::Post(body) => {
             let (content_type, body_serialized) = match body {
-                Data::Iterable(body) => (NDJSON, to_jsonlines(body)),
-                Data::NonIterable(body) => (JSON, to_string(&body).unwrap()),
+                Data::Iterable(body) => ("application/x-ndjson", to_jsonlines(body)),
+                Data::NonIterable(body) => ("application/json", to_string(&body).unwrap()),
             };
             request.method("POST");
             headers.append(CONTENT_TYPE, content_type).unwrap();
@@ -173,8 +190,8 @@ where
         }
         Method::Put(body) => {
             let (content_type, body_serialized) = match body {
-                Data::Iterable(body) => (NDJSON, to_jsonlines(body)),
-                Data::NonIterable(body) => (JSON, to_string(&body).unwrap()),
+                Data::Iterable(body) => ("application/x-ndjson", to_jsonlines(body)),
+                Data::NonIterable(body) => ("application/json", to_string(&body).unwrap()),
             };
             request.method("PUT");
             headers.append(CONTENT_TYPE, content_type).unwrap();
@@ -183,13 +200,14 @@ where
     }
 
     let window = web_sys::window().unwrap(); // TODO remove this unwrap
-    let response = match JsFuture::from(window.fetch_with_str_and_init(url, &request)).await {
-        Ok(response) => Response::from(response),
-        Err(e) => {
-            error!("Network error: {:?}", e);
-            return Err(Error::UnreachableServer);
-        }
-    };
+    let response =
+        match JsFuture::from(window.fetch_with_str_and_init(mut_url.as_str(), &request)).await {
+            Ok(response) => Response::from(response),
+            Err(e) => {
+                error!("Network error: {:?}", e);
+                return Err(Error::UnreachableServer);
+            }
+        };
     let status = response.status() as u16;
     let text = match response.text() {
         Ok(text) => match JsFuture::from(text).await {

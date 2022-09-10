@@ -214,7 +214,7 @@
 //!   ],
 //!   "offset": 0,
 //!   "limit": 20,
-//!   "nbHits": 1,
+//!   "estimatedTotalHits": 1,
 //!   "processingTimeMs": 0,
 //!   "query": "wonder"
 //! }
@@ -225,6 +225,8 @@
 
 /// Module containing the [client::Client] struct.
 pub mod client;
+/// Module representing the [documents] structures.
+pub mod documents;
 /// Module containing the [document::Document] trait.
 pub mod dumps;
 /// Module containing the [errors::Error] struct.
@@ -238,7 +240,11 @@ mod request;
 pub mod search;
 /// Module containing [settings::Settings].
 pub mod settings;
+/// Module representing the [task_info::TaskInfo]s.
+pub mod task_info;
 /// Module representing the [tasks::Task]s.
 pub mod tasks;
 /// Module that generates tenant tokens.
 mod tenant_tokens;
+/// Module containing utilies functions.
+mod utils;
