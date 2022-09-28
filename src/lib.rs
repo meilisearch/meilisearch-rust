@@ -248,3 +248,5 @@ pub mod tasks;
 mod tenant_tokens;
 /// Module containing utilies functions.
 mod utils;
+
+pub use client::*;

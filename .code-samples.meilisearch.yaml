@@ -820,9 +820,9 @@ getting_started_add_documents_md: |-
 
   [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 getting_started_search_md: |-
-  You can build a `Query` and execute it later:
+  You can build a `SearchQuery` and execute it later:
   ```rust
-  let query: Query = Query::new(&movies)
+  let query: SearchQuery = SearchQuery::new(&movies)
     .with_query("botman")
     .build();
 
@@ -833,9 +833,9 @@ getting_started_search_md: |-
     .unwrap();
   ```
 
-  You can build a `Query` and execute it directly:
+  You can build a `SearchQuery` and execute it directly:
   ```rust
-  let results: SearchResults<Movie> = Query::new(&movies)
+  let results: SearchResults<Movie> = SearchQuery::new(&movies)
     .with_query("botman")
     .execute()
     .await
