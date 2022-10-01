@@ -251,6 +251,35 @@ impl Index {
         .await
     }
 
+    /// Get [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # client.create_index("get_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_pagination");
+    /// let pagination = index.get_pagination().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_pagination(&self) -> Result<HashMap<String, i32>, Error> {
+        request::<(), HashMap<String, i32>>(
+            &format!(
+                "{}/indexes/{}/settings/pagination",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
+            Method::Get(()),
+            200,
+        )
+        .await
+    }
+
     /// Get [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
     ///
     /// ```
@@ -523,6 +552,42 @@ impl Index {
             ),
             &self.client.api_key,
             Method::Put(synonyms),
+            202,
+        )
+        .await
+    }
+
+    /// Update [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # client.create_index("set_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_pagination");
+    /// let mut pagination = std::collections::HashMap::new();
+    /// pagination.insert(String::from("maxTotalHits"), 100);
+    /// let task = index.set_pagination(&pagination).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_pagination(
+        &self,
+        pagination: &HashMap<String, i32>,
+    ) -> Result<TaskInfo, Error> {
+        request::<&HashMap<String, i32>, TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/pagination",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
+            Method::Patch(pagination),
             202,
         )
         .await
@@ -878,6 +943,37 @@ impl Index {
         .await
     }
 
+    /// Reset [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # client.create_index("reset_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_pagination");
+    ///
+    /// let task = index.reset_pagination().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_pagination(&self) -> Result<TaskInfo, Error> {
+        request::<(), TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/pagination",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
+            Method::Delete,
+            202,
+        )
+        .await
+    }
     /// Reset [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
     ///
     /// # Example
