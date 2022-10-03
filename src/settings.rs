@@ -6,7 +6,11 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginationSetting {
+    pub max_total_hits: i32
+}
 /// Struct reprensenting a set of settings.
 /// You can build this struct using the builder syntax.
 ///
@@ -562,7 +566,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings, PaginationSetting}};
     /// #
     /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -571,23 +575,22 @@ impl Index {
     /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
     /// # client.create_index("set_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_pagination");
-    /// let mut pagination = std::collections::HashMap::new();
-    /// pagination.insert(String::from("maxTotalHits"), 100);
-    /// let task = index.set_pagination(&pagination).await.unwrap();
+    /// let pagination = PaginationSetting {max_total_hits:100};
+    /// let task = index.set_pagination(pagination).await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn set_pagination(
         &self,
-        pagination: &HashMap<String, i32>,
+        pagination: PaginationSetting,
     ) -> Result<TaskInfo, Error> {
-        request::<&HashMap<String, i32>, TaskInfo>(
+        request::<&PaginationSetting, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/pagination",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Patch(pagination),
+            Method::Patch(&pagination),
             202,
         )
         .await
