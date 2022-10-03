@@ -9,7 +9,7 @@ use std::collections::HashMap;
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginationSetting {
-    pub max_total_hits: i32
+    pub max_total_hits: u32
 }
 /// Struct reprensenting a set of settings.
 /// You can build this struct using the builder syntax.
@@ -271,8 +271,8 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_pagination(&self) -> Result<HashMap<String, i32>, Error> {
-        request::<(), HashMap<String, i32>>(
+    pub async fn get_pagination(&self) -> Result<PaginationSetting, Error> {
+        request::<(), PaginationSetting>(
             &format!(
                 "{}/indexes/{}/settings/pagination",
                 self.client.host, self.uid
