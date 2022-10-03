@@ -287,7 +287,10 @@ impl<'a> SearchQuery<'a> {
         self.filter = Some(filter);
         self
     }
-    pub fn with_facets<'b>(&'b mut self, facets: Selectors<&'a [&'a str]>) -> &'b mut SearchQuery<'a> {
+    pub fn with_facets<'b>(
+        &'b mut self,
+        facets: Selectors<&'a [&'a str]>,
+    ) -> &'b mut SearchQuery<'a> {
         self.facets = Some(facets);
         self
     }
@@ -778,7 +781,7 @@ mod tests {
     async fn test_matching_strategy_all(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let results = Query::new(&index)
+        let results = SearchQuery::new(&index)
             .with_query("Harry Styles")
             .with_matching_strategy(MatchingStrategies::ALL)
             .execute::<Document>()
@@ -793,7 +796,7 @@ mod tests {
     async fn test_matching_strategy_left(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let results = Query::new(&index)
+        let results = SearchQuery::new(&index)
             .with_query("Harry Styles")
             .with_matching_strategy(MatchingStrategies::LAST)
             .execute::<Document>()
