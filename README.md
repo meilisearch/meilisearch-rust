@@ -33,12 +33,21 @@
 
 ## Table of Contents <!-- omit in TOC -->
 
+- [🎃 Hacktoberfest](#-hacktoberfest)
 - [📖 Documentation](#-documentation)
 - [🔧 Installation](#-installation)
 - [🚀 Getting Started](#-getting-started)
 - [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
 - [🤖 Compatibility with Meilisearch](#-compatibility-with-meilisearch)
 - [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
+
+## 🎃 Hacktoberfest
+
+It’s Hacktoberfest 2022 @Meilisearch
+
+[Hacktoberfest](https://hacktoberfest.com/) is a celebration of the open-source community. This year, and for the third time in a row, Meilisearch is participating in this fantastic event.
+
+You’d like to contribute? Don’t hesitate to check out our [contributing guidelines](./CONTRIBUTING.md).
 
 ## 📖 Documentation
 
@@ -50,7 +59,7 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.18.0"
+meilisearch-sdk = "0.19.0"
 ```
 
 The following optional dependencies may also be useful:

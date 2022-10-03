@@ -86,7 +86,7 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
     }
 }
 
-/// Some list fields in a `Query` can be set to a wildcard value.
+/// Some list fields in a `SearchQuery` can be set to a wildcard value.
 /// This structure allows you to choose between the wildcard value and an exhaustive list of selectors.
 #[derive(Debug, Clone)]
 pub enum Selectors<T> {
@@ -106,7 +106,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// use serde::{Serialize, Deserialize};
-/// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
+/// # use meilisearch_sdk::{client::Client, search::SearchQuery, indexes::Index};
 /// #
 /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -128,7 +128,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// #  .try_make_index(&client)
 /// #  .unwrap();
 ///
-/// let mut res = Query::new(&index)
+/// let mut res = SearchQuery::new(&index)
 ///     .with_query("space")
 ///     .with_offset(42)
 ///     .with_limit(21)
@@ -142,7 +142,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 ///
 /// ```
-/// # use meilisearch_sdk::{client::Client, search::Query, indexes::Index};
+/// # use meilisearch_sdk::{client::Client, search::SearchQuery, indexes::Index};
 /// #
 /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -157,7 +157,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Query<'a> {
+pub struct SearchQuery<'a> {
     #[serde(skip_serializing)]
     index: &'a Index,
     /// The text that will be searched for among the documents.
@@ -249,9 +249,9 @@ pub struct Query<'a> {
 }
 
 #[allow(missing_docs)]
-impl<'a> Query<'a> {
-    pub fn new(index: &'a Index) -> Query<'a> {
-        Query {
+impl<'a> SearchQuery<'a> {
+    pub fn new(index: &'a Index) -> SearchQuery<'a> {
+        SearchQuery {
             index,
             query: None,
             offset: None,
@@ -270,92 +270,91 @@ impl<'a> Query<'a> {
             matching_strategy: None,
         }
     }
-    pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut Query<'a> {
+    pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a> {
         self.query = Some(query);
         self
     }
 
-    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut Query<'a> {
+    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut SearchQuery<'a> {
         self.offset = Some(offset);
         self
     }
-    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut Query<'a> {
+    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut SearchQuery<'a> {
         self.limit = Some(limit);
         self
     }
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut Query<'a> {
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a> {
         self.filter = Some(filter);
         self
     }
-    pub fn with_facets<'b>(&'b mut self, facets: Selectors<&'a [&'a str]>) -> &'b mut Query<'a> {
+    pub fn with_facets<'b>(&'b mut self, facets: Selectors<&'a [&'a str]>) -> &'b mut SearchQuery<'a> {
         self.facets = Some(facets);
         self
     }
-    pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut Query<'a> {
+    pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut SearchQuery<'a> {
         self.sort = Some(sort);
         self
     }
     pub fn with_attributes_to_retrieve<'b>(
         &'b mut self,
         attributes_to_retrieve: Selectors<&'a [&'a str]>,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut SearchQuery<'a> {
         self.attributes_to_retrieve = Some(attributes_to_retrieve);
         self
     }
     pub fn with_attributes_to_crop<'b>(
         &'b mut self,
         attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut SearchQuery<'a> {
         self.attributes_to_crop = Some(attributes_to_crop);
         self
     }
-    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut Query<'a> {
+    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut SearchQuery<'a> {
         self.crop_length = Some(crop_length);
         self
     }
-    pub fn with_crop_marker<'b>(&'b mut self, crop_marker: &'a str) -> &'b mut Query<'a> {
+    pub fn with_crop_marker<'b>(&'b mut self, crop_marker: &'a str) -> &'b mut SearchQuery<'a> {
         self.crop_marker = Some(crop_marker);
         self
     }
     pub fn with_attributes_to_highlight<'b>(
         &'b mut self,
         attributes_to_highlight: Selectors<&'a [&'a str]>,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut SearchQuery<'a> {
         self.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
     pub fn with_highlight_pre_tag<'b>(
         &'b mut self,
         highlight_pre_tag: &'a str,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut SearchQuery<'a> {
         self.highlight_pre_tag = Some(highlight_pre_tag);
         self
     }
     pub fn with_highlight_post_tag<'b>(
         &'b mut self,
         highlight_post_tag: &'a str,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut SearchQuery<'a> {
         self.highlight_post_tag = Some(highlight_post_tag);
         self
     }
     pub fn with_show_matches_position<'b>(
         &'b mut self,
         show_matches_position: bool,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut SearchQuery<'a> {
         self.show_matches_position = Some(show_matches_position);
         self
     }
     pub fn with_matching_strategy<'b>(
         &'b mut self,
         matching_strategy: MatchingStrategies,
-    ) -> &'b mut Query<'a> {
+    ) -> &'b mut SearchQuery<'a> {
         self.matching_strategy = Some(matching_strategy);
         self
     }
-    pub fn build(&mut self) -> Query<'a> {
+    pub fn build(&mut self) -> SearchQuery<'a> {
         self.clone()
     }
-
     /// Execute the query and fetch the results.
     pub async fn execute<T: 'static + DeserializeOwned>(
         &'a self,
@@ -417,7 +416,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_query_builder(_client: Client, index: Index) -> Result<(), Error> {
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("space").with_offset(42).with_limit(21);
 
         let res = query.execute::<Document>().await.unwrap();
@@ -501,7 +500,7 @@ mod tests {
     async fn test_query_facet_distribution(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_facets(Selectors::All);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
@@ -515,7 +514,7 @@ mod tests {
             &8
         );
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_facets(Selectors::Some(&["kind"]));
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(
@@ -553,7 +552,7 @@ mod tests {
             .await?;
         assert_eq!(results.hits.len(), 10);
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_attributes_to_retrieve(Selectors::Some(&["kind", "id"])); // omit the "value" field
         assert!(index.execute_query::<Document>(&query).await.is_err()); // error: missing "value" field
         Ok(())
@@ -563,7 +562,7 @@ mod tests {
     async fn test_query_sort(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("harry potter");
         query.with_sort(&["title:desc"]);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
@@ -575,7 +574,7 @@ mod tests {
     async fn test_query_attributes_to_crop(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
@@ -592,7 +591,7 @@ mod tests {
             results.hits[0].formatted_result.as_ref().unwrap()
         );
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::Some(&[("value", Some(5)), ("kind", None)]));
         let results: SearchResults<Document> = index.execute_query(&query).await?;
@@ -614,7 +613,7 @@ mod tests {
     async fn test_query_crop_length(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
         query.with_crop_length(200);
@@ -627,7 +626,7 @@ mod tests {
         },
         results.hits[0].formatted_result.as_ref().unwrap());
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("lorem ipsum");
         query.with_attributes_to_crop(Selectors::All);
         query.with_crop_length(5);
@@ -650,7 +649,7 @@ mod tests {
     async fn test_query_customized_crop_marker(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("sed do eiusmod");
         query.with_attributes_to_crop(Selectors::All);
         query.with_crop_length(6);
@@ -679,7 +678,7 @@ mod tests {
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("Social");
         query.with_attributes_to_highlight(Selectors::All);
         query.with_highlight_pre_tag("(⊃｡•́‿•̀｡)⊃ ");
@@ -705,7 +704,7 @@ mod tests {
     async fn test_query_attributes_to_highlight(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("dolor text");
         query.with_attributes_to_highlight(Selectors::All);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
@@ -721,7 +720,7 @@ mod tests {
             results.hits[0].formatted_result.as_ref().unwrap(),
         );
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("dolor text");
         query.with_attributes_to_highlight(Selectors::Some(&["value"]));
         let results: SearchResults<Document> = index.execute_query(&query).await?;
@@ -743,7 +742,7 @@ mod tests {
     async fn test_query_show_matches_position(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("dolor text");
         query.with_show_matches_position(true);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
@@ -767,7 +766,7 @@ mod tests {
     async fn test_phrase_search(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let mut query = Query::new(&index);
+        let mut query = SearchQuery::new(&index);
         query.with_query("harry \"of Fire\"");
         let results: SearchResults<Document> = index.execute_query(&query).await?;
 

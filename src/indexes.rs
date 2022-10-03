@@ -211,7 +211,7 @@ impl Index {
     /// // add some documents
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
-    /// let query = Query::new(&movies).with_query("Interstellar").with_limit(5).build();
+    /// let query = SearchQuery::new(&movies).with_query("Interstellar").with_limit(5).build();
     /// let results = movies.execute_query::<Movie>(&query).await.unwrap();
     /// assert!(results.hits.len()>0);
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -219,9 +219,9 @@ impl Index {
     /// ```
     pub async fn execute_query<T: 'static + DeserializeOwned>(
         &self,
-        query: &Query<'_>,
+        query: &SearchQuery<'_>,
     ) -> Result<SearchResults<T>, Error> {
-        request::<&Query, SearchResults<T>>(
+        request::<&SearchQuery, SearchResults<T>>(
             &format!("{}/indexes/{}/search", self.client.host, self.uid),
             &self.client.api_key,
             Method::Post(query),
@@ -267,8 +267,8 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn search(&self) -> Query {
-        Query::new(self)
+    pub fn search(&self) -> SearchQuery {
+        SearchQuery::new(self)
     }
 
     /// Get one [Document] using its unique id.
