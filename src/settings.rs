@@ -6,7 +6,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-#[derive(Serialize, Deserialize, Default, Debug, Clone)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginationSetting {
     pub max_total_hits: u32
@@ -1209,5 +1209,51 @@ impl Index {
             202,
         )
         .await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::client::*;
+    use meilisearch_test_macro::meilisearch_test;
+
+    #[meilisearch_test]
+    async fn test_get_pagination(index: Index) {
+        let res = index.get_pagination().await.unwrap();
+        let pagination = PaginationSetting {
+            max_total_hits: 1000,
+        };
+
+        assert_eq!(pagination, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_pagination(index: Index) {
+        let pagination = PaginationSetting {
+            max_total_hits: 11,
+        };
+        let task = index.set_pagination(pagination).await.unwrap();
+        index.wait_for_task(task, None, None).await.unwrap();
+        let res = index.get_pagination().await.unwrap();
+
+        assert_eq!(pagination, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_pagination(index: Index) {
+        let pagination = PaginationSetting {
+            max_total_hits: 10,
+        };
+        let task = index.set_pagination(pagination).await.unwrap();
+        index.wait_for_task(task, None, None).await.unwrap();
+        let reset_task = index.reset_pagination().await.unwrap();
+        index.wait_for_task(reset_task, None, None).await.unwrap();
+        let res = index.get_pagination().await.unwrap();
+
+        let default = PaginationSetting { max_total_hits: 1000};
+   
+        assert_eq!(default, res);
     }
 }
