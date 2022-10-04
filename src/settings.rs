@@ -62,6 +62,8 @@ pub struct Settings {
     /// Fields displayed in the returned documents
     #[serde(skip_serializing_if = "Option::is_none")]
     pub displayed_attributes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pagination: Option<PaginationSetting>,
 }
 
 #[allow(missing_docs)]
@@ -77,6 +79,7 @@ impl Settings {
             distinct_attribute: None,
             searchable_attributes: None,
             displayed_attributes: None,
+            pagination: None
         }
     }
     pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
@@ -112,6 +115,17 @@ impl Settings {
                     .map(|v| v.as_ref().to_string())
                     .collect(),
             ),
+            ..self
+        }
+    }
+
+    pub fn with_pagination(
+        self,
+        pagination_settings: PaginationSetting
+    ) -> Settings {
+        Settings {
+            pagination: Some(
+                pagination_settings),
             ..self
         }
     }
@@ -493,7 +507,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings,PaginationSetting}};
     /// #
     /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -505,7 +519,9 @@ impl Index {
     ///
     /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
     /// let settings = Settings::new()
-    ///     .with_stop_words(stop_words.clone());
+    ///     .with_stop_words(stop_words.clone())
+    ///     .with_pagination(PaginationSetting {max_total_hits: 100}
+    /// );
     ///
     /// let task = index.set_settings(&settings).await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
