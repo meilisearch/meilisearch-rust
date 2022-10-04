@@ -79,7 +79,7 @@ impl Settings {
             distinct_attribute: None,
             searchable_attributes: None,
             displayed_attributes: None,
-            pagination: None
+            pagination: None,
         }
     }
     pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
@@ -119,13 +119,9 @@ impl Settings {
         }
     }
 
-    pub fn with_pagination(
-        self,
-        pagination_settings: PaginationSetting
-    ) -> Settings {
+    pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Settings {
         Settings {
-            pagination: Some(
-                pagination_settings),
+            pagination: Some(pagination_settings),
             ..self
         }
     }
@@ -596,10 +592,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn set_pagination(
-        &self,
-        pagination: PaginationSetting,
-    ) -> Result<TaskInfo, Error> {
+    pub async fn set_pagination(&self, pagination: PaginationSetting,) -> Result<TaskInfo, Error> {
         request::<&PaginationSetting, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/pagination",
