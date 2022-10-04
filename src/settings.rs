@@ -6,7 +6,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Copy)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginationSetting {
     pub max_total_hits: u32
