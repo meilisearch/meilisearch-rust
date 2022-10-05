@@ -9,7 +9,7 @@ use std::collections::HashMap;
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginationSetting {
-    pub max_total_hits: u32
+    pub max_total_hits: usize
 }
 /// Struct reprensenting a set of settings.
 /// You can build this struct using the builder syntax.
