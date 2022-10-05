@@ -222,7 +222,7 @@ reset_synonyms_1: |-
     .unwrap();
 get_pagination_settings_1: |-
   let pagination: PaginationSetting = client
-    .index("movies")
+    .index("books")
     .get_pagination()
     .await
     .unwrap();
@@ -230,13 +230,13 @@ update_pagination_settings_1: |-
   let pagination = PaginationSetting {max_total_hits:100};
 
   let task: TaskInfo = client
-    .index("movies")
+    .index("books")
     .set_pagination(pagination)
     .await
     .unwrap();
 reset_pagination_settings_1: |-
   let task: TaskInfo = client
-    .index("movies")
+    .index("books")
     .reset_pagination()
     .await
     .unwrap();
@@ -659,7 +659,7 @@ settings_guide_pagination_1: |-
   let pagination = PaginationSetting {max_total_hits:100};
 
   let task: TaskInfo = client
-    .index("books")
+    .index("movies")
     .set_pagination(pagination)
     .await
     .unwrap();
