@@ -1277,7 +1277,6 @@ mod tests {
     async fn test_reset_faceting(client: Client, index: Index) {
         let task_info = index.reset_faceting().await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
-
         let faceting = FacetingSettings {
             max_values_per_facet: 100,
         };
