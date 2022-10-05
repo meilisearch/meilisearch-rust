@@ -1222,6 +1222,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_get_pagination(index: Index) {
         let res = index.get_pagination().await.unwrap();
+
         let pagination = PaginationSetting {
             max_total_hits: 1000,
         };
@@ -1236,6 +1237,7 @@ mod tests {
         };
         let task = index.set_pagination(pagination).await.unwrap();
         index.wait_for_task(task, None, None).await.unwrap();
+
         let res = index.get_pagination().await.unwrap();
 
         assert_eq!(pagination, res);
@@ -1246,14 +1248,16 @@ mod tests {
         let pagination = PaginationSetting {
             max_total_hits: 10,
         };
+        let default = PaginationSetting { max_total_hits: 1000};
+
         let task = index.set_pagination(pagination).await.unwrap();
         index.wait_for_task(task, None, None).await.unwrap();
+
         let reset_task = index.reset_pagination().await.unwrap();
         index.wait_for_task(reset_task, None, None).await.unwrap();
+
         let res = index.get_pagination().await.unwrap();
 
-        let default = PaginationSetting { max_total_hits: 1000};
-   
         assert_eq!(default, res);
     }
 }
