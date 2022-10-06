@@ -2,11 +2,27 @@ use crate::{errors::Error, indexes::Index};
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+use either::Either;
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct MatchRange {
     pub start: usize,
     pub length: usize,
+}
+
+#[derive(Serialize , Debug, Eq, PartialEq , Clone)]
+#[serde(transparent)]
+pub struct Filter<'a>{
+    #[serde(with = "either::serde_untagged")]
+    inner: Either<&'a str , Vec<&'a str>>
+}
+
+impl<'a> Filter<'a> {
+    pub fn new(inner: Either<&'a str , Vec<&'a str>>) -> Filter {
+        Filter {
+            inner
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -182,7 +198,7 @@ pub struct SearchQuery<'a> {
     /// Filter applied to documents.
     /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub filter: Option<&'a str>,
+    pub filter: Option<Filter<'a>>,
     /// Facets for which to retrieve the matching count.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -284,7 +300,11 @@ impl<'a> SearchQuery<'a> {
         self
     }
     pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a> {
-        self.filter = Some(filter);
+        self.filter = Some(Filter::new(Either::Left(filter)));
+        self
+    }
+    pub fn with_array_filter<'b>(&'b mut self , filter: Vec<&'a str>) -> &'b mut SearchQuery<'a> {
+        self.filter = Some(Filter::new(Either::Right(filter)));
         self
     }
     pub fn with_facets<'b>(
@@ -498,6 +518,21 @@ mod tests {
         assert_eq!(results.hits.len(), 9);
         Ok(())
     }
+
+    #[meilisearch_test]
+    async fn test_query_filter_with_array(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results: SearchResults<Document> = index
+            .search()
+            .with_array_filter(vec!["value = \"The Social Network\"" , "value = \"The Social Network\""])
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 1);
+
+        Ok(())
+    }
+
 
     #[meilisearch_test]
     async fn test_query_facet_distribution(client: Client, index: Index) -> Result<(), Error> {
