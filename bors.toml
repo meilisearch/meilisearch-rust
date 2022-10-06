@@ -1,6 +1,7 @@
 status = [
     'integration-tests',
     'clippy-check',
+    'rust-format',
     'readme-check',
     'wasm-build'
 ]
