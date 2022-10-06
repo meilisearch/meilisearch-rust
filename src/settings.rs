@@ -6,11 +6,20 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginationSetting {
     pub max_total_hits: usize
 }
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct FacetingSettings {
+    #[serde()]
+    pub max_values_per_facet: usize,
+}
+
 /// Struct reprensenting a set of settings.
 /// You can build this struct using the builder syntax.
 ///
@@ -64,6 +73,9 @@ pub struct Settings {
     pub displayed_attributes: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pagination: Option<PaginationSetting>,
+    /// Faceting settings
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub faceting: Option<FacetingSettings>,
 }
 
 #[allow(missing_docs)]
@@ -80,6 +92,7 @@ impl Settings {
             searchable_attributes: None,
             displayed_attributes: None,
             pagination: None,
+            faceting: None,
         }
     }
     pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
@@ -204,6 +217,16 @@ impl Settings {
                     .map(|v| v.as_ref().to_string())
                     .collect(),
             ),
+            ..self
+        }
+    }
+
+    pub fn with_faceting(
+        self,
+        faceting: &FacetingSettings,
+    ) -> Settings {
+        Settings {
+            faceting: Some(faceting.clone()),
             ..self
         }
     }
@@ -488,6 +511,35 @@ impl Index {
         request::<(), Vec<String>>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
+            Method::Get(()),
+            200,
+        )
+        .await
+    }
+
+    /// Get [faceting](https://docs.meilisearch.com/reference/api/settings.html#faceting) settings of the [Index].
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # client.create_index("get_faceting", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_faceting");
+    /// let faceting = index.get_faceting().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_faceting(&self) -> Result<FacetingSettings, Error> {
+        request::<(), FacetingSettings>(
+            &format!(
+                "{}/indexes/{}/settings/faceting",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
@@ -893,6 +945,45 @@ impl Index {
         .await
     }
 
+    /// Update [faceting](https://docs.meilisearch.com/reference/api/settings.html#faceting) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings, settings::FacetingSettings};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # client.create_index("set_faceting", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_faceting");
+    ///
+    /// let mut faceting = FacetingSettings {
+    ///     max_values_per_facet: 12,
+    /// };
+    ///
+    /// let task = index.set_faceting(&faceting).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_faceting(
+        &self,
+        faceting: &FacetingSettings,
+    ) -> Result<TaskInfo, Error> {
+        request::<&FacetingSettings, TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/faceting",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
+            Method::Patch(faceting),
+            202,
+        )
+        .await
+    }
+
     /// Reset [Settings] of the [Index].
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/reference/api/settings.html#reset-settings).
     ///
@@ -1209,6 +1300,100 @@ impl Index {
             202,
         )
         .await
+    }
+
+    /// Reset [faceting](https://docs.meilisearch.com/reference/api/settings.html#faceting) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # client.create_index("reset_faceting", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_faceting");
+    ///
+    /// let task = index.reset_faceting().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_faceting(&self) -> Result<TaskInfo, Error> {
+        request::<(), TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/faceting",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
+            Method::Delete,
+            202,
+        )
+        .await
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::client::*;
+    use meilisearch_test_macro::meilisearch_test;
+
+    #[meilisearch_test]
+    async fn test_set_faceting_settings(client: Client, index: Index) {
+        let faceting = FacetingSettings {
+            max_values_per_facet: 5,
+        };
+        let settings = Settings::new()
+            .with_faceting(&faceting);
+
+        let task_info = index.set_settings(&settings).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_faceting().await.unwrap();
+
+        assert_eq!(faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_faceting(index: Index) {
+        let faceting = FacetingSettings {
+            max_values_per_facet: 100,
+        };
+
+        let res = index.get_faceting().await.unwrap();
+
+        assert_eq!(faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_faceting(client: Client, index: Index) {
+        let faceting = FacetingSettings {
+            max_values_per_facet: 5,
+        };
+        let task_info = index.set_faceting(&faceting).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_faceting().await.unwrap();
+
+        assert_eq!(faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_faceting(client: Client, index: Index) {
+        let task_info = index.reset_faceting().await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+        let faceting = FacetingSettings {
+            max_values_per_facet: 100,
+        };
+
+        let res = index.get_faceting().await.unwrap();
+
+        assert_eq!(faceting, res);
     }
 }
 

@@ -378,6 +378,28 @@ reset_displayed_attributes_1: |-
     .reset_displayed_attributes()
     .await
     .unwrap();
+get_faceting_settings_1: |-
+  let faceting: FacetingSettings = client
+    .index("books")
+    .get_faceting()
+    .await
+    .unwrap();
+update_faceting_settings_1: |-
+  let mut faceting = FacetingSettings {
+    max_values_per_facet: 2,
+  };
+
+  let task: TaskInfo = client
+    .index("books")
+    .set_faceting(&faceting)
+    .await
+    .unwrap();
+reset_faceting_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .reset_faceting()
+    .await
+    .unwrap();
 get_index_stats_1: |-
   let stats: IndexStats = client
     .index("movies")
@@ -689,6 +711,18 @@ settings_guide_sortable_1: |-
     .set_settings(&settings)
     .await
     .unwrap();
+settings_guide_faceting_1: |-
+  let faceting = FacetingSettings {
+      max_values_per_facet: 5,
+  };
+  let settings = Settings::new()
+    .with_faceting(&faceting);
+
+  let task: TaskInfo = client
+    .index("movies")
+    .set_settings(&settings)
+    .await
+    .unwrap();
 add_movies_json_1: |-
   use meilisearch_sdk::{
     indexes::*,
@@ -776,7 +810,7 @@ primary_field_guide_add_document_primary_key: |-
 getting_started_add_documents_md: |-
   ```toml
     [dependencies]
-    meilisearch-sdk = "0.19"
+    meilisearch-sdk = "0.20"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
@@ -1013,6 +1047,16 @@ getting_started_sorting: |-
     .with_filter("mass < 200")
     .with_sort(&["mass:asc"])
     .execute()
+    .await
+    .unwrap();
+getting_started_faceting: |-
+  let mut faceting = FacetingSettings {
+    max_values_per_facet: 2,
+  };
+
+  let task: TaskInfo = client
+    .index("movies")
+    .set_faceting(&faceting)
     .await
     .unwrap();
 getting_started_filtering: |-

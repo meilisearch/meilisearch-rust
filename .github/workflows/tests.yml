@@ -44,6 +44,14 @@ jobs:
       # Will fail when encountering warnings
       run: cargo clippy -- -D warnings
 
+  formatter:
+    name: rust-format
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run formatter
+      run: cargo fmt
+
   readme_check:
     name: readme-check
     runs-on: ubuntu-latest
