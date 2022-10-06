@@ -1396,14 +1396,6 @@ mod tests {
 
         assert_eq!(faceting, res);
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use crate::client::*;
-    use meilisearch_test_macro::meilisearch_test;
 
     #[meilisearch_test]
     async fn test_get_pagination(index: Index) {
