@@ -1,5 +1,6 @@
 use crate::{errors::Error, indexes::Index};
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
+use serde::ser::{SerializeSeq};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
@@ -7,6 +8,32 @@ use std::collections::HashMap;
 pub struct MatchRange {
     pub start: usize,
     pub length: usize,
+}
+
+#[derive(Debug, Eq, PartialEq , Clone)]
+pub enum Filter<'a> {
+    String(&'a str),
+    Array(Vec<&'a str>)
+}
+
+impl<'a> Serialize for Filter<'a> {
+    fn serialize<S>(&self , serializer: S) -> Result<S::Ok , S::Error>
+    where
+        S: Serializer
+    {
+        match self {
+            Filter::String(s) => serializer.serialize_str(s),
+            Filter::Array(s) => {
+                let mut seq = serializer.serialize_seq(Some(s.len()))?;
+
+                for item in s {
+                    seq.serialize_element(item)?;
+                }
+
+                seq.end()
+            },
+        } 
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -182,7 +209,7 @@ pub struct SearchQuery<'a> {
     /// Filter applied to documents.
     /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub filter: Option<&'a str>,
+    pub filter: Option<Filter<'a>>,
     /// Facets for which to retrieve the matching count.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -284,7 +311,11 @@ impl<'a> SearchQuery<'a> {
         self
     }
     pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a> {
-        self.filter = Some(filter);
+        self.filter = Some(Filter::String(filter));
+        self
+    }
+    pub fn with_array_filter<'b>(&'b mut self , filter: Vec<&'a str>) -> &'b mut SearchQuery<'a> {
+        self.filter = Some(Filter::Array(filter));
         self
     }
     pub fn with_facets<'b>(
@@ -498,6 +529,21 @@ mod tests {
         assert_eq!(results.hits.len(), 9);
         Ok(())
     }
+
+    #[meilisearch_test]
+    async fn test_query_filter_with_array(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results: SearchResults<Document> = index
+            .search()
+            .with_array_filter(vec!["value = \"The Social Network\"" , "value = \"The Social Network\""])
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 1);
+
+        Ok(())
+    }
+
 
     #[meilisearch_test]
     async fn test_query_facet_distribution(client: Client, index: Index) -> Result<(), Error> {
