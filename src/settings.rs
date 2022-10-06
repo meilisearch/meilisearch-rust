@@ -71,6 +71,7 @@ pub struct Settings {
     /// Fields displayed in the returned documents
     #[serde(skip_serializing_if = "Option::is_none")]
     pub displayed_attributes: Option<Vec<String>>,
+    /// Pagination settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pagination: Option<PaginationSetting>,
     /// Faceting settings
