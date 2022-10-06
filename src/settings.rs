@@ -556,7 +556,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings,PaginationSetting}};
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings, PaginationSetting}};
     /// #
     /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -1399,11 +1399,11 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_pagination(index: Index) {
-        let res = index.get_pagination().await.unwrap();
-
         let pagination = PaginationSetting {
             max_total_hits: 1000,
         };
+
+        let res = index.get_pagination().await.unwrap();
 
         assert_eq!(pagination, res);
     }
