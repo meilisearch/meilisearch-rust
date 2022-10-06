@@ -1,8 +1,8 @@
 use crate::{errors::Error, indexes::Index};
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
-use serde::ser::{SerializeSeq};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+use either::Either;
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct MatchRange {
@@ -10,29 +10,18 @@ pub struct MatchRange {
     pub length: usize,
 }
 
-#[derive(Debug, Eq, PartialEq , Clone)]
-pub enum Filter<'a> {
-    String(&'a str),
-    Array(Vec<&'a str>)
+#[derive(Serialize , Debug, Eq, PartialEq , Clone)]
+#[serde(transparent)]
+pub struct Filter<'a>{
+    #[serde(with = "either::serde_untagged")]
+    inner: Either<&'a str , Vec<&'a str>>
 }
 
-impl<'a> Serialize for Filter<'a> {
-    fn serialize<S>(&self , serializer: S) -> Result<S::Ok , S::Error>
-    where
-        S: Serializer
-    {
-        match self {
-            Filter::String(s) => serializer.serialize_str(s),
-            Filter::Array(s) => {
-                let mut seq = serializer.serialize_seq(Some(s.len()))?;
-
-                for item in s {
-                    seq.serialize_element(item)?;
-                }
-
-                seq.end()
-            },
-        } 
+impl<'a> Filter<'a> {
+    pub fn new(inner: Either<&'a str , Vec<&'a str>>) -> Filter {
+        Filter {
+            inner
+        }
     }
 }
 
@@ -311,11 +300,11 @@ impl<'a> SearchQuery<'a> {
         self
     }
     pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a> {
-        self.filter = Some(Filter::String(filter));
+        self.filter = Some(Filter::new(Either::Left(filter)));
         self
     }
     pub fn with_array_filter<'b>(&'b mut self , filter: Vec<&'a str>) -> &'b mut SearchQuery<'a> {
-        self.filter = Some(Filter::Array(filter));
+        self.filter = Some(Filter::new(Either::Right(filter)));
         self
     }
     pub fn with_facets<'b>(
