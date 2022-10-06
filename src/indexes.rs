@@ -611,7 +611,13 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], TaskInfo>(&url, &self.client.api_key, Method::Put(documents), 202).await
+        request::<&[T], TaskInfo>(
+            &url, 
+            &self.client.api_key, 
+            Method::Put(documents), 
+            202
+        )
+        .await
     }
 
     /// Delete all documents in the index.
