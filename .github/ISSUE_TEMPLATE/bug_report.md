@@ -23,4 +23,4 @@ If applicable, add screenshots or logs to help explain your problem.
 **Environment (please complete the following information):**
 - OS: [e.g. Debian GNU/Linux]
 - Meilisearch version: [e.g. v.0.20.0]
-- meilisearch-rust version: [e.g v0.8.1]
+- meilisearch-rust version: [e.g v0.20.1]
