@@ -220,6 +220,26 @@ reset_synonyms_1: |-
     .reset_synonyms()
     .await
     .unwrap();
+get_pagination_settings_1: |-
+  let pagination: PaginationSetting = client
+    .index("books")
+    .get_pagination()
+    .await
+    .unwrap();
+update_pagination_settings_1: |-
+  let pagination = PaginationSetting {max_total_hits:100};
+
+  let task: TaskInfo = client
+    .index("books")
+    .set_pagination(pagination)
+    .await
+    .unwrap();
+reset_pagination_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .reset_pagination()
+    .await
+    .unwrap();
 get_stop_words_1: |-
   let stop_words: Vec<String> = client
     .index("movies")
@@ -655,6 +675,14 @@ settings_guide_searchable_1: |-
   let task: TaskInfo = client
     .index("movies")
     .set_settings(&settings)
+    .await
+    .unwrap();
+settings_guide_pagination_1: |-
+  let pagination = PaginationSetting {max_total_hits:100};
+
+  let task: TaskInfo = client
+    .index("movies")
+    .set_pagination(pagination)
     .await
     .unwrap();
 settings_guide_displayed_1: |-

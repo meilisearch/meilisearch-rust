@@ -26,7 +26,7 @@ pub enum TaskType {
         details: Option<IndexDeletion>,
     },
     SettingsUpdate {
-        details: Option<Settings>,
+        details: Box<Option<Settings>>,
     },
     DumpCreation {
         details: Option<DumpCreation>,

@@ -7,6 +7,12 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq, Copy)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginationSetting {
+    pub max_total_hits: usize
+}
+
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetingSettings {
@@ -65,6 +71,9 @@ pub struct Settings {
     /// Fields displayed in the returned documents
     #[serde(skip_serializing_if = "Option::is_none")]
     pub displayed_attributes: Option<Vec<String>>,
+    /// Pagination settings
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pagination: Option<PaginationSetting>,
     /// Faceting settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub faceting: Option<FacetingSettings>,
@@ -83,6 +92,7 @@ impl Settings {
             distinct_attribute: None,
             searchable_attributes: None,
             displayed_attributes: None,
+            pagination: None,
             faceting: None,
         }
     }
@@ -119,6 +129,13 @@ impl Settings {
                     .map(|v| v.as_ref().to_string())
                     .collect(),
             ),
+            ..self
+        }
+    }
+
+    pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Settings {
+        Settings {
+            pagination: Some(pagination_settings),
             ..self
         }
     }
@@ -263,6 +280,35 @@ impl Index {
         request::<(), HashMap<String, Vec<String>>>(
             &format!(
                 "{}/indexes/{}/settings/synonyms",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
+            Method::Get(()),
+            200,
+        )
+        .await
+    }
+
+    /// Get [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # client.create_index("get_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_pagination");
+    /// let pagination = index.get_pagination().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_pagination(&self) -> Result<PaginationSetting, Error> {
+        request::<(), PaginationSetting>(
+            &format!(
+                "{}/indexes/{}/settings/pagination",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
@@ -510,7 +556,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings, PaginationSetting}};
     /// #
     /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -522,7 +568,9 @@ impl Index {
     ///
     /// let stop_words = vec![String::from("a"), String::from("the"), String::from("of")];
     /// let settings = Settings::new()
-    ///     .with_stop_words(stop_words.clone());
+    ///     .with_stop_words(stop_words.clone())
+    ///     .with_pagination(PaginationSetting {max_total_hits: 100}
+    /// );
     ///
     /// let task = index.set_settings(&settings).await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -573,6 +621,38 @@ impl Index {
             ),
             &self.client.api_key,
             Method::Put(synonyms),
+            202,
+        )
+        .await
+    }
+
+    /// Update [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings, PaginationSetting}};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # client.create_index("set_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_pagination");
+    /// let pagination = PaginationSetting {max_total_hits:100};
+    /// let task = index.set_pagination(pagination).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_pagination(&self, pagination: PaginationSetting,) -> Result<TaskInfo, Error> {
+        request::<&PaginationSetting, TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/pagination",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
+            Method::Patch(&pagination),
             202,
         )
         .await
@@ -967,6 +1047,37 @@ impl Index {
         .await
     }
 
+    /// Reset [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # client.create_index("reset_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_pagination");
+    ///
+    /// let task = index.reset_pagination().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_pagination(&self) -> Result<TaskInfo, Error> {
+        request::<(), TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/pagination",
+                self.client.host, self.uid
+            ),
+            &self.client.api_key,
+            Method::Delete,
+            202,
+        )
+        .await
+    }
     /// Reset [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
     ///
     /// # Example
@@ -1284,5 +1395,47 @@ mod tests {
         let res = index.get_faceting().await.unwrap();
 
         assert_eq!(faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_pagination(index: Index) {
+        let pagination = PaginationSetting {
+            max_total_hits: 1000,
+        };
+
+        let res = index.get_pagination().await.unwrap();
+
+        assert_eq!(pagination, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_pagination(index: Index) {
+        let pagination = PaginationSetting {
+            max_total_hits: 11,
+        };
+        let task = index.set_pagination(pagination).await.unwrap();
+        index.wait_for_task(task, None, None).await.unwrap();
+
+        let res = index.get_pagination().await.unwrap();
+
+        assert_eq!(pagination, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_pagination(index: Index) {
+        let pagination = PaginationSetting {
+            max_total_hits: 10,
+        };
+        let default = PaginationSetting { max_total_hits: 1000};
+
+        let task = index.set_pagination(pagination).await.unwrap();
+        index.wait_for_task(task, None, None).await.unwrap();
+
+        let reset_task = index.reset_pagination().await.unwrap();
+        index.wait_for_task(reset_task, None, None).await.unwrap();
+
+        let res = index.get_pagination().await.unwrap();
+
+        assert_eq!(default, res);
     }
 }
