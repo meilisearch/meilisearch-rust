@@ -111,7 +111,7 @@ struct Movie {
 
 fn main() { block_on(async move {
     // Create a client (without sending any request so that can't fail)
-    let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
 
     // An index is where the documents are stored.
     let movies = client.index("movies");
@@ -138,18 +138,22 @@ println!("{:?}", client.index("movies_2").search().with_query("caorl").execute::
 ```
 
 Output:
+
 ```
 [Movie { id: 1, title: String::from("Carol"), genres: vec!["Romance", "Drama"] }]
 ```
 
 Json output:
+
 ```json
 {
-  "hits": [{
-    "id": 1,
-    "title": "Carol",
-    "genres": ["Romance", "Drama"]
-  }],
+  "hits": [
+    {
+      "id": 1,
+      "title": "Carol",
+      "genres": ["Romance", "Drama"]
+    }
+  ],
   "offset": 0,
   "limit": 10,
   "processingTimeMs": 1,
@@ -171,23 +175,24 @@ println!("{:?}", search_result.hits);
 ```
 
 Json output:
+
 ```json
 {
-    "hits": [
-        {
-            "id": 6,
-            "title": "Philadelphia",
-            "_formatted": {
-                "id": 6,
-                "title": "<em>Phil</em>adelphia",
-                "genre": ["Drama"]
-            }
-        }
-    ],
-    "offset": 0,
-    "limit": 20,
-    "processingTimeMs": 0,
-    "query": "phil"
+  "hits": [
+    {
+      "id": 6,
+      "title": "Philadelphia",
+      "_formatted": {
+        "id": 6,
+        "title": "<em>Phil</em>adelphia",
+        "genre": ["Drama"]
+      }
+    }
+  ],
+  "offset": 0,
+  "limit": 20,
+  "processingTimeMs": 0,
+  "query": "phil"
 }
 ```
 
@@ -222,6 +227,7 @@ println!("{:?}", search_result.hits);
 ```
 
 Json output:
+
 ```json
 {
   "hits": [

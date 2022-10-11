@@ -1,8 +1,8 @@
 use crate::{errors::Error, indexes::Index};
+use either::Either;
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
-use either::Either;
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct MatchRange {
@@ -10,18 +10,16 @@ pub struct MatchRange {
     pub length: usize,
 }
 
-#[derive(Serialize , Debug, Eq, PartialEq , Clone)]
+#[derive(Serialize, Debug, Eq, PartialEq, Clone)]
 #[serde(transparent)]
-pub struct Filter<'a>{
+pub struct Filter<'a> {
     #[serde(with = "either::serde_untagged")]
-    inner: Either<&'a str , Vec<&'a str>>
+    inner: Either<&'a str, Vec<&'a str>>,
 }
 
 impl<'a> Filter<'a> {
-    pub fn new(inner: Either<&'a str , Vec<&'a str>>) -> Filter {
-        Filter {
-            inner
-        }
+    pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter {
+        Filter { inner }
     }
 }
 
@@ -124,7 +122,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// use serde::{Serialize, Deserialize};
 /// # use meilisearch_sdk::{client::Client, search::SearchQuery, indexes::Index};
 /// #
-/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
 /// #[derive(Serialize, Deserialize, Debug)]
@@ -134,7 +132,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// }
 ///
 /// # futures::executor::block_on(async move {
-/// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+/// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
 /// # let index = client
 /// #  .create_index("search_query_builder", None)
 /// #  .await
@@ -160,10 +158,10 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 /// # use meilisearch_sdk::{client::Client, search::SearchQuery, indexes::Index};
 /// #
-/// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
-/// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+/// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
 /// # let index = client.index("search_query_builder_build");
 /// let query = index.search()
 ///     .with_query("space")
@@ -303,7 +301,7 @@ impl<'a> SearchQuery<'a> {
         self.filter = Some(Filter::new(Either::Left(filter)));
         self
     }
-    pub fn with_array_filter<'b>(&'b mut self , filter: Vec<&'a str>) -> &'b mut SearchQuery<'a> {
+    pub fn with_array_filter<'b>(&'b mut self, filter: Vec<&'a str>) -> &'b mut SearchQuery<'a> {
         self.filter = Some(Filter::new(Either::Right(filter)));
         self
     }
@@ -525,14 +523,16 @@ mod tests {
 
         let results: SearchResults<Document> = index
             .search()
-            .with_array_filter(vec!["value = \"The Social Network\"" , "value = \"The Social Network\""])
+            .with_array_filter(vec![
+                "value = \"The Social Network\"",
+                "value = \"The Social Network\"",
+            ])
             .execute()
             .await?;
         assert_eq!(results.hits.len(), 1);
 
         Ok(())
     }
-
 
     #[meilisearch_test]
     async fn test_query_facet_distribution(client: Client, index: Index) -> Result<(), Error> {
@@ -851,14 +851,14 @@ mod tests {
 
         setup_test_index(&client, &index).await?;
 
-        let meilisearch_host = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+        let meilisearch_url = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
         let key = KeyBuilder::new()
             .with_action(Action::All)
             .with_index("*")
             .execute(&client)
             .await
             .unwrap();
-        let allowed_client = Client::new(meilisearch_host, key.key);
+        let allowed_client = Client::new(meilisearch_url, key.key);
 
         let search_rules = vec![
             json!({ "*": {}}),
@@ -873,7 +873,7 @@ mod tests {
                 .generate_tenant_token(key.uid.clone(), rules, None, None)
                 .expect("Cannot generate tenant token.");
 
-            let new_client = Client::new(meilisearch_host, token.clone());
+            let new_client = Client::new(meilisearch_url, token.clone());
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())
