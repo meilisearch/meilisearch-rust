@@ -83,13 +83,13 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
         // First we need to check if a client will be used and create it if it’s the case
         if use_client {
             outer_block.push(parse_quote!(
-                let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+                let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
             ));
             outer_block.push(parse_quote!(
                 let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
             ));
             outer_block.push(parse_quote!(
-                let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+                let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
             ));
         }
 
