@@ -34,10 +34,10 @@ impl<'a> DocumentQuery<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
     /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     /// let index = client.index("document_query_with_fields");
     /// let mut document_query = DocumentQuery::new(&index);
     ///
@@ -59,10 +59,10 @@ impl<'a> DocumentQuery<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
     /// # use serde::{Deserialize, Serialize};
     /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     ///
     /// # futures::executor::block_on(async move {
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -138,10 +138,10 @@ impl<'a> DocumentsQuery<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
     /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index).with_offset(1);
@@ -158,10 +158,10 @@ impl<'a> DocumentsQuery<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
     /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
@@ -180,10 +180,10 @@ impl<'a> DocumentsQuery<'a> {
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
     /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
@@ -206,10 +206,10 @@ impl<'a> DocumentsQuery<'a> {
     /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
     /// # use serde::{Deserialize, Serialize};
     /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     ///
     /// # futures::executor::block_on(async move {
     /// # let index = client.create_index("documents_query_execute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
