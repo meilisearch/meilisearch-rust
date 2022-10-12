@@ -34,7 +34,7 @@ pub enum Error {
     TenantTokensExpiredSignature,
 
     /// When jsonwebtoken cannot generate the token successfully.
-    #[error(transparent)]
+    #[error("Impossible to generate the token, jsonwebtoken encountered an error: {}", .0)]
     InvalidTenantToken(#[from] jsonwebtoken::errors::Error),
 
     /// The http client encountered an error.
@@ -188,7 +188,7 @@ impl From<isahc::Error> for Error {
 #[cfg(test)]
 mod test {
     use super::*;
-
+    
     #[test]
     fn test_meilisearch_error() {
         let error: MeilisearchError = serde_json::from_str(
@@ -206,11 +206,6 @@ mod test {
         assert_eq!(error.error_code, ErrorCode::IndexCreationFailed);
         assert_eq!(error.error_type, ErrorType::Internal);
         assert_eq!(error.error_link, "https://the best link eveer");
-        assert!(error.to_string().contains("Meilisearch"));
-        assert!(error.to_string().contains("internal"));
-        assert!(error.to_string().contains("index_creation_failed"));
-        assert!(error.to_string().contains("The cool error message"));
-        assert!(error.to_string().contains("https://the best link eveer"));
 
         let error: MeilisearchError = serde_json::from_str(
             r#"
