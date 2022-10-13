@@ -17,9 +17,9 @@ pub struct PaginationSetting {
 #[serde(rename_all = "camelCase")]
 pub struct MinWordSizeForTypos {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub one_typo: Option<i64>,
+    pub one_typo: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub two_typos: Option<i64>,
+    pub two_typos: Option<u8>,
 }
 
 impl Default for MinWordSizeForTypos {
