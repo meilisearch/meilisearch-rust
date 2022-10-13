@@ -1,50 +1,67 @@
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 /// An enum representing the errors that can occur.
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
     /// The exhaustive list of Meilisearch errors: <https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md>
     /// Also check out: <https://github.com/meilisearch/Meilisearch/blob/main/meilisearch-error/src/lib.rs>
-    Meilisearch(MeilisearchError),
+    #[error(transparent)]
+    Meilisearch(#[from] MeilisearchError),
     /// There is no Meilisearch server listening on the [specified host]
     /// (../client/struct.Client.html#method.new).
+    #[error("The Meilisearch server can't be reached.")]
     UnreachableServer,
     /// The Meilisearch server returned an invalid JSON for a request.
-    ParseError(serde_json::Error),
+    #[error("Error parsing response JSON: {}", .0)]
+    ParseError(#[from] serde_json::Error),
     /// A timeout happened while waiting for an update to complete.
+    #[error("A task did not succeed in time.")]
     Timeout,
     /// This Meilisearch SDK generated an invalid request (which was not sent).
     /// It probably comes from an invalid API key resulting in an invalid HTTP header.
+    #[error("Unable to generate a valid HTTP request. It probably comes from an invalid API key.")]
     InvalidRequest,
 
     /// It is not possible to generate a tenant token with a invalid api key.
     /// Empty strings or with less than 8 characters are considered invalid.
+    #[error("The provided api_key is invalid.")]
     TenantTokensInvalidApiKey,
     /// It is not possible to generate an already expired tenant token.
+    #[error("The provided expires_at is already expired.")]
     TenantTokensExpiredSignature,
 
     /// When jsonwebtoken cannot generate the token successfully.
-    InvalidTenantToken(jsonwebtoken::errors::Error),
+    #[error("Impossible to generate the token, jsonwebtoken encountered an error: {}", .0)]
+    InvalidTenantToken(#[from] jsonwebtoken::errors::Error),
 
     /// The http client encountered an error.
     #[cfg(not(target_arch = "wasm32"))]
+    #[error("HTTP request failed: {}", .0)]
     HttpError(isahc::Error),
+
     /// The http client encountered an error.
     #[cfg(target_arch = "wasm32")]
+    #[error("HTTP request failed: {}", .0)]
     HttpError(String),
+
     // The library formating the query parameters encountered an error.
-    Yaup(yaup::Error),
+    #[error("Internal Error: could not parse the query parameters: {}", .0)]
+    Yaup(#[from] yaup::Error),
     // The library validating the format of an uuid.
     #[cfg(not(target_arch = "wasm32"))]
-    Uuid(uuid::Error),
+    #[error("The uid of the token has bit an uuid4 format: {}", .0)]
+    Uuid(#[from] uuid::Error),
     // Error thrown in case the version of the Uuid is not v4.
+    #[error("The uid provided to the token is not of version uuidv4")]
     InvalidUuid4Version,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Error)]
 #[serde(rename_all = "camelCase")]
+#[error("Meilisearch {}: {}: {}. {}", .error_type, .error_code, .error_message, .error_link)]
 pub struct MeilisearchError {
     /// The human readable error message
     #[serde(rename = "message")]
@@ -60,31 +77,6 @@ pub struct MeilisearchError {
     /// A link to the Meilisearch documentation for an error.
     #[serde(rename = "link")]
     pub error_link: String,
-}
-
-impl From<MeilisearchError> for Error {
-    fn from(error: MeilisearchError) -> Self {
-        Self::Meilisearch(error)
-    }
-}
-
-impl From<jsonwebtoken::errors::Error> for Error {
-    fn from(error: jsonwebtoken::errors::Error) -> Error {
-        Error::InvalidTenantToken(error)
-    }
-}
-
-impl From<yaup::Error> for Error {
-    fn from(error: yaup::Error) -> Error {
-        Error::Yaup(error)
-    }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-impl From<uuid::Error> for Error {
-    fn from(error: uuid::Error) -> Error {
-        Error::Uuid(error)
-    }
 }
 
 /// The type of error that was encountered.
@@ -182,40 +174,6 @@ impl std::fmt::Display for ErrorCode {
     }
 }
 
-impl std::fmt::Display for Error {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        match self {
-            Error::Meilisearch(MeilisearchError {
-                error_message,
-                error_code,
-                error_type,
-                error_link,
-            }) => write!(
-                fmt,
-                "Meilisearch {}: {}: {}. {}",
-                error_type,
-                error_code,
-                error_message,
-                error_link,
-            ),
-            Error::UnreachableServer => write!(fmt, "The Meilisearch server can't be reached."),
-            Error::InvalidRequest => write!(fmt, "Unable to generate a valid HTTP request. It probably comes from an invalid API key."),
-            Error::ParseError(e) => write!(fmt, "Error parsing response JSON: {}", e),
-            Error::HttpError(e) => write!(fmt, "HTTP request failed: {}", e),
-            Error::Timeout => write!(fmt, "A task did not succeed in time."),
-            Error::TenantTokensInvalidApiKey => write!(fmt, "The provided api_key is invalid."),
-            Error::TenantTokensExpiredSignature => write!(fmt, "The provided expires_at is already expired."),
-            Error::InvalidTenantToken(e) => write!(fmt, "Impossible to generate the token, jsonwebtoken encountered an error: {}", e),
-            Error::Yaup(e) => write!(fmt, "Internal Error: could not parse the query parameters: {}", e),
-            #[cfg(not(target_arch = "wasm32"))]
-            Error::Uuid(e) => write!(fmt, "The uid of the token has bit an uuid4 format: {}", e),
-            Error::InvalidUuid4Version => write!(fmt, "The uid provided to the token is not of version uuidv4")
-        }
-    }
-}
-
-impl std::error::Error for Error {}
-
 #[cfg(not(target_arch = "wasm32"))]
 impl From<isahc::Error> for Error {
     fn from(error: isahc::Error) -> Error {
@@ -230,6 +188,7 @@ impl From<isahc::Error> for Error {
 #[cfg(test)]
 mod test {
     use super::*;
+    use uuid::Uuid;
 
     #[test]
     fn test_meilisearch_error() {
@@ -262,5 +221,72 @@ mod test {
 
         assert_eq!(error.error_code, ErrorCode::Unknown);
         assert_eq!(error.error_type, ErrorType::Unknown);
+    }
+
+    #[test]
+    fn test_error_message_parsing() {
+        let error: MeilisearchError = serde_json::from_str(
+            r#"
+{
+  "message": "The cool error message.",
+  "code": "index_creation_failed",
+  "type": "internal",
+  "link": "https://the best link eveer"
+}"#,
+        )
+        .unwrap();
+
+        assert_eq!(error.to_string(), ("Meilisearch internal: index_creation_failed: The cool error message.. https://the best link eveer"));
+
+        let error = Error::UnreachableServer;
+        assert_eq!(
+            error.to_string(),
+            "The Meilisearch server can't be reached."
+        );
+
+        let error = Error::Timeout;
+        assert_eq!(error.to_string(), "A task did not succeed in time.");
+
+        let error = Error::InvalidRequest;
+        assert_eq!(
+            error.to_string(),
+            "Unable to generate a valid HTTP request. It probably comes from an invalid API key."
+        );
+
+        let error = Error::TenantTokensInvalidApiKey;
+        assert_eq!(error.to_string(), "The provided api_key is invalid.");
+
+        let error = Error::TenantTokensExpiredSignature;
+        assert_eq!(
+            error.to_string(),
+            "The provided expires_at is already expired."
+        );
+
+        let error = Error::InvalidUuid4Version;
+        assert_eq!(
+            error.to_string(),
+            "The uid provided to the token is not of version uuidv4"
+        );
+
+        let error = Error::Uuid(Uuid::parse_str("67e55044").unwrap_err());
+        assert_eq!(error.to_string(), "The uid of the token has bit an uuid4 format: invalid length: expected length 32 for simple format, found 8");
+
+        let data = r#"
+        {
+            "name": "John Doe"
+            "age": 43,
+        }"#;
+
+        let error = Error::ParseError(serde_json::from_str::<String>(data).unwrap_err());
+        assert_eq!(
+            error.to_string(),
+            "Error parsing response JSON: invalid type: map, expected a string at line 2 column 8"
+        );
+
+        let error = Error::HttpError(isahc::post("test_url", "test_body").unwrap_err());
+        assert_eq!(
+            error.to_string(),
+            "HTTP request failed: failed to resolve host name"
+        );
     }
 }
