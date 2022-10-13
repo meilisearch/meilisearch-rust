@@ -16,7 +16,9 @@ pub struct PaginationSetting {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MinWordSizeForTypos {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub one_typo: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub two_typos: Option<i64>,
 }
 
@@ -31,10 +33,15 @@ impl Default for MinWordSizeForTypos {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+
 pub struct TypoToleranceSettings {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub disable_on_attributes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub disable_on_words: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub min_word_size_for_typos: Option<MinWordSizeForTypos>,
 }
 
