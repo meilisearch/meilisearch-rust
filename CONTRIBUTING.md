@@ -98,6 +98,21 @@ rustup component add clippy
 rustup update
 ```
 
+### Fmt
+
+Each PR should pass the format test to be accepted.
+
+Run the following to fix the formating errors:
+
+```
+cargo fmt
+```
+
+and the following to test if the formating is correct:
+```
+cargo fmt --all -- --check
+```
+
 ### Update the README <!-- omit in toc -->
 
 The README is generated. Please do not update manually the `README.md` file.
