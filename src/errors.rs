@@ -187,9 +187,9 @@ impl From<isahc::Error> for Error {
 
 #[cfg(test)]
 mod test {
-    use uuid::Uuid;
     use super::*;
-    
+    use uuid::Uuid;
+
     #[test]
     fn test_meilisearch_error() {
         let error: MeilisearchError = serde_json::from_str(
@@ -201,7 +201,7 @@ mod test {
   "link": "https://the best link eveer"
 }"#,
         )
-            .unwrap();
+        .unwrap();
 
         assert_eq!(error.error_message, "The cool error message.");
         assert_eq!(error.error_code, ErrorCode::IndexCreationFailed);
@@ -217,7 +217,7 @@ mod test {
   "link": ""
 }"#,
         )
-            .unwrap();
+        .unwrap();
 
         assert_eq!(error.error_code, ErrorCode::Unknown);
         assert_eq!(error.error_type, ErrorType::Unknown);
@@ -234,28 +234,39 @@ mod test {
   "link": "https://the best link eveer"
 }"#,
         )
-            .unwrap();
+        .unwrap();
 
         assert_eq!(error.to_string(), ("Meilisearch internal: index_creation_failed: The cool error message.. https://the best link eveer"));
 
-
         let error = Error::UnreachableServer;
-        assert_eq!(error.to_string(), "The Meilisearch server can't be reached.");
+        assert_eq!(
+            error.to_string(),
+            "The Meilisearch server can't be reached."
+        );
 
         let error = Error::Timeout;
         assert_eq!(error.to_string(), "A task did not succeed in time.");
 
         let error = Error::InvalidRequest;
-        assert_eq!(error.to_string(), "Unable to generate a valid HTTP request. It probably comes from an invalid API key.");
+        assert_eq!(
+            error.to_string(),
+            "Unable to generate a valid HTTP request. It probably comes from an invalid API key."
+        );
 
         let error = Error::TenantTokensInvalidApiKey;
         assert_eq!(error.to_string(), "The provided api_key is invalid.");
 
         let error = Error::TenantTokensExpiredSignature;
-        assert_eq!(error.to_string(), "The provided expires_at is already expired.");
+        assert_eq!(
+            error.to_string(),
+            "The provided expires_at is already expired."
+        );
 
         let error = Error::InvalidUuid4Version;
-        assert_eq!(error.to_string(), "The uid provided to the token is not of version uuidv4");
+        assert_eq!(
+            error.to_string(),
+            "The uid provided to the token is not of version uuidv4"
+        );
 
         let error = Error::Uuid(Uuid::parse_str("67e55044").unwrap_err());
         assert_eq!(error.to_string(), "The uid of the token has bit an uuid4 format: invalid length: expected length 32 for simple format, found 8");
@@ -267,9 +278,15 @@ mod test {
         }"#;
 
         let error = Error::ParseError(serde_json::from_str::<String>(data).unwrap_err());
-        assert_eq!(error.to_string(), "Error parsing response JSON: invalid type: map, expected a string at line 2 column 8");
+        assert_eq!(
+            error.to_string(),
+            "Error parsing response JSON: invalid type: map, expected a string at line 2 column 8"
+        );
 
         let error = Error::HttpError(isahc::post("test_url", "test_body").unwrap_err());
-        assert_eq!(error.to_string(), "HTTP request failed: failed to resolve host name");
+        assert_eq!(
+            error.to_string(),
+            "HTTP request failed: failed to resolve host name"
+        );
     }
 }
