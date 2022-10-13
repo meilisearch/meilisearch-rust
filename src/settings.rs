@@ -23,10 +23,10 @@ pub struct MinWordSizeForTypos {
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct TypoToleranceSettings {
-    pub enabled: bool,
-    pub disable_on_attributes: Vec<String>,
-    pub disable_on_words: Vec<String>,
-    pub min_word_size_for_typos: MinWordSizeForTypos,
+    pub enabled: Option<bool>,
+    pub disable_on_attributes: Option<Vec<String>>,
+    pub disable_on_words: Option<Vec<String>>,
+    pub min_word_size_for_typos: Option<MinWordSizeForTypos>,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -1051,10 +1051,12 @@ impl Index {
     /// let mut index = client.index("set_typo_tolerance");
     ///
     /// let mut typo_tolerance = TypoToleranceSettings {
-    ///     enabled: true,
-    ///     disable_on_attributes: vec!(),
-    ///     disable_on_words: vec!(),
-    ///     min_word_size_for_typos: MinWordSizeForTypos { one_typo : 1, two_typos: 2},
+    ///     enabled: Some(true),
+    ///     disable_on_attributes: None,
+    ///     disable_on_words: None,
+    ///     min_word_size_for_typos: Some(MinWordSizeForTypos {
+    ///     one_typo: 5,
+    ///     two_typos: 9})
     /// };
     ///
     /// let task = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
@@ -1562,13 +1564,13 @@ mod tests {
     #[meilisearch_test]
     async fn test_get_typo_tolerance(index: Index) {
         let typo_tolerance = TypoToleranceSettings {
-            enabled: true,
-            disable_on_attributes: vec![],
-            disable_on_words: vec![],
-            min_word_size_for_typos: MinWordSizeForTypos {
+            enabled: Some(true),
+            disable_on_attributes: None,
+            disable_on_words: None,
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
                 one_typo: 5,
                 two_typos: 9,
-            },
+            }),
         };
 
         let res = index.get_typo_tolerance().await.unwrap();
@@ -1579,13 +1581,13 @@ mod tests {
     #[meilisearch_test]
     async fn test_set_typo_tolerance(client: Client, index: Index) {
         let typo_tolerance = TypoToleranceSettings {
-            enabled: false,
-            disable_on_attributes: vec![],
-            disable_on_words: vec![],
-            min_word_size_for_typos: MinWordSizeForTypos {
+            enabled: Some(false),
+            disable_on_attributes: None,
+            disable_on_words: None,
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
                 one_typo: 6,
                 two_typos: 9,
-            },
+            }),
         };
         let task_info = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
@@ -1598,22 +1600,22 @@ mod tests {
     #[meilisearch_test]
     async fn test_reset_typo_tolerance(index: Index) {
         let typo_tolerance = TypoToleranceSettings {
-            enabled: false,
-            disable_on_attributes: vec![],
-            disable_on_words: vec![],
-            min_word_size_for_typos: MinWordSizeForTypos {
+            enabled: Some(false),
+            disable_on_attributes: None,
+            disable_on_words: None,
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
                 one_typo: 1,
                 two_typos: 2,
-            },
+            }),
         };
         let default = TypoToleranceSettings {
-            enabled: true,
-            disable_on_attributes: vec![],
-            disable_on_words: vec![],
-            min_word_size_for_typos: MinWordSizeForTypos {
+            enabled: Some(true),
+            disable_on_attributes: None,
+            disable_on_words: None,
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
                 one_typo: 5,
                 two_typos: 9,
-            },
+            }),
         };
 
         let task = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
