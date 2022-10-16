@@ -13,46 +13,100 @@ pub struct PaginationSetting {
     pub max_total_hits: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct MinWordSizeForTypos {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub one_typo: Option<u8>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub two_typos: Option<u8>,
+    pub one_typo: u8,
+    pub two_typos: u8,
 }
 
 impl Default for MinWordSizeForTypos {
     fn default() -> Self {
         MinWordSizeForTypos {
-            one_typo: Some(5),
-            two_typos: Some(9),
+            one_typo: 5,
+            two_typos: 9,
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 
 pub struct TypoToleranceSettings {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub disable_on_attributes: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub disable_on_words: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub min_word_size_for_typos: Option<MinWordSizeForTypos>,
+    pub enabled: bool,
+    pub disable_on_attributes: Vec<String>,
+    pub disable_on_words: Vec<String>,
+    pub min_word_size_for_typos: MinWordSizeForTypos,
 }
 
 impl Default for TypoToleranceSettings {
     fn default() -> Self {
         TypoToleranceSettings {
-            enabled: Some(true),
-            disable_on_attributes: Some(vec![]),
-            disable_on_words: Some(vec![]),
-            min_word_size_for_typos: Some(MinWordSizeForTypos::default()),
+            enabled: true,
+            disable_on_attributes: vec![],
+            disable_on_words: vec![],
+            min_word_size_for_typos: MinWordSizeForTypos::default(),
         }
+    }
+}
+
+impl TypoToleranceSettings {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn with_enabled(self, enabled: bool) -> TypoToleranceSettings {
+        TypoToleranceSettings {
+            enabled: enabled,
+            ..self
+        }
+    }
+
+    pub fn with_disable_on_attributes(
+        self,
+        disable_on_attributes: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> TypoToleranceSettings {
+        TypoToleranceSettings {
+            disable_on_attributes: disable_on_attributes
+                .into_iter()
+                .map(|v| v.as_ref().to_string())
+                .collect(),
+
+            ..self
+        }
+    }
+    pub fn with_disable_on_words(
+        self,
+        disable_on_words: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> TypoToleranceSettings {
+        TypoToleranceSettings {
+            disable_on_words: disable_on_words
+                .into_iter()
+                .map(|v| v.as_ref().to_string())
+                .collect(),
+
+            ..self
+        }
+    }
+
+    pub fn with_min_word_size_for_typos(
+        self,
+        min_word_size_for_typos: MinWordSizeForTypos,
+    ) -> TypoToleranceSettings {
+        TypoToleranceSettings {
+            min_word_size_for_typos: min_word_size_for_typos,
+            ..self
+        }
+    }
+
+    pub fn with_min_word_size_for_one_typo(mut self, one_typo: u8) -> TypoToleranceSettings {
+        self.min_word_size_for_typos.one_typo = one_typo;
+        self
+    }
+
+    pub fn with_min_word_size_for_two_typo(mut self, two_typo: u8) -> TypoToleranceSettings {
+        self.min_word_size_for_typos.two_typos = two_typo;
+        self
     }
 }
 
@@ -1077,7 +1131,7 @@ impl Index {
     /// # client.create_index("set_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_typo_tolerance");
     ///
-    /// let mut typo_tolerance = TypoToleranceSettings::default();
+    /// let mut typo_tolerance = TypoToleranceSettings::new().with_enabled(false);
     ///
     /// let task = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -1592,15 +1646,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_set_typo_tolerance(client: Client, index: Index) {
-        let typo_tolerance = TypoToleranceSettings {
-            enabled: Some(false),
-            disable_on_attributes: Some(vec![]),
-            disable_on_words: Some(vec![]),
-            min_word_size_for_typos: Some(MinWordSizeForTypos {
-                one_typo: Some(6),
-                two_typos: Some(9),
-            }),
-        };
+        let typo_tolerance = TypoToleranceSettings::new().with_min_word_size_for_one_typo(1);
+
         let task_info = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
 
@@ -1611,15 +1658,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_reset_typo_tolerance(index: Index) {
-        let typo_tolerance = TypoToleranceSettings {
-            enabled: Some(false),
-            disable_on_attributes: Some(vec![]),
-            disable_on_words: Some(vec![]),
-            min_word_size_for_typos: Some(MinWordSizeForTypos {
-                one_typo: Some(1),
-                two_typos: Some(2),
-            }),
-        };
+        let typo_tolerance = TypoToleranceSettings::new().with_enabled(false);
 
         let task = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
         index.wait_for_task(task, None, None).await.unwrap();
@@ -1627,8 +1666,8 @@ mod tests {
         let reset_task = index.reset_typo_tolerance().await.unwrap();
         index.wait_for_task(reset_task, None, None).await.unwrap();
 
-        let res = index.get_typo_tolerance().await.unwrap();
+        let default = index.get_typo_tolerance().await.unwrap();
 
-        assert_eq!(TypoToleranceSettings::default(), res);
+        assert_eq!(TypoToleranceSettings::new(), default);
     }
 }
