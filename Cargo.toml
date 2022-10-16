@@ -22,6 +22,9 @@ jsonwebtoken = { version = "8", default-features = false }
 yaup = "0.2.0"
 either = { version = "1.8.0" , features = ["serde"] }
 thiserror = "1.0.37"
+syn = { version = "1.0.102" }
+quote = "1.0.21"
+proc-macro2 = "1.0.46"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 futures = "0.3"
@@ -44,7 +47,9 @@ futures-await-test = "0.3"
 futures = "0.3"
 mockito = "0.31.0"
 meilisearch-test-macro = { path = "meilisearch-test-macro" }
+meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro" }
 tokio = { version = "1", features = ["rt", "macros"] }
+syn = { version = "1.0.102" }
 
 # The following dependencies are required for examples
 wasm-bindgen = "0.2"
