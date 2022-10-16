@@ -13,7 +13,7 @@ pub struct PaginationSetting {
     pub max_total_hits: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MinWordSizeForTypos {
     pub one_typo: u8,
@@ -56,10 +56,7 @@ impl TypoToleranceSettings {
     }
 
     pub fn with_enabled(self, enabled: bool) -> TypoToleranceSettings {
-        TypoToleranceSettings {
-            enabled,
-            ..self
-        }
+        TypoToleranceSettings { enabled, ..self }
     }
 
     pub fn with_disable_on_attributes(
