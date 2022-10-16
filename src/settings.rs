@@ -57,7 +57,7 @@ impl TypoToleranceSettings {
 
     pub fn with_enabled(self, enabled: bool) -> TypoToleranceSettings {
         TypoToleranceSettings {
-            enabled: enabled,
+            enabled,
             ..self
         }
     }
@@ -94,7 +94,7 @@ impl TypoToleranceSettings {
         min_word_size_for_typos: MinWordSizeForTypos,
     ) -> TypoToleranceSettings {
         TypoToleranceSettings {
-            min_word_size_for_typos: min_word_size_for_typos,
+            min_word_size_for_typos,
             ..self
         }
     }
