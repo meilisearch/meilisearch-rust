@@ -252,7 +252,7 @@ reset_pagination_settings_1: |-
     .unwrap();
 getting_started_typo_tolerance: |-
   let typo_tolerance = TypoToleranceSettings::new()
-    .with_min_word_size_for_two_typo(4);
+    .with_min_word_size_for_two_typos(4);
 
   let task: TaskInfo = client
     .index("movies")
@@ -765,7 +765,7 @@ settings_guide_faceting_1: |-
     .unwrap();
 settings_guide_typo_tolerance_1: |-
   let typo_tolerance = TypoToleranceSettings::new()
-    .with_min_word_size_for_two_typo(12)
+    .with_min_word_size_for_two_typos(12)
     .with_disable_on_attributes(["title".to_string()]);
 
   let settings = Settings::new()
@@ -787,7 +787,7 @@ typo_tolerance_guide_1: |-
     .unwrap();
 typo_tolerance_guide_2: |-
   let typo_tolerance = TypoToleranceSettings::new()
-    .with_min_word_size_for_two_typo(12)
+    .with_min_word_size_for_two_typos(12)
     .with_disable_on_attributes(["title".to_string()]);
 
   let task: TaskInfo = client
@@ -797,7 +797,7 @@ typo_tolerance_guide_2: |-
     .unwrap();
 typo_tolerance_guide_3: |-
   let typo_tolerance = TypoToleranceSettings::new()
-    .with_min_word_size_for_two_typo(12)
+    .with_min_word_size_for_two_typos(12)
     .with_disable_on_words(["shrek".to_string()]);
   
   let task: TaskInfo = client

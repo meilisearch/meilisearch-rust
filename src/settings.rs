@@ -104,8 +104,8 @@ impl TypoToleranceSettings {
         self
     }
 
-    pub fn with_min_word_size_for_two_typo(mut self, two_typo: u8) -> TypoToleranceSettings {
-        self.min_word_size_for_typos.two_typos = two_typo;
+    pub fn with_min_word_size_for_two_typos(mut self, two_typos: u8) -> TypoToleranceSettings {
+        self.min_word_size_for_typos.two_typos = two_typos;
         self
     }
 }
