@@ -256,7 +256,7 @@ getting_started_typo_tolerance: |-
 
   let task: TaskInfo = client
     .index("movies")
-    .set_update_typo_tolerance(&typo_tolerance)
+    .set_typo_tolerance(&typo_tolerance)
     .await
     .unwrap();
 get_typo_tolerance_1: |-
@@ -271,7 +271,7 @@ update_typo_tolerance_1: |-
 
   let task: TaskInfo = client
     .index("books")
-    .set_typo_tolerance(typo_tolerance)
+    .set_typo_tolerance(&typo_tolerance)
     .await
     .unwrap();
 reset_typo_tolerance_1: |-
@@ -780,12 +780,9 @@ typo_tolerance_guide_1: |-
   let typo_tolerance = TypoToleranceSettings::new()
     .with_enabled(false);
 
-  let settings = Settings::new()
-    .with_typo_tolerance(&typo_tolerance);
-
   let task: TaskInfo = client
     .index("movies")
-    .set_settings(&settings)
+    .set_typo_tolerance(&typo_tolerance)
     .await
     .unwrap();
 typo_tolerance_guide_2: |-
@@ -793,25 +790,19 @@ typo_tolerance_guide_2: |-
     .with_min_word_size_for_two_typo(12)
     .with_disable_on_attributes(["title".to_string()]);
 
-  let settings = Settings::new()
-    .with_typo_tolerance(&typo_tolerance);
-
   let task: TaskInfo = client
     .index("movies")
-    .set_settings(&settings)
+    .set_typo_tolerance(&typo_tolerance)
     .await
     .unwrap();
 typo_tolerance_guide_3: |-
   let typo_tolerance = TypoToleranceSettings::new()
     .with_min_word_size_for_two_typo(12)
     .with_disable_on_words(["shrek".to_string()]);
-
-  let settings = Settings::new()
-    .with_typo_tolerance(&typo_tolerance);
-
+  
   let task: TaskInfo = client
     .index("movies")
-    .set_settings(&settings)
+    .set_typo_tolerance(&typo_tolerance)
     .await
     .unwrap();
 typo_tolerance_guide_4: |-
@@ -822,12 +813,9 @@ typo_tolerance_guide_4: |-
   let typo_tolerance = TypoToleranceSettings::new()
     .with_min_word_size_for_typos(min_word_size_for_typos);
 
-  let settings = Settings::new()
-    .with_typo_tolerance(&typo_tolerance);
-
   let task: TaskInfo = client
     .index("movies")
-    .set_settings(&settings)
+    .set_typo_tolerance(&typo_tolerance)
     .await
     .unwrap();
 add_movies_json_1: |-
