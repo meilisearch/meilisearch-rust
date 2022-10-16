@@ -13,5 +13,4 @@ struct Movie {
     #[document(filterable, displayed)]
     genres: Vec<String>,
 }
-fn main() {
-}
+fn main() {}

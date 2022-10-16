@@ -8,7 +8,11 @@ pub fn generate_index_settings(input: proc_macro::TokenStream) -> proc_macro::To
 
     let fields: &syn::Fields = match ast.data {
         syn::Data::Struct(ref data) => &data.fields,
-        _ => return proc_macro::TokenStream::from(syn::Error::new(ast.ident.span(), "Applicable only to struct").to_compile_error()),
+        _ => {
+            return proc_macro::TokenStream::from(
+                syn::Error::new(ast.ident.span(), "Applicable only to struct").to_compile_error(),
+            )
+        }
     };
 
     let struct_name = &ast.ident;
@@ -19,14 +23,18 @@ pub fn generate_index_settings(input: proc_macro::TokenStream) -> proc_macro::To
     })
 }
 
-fn get_document_implementation(struct_ident: &syn::Ident, fields: &syn::Fields) -> proc_macro2::TokenStream {
-    let mut attribute_count: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
+fn get_document_implementation(
+    struct_ident: &syn::Ident,
+    fields: &syn::Fields,
+) -> proc_macro2::TokenStream {
+    let mut attribute_count: std::collections::HashMap<String, i32> =
+        std::collections::HashMap::new();
     let mut primary_key_attribute: String = "".to_string();
     let mut distinct_key_attribute: String = "".to_string();
-    let mut displayed_attributes: Vec<String> = vec!();
-    let mut searchable_attributes: Vec<String> = vec!();
-    let mut filterable_attributes: Vec<String> = vec!();
-    let mut sortable_attributes: Vec<String> = vec!();
+    let mut displayed_attributes: Vec<String> = vec![];
+    let mut searchable_attributes: Vec<String> = vec![];
+    let mut filterable_attributes: Vec<String> = vec![];
+    let mut sortable_attributes: Vec<String> = vec![];
     let document_name = struct_ident.to_string().to_lowercase();
 
     for field in fields {
@@ -36,30 +44,55 @@ fn get_document_implementation(struct_ident: &syn::Ident, fields: &syn::Fields) 
             Ok(attribute_list) => {
                 for attribute in attribute_list {
                     match attribute.as_str() {
-                        "displayed" => displayed_attributes.push(field.ident.clone().unwrap().to_string()),
-                        "searchable" => searchable_attributes.push(field.ident.clone().unwrap().to_string()),
-                        "filterable" => filterable_attributes.push(field.ident.clone().unwrap().to_string()),
-                        "sortable" => sortable_attributes.push(field.ident.clone().unwrap().to_string()),
-                        "primary_key" => primary_key_attribute = field.ident.clone().unwrap().to_string(),
-                        "distinct" => distinct_key_attribute = field.ident.clone().unwrap().to_string(),
-                        random => return syn::Error::new(field.ident.span(), format!("Property `{}` does not exist for type `document`", random)).to_compile_error()
+                        "displayed" => {
+                            displayed_attributes.push(field.ident.clone().unwrap().to_string())
+                        }
+                        "searchable" => {
+                            searchable_attributes.push(field.ident.clone().unwrap().to_string())
+                        }
+                        "filterable" => {
+                            filterable_attributes.push(field.ident.clone().unwrap().to_string())
+                        }
+                        "sortable" => {
+                            sortable_attributes.push(field.ident.clone().unwrap().to_string())
+                        }
+                        "primary_key" => {
+                            primary_key_attribute = field.ident.clone().unwrap().to_string()
+                        }
+                        "distinct" => {
+                            distinct_key_attribute = field.ident.clone().unwrap().to_string()
+                        }
+                        random => {
+                            return syn::Error::new(
+                                field.ident.span(),
+                                format!("Property `{}` does not exist for type `document`", random),
+                            )
+                            .to_compile_error()
+                        }
                     }
                 }
             }
-            Err(e) => { return e; }
+            Err(e) => {
+                return e;
+            }
         }
     }
 
     if primary_key_attribute.is_empty() {
-        return syn::Error::new(struct_ident.span(), "There should be exactly 1 primary key").to_compile_error();
+        return syn::Error::new(struct_ident.span(), "There should be exactly 1 primary key")
+            .to_compile_error();
     }
 
-
-    let display_attr_tokens = get_settings_token_for_list(&displayed_attributes, "with_displayed_attributes");
-    let sortable_attr_tokens = get_settings_token_for_list(&sortable_attributes, "with_sortable_attributes");
-    let filterable_attr_tokens = get_settings_token_for_list(&filterable_attributes, "with_filterable_attributes");
-    let searchable_attr_tokens = get_settings_token_for_list(&searchable_attributes, "with_searchable_attributes");
-    let distinct_attr_token = get_settings_token_for_string(&distinct_key_attribute, "with_distinct_attribute");
+    let display_attr_tokens =
+        get_settings_token_for_list(&displayed_attributes, "with_displayed_attributes");
+    let sortable_attr_tokens =
+        get_settings_token_for_list(&sortable_attributes, "with_sortable_attributes");
+    let filterable_attr_tokens =
+        get_settings_token_for_list(&filterable_attributes, "with_filterable_attributes");
+    let searchable_attr_tokens =
+        get_settings_token_for_list(&searchable_attributes, "with_searchable_attributes");
+    let distinct_attr_token =
+        get_settings_token_for_string(&distinct_key_attribute, "with_distinct_attribute");
 
     quote! {
         impl meilisearch_sdk::documents::Document for #struct_ident {
@@ -81,9 +114,11 @@ fn get_document_implementation(struct_ident: &syn::Ident, fields: &syn::Fields) 
     }
 }
 
-
-fn extract_all_attr_values(attrs: &[syn::Attribute], attribute_count: &mut std::collections::HashMap<String, i32>) -> std::result::Result<Vec<String>, proc_macro2::TokenStream> {
-    let mut value: Vec<String> = vec!();
+fn extract_all_attr_values(
+    attrs: &[syn::Attribute],
+    attribute_count: &mut std::collections::HashMap<String, i32>,
+) -> std::result::Result<Vec<String>, proc_macro2::TokenStream> {
+    let mut value: Vec<String> = vec![];
     for attr in attrs {
         if let std::result::Result::Ok(syn::Meta::List(list)) = attr.parse_meta() {
             if list.path.is_ident("document") {
@@ -91,13 +126,31 @@ fn extract_all_attr_values(attrs: &[syn::Attribute], attribute_count: &mut std::
                     if let syn::NestedMeta::Meta(syn::Meta::Path(path)) = nested_meta {
                         for segment in path.segments {
                             value.push(segment.ident.to_string());
-                            *attribute_count.entry(segment.ident.to_string()).or_insert(0) += 1;
+                            *attribute_count
+                                .entry(segment.ident.to_string())
+                                .or_insert(0) += 1;
 
-                            if segment.ident == "primary_key" && attribute_count.get("primary_key").unwrap_or(&0) > &1 {
-                                return std::result::Result::Err(syn::Error::new(segment.ident.span(), "primary_key already exists").to_compile_error());
+                            if segment.ident == "primary_key"
+                                && attribute_count.get("primary_key").unwrap_or(&0) > &1
+                            {
+                                return std::result::Result::Err(
+                                    syn::Error::new(
+                                        segment.ident.span(),
+                                        "primary_key already exists",
+                                    )
+                                    .to_compile_error(),
+                                );
                             }
-                            if segment.ident == "distinct" && attribute_count.get("distinct").unwrap_or(&0) > &1 {
-                                return std::result::Result::Err(syn::Error::new(segment.ident.span(), "distinct already exists").to_compile_error());
+                            if segment.ident == "distinct"
+                                && attribute_count.get("distinct").unwrap_or(&0) > &1
+                            {
+                                return std::result::Result::Err(
+                                    syn::Error::new(
+                                        segment.ident.span(),
+                                        "distinct already exists",
+                                    )
+                                    .to_compile_error(),
+                                );
                             }
                         }
                     }
@@ -108,7 +161,10 @@ fn extract_all_attr_values(attrs: &[syn::Attribute], attribute_count: &mut std::
     std::result::Result::Ok(value)
 }
 
-fn get_settings_token_for_list(attributes: &Vec<String>, attribute_key: &str) -> proc_macro2::TokenStream {
+fn get_settings_token_for_list(
+    attributes: &Vec<String>,
+    attribute_key: &str,
+) -> proc_macro2::TokenStream {
     let string_attributes = attributes.iter().map(|attr| {
         quote! {
             #attr
@@ -126,7 +182,10 @@ fn get_settings_token_for_list(attributes: &Vec<String>, attribute_key: &str) ->
     }
 }
 
-fn get_settings_token_for_string(attribute: &String, attribute_key: &str) -> proc_macro2::TokenStream {
+fn get_settings_token_for_string(
+    attribute: &String,
+    attribute_key: &str,
+) -> proc_macro2::TokenStream {
     let ident = syn::Ident::new(attribute_key, proc_macro2::Span::call_site());
 
     if !attribute.is_empty() {
