@@ -12,16 +12,8 @@ proc-macro = true
 syn = { version = "1.0.102", features = ["extra-traits"] }
 quote = "1.0.21"
 proc-macro2 = "1.0.46"
-meilisearch-sdk = "0.20.1"
 async-trait = "0.1.57"
 
-[[test]]
-name = "tests"
-path = "tests/index.rs"
-
 [dev-dependencies]
-trybuild = { version = "1.0.49", features = ["diff"] }
+meilisearch-sdk = "0.20.1"
 
-[[bin]]
-name = "test"
-path = "main.rs"

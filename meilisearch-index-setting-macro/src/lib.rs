@@ -11,7 +11,7 @@ pub fn generate_index_settings(input: proc_macro::TokenStream) -> proc_macro::To
         _ => {
             return proc_macro::TokenStream::from(
                 syn::Error::new(ast.ident.span(), "Applicable only to struct").to_compile_error(),
-            )
+            );
         }
     };
 
@@ -67,7 +67,7 @@ fn get_document_implementation(
                                 field.ident.span(),
                                 format!("Property `{}` does not exist for type `document`", random),
                             )
-                            .to_compile_error()
+                            .to_compile_error();
                         }
                     }
                 }
@@ -95,9 +95,10 @@ fn get_document_implementation(
         get_settings_token_for_string(&distinct_key_attribute, "with_distinct_attribute");
 
     quote! {
-        impl meilisearch_sdk::documents::Document for #struct_ident {
-            fn generate_settings(&self) -> meilisearch_sdk::settings::Settings {
-            meilisearch_sdk::settings::Settings::new()
+        #[async_trait::async_trait]
+        impl crate::documents::Document for #struct_ident {
+            fn generate_settings() -> crate::settings::Settings {
+            crate::settings::Settings::new()
             #display_attr_tokens
             #sortable_attr_tokens
             #filterable_attr_tokens
@@ -105,10 +106,11 @@ fn get_document_implementation(
             #distinct_attr_token
         }
 
-        async fn generate_index(client: &meilisearch_sdk::client::Client) -> std::result::Result<meilisearch_sdk::indexes::Index, meilisearch_sdk::errors::Error> {
-            client.create_index(#document_name, Some(#primary_key_attribute))?
-                .wait_for_completion(client)?
+         async fn generate_index(client: &crate::client::Client) -> std::result::Result<crate::indexes::Index, crate::errors::Error> {
+            Ok(client.create_index(#document_name, Some(#primary_key_attribute)).await?
+                .wait_for_completion(client, None, None).await?
                 .try_make_index(client)
+                .unwrap())
             }
         }
     }

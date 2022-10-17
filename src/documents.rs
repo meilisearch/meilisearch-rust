@@ -1,5 +1,15 @@
-use crate::{errors::Error, indexes::Index};
+use async_trait::async_trait;
+use meilisearch_index_setting_macro::Document;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+
+use crate::settings::Settings;
+use crate::{errors::Error, indexes::Index};
+
+#[async_trait]
+pub trait Document {
+    fn generate_settings() -> Settings;
+    async fn generate_index(client: &crate::client::Client) -> Result<Index, Error>;
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct DocumentsResults<T> {
@@ -238,15 +248,32 @@ impl<'a> DocumentsQuery<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{client::*, indexes::*};
-    use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
+
+    use meilisearch_test_macro::meilisearch_test;
+
+    use crate::{client::*, indexes::*};
+
+    use super::*;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct MyObject {
         id: Option<usize>,
         kind: String,
+    }
+
+    #[derive(Document)]
+    struct Movie {
+        #[document(primary_key)]
+        movie_id: u64,
+        #[document(displayed, searchable)]
+        title: String,
+        #[document(displayed)]
+        description: String,
+        #[document(filterable, sortable, displayed)]
+        release_date: String,
+        #[document(filterable, displayed)]
+        genres: Vec<String>,
     }
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
@@ -297,6 +324,7 @@ mod tests {
 
         Ok(())
     }
+
     #[meilisearch_test]
     async fn test_get_documents_with_only_one_param(
         client: Client,
@@ -313,6 +341,26 @@ mod tests {
         assert_eq!(documents.limit, 1);
         assert_eq!(documents.offset, 0);
         assert_eq!(documents.results.len(), 1);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_settings_generated_by_macro(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let settings: Settings = Movie::generate_settings();
+
+        assert_eq!(settings.searchable_attributes.unwrap(), ["title"]);
+        assert_eq!(
+            settings.displayed_attributes.unwrap(),
+            ["title", "description", "release_date", "genres"]
+        );
+        assert_eq!(
+            settings.filterable_attributes.unwrap(),
+            ["release_date", "genres"]
+        );
+        assert_eq!(settings.sortable_attributes.unwrap(), ["release_date"]);
 
         Ok(())
     }
