@@ -13,29 +13,81 @@ pub struct PaginationSetting {
     pub max_total_hits: usize,
 }
 
+fn is_min_word_size_object_default(s: &MinWordSizeForTypos) -> bool {
+    if *s == MinWordSizeForTypos::default() {
+        return true;
+    }
+    false
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MinWordSizeForTypos {
+    #[serde(default = "default_one_typo_size")]
+    #[serde(skip_serializing_if = "is_default_for_one_typo")]
     pub one_typo: u8,
+    #[serde(skip_serializing_if = "is_default_for_two_typos")]
+    #[serde(default = "default_two_typos_size")]
     pub two_typos: u8,
 }
 
 impl Default for MinWordSizeForTypos {
     fn default() -> Self {
         MinWordSizeForTypos {
-            one_typo: 5,
-            two_typos: 9,
+            one_typo: default_one_typo_size(),
+            two_typos: default_two_typos_size(),
         }
     }
 }
 
+const fn default_as_true() -> bool {
+    true
+}
+
+const fn default_one_typo_size() -> u8 {
+    5
+}
+
+const fn default_two_typos_size() -> u8 {
+    9
+}
+
+const fn is_true(val: &bool) -> bool {
+    if *val {
+        return true;
+    }
+
+    false
+}
+
+const fn is_default_for_one_typo(s: &u8) -> bool {
+    if *s == default_one_typo_size() {
+        return true;
+    }
+
+    false
+}
+
+const fn is_default_for_two_typos(s: &u8) -> bool {
+    if *s == default_two_typos_size() {
+        return true;
+    }
+
+    false
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-
+#[serde(default)]
 pub struct TypoToleranceSettings {
+    #[serde(default = "default_as_true")]
+    #[serde(skip_serializing_if = "is_true")]
     pub enabled: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub disable_on_attributes: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub disable_on_words: Vec<String>,
+    #[serde(skip_serializing_if = "is_min_word_size_object_default")]
     pub min_word_size_for_typos: MinWordSizeForTypos,
 }
 
