@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use meilisearch_index_setting_macro::Document;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::settings::Settings;
@@ -253,6 +252,8 @@ mod tests {
     use meilisearch_test_macro::meilisearch_test;
 
     use crate::{client::*, indexes::*};
+
+    use meilisearch_index_setting_macro::Document;
 
     use super::*;
 
