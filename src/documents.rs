@@ -2,12 +2,13 @@ use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::settings::Settings;
-use crate::{errors::Error, indexes::Index};
+use crate::tasks::Task;
+use crate::{errors::Error, indexes::Index, Client};
 
 #[async_trait]
 pub trait Document {
     fn generate_settings() -> Settings;
-    async fn generate_index(client: &crate::client::Client) -> Result<Index, Error>;
+    async fn generate_index(client: &crate::client::Client) -> Result<Index, Task>;
 }
 
 #[derive(Debug, Clone, Deserialize)]

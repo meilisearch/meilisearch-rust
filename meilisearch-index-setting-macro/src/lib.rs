@@ -78,6 +78,16 @@ fn get_document_implementation(
         }
     }
 
+    let primary_key_token: proc_macro2::TokenStream = if primary_key_attribute.is_empty() {
+        quote! {
+            None
+        }
+    } else {
+        quote! {
+            Some(#primary_key_attribute)
+        }
+    };
+
     if primary_key_attribute.is_empty() {
         return syn::Error::new(struct_ident.span(), "There should be exactly 1 primary key")
             .to_compile_error();
@@ -106,11 +116,12 @@ fn get_document_implementation(
             #distinct_attr_token
         }
 
-         async fn generate_index(client: &crate::client::Client) -> std::result::Result<crate::indexes::Index, crate::errors::Error> {
-            Ok(client.create_index(#document_name, Some(#primary_key_attribute)).await?
-                .wait_for_completion(client, None, None).await?
-                .try_make_index(client)
-                .unwrap())
+         async fn generate_index(client: &crate::client::Client) -> std::result::Result<crate::indexes::Index, crate::tasks::Task> {
+            return client.create_index(#document_name, #primary_key_token)
+                .await.unwrap()
+                .wait_for_completion(&client, None, None)
+                .await.unwrap()
+                .try_make_index(&client);
             }
         }
     }
