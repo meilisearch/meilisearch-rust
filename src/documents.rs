@@ -3,7 +3,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::settings::Settings;
 use crate::tasks::Task;
-use crate::{errors::Error, indexes::Index, Client};
+use crate::{errors::Error, indexes::Index};
 
 #[async_trait]
 pub trait Document {
