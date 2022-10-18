@@ -1,3 +1,4 @@
+use convert_case::{Case, Casing};
 use quote::quote;
 use syn::parse_macro_input;
 use syn::spanned::Spanned;
@@ -35,7 +36,10 @@ fn get_document_implementation(
     let mut searchable_attributes: Vec<String> = vec![];
     let mut filterable_attributes: Vec<String> = vec![];
     let mut sortable_attributes: Vec<String> = vec![];
-    let document_name = struct_ident.to_string().to_lowercase();
+    let document_name = struct_ident
+        .to_string()
+        .from_case(Case::UpperCamel)
+        .to_case(Case::Snake);
 
     for field in fields {
         let attribute_list_result = extract_all_attr_values(&field.attrs, &mut attribute_count);

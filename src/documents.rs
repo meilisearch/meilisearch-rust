@@ -265,7 +265,7 @@ mod tests {
     }
 
     #[derive(Document)]
-    struct Movie {
+    struct MovieClips {
         #[document(primary_key)]
         movie_id: u64,
         #[document(displayed, searchable)]
@@ -351,7 +351,7 @@ mod tests {
     async fn test_settings_generated_by_macro(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let settings: Settings = Movie::generate_settings();
+        let settings: Settings = MovieClips::generate_settings();
 
         assert_eq!(settings.searchable_attributes.unwrap(), ["title"]);
         assert_eq!(
@@ -369,9 +369,9 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_generate_index(client: Client) -> Result<(), Error> {
-        let index: Index = Movie::generate_index(&client).await.unwrap();
+        let index: Index = MovieClips::generate_index(&client).await.unwrap();
 
-        assert_eq!(index.uid.to_string(), "movie");
+        assert_eq!(index.uid.to_string(), "movie_clips");
 
         index
             .delete()
