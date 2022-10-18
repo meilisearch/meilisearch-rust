@@ -153,13 +153,15 @@ update_settings_1: |-
   synonyms.insert(String::from("logan"), vec!["wolverine"]);
 
   let min_word_size_for_typos = MinWordSizeForTypos {
-    one_typo: 4,
-    two_typos; 12
+    one_typo: Some(4),
+    two_typos; Some(12)
   }
-  let typo_tolerance = TypoToleranceSettings::new()
-    .with_min_word_size_for_typos(min_word_size_for_typos)
-    .with_disable_on_attributes(["title".to_string()])
-  ;
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: Some(vec!["title".to_string()]),
+    disable_on_words: Some(vec![])
+    min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
 
   let settings = Settings::new()
     .with_ranking_rules([
@@ -251,8 +253,16 @@ reset_pagination_settings_1: |-
     .await
     .unwrap();
 getting_started_typo_tolerance: |-
-  let typo_tolerance = TypoToleranceSettings::new()
-    .with_min_word_size_for_two_typos(4);
+  let min_word_size_for_typos = MinWordSizeForTypos {
+    one_typo: Some(5),
+    two_typos: Some(4)
+  }
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: Some(vec![]),
+    disable_on_words: Some(vec!["title".to_string()]),
+    min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
 
   let task: TaskInfo = client
     .index("movies")
@@ -266,8 +276,12 @@ get_typo_tolerance_1: |-
     .await
     .unwrap();
 update_typo_tolerance_1: |-
-  let typo_tolerance = TypoToleranceSettings::new()
-    .with_enabled(false);
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(false),
+    disable_on_attributes: Some(vec![]),
+    disable_on_words: Some(vec![]),
+    min_word_size_for_typos: Some(MinWordSizeForTypos::default()),
+  };
 
   let task: TaskInfo = client
     .index("books")
@@ -764,9 +778,16 @@ settings_guide_faceting_1: |-
     .await
     .unwrap();
 settings_guide_typo_tolerance_1: |-
-  let typo_tolerance = TypoToleranceSettings::new()
-    .with_min_word_size_for_two_typos(12)
-    .with_disable_on_attributes(["title".to_string()]);
+  let min_word_size_for_typos = MinWordSizeForTypos {
+    one_typo: Some(5),
+    two_typos: Some(12)
+  }
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: Some(vec![]),
+    disable_on_words: Some(vec!["title".to_string()]),
+    min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
 
   let settings = Settings::new()
     .with_typo_tolerance(&typo_tolerance);
@@ -777,8 +798,12 @@ settings_guide_typo_tolerance_1: |-
     .await
     .unwrap();
 typo_tolerance_guide_1: |-
-  let typo_tolerance = TypoToleranceSettings::new()
-    .with_enabled(false);
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(false),
+    disable_on_attributes: Some(vec![]),
+    disable_on_words: Some(vec![]),
+    min_word_size_for_typos: Some(MinWordSizeForTypos::default()),
+  };
 
   let task: TaskInfo = client
     .index("movies")
@@ -786,9 +811,16 @@ typo_tolerance_guide_1: |-
     .await
     .unwrap();
 typo_tolerance_guide_2: |-
-  let typo_tolerance = TypoToleranceSettings::new()
-    .with_min_word_size_for_two_typos(12)
-    .with_disable_on_attributes(["title".to_string()]);
+  let min_word_size_for_typos = MinWordSizeForTypos {
+    one_typo: Some(5),
+    two_typos: Some(12)
+  }
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: Some(vec!["title".to_string()]),
+    disable_on_words: Some(vec![]),
+    min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
 
   let task: TaskInfo = client
     .index("movies")
@@ -796,9 +828,16 @@ typo_tolerance_guide_2: |-
     .await
     .unwrap();
 typo_tolerance_guide_3: |-
-  let typo_tolerance = TypoToleranceSettings::new()
-    .with_min_word_size_for_two_typos(12)
-    .with_disable_on_words(["shrek".to_string()]);
+  let min_word_size_for_typos = MinWordSizeForTypos {
+    one_typo: Some(5),
+    two_typos: Some(12)
+  }
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: Some(vec![]),
+    disable_on_words: Some(vec!["shrek".to_string()]),
+    min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
   
   let task: TaskInfo = client
     .index("movies")
@@ -807,11 +846,15 @@ typo_tolerance_guide_3: |-
     .unwrap();
 typo_tolerance_guide_4: |-
   let min_word_size_for_typos = MinWordSizeForTypos {
-    one_typo: 4,
-    two_typos; 12
+    one_typo: Some(4),
+    two_typos: Some(12)
   };
-  let typo_tolerance = TypoToleranceSettings::new()
-    .with_min_word_size_for_typos(min_word_size_for_typos);
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: Some(vec![]),
+    disable_on_words: Some(vec!["title".to_string()]),
+    min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
 
   let task: TaskInfo = client
     .index("movies")
