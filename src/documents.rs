@@ -366,4 +366,19 @@ mod tests {
 
         Ok(())
     }
+
+    #[meilisearch_test]
+    async fn test_generate_index(client: Client) -> Result<(), Error> {
+        let index: Index = Movie::generate_index(&client).await.unwrap();
+
+        assert_eq!(index.uid.to_string(), "movie");
+
+        index
+            .delete()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        Ok(())
+    }
 }
