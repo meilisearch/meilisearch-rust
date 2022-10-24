@@ -608,13 +608,6 @@ search_parameter_guide_matching_strategy_1: |-
   .execute()
   .await
   .unwrap();
-  
-  // Get the formatted results
-  let formatted_results: Vec<&Movie> = results
-    .hits
-    .iter()
-    .map(|r| r.formatted_result.as_ref().unwrap())
-    .collect();
 search_parameter_guide_matching_strategy_2: |-
   let results: SearchResults<Movie> = client
   .index('movies')
