@@ -608,7 +608,6 @@ search_parameter_guide_matching_strategy_1: |-
   .execute()
   .await
   .unwrap();
-
 search_parameter_guide_matching_strategy_2: |-
   let results: SearchResults<Movie> = client
   .index('movies')
@@ -618,7 +617,6 @@ search_parameter_guide_matching_strategy_2: |-
   .execute()
   .await
   .unwrap();
-
 settings_guide_synonyms_1: |-
   let mut synonyms = HashMap::new();
   synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
