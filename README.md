@@ -29,17 +29,17 @@
 
 **Meilisearch Rust** is the Meilisearch API client for Rust developers.
 
-**Meilisearch** is an open-source search engine. [Discover what Meilisearch is!](https://github.com/meilisearch/meilisearch)
+**Meilisearch** is an open-source search engine. [Learn more about Meilisearch.](https://github.com/meilisearch/meilisearch)
 
 ## Table of Contents <!-- omit in TOC -->
 
 - [🎃 Hacktoberfest](#-hacktoberfest)
 - [📖 Documentation](#-documentation)
 - [🔧 Installation](#-installation)
-- [🚀 Getting Started](#-getting-started)
+- [🚀 Getting started](#-getting-started)
 - [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
 - [🤖 Compatibility with Meilisearch](#-compatibility-with-meilisearch)
-- [⚙️ Development Workflow and Contributing](#️-development-workflow-and-contributing)
+- [⚙️ Contributing](#️-contributing)
 
 ## 🎃 Hacktoberfest
 
@@ -51,7 +51,9 @@ You’d like to contribute? Don’t hesitate to check out our [contributing guid
 
 ## 📖 Documentation
 
-See our [Documentation](https://docs.meilisearch.com/learn/tutorials/getting_started.html) or our [API References](https://docs.meilisearch.com/reference/api/).
+This readme contains all the documentation you need to start using this Meilisearch SDK.
+
+For general information on how to use Meilisearch—such as our API reference, tutorials, guides, and in-depth articles—refer to our [main documentation website](https://docs.meilisearch.com/).
 
 ## 🔧 Installation
 
@@ -92,7 +94,7 @@ curl -L https://install.meilisearch.com | sh
 
 NB: you can also download Meilisearch from **Homebrew** or **APT**.
 
-## 🚀 Getting Started
+## 🚀 Getting started
 
 #### Add Documents <!-- omit in TOC -->
 
@@ -253,7 +255,7 @@ WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extensi
 
 This package only guarantees the compatibility with the [version v0.29.0 of Meilisearch](https://github.com/meilisearch/meilisearch/releases/tag/v0.29.0).
 
-## ⚙️ Development Workflow and Contributing
+## ⚙️ Contributing
 
 Any new contribution is more than welcome in this project!
 
