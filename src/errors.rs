@@ -188,6 +188,8 @@ impl From<isahc::Error> for Error {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    use jsonwebtoken::errors::ErrorKind::InvalidToken;
     use uuid::Uuid;
 
     #[test]
@@ -287,6 +289,18 @@ mod test {
         assert_eq!(
             error.to_string(),
             "HTTP request failed: failed to resolve host name"
+        );
+
+        let error = Error::InvalidTenantToken(jsonwebtoken::errors::Error::from(InvalidToken));
+        assert_eq!(
+            error.to_string(),
+            "Impossible to generate the token, jsonwebtoken encountered an error: InvalidToken"
+        );
+
+        let error = Error::Yaup(yaup::error::Error::Custom("Test yaup error".to_string()));
+        assert_eq!(
+            error.to_string(),
+            "Internal Error: could not parse the query parameters: Test yaup error"
         );
     }
 }

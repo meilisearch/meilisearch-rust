@@ -599,6 +599,24 @@ search_parameter_guide_show_matches_position_1: |-
     .iter()
     .map(|r| r.matches_position.as_ref().unwrap())
     .collect();
+search_parameter_guide_matching_strategy_1: |-
+  let results: SearchResults<Movie> = client
+  .index('movies')
+  .search()
+  .with_query("big fat liar")
+  .with_matching_strategy(MatchingStrategies::LAST)
+  .execute()
+  .await
+  .unwrap();
+search_parameter_guide_matching_strategy_2: |-
+  let results: SearchResults<Movie> = client
+  .index('movies')
+  .search()
+  .with_query("big fat liar")
+  .with_matching_strategy(MatchingStrategies::ALL)
+  .execute()
+  .await
+  .unwrap();
 settings_guide_synonyms_1: |-
   let mut synonyms = HashMap::new();
   synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
@@ -1280,9 +1298,9 @@ delete_a_key_1: |-
 authorization_header_1:
   let client = Client::new("http://localhost:7700", "masterKey");
   let keys = client
-    .get_keys()
-    .await
-    .unwrap();
+  .get_keys()
+  .await
+  .unwrap();
 security_guide_search_key_1: |-
   let client = Client::new("http://localhost:7700", "apiKey");
   let result = client.index("patient_medical_records")

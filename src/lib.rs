@@ -1,4 +1,4 @@
-//! # 🚀 Getting Started
+//! # 🚀 Getting started
 //!
 //! ### Add Documents <!-- omit in TOC -->
 //!
