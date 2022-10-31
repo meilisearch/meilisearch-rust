@@ -195,7 +195,9 @@ fn get_settings_token_for_list(
             .#ident([#(#string_attributes),*])
         }
     } else {
-        proc_macro2::TokenStream::new()
+        quote! {
+            .#ident(::std::iter::empty::<&str>())
+        }
     }
 }
 
