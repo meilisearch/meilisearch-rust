@@ -250,11 +250,10 @@ impl<'a> DocumentsQuery<'a> {
 mod tests {
     use serde::{Deserialize, Serialize};
 
+    use meilisearch_index_setting_macro::Document;
     use meilisearch_test_macro::meilisearch_test;
 
     use crate::{client::*, indexes::*};
-
-    use meilisearch_index_setting_macro::Document;
 
     use super::*;
 
@@ -268,6 +267,8 @@ mod tests {
     struct MovieClips {
         #[document(primary_key)]
         movie_id: u64,
+        #[document(distinct)]
+        owner: String,
         #[document(displayed, searchable)]
         title: String,
         #[document(displayed)]
@@ -276,6 +277,11 @@ mod tests {
         release_date: String,
         #[document(filterable, displayed)]
         genres: Vec<String>,
+    }
+
+    #[derive(Document)]
+    struct VideoClips {
+        video_id: u64,
     }
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
@@ -351,18 +357,29 @@ mod tests {
     async fn test_settings_generated_by_macro(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
-        let settings: Settings = MovieClips::generate_settings();
+        let movie_settings: Settings = MovieClips::generate_settings();
+        let video_settings: Settings = VideoClips::generate_settings();
 
-        assert_eq!(settings.searchable_attributes.unwrap(), ["title"]);
+        assert_eq!(movie_settings.searchable_attributes.unwrap(), ["title"]);
+        assert!(video_settings.searchable_attributes.unwrap().is_empty());
+
         assert_eq!(
-            settings.displayed_attributes.unwrap(),
+            movie_settings.displayed_attributes.unwrap(),
             ["title", "description", "release_date", "genres"]
         );
+        assert!(video_settings.displayed_attributes.unwrap().is_empty());
+
         assert_eq!(
-            settings.filterable_attributes.unwrap(),
+            movie_settings.filterable_attributes.unwrap(),
             ["release_date", "genres"]
         );
-        assert_eq!(settings.sortable_attributes.unwrap(), ["release_date"]);
+        assert!(video_settings.filterable_attributes.unwrap().is_empty());
+
+        assert_eq!(
+            movie_settings.sortable_attributes.unwrap(),
+            ["release_date"]
+        );
+        assert!(video_settings.sortable_attributes.unwrap().is_empty());
 
         Ok(())
     }

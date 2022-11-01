@@ -1,4 +1,7 @@
+use std::collections::HashSet;
+
 use convert_case::{Case, Casing};
+use proc_macro2::TokenTree;
 use quote::quote;
 use syn::parse_macro_input;
 use syn::spanned::Spanned;
@@ -16,9 +19,9 @@ pub fn generate_index_settings(input: proc_macro::TokenStream) -> proc_macro::To
         }
     };
 
-    let struct_name = &ast.ident;
+    let struct_ident = &ast.ident;
 
-    let document_implementation = get_document_implementation(struct_name, fields);
+    let document_implementation = get_document_implementation(struct_ident, fields);
     proc_macro::TokenStream::from(quote! {
         #document_implementation
     })
@@ -28,21 +31,30 @@ fn get_document_implementation(
     struct_ident: &syn::Ident,
     fields: &syn::Fields,
 ) -> proc_macro2::TokenStream {
-    let mut attribute_count: std::collections::HashMap<String, i32> =
-        std::collections::HashMap::new();
+    let mut attribute_set: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut primary_key_attribute: String = "".to_string();
     let mut distinct_key_attribute: String = "".to_string();
     let mut displayed_attributes: Vec<String> = vec![];
     let mut searchable_attributes: Vec<String> = vec![];
     let mut filterable_attributes: Vec<String> = vec![];
     let mut sortable_attributes: Vec<String> = vec![];
-    let document_name = struct_ident
+    let valid_attribute_names = std::collections::HashSet::from([
+        "displayed",
+        "searchable",
+        "filterable",
+        "sortable",
+        "primary_key",
+        "distinct",
+    ]);
+
+    let index_name = struct_ident
         .to_string()
         .from_case(Case::UpperCamel)
         .to_case(Case::Snake);
 
     for field in fields {
-        let attribute_list_result = extract_all_attr_values(&field.attrs, &mut attribute_count);
+        let attribute_list_result =
+            extract_all_attr_values(&field.attrs, &mut attribute_set, &valid_attribute_names);
 
         match attribute_list_result {
             Ok(attribute_list) => {
@@ -66,13 +78,7 @@ fn get_document_implementation(
                         "distinct" => {
                             distinct_key_attribute = field.ident.clone().unwrap().to_string()
                         }
-                        random => {
-                            return syn::Error::new(
-                                field.ident.span(),
-                                format!("Property `{}` does not exist for type `document`", random),
-                            )
-                            .to_compile_error();
-                        }
+                        _ => {}
                     }
                 }
             }
@@ -84,18 +90,13 @@ fn get_document_implementation(
 
     let primary_key_token: proc_macro2::TokenStream = if primary_key_attribute.is_empty() {
         quote! {
-            None
+            ::std::option::Option::None
         }
     } else {
         quote! {
-            Some(#primary_key_attribute)
+            ::std::option::Option::Some(#primary_key_attribute)
         }
     };
-
-    if primary_key_attribute.is_empty() {
-        return syn::Error::new(struct_ident.span(), "There should be exactly 1 primary key")
-            .to_compile_error();
-    }
 
     let display_attr_tokens =
         get_settings_token_for_list(&displayed_attributes, "with_displayed_attributes");
@@ -121,9 +122,9 @@ fn get_document_implementation(
         }
 
          async fn generate_index(client: &crate::client::Client) -> std::result::Result<crate::indexes::Index, crate::tasks::Task> {
-            return client.create_index(#document_name, #primary_key_token)
+            return client.create_index(#index_name, #primary_key_token)
                 .await.unwrap()
-                .wait_for_completion(&client, None, None)
+                .wait_for_completion(&client, ::std::option::Option::None, ::std::option::Option::None)
                 .await.unwrap()
                 .try_make_index(&client);
             }
@@ -133,83 +134,145 @@ fn get_document_implementation(
 
 fn extract_all_attr_values(
     attrs: &[syn::Attribute],
-    attribute_count: &mut std::collections::HashMap<String, i32>,
+    attribute_set: &mut std::collections::HashSet<String>,
+    valid_attribute_names: &std::collections::HashSet<&str>,
 ) -> std::result::Result<Vec<String>, proc_macro2::TokenStream> {
-    let mut value: Vec<String> = vec![];
+    let mut attribute_names: Vec<String> = vec![];
+    let mut local_attribute_set: std::collections::HashSet<String> = HashSet::new();
     for attr in attrs {
-        if let std::result::Result::Ok(syn::Meta::List(list)) = attr.parse_meta() {
-            if list.path.is_ident("document") {
-                for nested_meta in list.nested {
-                    if let syn::NestedMeta::Meta(syn::Meta::Path(path)) = nested_meta {
-                        for segment in path.segments {
-                            value.push(segment.ident.to_string());
-                            *attribute_count
-                                .entry(segment.ident.to_string())
-                                .or_insert(0) += 1;
+        match attr.parse_meta() {
+            std::result::Result::Ok(syn::Meta::List(list)) => {
+                if !list.path.is_ident("document") {
+                    continue;
+                }
+                for token_stream in attr.tokens.clone().into_iter() {
+                    if let TokenTree::Group(group) = token_stream {
+                        for token in group.stream() {
+                            match token {
+                                TokenTree::Punct(punct) => validate_punct(&punct)?,
+                                TokenTree::Ident(ident) => {
+                                    if ident == "primary_key"
+                                        && attribute_set.contains("primary_key")
+                                    {
+                                        return std::result::Result::Err(
+                                            syn::Error::new(
+                                                ident.span(),
+                                                "`primary_key` already exists",
+                                            )
+                                            .to_compile_error(),
+                                        );
+                                    }
+                                    if ident == "distinct" && attribute_set.contains("distinct") {
+                                        return std::result::Result::Err(
+                                            syn::Error::new(
+                                                ident.span(),
+                                                "`distinct` already exists",
+                                            )
+                                            .to_compile_error(),
+                                        );
+                                    }
 
-                            if segment.ident == "primary_key"
-                                && attribute_count.get("primary_key").unwrap_or(&0) > &1
-                            {
-                                return std::result::Result::Err(
-                                    syn::Error::new(
-                                        segment.ident.span(),
-                                        "primary_key already exists",
-                                    )
-                                    .to_compile_error(),
-                                );
-                            }
-                            if segment.ident == "distinct"
-                                && attribute_count.get("distinct").unwrap_or(&0) > &1
-                            {
-                                return std::result::Result::Err(
-                                    syn::Error::new(
-                                        segment.ident.span(),
-                                        "distinct already exists",
-                                    )
-                                    .to_compile_error(),
-                                );
+                                    if local_attribute_set.contains(ident.to_string().as_str()) {
+                                        return std::result::Result::Err(
+                                            syn::Error::new(
+                                                ident.span(),
+                                                format!(
+                                                    "`{}` already exists for this field",
+                                                    ident
+                                                ),
+                                            )
+                                            .to_compile_error(),
+                                        );
+                                    }
+
+                                    if !valid_attribute_names.contains(ident.to_string().as_str()) {
+                                        return std::result::Result::Err(
+                                                syn::Error::new(
+                                                    ident.span(),
+                                                    format!(
+                                                        "Property `{}` does not exist for type `document`",
+                                                        ident
+                                                    ),
+                                                )
+                                                    .to_compile_error(),
+                                            );
+                                    }
+                                    attribute_names.push(ident.to_string());
+                                    attribute_set.insert(ident.to_string());
+                                    local_attribute_set.insert(ident.to_string());
+                                }
+                                _ => {
+                                    return std::result::Result::Err(
+                                        syn::Error::new(attr.span(), "Invalid parsing".to_string())
+                                            .to_compile_error(),
+                                    );
+                                }
                             }
                         }
                     }
                 }
             }
+            std::result::Result::Err(e) => {
+                println!("{:#?}", attr);
+                for token_stream in attr.tokens.clone().into_iter() {
+                    if let TokenTree::Group(group) = token_stream {
+                        for token in group.stream() {
+                            if let TokenTree::Punct(punct) = token {
+                                validate_punct(&punct)?
+                            }
+                        }
+                    }
+                }
+                return std::result::Result::Err(
+                    syn::Error::new(attr.span(), e.to_string()).to_compile_error(),
+                );
+            }
+            _ => {}
         }
     }
-    std::result::Result::Ok(value)
+    std::result::Result::Ok(attribute_names)
+}
+
+fn validate_punct(punct: &proc_macro2::Punct) -> std::result::Result<(), proc_macro2::TokenStream> {
+    if punct.as_char() == ',' && punct.spacing() == proc_macro2::Spacing::Alone {
+        return std::result::Result::Ok(());
+    }
+    std::result::Result::Err(
+        syn::Error::new(punct.span(), "`,` expected".to_string()).to_compile_error(),
+    )
 }
 
 fn get_settings_token_for_list(
-    attributes: &Vec<String>,
-    attribute_key: &str,
+    field_name_list: &Vec<String>,
+    method_name: &str,
 ) -> proc_macro2::TokenStream {
-    let string_attributes = attributes.iter().map(|attr| {
+    let string_attributes = field_name_list.iter().map(|attr| {
         quote! {
             #attr
         }
     });
+    let method_ident = syn::Ident::new(method_name, proc_macro2::Span::call_site());
 
-    let ident = syn::Ident::new(attribute_key, proc_macro2::Span::call_site());
-
-    if !attributes.is_empty() {
+    if !field_name_list.is_empty() {
         quote! {
-            .#ident([#(#string_attributes),*])
+            .#method_ident([#(#string_attributes),*])
         }
     } else {
         quote! {
-            .#ident(::std::iter::empty::<&str>())
+            .#method_ident(::std::iter::empty::<&str>())
         }
     }
 }
 
 fn get_settings_token_for_string(
-    attribute: &String,
-    attribute_key: &str,
+    field_name: &String,
+    method_name: &str,
 ) -> proc_macro2::TokenStream {
-    let ident = syn::Ident::new(attribute_key, proc_macro2::Span::call_site());
+    let method_ident = syn::Ident::new(method_name, proc_macro2::Span::call_site());
 
-    if !attribute.is_empty() {
+    if !field_name.is_empty() {
         quote! {
-            .#ident(#attribute)
+            .#method_ident(#field_name)
         }
     } else {
         proc_macro2::TokenStream::new()
