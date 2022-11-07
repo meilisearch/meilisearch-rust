@@ -253,7 +253,7 @@ WARNING: `meilisearch-sdk` will panic if no Window is available (ex: Web extensi
 
 ## 🤖 Compatibility with Meilisearch
 
-This package only guarantees the compatibility with the [version v0.29.0 of Meilisearch](https://github.com/meilisearch/meilisearch/releases/tag/v0.29.0).
+This package only guarantees the compatibility with the [version v0.30.0 of Meilisearch](https://github.com/meilisearch/meilisearch/releases/tag/v0.30.0).
 
 ## ⚙️ Contributing
 
