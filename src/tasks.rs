@@ -413,6 +413,28 @@ pub struct TasksQuery<'a> {
     // Types array to only retrieve the tasks with these [TaskType].
     #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
     pub task_type: Option<Vec<&'a str>>,
+    // Uids of the tasks to retrieve
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid: Option<Vec<&'a usize>>,
+    // Date to retrieve all tasks that were enqueued before it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub beforeEnqueuedAt: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were enqueued after it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub afterEnqueuedAt: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were started before it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub beforeStartedAt: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were started before it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub afterStatedAt: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were finished before it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub beforeFinishedAt: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were finished after it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub afterFinishedAt: Option<OffsetDateTime>,
+
     // Maximum number of tasks to return
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
