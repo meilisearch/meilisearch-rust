@@ -158,7 +158,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///     .await
 ///     .unwrap();
 ///
-/// assert_eq!(res.limit, 21);
+/// assert_eq!(res.limit, Some(21));
 /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 /// # });
 /// ```

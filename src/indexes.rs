@@ -813,10 +813,10 @@ impl Index {
     /// # futures::executor::block_on(async move {
     /// // create the client
     /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    /// # let index = client.create_index("get_primary_key", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    /// # let mut index = client.create_index("get_primary_key", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
     /// // get the primary key of the index named "movies"
-    /// let movies = client.index("movies").get_primary_key().await;
+    /// let primary_key = index.get_primary_key().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
