@@ -443,7 +443,7 @@ pub struct TasksQuery<'a, T> {
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
     before_started_at: Option<OffsetDateTime>,
-    // Date to retrieve all tasks that were started before it.
+    // Date to retrieve all tasks that were started after it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
