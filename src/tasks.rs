@@ -415,26 +415,43 @@ pub struct TasksQuery<'a> {
     pub task_type: Option<Vec<&'a str>>,
     // Uids of the tasks to retrieve
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<Vec<&'a usize>>,
+    pub uid: Option<Vec<&'a u32>>,
     // Date to retrieve all tasks that were enqueued before it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub beforeEnqueuedAt: Option<OffsetDateTime>,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub before_enqueued_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were enqueued after it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub afterEnqueuedAt: Option<OffsetDateTime>,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub after_enqueued_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were started before it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub beforeStartedAt: Option<OffsetDateTime>,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub before_started_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were started before it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub afterStatedAt: Option<OffsetDateTime>,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub after_started_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were finished before it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub beforeFinishedAt: Option<OffsetDateTime>,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub before_finished_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were finished after it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub afterFinishedAt: Option<OffsetDateTime>,
-
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub after_finished_at: Option<OffsetDateTime>,
     // Maximum number of tasks to return
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
@@ -453,6 +470,13 @@ impl<'a> TasksQuery<'a> {
             task_type: None,
             limit: None,
             from: None,
+            uid: None,
+            before_enqueued_at: None,
+            after_enqueued_at: None,
+            before_started_at: None,
+            after_started_at: None,
+            before_finished_at: None,
+            after_finished_at: None,
         }
     }
     pub fn with_index_uid<'b>(
@@ -474,6 +498,55 @@ impl<'a> TasksQuery<'a> {
         task_type: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a> {
         self.task_type = Some(task_type.into_iter().collect());
+        self
+    }
+    pub fn with_uid<'b>(
+        &'b mut self,
+        index_uid: impl IntoIterator<Item = &'a u32>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.uid = Some(index_uid.into_iter().collect());
+        self
+    }
+    pub fn with_before_enqueued_at<'b>(
+        &'b mut self,
+        before_enqueued_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.before_enqueued_at = Some(before_enqueued_at.clone());
+        self
+    }
+    pub fn with_after_enqueued_at<'b>(
+        &'b mut self,
+        after_enqueued_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.after_enqueued_at = Some(after_enqueued_at.clone());
+        self
+    }
+    pub fn with_before_started_at<'b>(
+        &'b mut self,
+        before_started_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.before_started_at = Some(before_started_at.clone());
+        self
+    }
+    pub fn with_after_started_at<'b>(
+        &'b mut self,
+        after_started_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.after_started_at = Some(after_started_at.clone());
+        self
+    }
+    pub fn with_before_finished_at<'b>(
+        &'b mut self,
+        before_finished_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.before_finished_at = Some(before_finished_at.clone());
+        self
+    }
+    pub fn with_after_finished_at<'b>(
+        &'b mut self,
+        after_finished_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.after_finished_at = Some(after_finished_at.clone());
         self
     }
     pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a> {
@@ -662,7 +735,7 @@ mod test {
         let mock_server_url = &mockito::server_url();
         let client = Client::new(mock_server_url, "masterKey");
         let path =
-            "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion&limit=0&from=1";
+            "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion&uid=1&limit=0&from=1";
 
         let mock_res = mock("GET", path).with_status(200).create();
 
@@ -672,7 +745,71 @@ mod test {
             .with_status(["equeued"])
             .with_type(["documentDeletion"])
             .with_from(1)
-            .with_limit(0);
+            .with_limit(0)
+            .with_uid([&1]);
+
+        let _ = client.get_tasks_with(&query).await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_with_date_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks?\
+            beforeEnqueuedAt=2022-02-03T13%3A02%3A38.369634Z\
+            &afterEnqueuedAt=2023-02-03T13%3A02%3A38.369634Z\
+            &beforeStartedAt=2024-02-03T13%3A02%3A38.369634Z\
+            &afterStartedAt=2025-02-03T13%3A02%3A38.369634Z\
+            &beforeFinishedAt=2026-02-03T13%3A02%3A38.369634Z\
+            &afterFinishedAt=2027-02-03T13%3A02%3A38.369634Z";
+
+        let mock_res = mock("GET", path).with_status(200).create();
+
+        let before_enqueued_at = OffsetDateTime::parse(
+            "2022-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+        let after_enqueued_at = OffsetDateTime::parse(
+            "2023-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+        let before_started_at = OffsetDateTime::parse(
+            "2024-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let after_started_at = OffsetDateTime::parse(
+            "2025-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let before_finished_at = OffsetDateTime::parse(
+            "2026-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let after_finished_at = OffsetDateTime::parse(
+            "2027-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let mut query = TasksQuery::new(&client);
+        query
+            .with_before_enqueued_at(&before_enqueued_at)
+            .with_after_enqueued_at(&after_enqueued_at)
+            .with_before_started_at(&before_started_at)
+            .with_after_started_at(&after_started_at)
+            .with_before_finished_at(&before_finished_at)
+            .with_after_finished_at(&after_finished_at);
 
         let _ = client.get_tasks_with(&query).await;
 
