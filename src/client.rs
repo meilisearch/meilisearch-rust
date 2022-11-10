@@ -936,7 +936,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_tasks_with_params(client: Client) {
-        let query = TasksQuery::new(&client);
+        let query = TasksSearchQuery::new(&client);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
         assert!(tasks.limit == 20);
