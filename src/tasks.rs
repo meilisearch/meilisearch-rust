@@ -511,42 +511,42 @@ impl<'a> TasksQuery<'a> {
         &'b mut self,
         before_enqueued_at: &'a OffsetDateTime,
     ) -> &'b mut TasksQuery<'a> {
-        self.before_enqueued_at = Some(before_enqueued_at.clone());
+        self.before_enqueued_at = Some(*before_enqueued_at);
         self
     }
     pub fn with_after_enqueued_at<'b>(
         &'b mut self,
         after_enqueued_at: &'a OffsetDateTime,
     ) -> &'b mut TasksQuery<'a> {
-        self.after_enqueued_at = Some(after_enqueued_at.clone());
+        self.after_enqueued_at = Some(*after_enqueued_at);
         self
     }
     pub fn with_before_started_at<'b>(
         &'b mut self,
         before_started_at: &'a OffsetDateTime,
     ) -> &'b mut TasksQuery<'a> {
-        self.before_started_at = Some(before_started_at.clone());
+        self.before_started_at = Some(*before_started_at);
         self
     }
     pub fn with_after_started_at<'b>(
         &'b mut self,
         after_started_at: &'a OffsetDateTime,
     ) -> &'b mut TasksQuery<'a> {
-        self.after_started_at = Some(after_started_at.clone());
+        self.after_started_at = Some(*after_started_at);
         self
     }
     pub fn with_before_finished_at<'b>(
         &'b mut self,
         before_finished_at: &'a OffsetDateTime,
     ) -> &'b mut TasksQuery<'a> {
-        self.before_finished_at = Some(before_finished_at.clone());
+        self.before_finished_at = Some(*before_finished_at);
         self
     }
     pub fn with_after_finished_at<'b>(
         &'b mut self,
         after_finished_at: &'a OffsetDateTime,
     ) -> &'b mut TasksQuery<'a> {
-        self.after_finished_at = Some(after_finished_at.clone());
+        self.after_finished_at = Some(*after_finished_at);
         self
     }
     pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a> {
