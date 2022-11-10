@@ -930,7 +930,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_get_tasks(client: Client) {
         let tasks = client.get_tasks().await.unwrap();
-        assert!(tasks.results.len() >= 2);
+        assert!(tasks.limit == 20);
     }
 
     #[meilisearch_test]
@@ -938,7 +938,7 @@ mod tests {
         let query = TasksQuery::new(&client);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
-        assert!(tasks.results.len() >= 2);
+        assert!(tasks.limit == 20);
     }
 
     #[meilisearch_test]

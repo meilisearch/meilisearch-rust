@@ -436,7 +436,8 @@ impl Index {
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    /// let movie_index = client.index("get_documents");
+    ///
+    /// let movie_index = client.index("get_documents_with");
     ///
     /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
