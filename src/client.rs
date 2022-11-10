@@ -743,16 +743,16 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     ///
-    /// let mut query = tasks::TasksQuery::new(&client);
+    /// let mut query = tasks::TasksSearchQuery::new(&client);
     /// query.with_index_uid(["get_tasks_with"]);
     /// let tasks = client.get_tasks_with(&query).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_tasks_with(
+    pub async fn get_tasks_with<T>(
         &self,
-        tasks_query: &TasksQuery<'_>,
+        tasks_query: &TasksQuery<'_, T>,
     ) -> Result<TasksResults, Error> {
-        let tasks = request::<&TasksQuery, TasksResults>(
+        let tasks = request::<&TasksQuery<T>, TasksResults>(
             &format!("{}/tasks", self.host),
             &self.api_key,
             Method::Get(tasks_query),
@@ -873,6 +873,7 @@ mod tests {
     use crate::{
         client::*,
         key::{Action, KeyBuilder},
+        tasks::TasksSearchQuery,
     };
     use meilisearch_test_macro::meilisearch_test;
     use mockito::mock;

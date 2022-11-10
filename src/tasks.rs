@@ -1,5 +1,5 @@
 use serde::{Deserialize, Deserializer, Serialize};
-use std::time::Duration;
+use std::{marker::PhantomData, time::Duration};
 use time::OffsetDateTime;
 
 use crate::{
@@ -400,69 +400,157 @@ impl AsRef<u32> for Task {
 }
 
 #[derive(Debug, Serialize, Clone)]
+pub enum TasksPagination {}
+
+#[derive(Debug, Serialize, Clone)]
+pub enum TasksDefault {}
+
+pub type TasksSearchQuery<'a> = TasksQuery<'a, TasksPagination>;
+pub type TasksCancelQuery<'a> = TasksQuery<'a, TasksDefault>;
+
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct TasksQuery<'a> {
+pub struct TasksQuery<'a, T> {
     #[serde(skip_serializing)]
-    pub client: &'a Client,
+    client: &'a Client,
     // Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub index_uid: Option<Vec<&'a str>>,
+    index_uid: Option<Vec<&'a str>>,
     // Statuses array to only retrieve the tasks with these statuses.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<Vec<&'a str>>,
+    status: Option<Vec<&'a str>>,
     // Types array to only retrieve the tasks with these [TaskType].
     #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
-    pub task_type: Option<Vec<&'a str>>,
+    task_type: Option<Vec<&'a str>>,
     // Uids of the tasks to retrieve
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<Vec<&'a u32>>,
+    uid: Option<Vec<&'a u32>>,
     // Date to retrieve all tasks that were enqueued before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub before_enqueued_at: Option<OffsetDateTime>,
+    before_enqueued_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were enqueued after it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub after_enqueued_at: Option<OffsetDateTime>,
+    after_enqueued_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were started before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub before_started_at: Option<OffsetDateTime>,
+    before_started_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were started before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub after_started_at: Option<OffsetDateTime>,
+    after_started_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were finished before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub before_finished_at: Option<OffsetDateTime>,
+    before_finished_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were finished after it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub after_finished_at: Option<OffsetDateTime>,
+    after_finished_at: Option<OffsetDateTime>,
     // Maximum number of tasks to return
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub limit: Option<u32>,
+    limit: Option<u32>,
     // The first task uid that should be returned
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub from: Option<u32>,
+    from: Option<u32>,
+    #[serde(skip_serializing)]
+    phantom_data: PhantomData<T>,
 }
 
 #[allow(missing_docs)]
-impl<'a> TasksQuery<'a> {
-    pub fn new(client: &'a Client) -> TasksQuery<'a> {
+impl<'a, T> TasksQuery<'a, T> {
+    pub fn with_index_uid<'b>(
+        &'b mut self,
+        index_uid: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.index_uid = Some(index_uid.into_iter().collect());
+        self
+    }
+    pub fn with_status<'b>(
+        &'b mut self,
+        status: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.status = Some(status.into_iter().collect());
+        self
+    }
+    pub fn with_type<'b>(
+        &'b mut self,
+        task_type: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.task_type = Some(task_type.into_iter().collect());
+        self
+    }
+    pub fn with_uid<'b>(
+        &'b mut self,
+        index_uid: impl IntoIterator<Item = &'a u32>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.uid = Some(index_uid.into_iter().collect());
+        self
+    }
+    pub fn with_before_enqueued_at<'b>(
+        &'b mut self,
+        before_enqueued_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.before_enqueued_at = Some(*before_enqueued_at);
+        self
+    }
+    pub fn with_after_enqueued_at<'b>(
+        &'b mut self,
+        after_enqueued_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.after_enqueued_at = Some(*after_enqueued_at);
+        self
+    }
+    pub fn with_before_started_at<'b>(
+        &'b mut self,
+        before_started_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.before_started_at = Some(*before_started_at);
+        self
+    }
+    pub fn with_after_started_at<'b>(
+        &'b mut self,
+        after_started_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.after_started_at = Some(*after_started_at);
+        self
+    }
+    pub fn with_before_finished_at<'b>(
+        &'b mut self,
+        before_finished_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.before_finished_at = Some(*before_finished_at);
+        self
+    }
+    pub fn with_after_finished_at<'b>(
+        &'b mut self,
+        after_finished_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.after_finished_at = Some(*after_finished_at);
+        self
+    }
+
+    pub async fn execute(&'a self) -> Result<TasksResults, Error> {
+        self.client.get_tasks_with(self).await
+    }
+}
+
+impl<'a> TasksQuery<'a, TasksDefault> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksDefault> {
         TasksQuery {
             client,
             index_uid: None,
@@ -477,89 +565,37 @@ impl<'a> TasksQuery<'a> {
             after_started_at: None,
             before_finished_at: None,
             after_finished_at: None,
+            phantom_data: PhantomData,
         }
     }
-    pub fn with_index_uid<'b>(
-        &'b mut self,
-        index_uid: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.index_uid = Some(index_uid.into_iter().collect());
-        self
+}
+
+impl<'a> TasksQuery<'a, TasksPagination> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksPagination> {
+        TasksQuery {
+            client,
+            index_uid: None,
+            status: None,
+            task_type: None,
+            limit: None,
+            from: None,
+            uid: None,
+            before_enqueued_at: None,
+            after_enqueued_at: None,
+            before_started_at: None,
+            after_started_at: None,
+            before_finished_at: None,
+            after_finished_at: None,
+            phantom_data: PhantomData,
+        }
     }
-    pub fn with_status<'b>(
-        &'b mut self,
-        status: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.status = Some(status.into_iter().collect());
-        self
-    }
-    pub fn with_type<'b>(
-        &'b mut self,
-        task_type: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.task_type = Some(task_type.into_iter().collect());
-        self
-    }
-    pub fn with_uid<'b>(
-        &'b mut self,
-        index_uid: impl IntoIterator<Item = &'a u32>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.uid = Some(index_uid.into_iter().collect());
-        self
-    }
-    pub fn with_before_enqueued_at<'b>(
-        &'b mut self,
-        before_enqueued_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.before_enqueued_at = Some(*before_enqueued_at);
-        self
-    }
-    pub fn with_after_enqueued_at<'b>(
-        &'b mut self,
-        after_enqueued_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.after_enqueued_at = Some(*after_enqueued_at);
-        self
-    }
-    pub fn with_before_started_at<'b>(
-        &'b mut self,
-        before_started_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.before_started_at = Some(*before_started_at);
-        self
-    }
-    pub fn with_after_started_at<'b>(
-        &'b mut self,
-        after_started_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.after_started_at = Some(*after_started_at);
-        self
-    }
-    pub fn with_before_finished_at<'b>(
-        &'b mut self,
-        before_finished_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.before_finished_at = Some(*before_finished_at);
-        self
-    }
-    pub fn with_after_finished_at<'b>(
-        &'b mut self,
-        after_finished_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.after_finished_at = Some(*after_finished_at);
-        self
-    }
-    pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a> {
+    pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a, TasksPagination> {
         self.limit = Some(limit);
         self
     }
-    pub fn with_from<'b>(&'b mut self, from: u32) -> &'b mut TasksQuery<'a> {
+    pub fn with_from<'b>(&'b mut self, from: u32) -> &'b mut TasksQuery<'a, TasksPagination> {
         self.from = Some(from);
         self
-    }
-
-    pub async fn execute(&'a self) -> Result<TasksResults, Error> {
-        self.client.get_tasks_with(self).await
     }
 }
 
@@ -739,7 +775,7 @@ mod test {
 
         let mock_res = mock("GET", path).with_status(200).create();
 
-        let mut query = TasksQuery::new(&client);
+        let mut query = TasksSearchQuery::new(&client);
         query
             .with_index_uid(["movies", "test"])
             .with_status(["equeued"])
@@ -802,7 +838,7 @@ mod test {
         )
         .unwrap();
 
-        let mut query = TasksQuery::new(&client);
+        let mut query = TasksSearchQuery::new(&client);
         query
             .with_before_enqueued_at(&before_enqueued_at)
             .with_after_enqueued_at(&after_enqueued_at)
@@ -825,7 +861,7 @@ mod test {
 
         let mock_res = mock("GET", path).with_status(200).create();
 
-        let mut query = TasksQuery::new(&client);
+        let mut query = TasksSearchQuery::new(&client);
         let _ = query
             .with_index_uid(["movies", "test"])
             .with_status(["equeued"])
@@ -840,7 +876,7 @@ mod test {
 
     #[meilisearch_test]
     async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
-        let mut query = TasksQuery::new(&client);
+        let mut query = TasksSearchQuery::new(&client);
         query.with_index_uid(["no_name"]);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
@@ -850,7 +886,7 @@ mod test {
 
     #[meilisearch_test]
     async fn test_get_tasks_with_execute(client: Client) -> Result<(), Error> {
-        let tasks = TasksQuery::new(&client)
+        let tasks = TasksSearchQuery::new(&client)
             .with_index_uid(["no_name"])
             .execute()
             .await
