@@ -156,6 +156,9 @@ pub enum ErrorCode {
     InvalidApiKeyIndexes,
     InvalidApiKeyExpiresAt,
     ApiKeyNotFound,
+    InvalidTaskUid,
+    InvalidTaskDate,
+    MissingTaskFilter,
 
     /// That's unexpected. Please open a GitHub issue after ensuring you are
     /// using the supported version of the Meilisearch server.
