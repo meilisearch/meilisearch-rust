@@ -117,7 +117,7 @@ get_all_tasks_filtering_1: |-
 get_all_tasks_filtering_2: |-
   let mut query = TasksQuery::new(&client)
       .with_status(["succeeded", "failed"])
-      .with_type(["documentAdditionOrUpdate"])
+      .with_types(["documentAdditionOrUpdate"])
       .execute()
       .await
       .unwrap();

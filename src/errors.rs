@@ -156,8 +156,11 @@ pub enum ErrorCode {
     InvalidApiKeyIndexes,
     InvalidApiKeyExpiresAt,
     ApiKeyNotFound,
-    InvalidTaskUid,
-    InvalidTaskDate,
+    InvalidTaskTypesFilter,
+    InvalidTaskStatusesFilter,
+    InvalidTaskCanceledByFilter,
+    InvalidTaskUidsFilter,
+    InvalidTaskDateFilter,
     MissingTaskFilter,
 
     /// That's unexpected. Please open a GitHub issue after ensuring you are
