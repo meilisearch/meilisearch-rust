@@ -109,27 +109,27 @@ get_all_tasks_1: |-
     .await
     .unwrap();
 get_all_tasks_filtering_1: |-
-  let mut query = TasksQuery::new(&client)
+  let mut query = TasksSearchQuery::new(&client)
       .with_index_uid(["movies"])
       .execute()
       .await
       .unwrap();
 get_all_tasks_filtering_2: |-
-  let mut query = TasksQuery::new(&client)
+  let mut query = TasksSearchQuery::new(&client)
       .with_status(["succeeded", "failed"])
       .with_type(["documentAdditionOrUpdate"])
       .execute()
       .await
       .unwrap();
 get_all_tasks_paginating_1: |-
-  let mut query = TasksQuery::new(&client)
+  let mut query = TasksSearchQuery::new(&client)
       .with_limit(2)
       .with_from(10)
       .execute()
       .await
       .unwrap();
 get_all_tasks_paginating_2: |-
-  let mut query = TasksQuery::new(&client)
+  let mut query = TasksSearchQuery::new(&client)
       .with_limit(2)
       .from(8)
       .execute()

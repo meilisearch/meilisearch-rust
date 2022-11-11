@@ -1,5 +1,5 @@
 use serde::{Deserialize, Deserializer, Serialize};
-use std::{marker::PhantomData, time::Duration};
+use std::time::Duration;
 use time::OffsetDateTime;
 
 use crate::{
@@ -400,10 +400,17 @@ impl AsRef<u32> for Task {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub enum TasksPagination {}
+pub struct TasksPagination {
+    // Maximum number of tasks to return
+    #[serde(skip_serializing_if = "Option::is_none")]
+    limit: Option<u32>,
+    // The first task uid that should be returned
+    #[serde(skip_serializing_if = "Option::is_none")]
+    from: Option<u32>,
+}
 
 #[derive(Debug, Serialize, Clone)]
-pub enum TasksDefault {}
+pub struct TasksDefault {}
 
 pub type TasksSearchQuery<'a> = TasksQuery<'a, TasksPagination>;
 pub type TasksCancelQuery<'a> = TasksQuery<'a, TasksDefault>;
@@ -461,14 +468,9 @@ pub struct TasksQuery<'a, T> {
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
     after_finished_at: Option<OffsetDateTime>,
-    // Maximum number of tasks to return
-    #[serde(skip_serializing_if = "Option::is_none")]
-    limit: Option<u32>,
-    // The first task uid that should be returned
-    #[serde(skip_serializing_if = "Option::is_none")]
-    from: Option<u32>,
-    #[serde(skip_serializing)]
-    phantom_data: PhantomData<T>,
+
+    #[serde(flatten)]
+    pagination: T,
 }
 
 #[allow(missing_docs)]
@@ -543,10 +545,6 @@ impl<'a, T> TasksQuery<'a, T> {
         self.after_finished_at = Some(*after_finished_at);
         self
     }
-
-    pub async fn execute(&'a self) -> Result<TasksResults, Error> {
-        self.client.get_tasks_with(self).await
-    }
 }
 
 impl<'a> TasksQuery<'a, TasksDefault> {
@@ -556,8 +554,6 @@ impl<'a> TasksQuery<'a, TasksDefault> {
             index_uid: None,
             status: None,
             task_type: None,
-            limit: None,
-            from: None,
             uid: None,
             before_enqueued_at: None,
             after_enqueued_at: None,
@@ -565,9 +561,13 @@ impl<'a> TasksQuery<'a, TasksDefault> {
             after_started_at: None,
             before_finished_at: None,
             after_finished_at: None,
-            phantom_data: PhantomData,
+            pagination: TasksDefault {},
         }
     }
+
+    // pub async fn execute(&'a self) -> Result<TasksResults, Error> {
+    //     self.client.get_tasks_with(self).await
+    // }
 }
 
 impl<'a> TasksQuery<'a, TasksPagination> {
@@ -577,8 +577,6 @@ impl<'a> TasksQuery<'a, TasksPagination> {
             index_uid: None,
             status: None,
             task_type: None,
-            limit: None,
-            from: None,
             uid: None,
             before_enqueued_at: None,
             after_enqueued_at: None,
@@ -586,16 +584,22 @@ impl<'a> TasksQuery<'a, TasksPagination> {
             after_started_at: None,
             before_finished_at: None,
             after_finished_at: None,
-            phantom_data: PhantomData,
+            pagination: TasksPagination {
+                limit: None,
+                from: None,
+            },
         }
     }
     pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a, TasksPagination> {
-        self.limit = Some(limit);
+        self.pagination.limit = Some(limit);
         self
     }
     pub fn with_from<'b>(&'b mut self, from: u32) -> &'b mut TasksQuery<'a, TasksPagination> {
-        self.from = Some(from);
+        self.pagination.from = Some(from);
         self
+    }
+    pub async fn execute(&'a self) -> Result<TasksResults, Error> {
+        self.client.get_tasks_with(self).await
     }
 }
 

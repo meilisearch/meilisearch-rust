@@ -4,7 +4,7 @@ use crate::{
     key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
     request::*,
     task_info::TaskInfo,
-    tasks::{Task, TasksQuery, TasksResults},
+    tasks::{Task, TasksResults, TasksSearchQuery},
     utils::async_sleep,
 };
 use serde::Deserialize;
@@ -748,11 +748,11 @@ impl Client {
     /// let tasks = client.get_tasks_with(&query).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_tasks_with<T>(
+    pub async fn get_tasks_with(
         &self,
-        tasks_query: &TasksQuery<'_, T>,
+        tasks_query: &TasksSearchQuery<'_>,
     ) -> Result<TasksResults, Error> {
-        let tasks = request::<&TasksQuery<T>, TasksResults>(
+        let tasks = request::<&TasksSearchQuery, TasksResults>(
             &format!("{}/tasks", self.host),
             &self.api_key,
             Method::Get(tasks_query),
