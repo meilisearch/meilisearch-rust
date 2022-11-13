@@ -427,7 +427,7 @@ pub struct TasksQuery<'a, T> {
     #[serde(skip_serializing_if = "Option::is_none")]
     statuses: Option<Vec<&'a str>>,
     // Types array to only retrieve the tasks with these [TaskType].
-    #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none", rename = "types")]
     task_types: Option<Vec<&'a str>>,
     // Uids of the tasks to retrieve
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -775,7 +775,7 @@ mod test {
         let mock_server_url = &mockito::server_url();
         let client = Client::new(mock_server_url, "masterKey");
         let path =
-            "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion&uid=1&limit=0&from=1";
+            "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
 
         let mock_res = mock("GET", path).with_status(200).create();
 
@@ -861,7 +861,7 @@ mod test {
     async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
         let mock_server_url = &mockito::server_url();
         let client = Client::new(mock_server_url, "masterKey");
-        let path = "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion";
+        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion";
 
         let mock_res = mock("GET", path).with_status(200).create();
 
@@ -879,7 +879,7 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
+    async fn test_get_tasks_with_none_existant_index_uids(client: Client) -> Result<(), Error> {
         let mut query = TasksSearchQuery::new(&client);
         query.with_index_uids(["no_name"]);
         let tasks = client.get_tasks_with(&query).await.unwrap();
