@@ -110,14 +110,14 @@ get_all_tasks_1: |-
     .unwrap();
 get_all_tasks_filtering_1: |-
   let mut query = TasksSearchQuery::new(&client)
-      .with_index_uid(["movies"])
+      .with_index_uids(["movies"])
       .execute()
       .await
       .unwrap();
 get_all_tasks_filtering_2: |-
   let mut query = TasksSearchQuery::new(&client)
-      .with_status(["succeeded", "failed"])
-      .with_type(["documentAdditionOrUpdate"])
+      .with_statuses(["succeeded", "failed"])
+      .with_types(["documentAdditionOrUpdate"])
       .execute()
       .await
       .unwrap();
