@@ -744,7 +744,7 @@ impl Client {
     /// # let client = client::Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     ///
     /// let mut query = tasks::TasksSearchQuery::new(&client);
-    /// query.with_index_uid(["get_tasks_with"]);
+    /// query.with_index_uids(["get_tasks_with"]);
     /// let tasks = client.get_tasks_with(&query).await.unwrap();
     /// # });
     /// ```

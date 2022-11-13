@@ -422,16 +422,16 @@ pub struct TasksQuery<'a, T> {
     client: &'a Client,
     // Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    index_uid: Option<Vec<&'a str>>,
+    index_uids: Option<Vec<&'a str>>,
     // Statuses array to only retrieve the tasks with these statuses.
     #[serde(skip_serializing_if = "Option::is_none")]
-    status: Option<Vec<&'a str>>,
+    statuses: Option<Vec<&'a str>>,
     // Types array to only retrieve the tasks with these [TaskType].
     #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
-    task_type: Option<Vec<&'a str>>,
+    task_types: Option<Vec<&'a str>>,
     // Uids of the tasks to retrieve
     #[serde(skip_serializing_if = "Option::is_none")]
-    uid: Option<Vec<&'a u32>>,
+    uids: Option<Vec<&'a u32>>,
     // Date to retrieve all tasks that were enqueued before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
@@ -475,32 +475,32 @@ pub struct TasksQuery<'a, T> {
 
 #[allow(missing_docs)]
 impl<'a, T> TasksQuery<'a, T> {
-    pub fn with_index_uid<'b>(
+    pub fn with_index_uids<'b>(
         &'b mut self,
         index_uid: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a, T> {
-        self.index_uid = Some(index_uid.into_iter().collect());
+        self.index_uids = Some(index_uid.into_iter().collect());
         self
     }
-    pub fn with_status<'b>(
+    pub fn with_statuses<'b>(
         &'b mut self,
         status: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a, T> {
-        self.status = Some(status.into_iter().collect());
+        self.statuses = Some(status.into_iter().collect());
         self
     }
-    pub fn with_type<'b>(
+    pub fn with_types<'b>(
         &'b mut self,
         task_type: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a, T> {
-        self.task_type = Some(task_type.into_iter().collect());
+        self.task_types = Some(task_type.into_iter().collect());
         self
     }
-    pub fn with_uid<'b>(
+    pub fn with_uids<'b>(
         &'b mut self,
         index_uid: impl IntoIterator<Item = &'a u32>,
     ) -> &'b mut TasksQuery<'a, T> {
-        self.uid = Some(index_uid.into_iter().collect());
+        self.uids = Some(index_uid.into_iter().collect());
         self
     }
     pub fn with_before_enqueued_at<'b>(
@@ -551,10 +551,10 @@ impl<'a> TasksQuery<'a, TasksDefault> {
     pub fn new(client: &'a Client) -> TasksQuery<'a, TasksDefault> {
         TasksQuery {
             client,
-            index_uid: None,
-            status: None,
-            task_type: None,
-            uid: None,
+            index_uids: None,
+            statuses: None,
+            task_types: None,
+            uids: None,
             before_enqueued_at: None,
             after_enqueued_at: None,
             before_started_at: None,
@@ -574,10 +574,10 @@ impl<'a> TasksQuery<'a, TasksPagination> {
     pub fn new(client: &'a Client) -> TasksQuery<'a, TasksPagination> {
         TasksQuery {
             client,
-            index_uid: None,
-            status: None,
-            task_type: None,
-            uid: None,
+            index_uids: None,
+            statuses: None,
+            task_types: None,
+            uids: None,
             before_enqueued_at: None,
             after_enqueued_at: None,
             before_started_at: None,
@@ -781,12 +781,12 @@ mod test {
 
         let mut query = TasksSearchQuery::new(&client);
         query
-            .with_index_uid(["movies", "test"])
-            .with_status(["equeued"])
-            .with_type(["documentDeletion"])
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
             .with_from(1)
             .with_limit(0)
-            .with_uid([&1]);
+            .with_uids([&1]);
 
         let _ = client.get_tasks_with(&query).await;
 
@@ -867,9 +867,9 @@ mod test {
 
         let mut query = TasksSearchQuery::new(&client);
         let _ = query
-            .with_index_uid(["movies", "test"])
-            .with_status(["equeued"])
-            .with_type(["documentDeletion"])
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
             .execute()
             .await;
 
@@ -881,7 +881,7 @@ mod test {
     #[meilisearch_test]
     async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
         let mut query = TasksSearchQuery::new(&client);
-        query.with_index_uid(["no_name"]);
+        query.with_index_uids(["no_name"]);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
         assert_eq!(tasks.results.len(), 0);
@@ -891,7 +891,7 @@ mod test {
     #[meilisearch_test]
     async fn test_get_tasks_with_execute(client: Client) -> Result<(), Error> {
         let tasks = TasksSearchQuery::new(&client)
-            .with_index_uid(["no_name"])
+            .with_index_uids(["no_name"])
             .execute()
             .await
             .unwrap();
