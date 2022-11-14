@@ -3,14 +3,13 @@ use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
 
-// TODO: change query letter T to Q for Query and P to B
 #[derive(Debug)]
-pub(crate) enum Method<T, P> {
-    Get { query: T },
-    Post { query: T, body: P },
-    Patch { query: T, body: P },
-    Put { query: T, body: P },
-    Delete { query: T },
+pub(crate) enum Method<Q, B> {
+    Get { query: Q },
+    Post { query: Q, body: B },
+    Patch { query: Q, body: B },
+    Put { query: Q, body: B },
+    Delete { query: Q },
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -246,8 +245,6 @@ fn parse_response<Output: DeserializeOwned>(
             }
         };
     }
-    // TODO: create issue where it is clear what the HTTP error is
-    // ParseError(Error("invalid type: null, expected struct MeilisearchError", line: 1, column: 4))
 
     warn!(
         "Expected response code {}, got {}",
