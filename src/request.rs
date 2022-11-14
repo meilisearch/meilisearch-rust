@@ -4,19 +4,34 @@ use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
 
 #[derive(Debug)]
-pub(crate) enum Method<T: Serialize> {
-    Get(T),
-    Post(T),
-    Patch(T),
-    Put(T),
-    Delete,
+pub(crate) enum Method<Q, B> {
+    Get { query: Q },
+    Post { query: Q, body: B },
+    Patch { query: Q, body: B },
+    Put { query: Q, body: B },
+    Delete { query: Q },
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
+pub fn add_query_parameters<Query: Serialize>(url: &str, query: &Query) -> Result<String, Error> {
+    let query = yaup::to_string(query)?;
+
+    if query.is_empty() {
+        Ok(url.to_string())
+    } else {
+        Ok(format!("{}?{}", url, query))
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn request<
+    Query: Serialize,
+    Body: Serialize,
+    Output: DeserializeOwned + 'static,
+>(
     url: &str,
     apikey: &str,
-    method: Method<Input>,
+    method: Method<Query, Body>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
     use isahc::http::header;
@@ -26,14 +41,8 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     let user_agent = qualified_version();
 
     let mut response = match &method {
-        Method::Get(query) => {
-            let query = yaup::to_string(query)?;
-
-            let url = if query.is_empty() {
-                url.to_string()
-            } else {
-                format!("{}?{}", url, query)
-            };
+        Method::Get { query } => {
+            let url = add_query_parameters(url, query)?;
 
             Request::get(url)
                 .header(header::AUTHORIZATION, auth)
@@ -43,7 +52,9 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 .send_async()
                 .await?
         }
-        Method::Delete => {
+        Method::Delete { query } => {
+            let url = add_query_parameters(url, query)?;
+
             Request::delete(url)
                 .header(header::AUTHORIZATION, auth)
                 .header(header::USER_AGENT, user_agent)
@@ -52,7 +63,9 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 .send_async()
                 .await?
         }
-        Method::Post(body) => {
+        Method::Post { query, body } => {
+            let url = add_query_parameters(url, query)?;
+
             Request::post(url)
                 .header(header::AUTHORIZATION, auth)
                 .header(header::CONTENT_TYPE, "application/json")
@@ -62,7 +75,9 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 .send_async()
                 .await?
         }
-        Method::Patch(body) => {
+        Method::Patch { query, body } => {
+            let url = add_query_parameters(url, query)?;
+
             Request::patch(url)
                 .header(header::AUTHORIZATION, auth)
                 .header(header::CONTENT_TYPE, "application/json")
@@ -72,7 +87,9 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
                 .send_async()
                 .await?
         }
-        Method::Put(body) => {
+        Method::Put { query, body } => {
+            let url = add_query_parameters(url, query)?;
+
             Request::put(url)
                 .header(header::AUTHORIZATION, auth)
                 .header(header::CONTENT_TYPE, "application/json")
@@ -85,10 +102,12 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     };
 
     let status = response.status().as_u16();
+
     let mut body = response
         .text()
         .await
         .map_err(|e| crate::errors::Error::HttpError(e.into()))?;
+
     if body.is_empty() {
         body = "null".to_string();
     }
@@ -97,10 +116,26 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
+pub fn add_query_parameters<Query: Serialize>(
+    mut url: String,
+    query: &Query,
+) -> Result<String, Error> {
+    let query = yaup::to_string(query)?;
+
+    if !query.is_empty() {
+        url = format!("{}?{}", url, query);
+    };
+    return Ok(url);
+}
+#[cfg(target_arch = "wasm32")]
+pub(crate) async fn request<
+    Query: Serialize,
+    Body: Serialize,
+    Output: DeserializeOwned + 'static,
+>(
     url: &str,
     apikey: &str,
-    method: Method<Input>,
+    method: Method<Query, Body>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
     use wasm_bindgen::JsValue;
@@ -124,29 +159,29 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     request.headers(&headers);
 
     match &method {
-        Method::Get(query) => {
-            let query = yaup::to_string(query)?;
-
-            if !query.is_empty() {
-                mut_url = format!("{}?{}", mut_url, query);
-            };
+        Method::Get { query } => {
+            mut_url = add_query_parameters(mut_url, &query)?;
 
             request.method("GET");
         }
-        Method::Delete => {
+        Method::Delete { query } => {
+            mut_url = add_query_parameters(mut_url, &query)?;
             request.method("DELETE");
         }
-        Method::Patch(body) => {
+        Method::Patch { query, body } => {
+            mut_url = add_query_parameters(mut_url, &query)?;
             request.method("PATCH");
             headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
-        Method::Post(body) => {
+        Method::Post { query, body } => {
+            mut_url = add_query_parameters(mut_url, &query)?;
             request.method("POST");
             headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
-        Method::Put(body) => {
+        Method::Put { query, body } => {
+            mut_url = add_query_parameters(mut_url, &query)?;
             request.method("PUT");
             headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
@@ -206,6 +241,9 @@ fn parse_response<Output: DeserializeOwned>(
             }
         };
     }
+    // TODO: create issue where it is clear what the HTTP error is
+    // ParseError(Error("invalid type: null, expected struct MeilisearchError", line: 1, column: 4))
+
     warn!(
         "Expected response code {}, got {}",
         expected_status_code, status_code
