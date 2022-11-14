@@ -176,10 +176,10 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete(self) -> Result<TaskInfo, Error> {
-        request::<(), TaskInfo>(
+        request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Delete,
+            Method::Delete { query: () },
             202,
         )
         .await
@@ -219,12 +219,15 @@ impl Index {
     /// ```
     pub async fn execute_query<T: 'static + DeserializeOwned>(
         &self,
-        query: &SearchQuery<'_>,
+        body: &SearchQuery<'_>,
     ) -> Result<SearchResults<T>, Error> {
-        request::<&SearchQuery, SearchResults<T>>(
+        request::<(), &SearchQuery, SearchResults<T>>(
             &format!("{}/indexes/{}/search", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Post(query),
+            Method::Post {
+                body: body,
+                query: (),
+            },
             200,
         )
         .await
@@ -315,7 +318,7 @@ impl Index {
             self.client.host, self.uid, document_id
         );
 
-        request::<(), T>(&url, &self.client.api_key, Method::Get(()), 200).await
+        request::<(), (), T>(&url, &self.client.api_key, Method::Get { query: () }, 200).await
     }
 
     /// Get one document with parameters.
@@ -366,8 +369,15 @@ impl Index {
             self.client.host, self.uid, document_id
         );
 
-        request::<&DocumentQuery, T>(&url, &self.client.api_key, Method::Get(document_query), 200)
-            .await
+        request::<&DocumentQuery, (), T>(
+            &url,
+            &self.client.api_key,
+            Method::Get {
+                query: document_query,
+            },
+            200,
+        )
+        .await
     }
 
     /// Get [Document]s by batch.
@@ -409,7 +419,13 @@ impl Index {
     ) -> Result<DocumentsResults<T>, Error> {
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
 
-        request::<(), DocumentsResults<T>>(&url, &self.client.api_key, Method::Get(()), 200).await
+        request::<(), (), DocumentsResults<T>>(
+            &url,
+            &self.client.api_key,
+            Method::Get { query: () },
+            200,
+        )
+        .await
     }
 
     /// Get [Document]s by batch with parameters.
@@ -455,10 +471,12 @@ impl Index {
         documents_query: &DocumentsQuery<'_>,
     ) -> Result<DocumentsResults<T>, Error> {
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
-        request::<&DocumentsQuery, DocumentsResults<T>>(
+        request::<&DocumentsQuery, (), DocumentsResults<T>>(
             &url,
             &self.client.api_key,
-            Method::Get(documents_query),
+            Method::Get {
+                query: documents_query,
+            },
             200,
         )
         .await
@@ -531,7 +549,16 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], TaskInfo>(&url, &self.client.api_key, Method::Post(documents), 202).await
+        request::<(), &[T], TaskInfo>(
+            &url,
+            &self.client.api_key,
+            Method::Post {
+                query: (),
+                body: documents,
+            },
+            202,
+        )
+        .await
     }
 
     /// Alias for [Index::add_or_replace].
@@ -611,7 +638,16 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<&[T], TaskInfo>(&url, &self.client.api_key, Method::Put(documents), 202).await
+        request::<(), &[T], TaskInfo>(
+            &url,
+            &self.client.api_key,
+            Method::Put {
+                query: (),
+                body: documents,
+            },
+            202,
+        )
+        .await
     }
 
     /// Delete all documents in the index.
@@ -652,10 +688,10 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete_all_documents(&self) -> Result<TaskInfo, Error> {
-        request::<(), TaskInfo>(
+        request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Delete,
+            Method::Delete { query: () },
             202,
         )
         .await
@@ -697,13 +733,13 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete_document<T: Display>(&self, uid: T) -> Result<TaskInfo, Error> {
-        request::<(), TaskInfo>(
+        request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/documents/{}",
                 self.client.host, self.uid, uid
             ),
             &self.client.api_key,
-            Method::Delete,
+            Method::Delete { query: () },
             202,
         )
         .await
@@ -749,13 +785,16 @@ impl Index {
         &self,
         uids: &[T],
     ) -> Result<TaskInfo, Error> {
-        request::<&[T], TaskInfo>(
+        request::<(), &[T], TaskInfo>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
                 self.client.host, self.uid
             ),
             &self.client.api_key,
-            Method::Post(uids),
+            Method::Post {
+                query: (),
+                body: uids,
+            },
             202,
         )
         .await
@@ -871,10 +910,10 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_task(&self, uid: impl AsRef<u32>) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<(), (), Task>(
             &format!("{}/tasks/{}", self.client.host, uid.as_ref()),
             &self.client.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await
@@ -961,10 +1000,10 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<IndexStats, Error> {
-        request::<(), IndexStats>(
+        request::<(), (), IndexStats>(
             &format!("{}/indexes/{}/stats", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await
@@ -1317,10 +1356,13 @@ impl<'a> IndexUpdater<'a> {
     /// # });
     /// ```
     pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
-        request::<&IndexUpdater, TaskInfo>(
+        request::<(), &IndexUpdater, TaskInfo>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Patch(self),
+            Method::Patch {
+                query: (),
+                body: self,
+            },
             202,
         )
         .await

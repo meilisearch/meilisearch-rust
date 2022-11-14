@@ -70,10 +70,13 @@ impl Client {
     /// # });
     /// ```
     pub async fn create_dump(&self) -> Result<TaskInfo, Error> {
-        request::<(), TaskInfo>(
+        request::<(), (), TaskInfo>(
             &format!("{}/dumps", self.host),
             &self.api_key,
-            Method::Post(()),
+            Method::Post {
+                query: (),
+                body: (),
+            },
             202,
         )
         .await

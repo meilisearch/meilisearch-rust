@@ -130,10 +130,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn list_all_indexes_raw(&self) -> Result<Value, Error> {
-        let json_indexes = request::<(), Value>(
+        let json_indexes = request::<(), (), Value>(
             &format!("{}/indexes", self.host),
             &self.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await?;
@@ -166,10 +166,12 @@ impl Client {
         &self,
         indexes_query: &IndexesQuery<'_>,
     ) -> Result<Value, Error> {
-        let json_indexes = request::<&IndexesQuery, Value>(
+        let json_indexes = request::<&IndexesQuery, (), Value>(
             &format!("{}/indexes", self.host),
             &self.api_key,
-            Method::Get(indexes_query),
+            Method::Get {
+                query: indexes_query,
+            },
             200,
         )
         .await?;
@@ -227,10 +229,10 @@ impl Client {
     /// ```
     /// If you use it directly from an [Index], you can use the method [Index::fetch_info], which is the equivalent method from an index.
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<Value, Error> {
-        request::<(), Value>(
+        request::<(), (), Value>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
             &self.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await
@@ -274,13 +276,16 @@ impl Client {
         uid: impl AsRef<str>,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        request::<Value, TaskInfo>(
+        request::<(), Value, TaskInfo>(
             &format!("{}/indexes", self.host),
             &self.api_key,
-            Method::Post(json!({
-                "uid": uid.as_ref(),
-                "primaryKey": primary_key,
-            })),
+            Method::Post {
+                query: (),
+                body: json!({
+                    "uid": uid.as_ref(),
+                    "primaryKey": primary_key,
+                }),
+            },
             202,
         )
         .await
@@ -289,10 +294,10 @@ impl Client {
     /// Delete an index from its UID.
     /// To delete an [Index], use the [Index::delete] method.
     pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo, Error> {
-        request::<(), TaskInfo>(
+        request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
             &self.api_key,
-            Method::Delete,
+            Method::Delete { query: () },
             202,
         )
         .await
@@ -340,10 +345,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
-        request::<(), ClientStats>(
+        request::<(), (), ClientStats>(
             &format!("{}/stats", self.host),
             &self.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await
@@ -366,10 +371,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn health(&self) -> Result<Health, Error> {
-        request::<(), Health>(
+        request::<(), (), Health>(
             &format!("{}/health", self.host),
             &self.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await
@@ -422,10 +427,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_keys_with(&self, keys_query: &KeysQuery) -> Result<KeysResults, Error> {
-        let keys = request::<&KeysQuery, KeysResults>(
+        let keys = request::<&KeysQuery, (), KeysResults>(
             &format!("{}/keys", self.host),
             &self.api_key,
-            Method::Get(keys_query),
+            Method::Get { query: keys_query },
             200,
         )
         .await?;
@@ -454,10 +459,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_keys(&self) -> Result<KeysResults, Error> {
-        let keys = request::<(), KeysResults>(
+        let keys = request::<(), (), KeysResults>(
             &format!("{}/keys", self.host),
             &self.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await?;
@@ -490,10 +495,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
-        request::<(), Key>(
+        request::<(), (), Key>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
             &self.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await
@@ -525,10 +530,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn delete_key(&self, key: impl AsRef<str>) -> Result<(), Error> {
-        request::<(), ()>(
+        request::<(), (), ()>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
             &self.api_key,
-            Method::Delete,
+            Method::Delete { query: () },
             204,
         )
         .await
@@ -559,10 +564,13 @@ impl Client {
     /// # });
     /// ```
     pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
-        request::<&KeyBuilder, Key>(
+        request::<(), &KeyBuilder, Key>(
             &format!("{}/keys", self.host),
             &self.api_key,
-            Method::Post(key.as_ref()),
+            Method::Post {
+                query: (),
+                body: key.as_ref(),
+            },
             201,
         )
         .await
@@ -595,10 +603,13 @@ impl Client {
     /// # });
     /// ```
     pub async fn update_key(&self, key: impl AsRef<KeyUpdater>) -> Result<Key, Error> {
-        request::<&KeyUpdater, Key>(
+        request::<(), &KeyUpdater, Key>(
             &format!("{}/keys/{}", self.host, key.as_ref().key),
             &self.api_key,
-            Method::Patch(key.as_ref()),
+            Method::Patch {
+                body: key.as_ref(),
+                query: (),
+            },
             200,
         )
         .await
@@ -620,10 +631,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_version(&self) -> Result<Version, Error> {
-        request::<(), Version>(
+        request::<(), (), Version>(
             &format!("{}/version", self.host),
             &self.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await
@@ -721,10 +732,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_task(&self, task_id: impl AsRef<u32>) -> Result<Task, Error> {
-        request::<(), Task>(
+        request::<(), (), Task>(
             &format!("{}/tasks/{}", self.host, task_id.as_ref()),
             &self.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await
@@ -752,10 +763,10 @@ impl Client {
         &self,
         tasks_query: &TasksQuery<'_>,
     ) -> Result<TasksResults, Error> {
-        let tasks = request::<&TasksQuery, TasksResults>(
+        let tasks = request::<&TasksQuery, (), TasksResults>(
             &format!("{}/tasks", self.host),
             &self.api_key,
-            Method::Get(tasks_query),
+            Method::Get { query: tasks_query },
             200,
         )
         .await?;
@@ -782,10 +793,10 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
-        let tasks = request::<(), TasksResults>(
+        let tasks = request::<(), (), TasksResults>(
             &format!("{}/tasks", self.host),
             &self.api_key,
-            Method::Get(()),
+            Method::Get { query: () },
             200,
         )
         .await?;
@@ -891,31 +902,55 @@ mod tests {
                 mock("GET", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<(), ()>(address, "", Method::Get(()), 200),
+                request::<(), (), ()>(address, "", Method::Get { query: () }, 200),
             ),
             (
                 mock("POST", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<(), ()>(address, "", Method::Post(()), 200),
+                request::<(), (), ()>(
+                    address,
+                    "",
+                    Method::Post {
+                        query: (),
+                        body: {},
+                    },
+                    200,
+                ),
             ),
             (
                 mock("DELETE", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<(), ()>(address, "", Method::Delete, 200),
+                request::<(), (), ()>(address, "", Method::Delete { query: () }, 200),
             ),
             (
                 mock("PUT", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<(), ()>(address, "", Method::Put(()), 200),
+                request::<(), (), ()>(
+                    address,
+                    "",
+                    Method::Put {
+                        query: (),
+                        body: (),
+                    },
+                    200,
+                ),
             ),
             (
                 mock("PATCH", path)
                     .match_header("User-Agent", user_agent)
                     .create(),
-                request::<(), ()>(address, "", Method::Patch(()), 200),
+                request::<(), (), ()>(
+                    address,
+                    "",
+                    Method::Patch {
+                        query: (),
+                        body: (),
+                    },
+                    200,
+                ),
             ),
         ];
 
