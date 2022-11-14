@@ -102,12 +102,12 @@ pub(crate) async fn request<
     };
 
     let status = response.status().as_u16();
-    println!("{:?}", &response);
+
     let mut body = response
         .text()
         .await
         .map_err(|e| crate::errors::Error::HttpError(e.into()))?;
-    println!("{:?}", &body);
+
     if body.is_empty() {
         body = "null".to_string();
     }
@@ -229,10 +229,6 @@ fn parse_response<Output: DeserializeOwned>(
     expected_status_code: u16,
     body: String,
 ) -> Result<Output, Error> {
-    println!(
-        " expected status code = {} recieved = {}",
-        expected_status_code, status_code
-    );
     if status_code == expected_status_code {
         match from_str::<Output>(&body) {
             Ok(output) => {
@@ -245,6 +241,8 @@ fn parse_response<Output: DeserializeOwned>(
             }
         };
     }
+    // TODO: create issue where it is clear what the HTTP error is
+    // ParseError(Error("invalid type: null, expected struct MeilisearchError", line: 1, column: 4))
 
     warn!(
         "Expected response code {}, got {}",
