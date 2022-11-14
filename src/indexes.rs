@@ -224,10 +224,7 @@ impl Index {
         request::<(), &SearchQuery, SearchResults<T>>(
             &format!("{}/indexes/{}/search", self.client.host, self.uid),
             &self.client.api_key,
-            Method::Post {
-                body: body,
-                query: (),
-            },
+            Method::Post { body, query: () },
             200,
         )
         .await
