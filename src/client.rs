@@ -4,7 +4,7 @@ use crate::{
     key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
     request::*,
     task_info::TaskInfo,
-    tasks::{Task, TasksResults, TasksSearchQuery},
+    tasks::{Task, TasksCancelQuery, TasksResults, TasksSearchQuery},
     utils::async_sleep,
 };
 use serde::Deserialize;
@@ -756,6 +756,43 @@ impl Client {
             &format!("{}/tasks", self.host),
             &self.api_key,
             Method::Get(tasks_query),
+            200,
+        )
+        .await?;
+
+        Ok(tasks)
+    }
+
+    /// Cancel tasks with filters [TasksCancelQuery]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::*;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = client::Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    ///
+    /// let mut query = tasks::TasksCancelQuery::new(&client);
+    /// query.with_index_uids(["get_tasks_with"]);
+    ///
+    /// let res = client.cancel_tasks_with(&query).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn cancel_tasks_with(
+        &self,
+        filters: &TasksCancelQuery<'_>,
+    ) -> Result<TasksResults, Error> {
+        let tasks = request::<&TasksCancelQuery, (), TasksResults>(
+            &format!("{}/tasks/cancel", self.host),
+            &self.api_key,
+            Method::Post {
+                query: filters,
+                body: (),
+            },
             200,
         )
         .await?;

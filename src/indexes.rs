@@ -933,7 +933,7 @@ impl Index {
     /// ```
     pub async fn get_tasks_with(
         &self,
-        tasks_query: &TasksQuery<'_, TasksPagination>,
+        tasks_query: &TasksQuery<'_, TasksPaginationFilters>,
     ) -> Result<TasksResults, Error> {
         let mut query = tasks_query.clone();
         query.with_index_uids([self.uid.as_str()]);

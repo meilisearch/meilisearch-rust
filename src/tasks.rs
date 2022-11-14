@@ -400,7 +400,7 @@ impl AsRef<u32> for Task {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct TasksPagination {
+pub struct TasksPaginationFilters {
     // Maximum number of tasks to return
     #[serde(skip_serializing_if = "Option::is_none")]
     limit: Option<u32>,
@@ -410,10 +410,10 @@ pub struct TasksPagination {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct TasksDefault {}
+pub struct TasksCancelFilters {}
 
-pub type TasksSearchQuery<'a> = TasksQuery<'a, TasksPagination>;
-pub type TasksCancelQuery<'a> = TasksQuery<'a, TasksDefault>;
+pub type TasksSearchQuery<'a> = TasksQuery<'a, TasksPaginationFilters>;
+pub type TasksCancelQuery<'a> = TasksQuery<'a, TasksCancelFilters>;
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -547,8 +547,8 @@ impl<'a, T> TasksQuery<'a, T> {
     }
 }
 
-impl<'a> TasksQuery<'a, TasksDefault> {
-    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksDefault> {
+impl<'a> TasksQuery<'a, TasksCancelFilters> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksCancelFilters> {
         TasksQuery {
             client,
             index_uids: None,
@@ -561,17 +561,17 @@ impl<'a> TasksQuery<'a, TasksDefault> {
             after_started_at: None,
             before_finished_at: None,
             after_finished_at: None,
-            pagination: TasksDefault {},
+            pagination: TasksCancelFilters {},
         }
     }
 
-    // pub async fn execute(&'a self) -> Result<TasksResults, Error> {
-    //     self.client.get_tasks_with(self).await
-    // }
+    pub async fn execute(&'a self) -> Result<TasksResults, Error> {
+        self.client.cancel_tasks_with(self).await
+    }
 }
 
-impl<'a> TasksQuery<'a, TasksPagination> {
-    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksPagination> {
+impl<'a> TasksQuery<'a, TasksPaginationFilters> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksPaginationFilters> {
         TasksQuery {
             client,
             index_uids: None,
@@ -584,17 +584,23 @@ impl<'a> TasksQuery<'a, TasksPagination> {
             after_started_at: None,
             before_finished_at: None,
             after_finished_at: None,
-            pagination: TasksPagination {
+            pagination: TasksPaginationFilters {
                 limit: None,
                 from: None,
             },
         }
     }
-    pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a, TasksPagination> {
+    pub fn with_limit<'b>(
+        &'b mut self,
+        limit: u32,
+    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters> {
         self.pagination.limit = Some(limit);
         self
     }
-    pub fn with_from<'b>(&'b mut self, from: u32) -> &'b mut TasksQuery<'a, TasksPagination> {
+    pub fn with_from<'b>(
+        &'b mut self,
+        from: u32,
+    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters> {
         self.pagination.from = Some(from);
         self
     }
@@ -873,7 +879,6 @@ mod test {
             .execute()
             .await;
 
-        // let _ = client.get_tasks(&query).await;
         mock_res.assert();
         Ok(())
     }
@@ -910,6 +915,50 @@ mod test {
         let error = task.unwrap_failure();
         assert_eq!(error.error_code, ErrorCode::InvalidRankingRule);
         assert_eq!(error.error_type, ErrorType::InvalidRequest);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_cancel_tasks_with_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path =
+            "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = mock("GET", path).with_status(200).create();
+
+        let mut query = TasksCancelQuery::new(&client);
+        query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1]);
+
+        let _ = client.cancel_tasks_with(&query).await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_cancel_tasks_with_params_execute() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path =
+            "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = mock("GET", path).with_status(200).create();
+
+        let mut query = TasksCancelQuery::new(&client);
+        let _ = query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1])
+            .execute()
+            .await;
+
+        mock_res.assert();
         Ok(())
     }
 }
