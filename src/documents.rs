@@ -256,13 +256,13 @@ mod tests {
     use crate::{client::*, indexes::*};
 
     use super::*;
-
+use crate as meilisearch_sdk;
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct MyObject {
         id: Option<usize>,
         kind: String,
     }
-
+    #[allow(unused)]
     #[derive(Document)]
     struct MovieClips {
         #[document(primary_key)]
@@ -278,7 +278,7 @@ mod tests {
         #[document(filterable, displayed)]
         genres: Vec<String>,
     }
-
+    #[allow(unused)]
     #[derive(Document)]
     struct VideoClips {
         video_id: u64,
