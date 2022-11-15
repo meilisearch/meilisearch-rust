@@ -7,7 +7,7 @@ use crate::{
     tasks::{Task, TasksQuery, TasksResults},
     utils::async_sleep,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{collections::HashMap, time::Duration};
 use time::OffsetDateTime;
@@ -17,6 +17,11 @@ use time::OffsetDateTime;
 pub struct Client {
     pub(crate) host: String,
     pub(crate) api_key: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SwapIndexes {
+    pub indexes: Option<Vec<String>>,
 }
 
 impl Client {
@@ -327,6 +332,45 @@ impl Client {
         indexes_query: &IndexesQuery<'_>,
     ) -> Result<Value, Error> {
         self.list_all_indexes_raw_with(indexes_query).await
+    }
+
+    /// Swaps a list of [Index] tuples.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// // Create the client
+    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    ///
+    /// let task_index_1 = client.create_index("swap_index_1", None).await.unwrap();
+    /// let task_index_2 = client.create_index("swap_index_2", None).await.unwrap();
+    ///
+    /// // Wait for the task to complete
+    /// let task = task_index_2.wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// // const swap_indexes = SwapIndexes::new([ SwapIndexes{}])
+    ///
+    /// assert_eq!(index.as_ref(), "create_index");
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn swap_indexes(&self, indexes: &SwapIndexes) -> Result<TaskInfo, Error> {
+        request::<(), &SwapIndexes, TaskInfo>(
+            &format!("{}/swap-indexes", self.host),
+            &self.api_key,
+            Method::Post {
+                query: (),
+                body: indexes,
+            },
+            202,
+        )
+        .await
     }
 
     /// Get stats of all indexes.
@@ -889,6 +933,47 @@ mod tests {
     use mockito::mock;
     use std::mem;
     use time::OffsetDateTime;
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Document {
+        id: usize,
+        value: String,
+        kind: String,
+    }
+
+    // impl PartialEq<Map<String, Value>> for Document {
+    //     fn eq(&self, rhs: &Map<String, Value>) -> bool {
+    //         self.id.to_string() == rhs["id"]
+    //             && self.value == rhs["value"]
+    //             && self.kind == rhs["kind"]
+    //     }
+    // }
+
+    async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
+        let t0 = index.add_documents(&[
+            Document { id: 0, kind: "text".into(), value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string() },
+            Document { id: 1, kind: "text".into(), value: "dolor sit amet, consectetur adipiscing elit".to_string() },
+            Document { id: 2, kind: "title".into(), value: "The Social Network".to_string() },
+            Document { id: 3, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
+            Document { id: 4, kind: "title".into(), value: "Harry Potter and the Chamber of Secrets".to_string() },
+            Document { id: 5, kind: "title".into(), value: "Harry Potter and the Prisoner of Azkaban".to_string() },
+            Document { id: 6, kind: "title".into(), value: "Harry Potter and the Goblet of Fire".to_string() },
+            Document { id: 7, kind: "title".into(), value: "Harry Potter and the Order of the Phoenix".to_string() },
+            Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string() },
+            Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string() },
+        ], None).await?;
+        let t1 = index.set_filterable_attributes(["kind", "value"]).await?;
+        let t2 = index.set_sortable_attributes(["title"]).await?;
+
+        t2.wait_for_completion(client, None, None).await?;
+        t1.wait_for_completion(client, None, None).await?;
+        t0.wait_for_completion(client, None, None).await?;
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_swapping_two_indexes(client: Client) {}
 
     #[meilisearch_test]
     async fn test_methods_has_qualified_version_as_header() {
