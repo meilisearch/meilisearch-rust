@@ -796,8 +796,8 @@ impl Client {
     pub async fn cancel_tasks_with(
         &self,
         filters: &TasksCancelQuery<'_>,
-    ) -> Result<TasksResults, Error> {
-        let tasks = request::<&TasksCancelQuery, (), TasksResults>(
+    ) -> Result<TaskInfo, Error> {
+        let tasks = request::<&TasksCancelQuery, (), TaskInfo>(
             &format!("{}/tasks/cancel", self.host),
             &self.api_key,
             Method::Post {

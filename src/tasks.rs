@@ -577,7 +577,7 @@ impl<'a> TasksQuery<'a, TasksCancelFilters> {
         }
     }
 
-    pub async fn execute(&'a self) -> Result<TasksResults, Error> {
+    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
         self.client.cancel_tasks_with(self).await
     }
 }
@@ -937,7 +937,7 @@ mod test {
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
-        let mock_res = mock("GET", path).with_status(200).create();
+        let mock_res = mock("POST", path).with_status(200).create();
 
         let mut query = TasksCancelQuery::new(&client);
         query
@@ -959,7 +959,7 @@ mod test {
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
-        let mock_res = mock("GET", path).with_status(200).create();
+        let mock_res = mock("POST", path).with_status(200).create();
 
         let mut query = TasksCancelQuery::new(&client);
         let _ = query
