@@ -110,10 +110,10 @@ fn get_document_implementation(
         get_settings_token_for_string(&distinct_key_attribute, "with_distinct_attribute");
 
     quote! {
-        #[async_trait::async_trait]
-        impl crate::documents::Document for #struct_ident {
-            fn generate_settings() -> crate::settings::Settings {
-            crate::settings::Settings::new()
+        #[meilisearch_sdk::macro_helper::async_trait]
+        impl meilisearch_sdk::documents::Document for #struct_ident {
+            fn generate_settings() -> meilisearch_sdk::settings::Settings {
+            meilisearch_sdk::settings::Settings::new()
             #display_attr_tokens
             #sortable_attr_tokens
             #filterable_attr_tokens

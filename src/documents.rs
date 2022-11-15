@@ -1,6 +1,52 @@
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
+/// Derive the [`Document`](crate::documents::Document) trait.
+///
+/// ## Field attribute
+/// Use the `#[document(..)]` field attribute to generate the correct settings
+/// for each field. The available parameters are:
+/// - `primary_key` (can only be used once)
+/// - `distinct` (can only be used once)
+/// - `searchable`
+/// - `displayed`
+/// - `filterable`
+/// - `sortable`
+///
+/// ## Index name
+/// The name of the index will be the name of the struct converted to snake case.
+///
+/// ## Sample usage:
+/// ```
+/// use serde::{Serialize, Deserialize};
+/// use meilisearch_sdk::documents::Document;
+/// use meilisearch_sdk::settings::Settings;
+/// use meilisearch_sdk::indexes::Index;
+/// use meilisearch_sdk::client::Client;
+///
+/// #[derive(Serialize, Deserialize, Document)]
+/// struct Movie {
+///     #[document(primary_key)]
+///     movie_id: u64,
+///     #[document(displayed, searchable)]
+///     title: String,
+///     #[document(displayed)]
+///     description: String,
+///     #[document(filterable, sortable, displayed)]
+///     release_date: String,
+///     #[document(filterable, displayed)]
+///     genres: Vec<String>,
+/// }
+///
+/// async fn usage(client: Client) {
+///     // Default settings with the distinct, searchable, displayed, filterable, and sortable fields set correctly.
+///     let settings: Settings = Movie::generate_settings();
+///     // Index created with the name `movie` and the primary key set to `movie_id`
+///     let index: Index = Movie::generate_index(&client).await.unwrap();
+/// }
+/// ```
+pub use meilisearch_index_setting_macro::Document;
+
 use crate::settings::Settings;
 use crate::tasks::Task;
 use crate::{errors::Error, indexes::Index};
@@ -253,15 +299,17 @@ mod tests {
     use meilisearch_index_setting_macro::Document;
     use meilisearch_test_macro::meilisearch_test;
 
+    use crate as meilisearch_sdk;
     use crate::{client::*, indexes::*};
 
     use super::*;
-use crate as meilisearch_sdk;
+
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct MyObject {
         id: Option<usize>,
         kind: String,
     }
+
     #[allow(unused)]
     #[derive(Document)]
     struct MovieClips {
@@ -278,6 +326,7 @@ use crate as meilisearch_sdk;
         #[document(filterable, displayed)]
         genres: Vec<String>,
     }
+
     #[allow(unused)]
     #[derive(Document)]
     struct VideoClips {
