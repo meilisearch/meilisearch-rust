@@ -33,7 +33,10 @@ pub enum TaskType {
         details: Option<DumpCreation>,
     },
     TaskCancelation {
-        details: Option<DumpCreation>,
+        details: Option<TaskCancelation>,
+    },
+    TaskDeletion {
+        details: Option<TaskDeletion>,
     },
 }
 
@@ -87,7 +90,15 @@ pub struct DumpCreation {
 pub struct TaskCancelation {
     pub matched_tasks: usize,
     pub canceled_tasks: usize,
-    pub original_filters: usize,
+    pub original_filters: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskDeletion {
+    pub matched_tasks: usize,
+    pub deleted_tasks: usize,
+    pub original_filters: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -424,8 +435,12 @@ pub struct TasksPaginationFilters {
 #[derive(Debug, Serialize, Clone)]
 pub struct TasksCancelFilters {}
 
+#[derive(Debug, Serialize, Clone)]
+pub struct TasksDeleteFilters {}
+
 pub type TasksSearchQuery<'a> = TasksQuery<'a, TasksPaginationFilters>;
 pub type TasksCancelQuery<'a> = TasksQuery<'a, TasksCancelFilters>;
+pub type TasksDeleteQuery<'a> = TasksQuery<'a, TasksDeleteFilters>;
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -579,6 +594,29 @@ impl<'a> TasksQuery<'a, TasksCancelFilters> {
 
     pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
         self.client.cancel_tasks_with(self).await
+    }
+}
+
+impl<'a> TasksQuery<'a, TasksDeleteFilters> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksDeleteFilters> {
+        TasksQuery {
+            client,
+            index_uids: None,
+            statuses: None,
+            task_types: None,
+            uids: None,
+            before_enqueued_at: None,
+            after_enqueued_at: None,
+            before_started_at: None,
+            after_started_at: None,
+            before_finished_at: None,
+            after_finished_at: None,
+            pagination: TasksDeleteFilters {},
+        }
+    }
+
+    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
+        self.client.delete_tasks_with(self).await
     }
 }
 
@@ -962,6 +1000,48 @@ mod test {
         let mock_res = mock("POST", path).with_status(200).create();
 
         let mut query = TasksCancelQuery::new(&client);
+        let _ = query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1])
+            .execute()
+            .await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_tasks_with_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = mock("DELETE", path).with_status(200).create();
+
+        let mut query = TasksDeleteQuery::new(&client);
+        query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1]);
+
+        let _ = client.delete_tasks_with(&query).await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_tasks_with_params_execute() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = mock("DELETE", path).with_status(200).create();
+
+        let mut query = TasksDeleteQuery::new(&client);
         let _ = query
             .with_index_uids(["movies", "test"])
             .with_statuses(["equeued"])
