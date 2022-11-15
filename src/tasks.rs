@@ -406,13 +406,52 @@ pub struct TasksQuery<'a> {
     pub client: &'a Client,
     // Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub index_uid: Option<Vec<&'a str>>,
+    pub index_uids: Option<Vec<&'a str>>,
     // Statuses array to only retrieve the tasks with these statuses.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<Vec<&'a str>>,
+    pub statuses: Option<Vec<&'a str>>,
     // Types array to only retrieve the tasks with these [TaskType].
-    #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
-    pub task_type: Option<Vec<&'a str>>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "types")]
+    pub task_types: Option<Vec<&'a str>>,
+    // Uids of the tasks to retrieve
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uids: Option<Vec<&'a u32>>,
+    // Date to retrieve all tasks that were enqueued before it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub before_enqueued_at: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were enqueued after it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub after_enqueued_at: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were started before it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub before_started_at: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were started after it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub after_started_at: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were finished before it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub before_finished_at: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were finished after it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    pub after_finished_at: Option<OffsetDateTime>,
     // Maximum number of tasks to return
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
@@ -426,32 +465,88 @@ impl<'a> TasksQuery<'a> {
     pub fn new(client: &'a Client) -> TasksQuery<'a> {
         TasksQuery {
             client,
-            index_uid: None,
-            status: None,
-            task_type: None,
+            index_uids: None,
+            statuses: None,
+            task_types: None,
             limit: None,
             from: None,
+            uids: None,
+            before_enqueued_at: None,
+            after_enqueued_at: None,
+            before_started_at: None,
+            after_started_at: None,
+            before_finished_at: None,
+            after_finished_at: None,
         }
     }
-    pub fn with_index_uid<'b>(
+    pub fn with_index_uids<'b>(
         &'b mut self,
-        index_uid: impl IntoIterator<Item = &'a str>,
+        index_uids: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a> {
-        self.index_uid = Some(index_uid.into_iter().collect());
+        self.index_uids = Some(index_uids.into_iter().collect());
         self
     }
-    pub fn with_status<'b>(
+    pub fn with_statuses<'b>(
         &'b mut self,
-        status: impl IntoIterator<Item = &'a str>,
+        statuses: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a> {
-        self.status = Some(status.into_iter().collect());
+        self.statuses = Some(statuses.into_iter().collect());
         self
     }
-    pub fn with_type<'b>(
+    pub fn with_types<'b>(
         &'b mut self,
-        task_type: impl IntoIterator<Item = &'a str>,
+        task_types: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a> {
-        self.task_type = Some(task_type.into_iter().collect());
+        self.task_types = Some(task_types.into_iter().collect());
+        self
+    }
+    pub fn with_uids<'b>(
+        &'b mut self,
+        uids: impl IntoIterator<Item = &'a u32>,
+    ) -> &'b mut TasksQuery<'a> {
+        self.uids = Some(uids.into_iter().collect());
+        self
+    }
+    pub fn with_before_enqueued_at<'b>(
+        &'b mut self,
+        before_enqueued_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.before_enqueued_at = Some(*before_enqueued_at);
+        self
+    }
+    pub fn with_after_enqueued_at<'b>(
+        &'b mut self,
+        after_enqueued_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.after_enqueued_at = Some(*after_enqueued_at);
+        self
+    }
+    pub fn with_before_started_at<'b>(
+        &'b mut self,
+        before_started_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.before_started_at = Some(*before_started_at);
+        self
+    }
+    pub fn with_after_started_at<'b>(
+        &'b mut self,
+        after_started_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.after_started_at = Some(*after_started_at);
+        self
+    }
+    pub fn with_before_finished_at<'b>(
+        &'b mut self,
+        before_finished_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.before_finished_at = Some(*before_finished_at);
+        self
+    }
+    pub fn with_after_finished_at<'b>(
+        &'b mut self,
+        after_finished_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a> {
+        self.after_finished_at = Some(*after_finished_at);
         self
     }
     pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a> {
@@ -640,17 +735,81 @@ mod test {
         let mock_server_url = &mockito::server_url();
         let client = Client::new(mock_server_url, "masterKey");
         let path =
-            "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion&limit=0&from=1";
+            "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
 
         let mock_res = mock("GET", path).with_status(200).create();
 
         let mut query = TasksQuery::new(&client);
         query
-            .with_index_uid(["movies", "test"])
-            .with_status(["equeued"])
-            .with_type(["documentDeletion"])
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
             .with_from(1)
-            .with_limit(0);
+            .with_limit(0)
+            .with_uids([&1]);
+
+        let _ = client.get_tasks_with(&query).await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_with_date_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks?\
+            beforeEnqueuedAt=2022-02-03T13%3A02%3A38.369634Z\
+            &afterEnqueuedAt=2023-02-03T13%3A02%3A38.369634Z\
+            &beforeStartedAt=2024-02-03T13%3A02%3A38.369634Z\
+            &afterStartedAt=2025-02-03T13%3A02%3A38.369634Z\
+            &beforeFinishedAt=2026-02-03T13%3A02%3A38.369634Z\
+            &afterFinishedAt=2027-02-03T13%3A02%3A38.369634Z";
+
+        let mock_res = mock("GET", path).with_status(200).create();
+
+        let before_enqueued_at = OffsetDateTime::parse(
+            "2022-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+        let after_enqueued_at = OffsetDateTime::parse(
+            "2023-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+        let before_started_at = OffsetDateTime::parse(
+            "2024-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let after_started_at = OffsetDateTime::parse(
+            "2025-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let before_finished_at = OffsetDateTime::parse(
+            "2026-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let after_finished_at = OffsetDateTime::parse(
+            "2027-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let mut query = TasksQuery::new(&client);
+        query
+            .with_before_enqueued_at(&before_enqueued_at)
+            .with_after_enqueued_at(&after_enqueued_at)
+            .with_before_started_at(&before_started_at)
+            .with_after_started_at(&after_started_at)
+            .with_before_finished_at(&before_finished_at)
+            .with_after_finished_at(&after_finished_at);
 
         let _ = client.get_tasks_with(&query).await;
 
@@ -662,15 +821,15 @@ mod test {
     async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
         let mock_server_url = &mockito::server_url();
         let client = Client::new(mock_server_url, "masterKey");
-        let path = "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion";
+        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion";
 
         let mock_res = mock("GET", path).with_status(200).create();
 
         let mut query = TasksQuery::new(&client);
         let _ = query
-            .with_index_uid(["movies", "test"])
-            .with_status(["equeued"])
-            .with_type(["documentDeletion"])
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
             .execute()
             .await;
 
@@ -680,9 +839,9 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
+    async fn test_get_tasks_with_none_existant_index_uids(client: Client) -> Result<(), Error> {
         let mut query = TasksQuery::new(&client);
-        query.with_index_uid(["no_name"]);
+        query.with_index_uids(["no_name"]);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
         assert_eq!(tasks.results.len(), 0);
@@ -692,7 +851,7 @@ mod test {
     #[meilisearch_test]
     async fn test_get_tasks_with_execute(client: Client) -> Result<(), Error> {
         let tasks = TasksQuery::new(&client)
-            .with_index_uid(["no_name"])
+            .with_index_uids(["no_name"])
             .execute()
             .await
             .unwrap();
