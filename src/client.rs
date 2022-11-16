@@ -352,12 +352,20 @@ impl Client {
     /// let task_index_2 = client.create_index("swap_index_2", None).await.unwrap();
     ///
     /// // Wait for the task to complete
-    /// let task = task_index_2.wait_for_completion(&client, None, None).await.unwrap();
+    /// task_index_2.wait_for_completion(&client, None, None).await.unwrap();
     ///
-    /// // const swap_indexes = SwapIndexes::new([ SwapIndexes{}])
+    /// let task = client
+    /// .swap_indexes([&SwapIndexes {
+    ///     indexes: (
+    ///         "test_swapping_two_indexes_1".to_string(),
+    ///         "test_swapping_two_indexes_2".to_string(),
+    ///     ),
+    /// }])
+    /// .await
+    /// .unwrap();
     ///
-    /// assert_eq!(index.as_ref(), "create_index");
-    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # client.index("task_index_1").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # client.index("task_index_2").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn swap_indexes(
