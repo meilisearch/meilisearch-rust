@@ -939,7 +939,7 @@ mod tests {
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
-        id: usize,
+        id: String,
     }
 
     // impl PartialEq<Map<String, Value>> for Document {
@@ -956,20 +956,46 @@ mod tests {
         let index_2 = client.index("test_swapping_two_indexes_2");
 
         let t0 = index_1
-            .add_documents(&[Document { id: 1 }], None)
+            .add_documents(
+                &[Document {
+                    id: "1".to_string(),
+                }],
+                None,
+            )
             .await
             .unwrap();
 
         let t1 = index_2
-            .add_documents(&[Document { id: 2 }], None)
+            .add_documents(
+                &[Document {
+                    id: "2".to_string(),
+                }],
+                None,
+            )
             .await
             .unwrap();
 
         t0.wait_for_completion(&client, None, None).await.unwrap();
 
-        client.swap_indexes([&SwapIndexes {
-            indexes: ["test_swapping_two_indexes_1", "test_swapping_two_indexes_2"],
-        }]);
+        let task = client
+            .swap_indexes([&SwapIndexes {
+                indexes: (
+                    "test_swapping_two_indexes_1".to_string(),
+                    "test_swapping_two_indexes_2".to_string(),
+                ),
+            }])
+            .await
+            .unwrap();
+        task.wait_for_completion(&client, None, None).await.unwrap();
+
+        let document = index_1.get_document("2").await.unwrap();
+
+        assert_eq!(
+            Document {
+                id: "2".to_string()
+            },
+            document
+        );
     }
 
     #[meilisearch_test]
