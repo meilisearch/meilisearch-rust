@@ -113,6 +113,7 @@ pub struct SucceededTask {
     #[serde(with = "time::serde::rfc3339")]
     pub finished_at: OffsetDateTime,
     pub index_uid: Option<String>,
+    pub error: Option<MeilisearchError>,
     #[serde(flatten)]
     pub update_type: TaskType,
     pub uid: u32,
