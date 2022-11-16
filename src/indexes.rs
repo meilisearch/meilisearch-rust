@@ -939,7 +939,7 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
-        let mut query = TasksQuery::new(&self.client);
+        let mut query = TasksSearchQuery::new(&self.client);
         query.with_index_uids([self.uid.as_str()]);
 
         self.client.get_tasks_with(&query).await
@@ -960,7 +960,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_tasks_with", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    /// let mut query = TasksQuery::new(&client);
+    /// let mut query = TasksSearchQuery::new(&client);
     /// query.with_index_uids(["none_existant"]);
     /// let tasks = index.get_tasks_with(&query).await.unwrap();
     ///
@@ -970,7 +970,7 @@ impl Index {
     /// ```
     pub async fn get_tasks_with(
         &self,
-        tasks_query: &TasksQuery<'_>,
+        tasks_query: &TasksQuery<'_, TasksPaginationFilters>,
     ) -> Result<TasksResults, Error> {
         let mut query = tasks_query.clone();
         query.with_index_uids([self.uid.as_str()]);

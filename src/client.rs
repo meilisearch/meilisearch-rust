@@ -4,7 +4,7 @@ use crate::{
     key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
     request::*,
     task_info::TaskInfo,
-    tasks::{Task, TasksQuery, TasksResults},
+    tasks::{Task, TasksCancelQuery, TasksDeleteQuery, TasksResults, TasksSearchQuery},
     utils::async_sleep,
 };
 use serde::{Deserialize, Serialize};
@@ -809,19 +809,90 @@ impl Client {
     /// # futures::executor::block_on(async move {
     /// # let client = client::Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     ///
-    /// let mut query = tasks::TasksQuery::new(&client);
+    /// let mut query = tasks::TasksSearchQuery::new(&client);
     /// query.with_index_uids(["get_tasks_with"]);
     /// let tasks = client.get_tasks_with(&query).await.unwrap();
     /// # });
     /// ```
     pub async fn get_tasks_with(
         &self,
-        tasks_query: &TasksQuery<'_>,
+        tasks_query: &TasksSearchQuery<'_>,
     ) -> Result<TasksResults, Error> {
-        let tasks = request::<&TasksQuery, (), TasksResults>(
+        let tasks = request::<&TasksSearchQuery, (), TasksResults>(
             &format!("{}/tasks", self.host),
             &self.api_key,
             Method::Get { query: tasks_query },
+            200,
+        )
+        .await?;
+
+        Ok(tasks)
+    }
+
+    /// Cancel tasks with filters [TasksCancelQuery]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::*;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = client::Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    ///
+    /// let mut query = tasks::TasksCancelQuery::new(&client);
+    /// query.with_index_uids(["movies"]);
+    ///
+    /// let res = client.cancel_tasks_with(&query).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn cancel_tasks_with(
+        &self,
+        filters: &TasksCancelQuery<'_>,
+    ) -> Result<TaskInfo, Error> {
+        let tasks = request::<&TasksCancelQuery, (), TaskInfo>(
+            &format!("{}/tasks/cancel", self.host),
+            &self.api_key,
+            Method::Post {
+                query: filters,
+                body: (),
+            },
+            200,
+        )
+        .await?;
+
+        Ok(tasks)
+    }
+
+    /// Delete tasks with filters [TasksDeleteQuery]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::*;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = client::Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    ///
+    /// let mut query = tasks::TasksDeleteQuery::new(&client);
+    /// query.with_index_uids(["movies"]);
+    ///
+    /// let res = client.delete_tasks_with(&query).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn delete_tasks_with(
+        &self,
+        filters: &TasksDeleteQuery<'_>,
+    ) -> Result<TaskInfo, Error> {
+        let tasks = request::<&TasksDeleteQuery, (), TaskInfo>(
+            &format!("{}/tasks", self.host),
+            &self.api_key,
+            Method::Delete { query: filters },
             200,
         )
         .await?;
@@ -939,6 +1010,7 @@ mod tests {
     use crate::{
         client::*,
         key::{Action, KeyBuilder},
+        tasks::TasksSearchQuery,
     };
     use meilisearch_test_macro::meilisearch_test;
     use mockito::mock;
@@ -1086,7 +1158,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_tasks_with_params(client: Client) {
-        let query = TasksQuery::new(&client);
+        let query = TasksSearchQuery::new(&client);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
         assert!(tasks.limit == 20);
