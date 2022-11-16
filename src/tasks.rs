@@ -124,6 +124,7 @@ pub struct SucceededTask {
     pub started_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub finished_at: OffsetDateTime,
+    pub canceled_by: Option<String>,
     pub index_uid: Option<String>,
     #[serde(flatten)]
     pub update_type: TaskType,
