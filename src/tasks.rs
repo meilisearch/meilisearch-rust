@@ -52,6 +52,7 @@ pub struct DocumentAdditionOrUpdate {
 #[serde(rename_all = "camelCase")]
 pub struct DocumentDeletion {
     pub deleted_documents: Option<usize>,
+    pub matched_documents: usize,
 }
 
 #[derive(Debug, Clone, Deserialize)]
