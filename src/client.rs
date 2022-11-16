@@ -1022,14 +1022,6 @@ mod tests {
         id: String,
     }
 
-    // impl PartialEq<Map<String, Value>> for Document {
-    //     fn eq(&self, rhs: &Map<String, Value>) -> bool {
-    //         self.id.to_string() == rhs["id"]
-    //             && self.value == rhs["value"]
-    //             && self.kind == rhs["kind"]
-    //     }
-    // }
-
     #[meilisearch_test]
     async fn test_swapping_two_indexes(client: Client) {
         let index_1 = client.index("test_swapping_two_indexes_1");
@@ -1045,7 +1037,7 @@ mod tests {
             .await
             .unwrap();
 
-        let t1 = index_2
+        index_2
             .add_documents(
                 &[Document {
                     id: "2".to_string(),
