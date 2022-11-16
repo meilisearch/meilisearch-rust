@@ -19,9 +19,9 @@ pub struct Client {
     pub(crate) api_key: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SwapIndexes {
-    pub indexes: Vec<String>,
+    pub indexes: (String, String),
 }
 
 impl Client {
@@ -364,7 +364,7 @@ impl Client {
         &self,
         indexes: impl IntoIterator<Item = &SwapIndexes>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), &SwapIndexes, TaskInfo>(
+        request::<(), Vec<&SwapIndexes>, TaskInfo>(
             &format!("{}/swap-indexes", self.host),
             &self.api_key,
             Method::Post {
