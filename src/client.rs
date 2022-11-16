@@ -357,15 +357,15 @@ impl Client {
     /// let task = client
     /// .swap_indexes([&SwapIndexes {
     ///     indexes: (
-    ///         "test_swapping_two_indexes_1".to_string(),
-    ///         "test_swapping_two_indexes_2".to_string(),
+    ///         "swap_index_1".to_string(),
+    ///         "swap_index_2".to_string(),
     ///     ),
     /// }])
     /// .await
     /// .unwrap();
     ///
-    /// # client.index("task_index_1").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-    /// # client.index("task_index_2").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # client.index("swap_index_1").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # client.index("swap_index_2").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn swap_indexes(
