@@ -33,7 +33,7 @@ pub enum TaskType {
         details: Option<DumpCreation>,
     },
     TaskCancelation {
-        details: Option<DumpCreation>,
+        details: Option<TaskCancelation>,
     },
 }
 
