@@ -294,15 +294,11 @@ impl<'a> DocumentsQuery<'a> {
 
 #[cfg(test)]
 mod tests {
-    use serde::{Deserialize, Serialize};
-
-    use meilisearch_index_setting_macro::Document;
-    use meilisearch_test_macro::meilisearch_test;
-
-    use crate as meilisearch_sdk;
-    use crate::{client::*, indexes::*};
-
     use super::*;
+    use crate::{client::*, indexes::*};
+    use ::meilisearch_sdk::documents::Document;
+    use meilisearch_test_macro::meilisearch_test;
+    use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct MyObject {
@@ -446,5 +442,18 @@ mod tests {
             .await?;
 
         Ok(())
+    }
+    #[derive(Serialize, Deserialize, Document)]
+    struct Movie {
+        #[document(primary_key)]
+        movie_id: u64,
+        #[document(displayed, searchable)]
+        title: String,
+        #[document(displayed)]
+        description: String,
+        #[document(filterable, sortable, displayed)]
+        release_date: String,
+        #[document(filterable, displayed)]
+        genres: Vec<String>,
     }
 }

@@ -110,10 +110,10 @@ fn get_document_implementation(
         get_settings_token_for_string(&distinct_key_attribute, "with_distinct_attribute");
 
     quote! {
-        #[meilisearch_sdk::macro_helper::async_trait]
-        impl meilisearch_sdk::documents::Document for #struct_ident {
-            fn generate_settings() -> meilisearch_sdk::settings::Settings {
-            meilisearch_sdk::settings::Settings::new()
+        #[::meilisearch_sdk::macro_helper::async_trait]
+        impl ::meilisearch_sdk::documents::Document for #struct_ident {
+            fn generate_settings() -> ::meilisearch_sdk::settings::Settings {
+            ::meilisearch_sdk::settings::Settings::new()
             #display_attr_tokens
             #sortable_attr_tokens
             #filterable_attr_tokens
@@ -121,7 +121,7 @@ fn get_document_implementation(
             #distinct_attr_token
         }
 
-         async fn generate_index(client: &crate::client::Client) -> std::result::Result<crate::indexes::Index, crate::tasks::Task> {
+         async fn generate_index(client: &::meilisearch_sdk::client::Client) -> std::result::Result<::meilisearch_sdk::indexes::Index, ::meilisearch_sdk::tasks::Task> {
             return client.create_index(#index_name, #primary_key_token)
                 .await.unwrap()
                 .wait_for_completion(&client, ::std::option::Option::None, ::std::option::Option::None)
