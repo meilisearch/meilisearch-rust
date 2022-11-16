@@ -1,5 +1,61 @@
-use crate::{errors::Error, indexes::Index};
+use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+
+/// Derive the [`Document`](crate::documents::Document) trait.
+///
+/// ## Field attribute
+/// Use the `#[document(..)]` field attribute to generate the correct settings
+/// for each field. The available parameters are:
+/// - `primary_key` (can only be used once)
+/// - `distinct` (can only be used once)
+/// - `searchable`
+/// - `displayed`
+/// - `filterable`
+/// - `sortable`
+///
+/// ## Index name
+/// The name of the index will be the name of the struct converted to snake case.
+///
+/// ## Sample usage:
+/// ```
+/// use serde::{Serialize, Deserialize};
+/// use meilisearch_sdk::documents::Document;
+/// use meilisearch_sdk::settings::Settings;
+/// use meilisearch_sdk::indexes::Index;
+/// use meilisearch_sdk::client::Client;
+///
+/// #[derive(Serialize, Deserialize, Document)]
+/// struct Movie {
+///     #[document(primary_key)]
+///     movie_id: u64,
+///     #[document(displayed, searchable)]
+///     title: String,
+///     #[document(displayed)]
+///     description: String,
+///     #[document(filterable, sortable, displayed)]
+///     release_date: String,
+///     #[document(filterable, displayed)]
+///     genres: Vec<String>,
+/// }
+///
+/// async fn usage(client: Client) {
+///     // Default settings with the distinct, searchable, displayed, filterable, and sortable fields set correctly.
+///     let settings: Settings = Movie::generate_settings();
+///     // Index created with the name `movie` and the primary key set to `movie_id`
+///     let index: Index = Movie::generate_index(&client).await.unwrap();
+/// }
+/// ```
+pub use meilisearch_index_setting_macro::Document;
+
+use crate::settings::Settings;
+use crate::tasks::Task;
+use crate::{errors::Error, indexes::Index};
+
+#[async_trait]
+pub trait Document {
+    fn generate_settings() -> Settings;
+    async fn generate_index(client: &crate::client::Client) -> Result<Index, Task>;
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct DocumentsResults<T> {
@@ -238,15 +294,43 @@ impl<'a> DocumentsQuery<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{client::*, indexes::*};
-    use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
+
+    use meilisearch_index_setting_macro::Document;
+    use meilisearch_test_macro::meilisearch_test;
+
+    use crate as meilisearch_sdk;
+    use crate::{client::*, indexes::*};
+
+    use super::*;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct MyObject {
         id: Option<usize>,
         kind: String,
+    }
+
+    #[allow(unused)]
+    #[derive(Document)]
+    struct MovieClips {
+        #[document(primary_key)]
+        movie_id: u64,
+        #[document(distinct)]
+        owner: String,
+        #[document(displayed, searchable)]
+        title: String,
+        #[document(displayed)]
+        description: String,
+        #[document(filterable, sortable, displayed)]
+        release_date: String,
+        #[document(filterable, displayed)]
+        genres: Vec<String>,
+    }
+
+    #[allow(unused)]
+    #[derive(Document)]
+    struct VideoClips {
+        video_id: u64,
     }
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
@@ -297,6 +381,7 @@ mod tests {
 
         Ok(())
     }
+
     #[meilisearch_test]
     async fn test_get_documents_with_only_one_param(
         client: Client,
@@ -313,6 +398,52 @@ mod tests {
         assert_eq!(documents.limit, 1);
         assert_eq!(documents.offset, 0);
         assert_eq!(documents.results.len(), 1);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_settings_generated_by_macro(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let movie_settings: Settings = MovieClips::generate_settings();
+        let video_settings: Settings = VideoClips::generate_settings();
+
+        assert_eq!(movie_settings.searchable_attributes.unwrap(), ["title"]);
+        assert!(video_settings.searchable_attributes.unwrap().is_empty());
+
+        assert_eq!(
+            movie_settings.displayed_attributes.unwrap(),
+            ["title", "description", "release_date", "genres"]
+        );
+        assert!(video_settings.displayed_attributes.unwrap().is_empty());
+
+        assert_eq!(
+            movie_settings.filterable_attributes.unwrap(),
+            ["release_date", "genres"]
+        );
+        assert!(video_settings.filterable_attributes.unwrap().is_empty());
+
+        assert_eq!(
+            movie_settings.sortable_attributes.unwrap(),
+            ["release_date"]
+        );
+        assert!(video_settings.sortable_attributes.unwrap().is_empty());
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_generate_index(client: Client) -> Result<(), Error> {
+        let index: Index = MovieClips::generate_index(&client).await.unwrap();
+
+        assert_eq!(index.uid.to_string(), "movie_clips");
+
+        index
+            .delete()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
 
         Ok(())
     }
