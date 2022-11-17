@@ -4,6 +4,7 @@ use time::OffsetDateTime;
 
 use crate::{
     client::Client, errors::Error, errors::MeilisearchError, indexes::Index, settings::Settings,
+    task_info::TaskInfo, SwapIndexes,
 };
 
 #[derive(Debug, Clone, Deserialize)]
@@ -30,6 +31,15 @@ pub enum TaskType {
     },
     DumpCreation {
         details: Option<DumpCreation>,
+    },
+    IndexSwap {
+        details: Option<IndexSwap>,
+    },
+    TaskCancelation {
+        details: Option<TaskCancelation>,
+    },
+    TaskDeletion {
+        details: Option<TaskDeletion>,
     },
     SnapshotCreation {
         details: Option<SnapshotCreation>,
@@ -85,6 +95,28 @@ pub struct DumpCreation {
     pub dump_uid: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexSwap {
+    pub swaps: Vec<SwapIndexes>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskCancelation {
+    pub matched_tasks: usize,
+    pub canceled_tasks: usize,
+    pub original_filters: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskDeletion {
+    pub matched_tasks: usize,
+    pub deleted_tasks: usize,
+    pub original_filters: String,
+}
+
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FailedTask {
@@ -119,6 +151,7 @@ pub struct SucceededTask {
     pub started_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub finished_at: OffsetDateTime,
+    pub canceled_by: Option<usize>,
     pub index_uid: Option<String>,
     pub error: Option<MeilisearchError>,
     #[serde(flatten)]
@@ -409,76 +442,164 @@ impl AsRef<u32> for Task {
 }
 
 #[derive(Debug, Serialize, Clone)]
+pub struct TasksPaginationFilters {
+    // Maximum number of tasks to return
+    #[serde(skip_serializing_if = "Option::is_none")]
+    limit: Option<u32>,
+    // The first task uid that should be returned
+    #[serde(skip_serializing_if = "Option::is_none")]
+    from: Option<u32>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TasksCancelFilters {}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TasksDeleteFilters {}
+
+pub type TasksSearchQuery<'a> = TasksQuery<'a, TasksPaginationFilters>;
+pub type TasksCancelQuery<'a> = TasksQuery<'a, TasksCancelFilters>;
+pub type TasksDeleteQuery<'a> = TasksQuery<'a, TasksDeleteFilters>;
+
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct TasksQuery<'a> {
+pub struct TasksQuery<'a, T> {
     #[serde(skip_serializing)]
-    pub client: &'a Client,
+    client: &'a Client,
     // Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub index_uids: Option<Vec<&'a str>>,
+    index_uids: Option<Vec<&'a str>>,
     // Statuses array to only retrieve the tasks with these statuses.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub statuses: Option<Vec<&'a str>>,
+    statuses: Option<Vec<&'a str>>,
     // Types array to only retrieve the tasks with these [TaskType].
     #[serde(skip_serializing_if = "Option::is_none", rename = "types")]
-    pub task_types: Option<Vec<&'a str>>,
+    task_types: Option<Vec<&'a str>>,
     // Uids of the tasks to retrieve
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub uids: Option<Vec<&'a u32>>,
+    uids: Option<Vec<&'a u32>>,
     // Date to retrieve all tasks that were enqueued before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub before_enqueued_at: Option<OffsetDateTime>,
+    before_enqueued_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were enqueued after it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub after_enqueued_at: Option<OffsetDateTime>,
+    after_enqueued_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were started before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub before_started_at: Option<OffsetDateTime>,
+    before_started_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were started after it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub after_started_at: Option<OffsetDateTime>,
+    after_started_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were finished before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub before_finished_at: Option<OffsetDateTime>,
+    before_finished_at: Option<OffsetDateTime>,
     // Date to retrieve all tasks that were finished after it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
-    pub after_finished_at: Option<OffsetDateTime>,
-    // Maximum number of tasks to return
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub limit: Option<u32>,
-    // The first task uid that should be returned
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub from: Option<u32>,
+    after_finished_at: Option<OffsetDateTime>,
+
+    #[serde(flatten)]
+    pagination: T,
 }
 
 #[allow(missing_docs)]
-impl<'a> TasksQuery<'a> {
-    pub fn new(client: &'a Client) -> TasksQuery<'a> {
+impl<'a, T> TasksQuery<'a, T> {
+    pub fn with_index_uids<'b>(
+        &'b mut self,
+        index_uids: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.index_uids = Some(index_uids.into_iter().collect());
+        self
+    }
+    pub fn with_statuses<'b>(
+        &'b mut self,
+        statuses: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.statuses = Some(statuses.into_iter().collect());
+        self
+    }
+    pub fn with_types<'b>(
+        &'b mut self,
+        task_types: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.task_types = Some(task_types.into_iter().collect());
+        self
+    }
+    pub fn with_uids<'b>(
+        &'b mut self,
+        uids: impl IntoIterator<Item = &'a u32>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.uids = Some(uids.into_iter().collect());
+        self
+    }
+    pub fn with_before_enqueued_at<'b>(
+        &'b mut self,
+        before_enqueued_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.before_enqueued_at = Some(*before_enqueued_at);
+        self
+    }
+    pub fn with_after_enqueued_at<'b>(
+        &'b mut self,
+        after_enqueued_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.after_enqueued_at = Some(*after_enqueued_at);
+        self
+    }
+    pub fn with_before_started_at<'b>(
+        &'b mut self,
+        before_started_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.before_started_at = Some(*before_started_at);
+        self
+    }
+    pub fn with_after_started_at<'b>(
+        &'b mut self,
+        after_started_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.after_started_at = Some(*after_started_at);
+        self
+    }
+    pub fn with_before_finished_at<'b>(
+        &'b mut self,
+        before_finished_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.before_finished_at = Some(*before_finished_at);
+        self
+    }
+    pub fn with_after_finished_at<'b>(
+        &'b mut self,
+        after_finished_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.after_finished_at = Some(*after_finished_at);
+        self
+    }
+}
+
+impl<'a> TasksQuery<'a, TasksCancelFilters> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksCancelFilters> {
         TasksQuery {
             client,
             index_uids: None,
             statuses: None,
             task_types: None,
-            limit: None,
-            from: None,
             uids: None,
             before_enqueued_at: None,
             after_enqueued_at: None,
@@ -486,87 +607,72 @@ impl<'a> TasksQuery<'a> {
             after_started_at: None,
             before_finished_at: None,
             after_finished_at: None,
+            pagination: TasksCancelFilters {},
         }
     }
-    pub fn with_index_uids<'b>(
-        &'b mut self,
-        index_uids: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.index_uids = Some(index_uids.into_iter().collect());
-        self
+
+    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
+        self.client.cancel_tasks_with(self).await
     }
-    pub fn with_statuses<'b>(
-        &'b mut self,
-        statuses: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.statuses = Some(statuses.into_iter().collect());
-        self
-    }
-    pub fn with_types<'b>(
-        &'b mut self,
-        task_types: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.task_types = Some(task_types.into_iter().collect());
-        self
-    }
-    pub fn with_uids<'b>(
-        &'b mut self,
-        uids: impl IntoIterator<Item = &'a u32>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.uids = Some(uids.into_iter().collect());
-        self
-    }
-    pub fn with_before_enqueued_at<'b>(
-        &'b mut self,
-        before_enqueued_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.before_enqueued_at = Some(*before_enqueued_at);
-        self
-    }
-    pub fn with_after_enqueued_at<'b>(
-        &'b mut self,
-        after_enqueued_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.after_enqueued_at = Some(*after_enqueued_at);
-        self
-    }
-    pub fn with_before_started_at<'b>(
-        &'b mut self,
-        before_started_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.before_started_at = Some(*before_started_at);
-        self
-    }
-    pub fn with_after_started_at<'b>(
-        &'b mut self,
-        after_started_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.after_started_at = Some(*after_started_at);
-        self
-    }
-    pub fn with_before_finished_at<'b>(
-        &'b mut self,
-        before_finished_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.before_finished_at = Some(*before_finished_at);
-        self
-    }
-    pub fn with_after_finished_at<'b>(
-        &'b mut self,
-        after_finished_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a> {
-        self.after_finished_at = Some(*after_finished_at);
-        self
-    }
-    pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a> {
-        self.limit = Some(limit);
-        self
-    }
-    pub fn with_from<'b>(&'b mut self, from: u32) -> &'b mut TasksQuery<'a> {
-        self.from = Some(from);
-        self
+}
+
+impl<'a> TasksQuery<'a, TasksDeleteFilters> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksDeleteFilters> {
+        TasksQuery {
+            client,
+            index_uids: None,
+            statuses: None,
+            task_types: None,
+            uids: None,
+            before_enqueued_at: None,
+            after_enqueued_at: None,
+            before_started_at: None,
+            after_started_at: None,
+            before_finished_at: None,
+            after_finished_at: None,
+            pagination: TasksDeleteFilters {},
+        }
     }
 
+    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
+        self.client.delete_tasks_with(self).await
+    }
+}
+
+impl<'a> TasksQuery<'a, TasksPaginationFilters> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksPaginationFilters> {
+        TasksQuery {
+            client,
+            index_uids: None,
+            statuses: None,
+            task_types: None,
+            uids: None,
+            before_enqueued_at: None,
+            after_enqueued_at: None,
+            before_started_at: None,
+            after_started_at: None,
+            before_finished_at: None,
+            after_finished_at: None,
+            pagination: TasksPaginationFilters {
+                limit: None,
+                from: None,
+            },
+        }
+    }
+    pub fn with_limit<'b>(
+        &'b mut self,
+        limit: u32,
+    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters> {
+        self.pagination.limit = Some(limit);
+        self
+    }
+    pub fn with_from<'b>(
+        &'b mut self,
+        from: u32,
+    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters> {
+        self.pagination.from = Some(from);
+        self
+    }
     pub async fn execute(&'a self) -> Result<TasksResults, Error> {
         self.client.get_tasks_with(self).await
     }
@@ -748,7 +854,7 @@ mod test {
 
         let mock_res = mock("GET", path).with_status(200).create();
 
-        let mut query = TasksQuery::new(&client);
+        let mut query = TasksSearchQuery::new(&client);
         query
             .with_index_uids(["movies", "test"])
             .with_statuses(["equeued"])
@@ -811,7 +917,7 @@ mod test {
         )
         .unwrap();
 
-        let mut query = TasksQuery::new(&client);
+        let mut query = TasksSearchQuery::new(&client);
         query
             .with_before_enqueued_at(&before_enqueued_at)
             .with_after_enqueued_at(&after_enqueued_at)
@@ -834,7 +940,7 @@ mod test {
 
         let mock_res = mock("GET", path).with_status(200).create();
 
-        let mut query = TasksQuery::new(&client);
+        let mut query = TasksSearchQuery::new(&client);
         let _ = query
             .with_index_uids(["movies", "test"])
             .with_statuses(["equeued"])
@@ -842,14 +948,13 @@ mod test {
             .execute()
             .await;
 
-        // let _ = client.get_tasks(&query).await;
         mock_res.assert();
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_get_tasks_with_none_existant_index_uids(client: Client) -> Result<(), Error> {
-        let mut query = TasksQuery::new(&client);
+        let mut query = TasksSearchQuery::new(&client);
         query.with_index_uids(["no_name"]);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
@@ -859,7 +964,7 @@ mod test {
 
     #[meilisearch_test]
     async fn test_get_tasks_with_execute(client: Client) -> Result<(), Error> {
-        let tasks = TasksQuery::new(&client)
+        let tasks = TasksSearchQuery::new(&client)
             .with_index_uids(["no_name"])
             .execute()
             .await
@@ -879,6 +984,92 @@ mod test {
         let error = task.unwrap_failure();
         assert_eq!(error.error_code, ErrorCode::InvalidRankingRule);
         assert_eq!(error.error_type, ErrorType::InvalidRequest);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_cancel_tasks_with_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path =
+            "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = mock("POST", path).with_status(200).create();
+
+        let mut query = TasksCancelQuery::new(&client);
+        query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1]);
+
+        let _ = client.cancel_tasks_with(&query).await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_cancel_tasks_with_params_execute() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path =
+            "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = mock("POST", path).with_status(200).create();
+
+        let mut query = TasksCancelQuery::new(&client);
+        let _ = query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1])
+            .execute()
+            .await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_tasks_with_params() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = mock("DELETE", path).with_status(200).create();
+
+        let mut query = TasksDeleteQuery::new(&client);
+        query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1]);
+
+        let _ = client.delete_tasks_with(&query).await;
+
+        mock_res.assert();
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_tasks_with_params_execute() -> Result<(), Error> {
+        let mock_server_url = &mockito::server_url();
+        let client = Client::new(mock_server_url, "masterKey");
+        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = mock("DELETE", path).with_status(200).create();
+
+        let mut query = TasksDeleteQuery::new(&client);
+        let _ = query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1])
+            .execute()
+            .await;
+
+        mock_res.assert();
         Ok(())
     }
 }
