@@ -860,7 +860,6 @@ impl Client {
     /// let tasks = client.get_tasks().await.unwrap();
     ///
     /// # assert!(tasks.results.len() > 0);
-    /// # client.index("get_tasks").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
