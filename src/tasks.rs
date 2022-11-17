@@ -475,6 +475,7 @@ mod test {
         client::*,
         errors::{ErrorCode, ErrorType},
     };
+    use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use mockito::mock;
     use serde::{Deserialize, Serialize};
@@ -600,12 +601,12 @@ mod test {
                     Document {
                         id: 0,
                         kind: "title".into(),
-                        value: "The Social Network".to_string(),
+                        value: S("The Social Network"),
                     },
                     Document {
                         id: 1,
                         kind: "title".into(),
-                        value: "Harry Potter and the Sorcerer's Stone".to_string(),
+                        value: S("Harry Potter and the Sorcerer's Stone"),
                     },
                 ],
                 None,
