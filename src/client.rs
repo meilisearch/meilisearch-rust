@@ -334,7 +334,7 @@ impl Client {
         self.list_all_indexes_raw_with(indexes_query).await
     }
 
-    /// Swaps a list of [Index] tuples.
+    /// Swaps a list of two [Index]'es.
     ///
     /// # Example
     ///
