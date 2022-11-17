@@ -4,7 +4,7 @@ use time::OffsetDateTime;
 
 use crate::{
     client::Client, errors::Error, errors::MeilisearchError, indexes::Index, settings::Settings,
-    task_info::TaskInfo,
+    task_info::TaskInfo, SwapIndexes,
 };
 
 #[derive(Debug, Clone, Deserialize)]
@@ -31,6 +31,9 @@ pub enum TaskType {
     },
     DumpCreation {
         details: Option<DumpCreation>,
+    },
+    IndexSwap {
+        details: Option<IndexSwap>,
     },
     TaskCancelation {
         details: Option<TaskCancelation>,
@@ -90,6 +93,12 @@ pub struct SnapshotCreation {}
 #[serde(rename_all = "camelCase")]
 pub struct DumpCreation {
     pub dump_uid: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexSwap {
+    pub swaps: Vec<SwapIndexes>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
