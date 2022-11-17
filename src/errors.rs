@@ -139,6 +139,7 @@ pub enum ErrorCode {
     MissingAuthorizationHeader,
     TaskNotFound,
     DumpNotFound,
+    MssingMasterKey,
     NoSpaceLeftOnDevice,
     PayloadTooLarge,
     UnretrievableDocument,

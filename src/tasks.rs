@@ -255,6 +255,7 @@ impl Task {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[allow(clippy::result_large_err)] // Since `self` has been consumed, this is not an issue
     pub fn try_make_index(self, client: &Client) -> Result<Index, Self> {
         match self {
             Self::Succeeded {
