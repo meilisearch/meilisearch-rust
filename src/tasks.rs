@@ -31,6 +31,9 @@ pub enum TaskType {
     DumpCreation {
         details: Option<DumpCreation>,
     },
+    SnapshotCreation {
+        details: Option<SnapshotCreation>,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -71,6 +74,10 @@ pub struct IndexUpdate {
 pub struct IndexDeletion {
     pub deleted_documents: Option<usize>,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnapshotCreation {}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -249,6 +256,7 @@ impl Task {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[allow(clippy::result_large_err)] // Since `self` has been consumed, this is not an issue
     pub fn try_make_index(self, client: &Client) -> Result<Index, Self> {
         match self {
             Self::Succeeded {
