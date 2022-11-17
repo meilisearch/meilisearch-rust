@@ -87,7 +87,7 @@ pub struct DumpCreation {
 pub struct TaskCancelation {
     pub matched_tasks: usize,
     pub canceled_tasks: usize,
-    pub original_filters: usize,
+    pub original_filters: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
