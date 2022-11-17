@@ -31,6 +31,9 @@ pub enum TaskType {
     DumpCreation {
         details: Option<DumpCreation>,
     },
+    SnapshotCreation {
+        details: Option<SnapshotCreation>,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -71,6 +74,10 @@ pub struct IndexUpdate {
 pub struct IndexDeletion {
     pub deleted_documents: Option<usize>,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnapshotCreation {}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
