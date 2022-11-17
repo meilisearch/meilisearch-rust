@@ -490,30 +490,30 @@ pub struct TasksQuery<'a, T> {
 impl<'a, T> TasksQuery<'a, T> {
     pub fn with_index_uids<'b>(
         &'b mut self,
-        index_uids: impl IntoIterator<Item = &'a str>,
+        index_uid: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a, T> {
-        self.index_uids = Some(index_uids.into_iter().collect());
+        self.index_uids = Some(index_uid.into_iter().collect());
         self
     }
     pub fn with_statuses<'b>(
         &'b mut self,
-        statuses: impl IntoIterator<Item = &'a str>,
+        status: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a, T> {
-        self.statuses = Some(statuses.into_iter().collect());
+        self.statuses = Some(status.into_iter().collect());
         self
     }
     pub fn with_types<'b>(
         &'b mut self,
-        task_types: impl IntoIterator<Item = &'a str>,
+        task_type: impl IntoIterator<Item = &'a str>,
     ) -> &'b mut TasksQuery<'a, T> {
-        self.task_types = Some(task_types.into_iter().collect());
+        self.task_types = Some(task_type.into_iter().collect());
         self
     }
     pub fn with_uids<'b>(
         &'b mut self,
-        uids: impl IntoIterator<Item = &'a u32>,
+        index_uid: impl IntoIterator<Item = &'a u32>,
     ) -> &'b mut TasksQuery<'a, T> {
-        self.uids = Some(uids.into_iter().collect());
+        self.uids = Some(index_uid.into_iter().collect());
         self
     }
     pub fn with_before_enqueued_at<'b>(
