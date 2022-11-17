@@ -4,10 +4,10 @@ use crate::{
     key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
     request::*,
     task_info::TaskInfo,
-    tasks::{Task, TasksCancelQuery, TasksResults, TasksSearchQuery},
+    tasks::{Task, TasksCancelQuery, TasksDeleteQuery, TasksResults, TasksSearchQuery},
     utils::async_sleep,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{collections::HashMap, time::Duration};
 use time::OffsetDateTime;
@@ -17,6 +17,11 @@ use time::OffsetDateTime;
 pub struct Client {
     pub(crate) host: String,
     pub(crate) api_key: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SwapIndexes {
+    pub indexes: (String, String),
 }
 
 impl Client {
@@ -327,6 +332,56 @@ impl Client {
         indexes_query: &IndexesQuery<'_>,
     ) -> Result<Value, Error> {
         self.list_all_indexes_raw_with(indexes_query).await
+    }
+
+    /// Swaps a list of two [Index]'es.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// // Create the client
+    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    ///
+    /// let task_index_1 = client.create_index("swap_index_1", None).await.unwrap();
+    /// let task_index_2 = client.create_index("swap_index_2", None).await.unwrap();
+    ///
+    /// // Wait for the task to complete
+    /// task_index_2.wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let task = client
+    /// .swap_indexes([&SwapIndexes {
+    ///     indexes: (
+    ///         "swap_index_1".to_string(),
+    ///         "swap_index_2".to_string(),
+    ///     ),
+    /// }])
+    /// .await
+    /// .unwrap();
+    ///
+    /// # client.index("swap_index_1").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # client.index("swap_index_2").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn swap_indexes(
+        &self,
+        indexes: impl IntoIterator<Item = &SwapIndexes>,
+    ) -> Result<TaskInfo, Error> {
+        request::<(), Vec<&SwapIndexes>, TaskInfo>(
+            &format!("{}/swap-indexes", self.host),
+            &self.api_key,
+            Method::Post {
+                query: (),
+                body: indexes.into_iter().collect(),
+            },
+            202,
+        )
+        .await
     }
 
     /// Get stats of all indexes.
@@ -788,7 +843,7 @@ impl Client {
     /// # let client = client::Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     ///
     /// let mut query = tasks::TasksCancelQuery::new(&client);
-    /// query.with_index_uids(["get_tasks_with"]);
+    /// query.with_index_uids(["movies"]);
     ///
     /// let res = client.cancel_tasks_with(&query).await.unwrap();
     /// # });
@@ -804,6 +859,40 @@ impl Client {
                 query: filters,
                 body: (),
             },
+            200,
+        )
+        .await?;
+
+        Ok(tasks)
+    }
+
+    /// Delete tasks with filters [TasksDeleteQuery]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::*;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = client::Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    ///
+    /// let mut query = tasks::TasksDeleteQuery::new(&client);
+    /// query.with_index_uids(["movies"]);
+    ///
+    /// let res = client.delete_tasks_with(&query).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn delete_tasks_with(
+        &self,
+        filters: &TasksDeleteQuery<'_>,
+    ) -> Result<TaskInfo, Error> {
+        let tasks = request::<&TasksDeleteQuery, (), TaskInfo>(
+            &format!("{}/tasks", self.host),
+            &self.api_key,
+            Method::Delete { query: filters },
             200,
         )
         .await?;
@@ -926,6 +1015,59 @@ mod tests {
     use mockito::mock;
     use std::mem;
     use time::OffsetDateTime;
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Document {
+        id: String,
+    }
+
+    #[meilisearch_test]
+    async fn test_swapping_two_indexes(client: Client) {
+        let index_1 = client.index("test_swapping_two_indexes_1");
+        let index_2 = client.index("test_swapping_two_indexes_2");
+
+        let t0 = index_1
+            .add_documents(
+                &[Document {
+                    id: "1".to_string(),
+                }],
+                None,
+            )
+            .await
+            .unwrap();
+
+        index_2
+            .add_documents(
+                &[Document {
+                    id: "2".to_string(),
+                }],
+                None,
+            )
+            .await
+            .unwrap();
+
+        t0.wait_for_completion(&client, None, None).await.unwrap();
+
+        let task = client
+            .swap_indexes([&SwapIndexes {
+                indexes: (
+                    "test_swapping_two_indexes_1".to_string(),
+                    "test_swapping_two_indexes_2".to_string(),
+                ),
+            }])
+            .await
+            .unwrap();
+        task.wait_for_completion(&client, None, None).await.unwrap();
+
+        let document = index_1.get_document("2").await.unwrap();
+
+        assert_eq!(
+            Document {
+                id: "2".to_string()
+            },
+            document
+        );
+    }
 
     #[meilisearch_test]
     async fn test_methods_has_qualified_version_as_header() {
