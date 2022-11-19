@@ -433,7 +433,7 @@ mod tests {
     async fn test_generate_index(client: Client) -> Result<(), Error> {
         let index: Index = MovieClips::generate_index(&client).await.unwrap();
 
-        assert_eq!(index.uid.to_string(), "movie_clips");
+        assert_eq!(index.uid, "movie_clips");
 
         index
             .delete()

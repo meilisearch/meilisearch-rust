@@ -1146,7 +1146,7 @@ mod tests {
             .try_make_index(&client)
             .unwrap();
 
-        assert_eq!(index.uid.to_string(), index_uid);
+        assert_eq!(index.uid, index_uid);
         index
             .delete()
             .await?
