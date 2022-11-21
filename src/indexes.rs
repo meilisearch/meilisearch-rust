@@ -1565,6 +1565,7 @@ pub struct IndexesResults {
 mod tests {
     use super::*;
 
+    use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde_json::json;
 
@@ -1583,7 +1584,7 @@ mod tests {
         });
 
         let idx = Index {
-            uid: "test_from_value".to_string(),
+            uid: S("test_from_value"),
             primary_key: None,
             created_at: Some(t),
             updated_at: Some(t),

@@ -387,6 +387,7 @@ impl<'a> SearchQuery<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{client::*, search::*};
+    use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{json, Map, Value};
@@ -414,16 +415,16 @@ mod tests {
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
         let t0 = index.add_documents(&[
-            Document { id: 0, kind: "text".into(), value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string(), nested: Nested { child: "first".to_string() } },
-            Document { id: 1, kind: "text".into(), value: "dolor sit amet, consectetur adipiscing elit".to_string(), nested: Nested { child: "second".to_string() } },
-            Document { id: 2, kind: "title".into(), value: "The Social Network".to_string(), nested: Nested { child: "third".to_string() } },
-            Document { id: 3, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string(), nested: Nested { child: "fourth".to_string() } },
-            Document { id: 4, kind: "title".into(), value: "Harry Potter and the Chamber of Secrets".to_string(), nested: Nested { child: "fift".to_string() } },
-            Document { id: 5, kind: "title".into(), value: "Harry Potter and the Prisoner of Azkaban".to_string(), nested: Nested { child: "sixth".to_string() } },
-            Document { id: 6, kind: "title".into(), value: "Harry Potter and the Goblet of Fire".to_string(), nested: Nested { child: "seventh".to_string() } },
-            Document { id: 7, kind: "title".into(), value: "Harry Potter and the Order of the Phoenix".to_string(), nested: Nested { child: "eighth".to_string() } },
-            Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string(), nested: Nested { child: "ninth".to_string() } },
-            Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string(), nested: Nested { child: "tenth".to_string() } },
+            Document { id: 0, kind: "text".into(), value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") } },
+            Document { id: 1, kind: "text".into(), value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") } },
+            Document { id: 2, kind: "title".into(), value: S("The Social Network"), nested: Nested { child: S("third") } },
+            Document { id: 3, kind: "title".into(), value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") } },
+            Document { id: 4, kind: "title".into(), value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") } },
+            Document { id: 5, kind: "title".into(), value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") } },
+            Document { id: 6, kind: "title".into(), value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") } },
+            Document { id: 7, kind: "title".into(), value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") } },
+            Document { id: 8, kind: "title".into(), value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") } },
+            Document { id: 9, kind: "title".into(), value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") } },
         ], None).await?;
         let t1 = index.set_filterable_attributes(["kind", "value"]).await?;
         let t2 = index.set_sortable_attributes(["title"]).await?;
@@ -442,7 +443,7 @@ mod tests {
 
         let res = query.execute::<Document>().await.unwrap();
 
-        assert_eq!(res.query, "space".to_string());
+        assert_eq!(res.query, S("space"));
         assert_eq!(res.limit, 21);
         assert_eq!(res.offset, 42);
         Ok(())
@@ -467,11 +468,9 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 1,
-                value: "dolor sit amet, consectetur adipiscing elit".to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "second".to_string()
-                }
+                value: S("dolor sit amet, consectetur adipiscing elit"),
+                kind: S("text"),
+                nested: Nested { child: S("second") }
             },
             &results.hits[0].result
         );
@@ -619,12 +618,9 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do…"
-                    .to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do…"),
+                kind: S("text"),
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -636,11 +632,9 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet…".to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("Lorem ipsum dolor sit amet…"),
+                kind: S("text"),
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -658,9 +652,9 @@ mod tests {
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(&Document {
             id: 0,
-            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string(),
-            kind: "text".to_string(),
-            nested: Nested { child: "first".to_string() }
+            value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
+            kind: S("text"),
+            nested: Nested { child: S("first") }
         },
         results.hits[0].formatted_result.as_ref().unwrap());
 
@@ -672,11 +666,9 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet…".to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("Lorem ipsum dolor sit amet…"),
+                kind: S("text"),
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -698,11 +690,9 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: "(ꈍᴗꈍ) sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)".to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("(ꈍᴗꈍ) sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)"),
+                kind: S("text"),
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -726,11 +716,9 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 2,
-                value: "The (⊃｡•́‿•̀｡)⊃ Social ⊂(´• ω •`⊂) Network".to_string(),
-                kind: "title".to_string(),
-                nested: Nested {
-                    child: "third".to_string()
-                }
+                value: S("The (⊃｡•́‿•̀｡)⊃ Social ⊂(´• ω •`⊂) Network"),
+                kind: S("title"),
+                nested: Nested { child: S("third") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -749,11 +737,9 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 1,
-                value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
-                kind: "<em>text</em>".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("<em>dolor</em> sit amet, consectetur adipiscing elit"),
+                kind: S("<em>text</em>"),
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap(),
         );
@@ -765,11 +751,9 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 1,
-                value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("<em>dolor</em> sit amet, consectetur adipiscing elit"),
+                kind: S("text"),
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );

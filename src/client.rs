@@ -1,3 +1,9 @@
+use std::{collections::HashMap, time::Duration};
+
+use serde::Deserialize;
+use serde_json::{json, Value};
+use time::OffsetDateTime;
+
 use crate::{
     errors::*,
     indexes::*,
@@ -7,10 +13,6 @@ use crate::{
     tasks::{Task, TasksQuery, TasksResults},
     utils::async_sleep,
 };
-use serde::Deserialize;
-use serde_json::{json, Value};
-use std::{collections::HashMap, time::Duration};
-use time::OffsetDateTime;
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
@@ -881,14 +883,18 @@ pub struct Version {
 
 #[cfg(test)]
 mod tests {
+    use std::mem;
+
+    use big_s::S;
+    use mockito::mock;
+    use time::OffsetDateTime;
+
+    use meilisearch_test_macro::meilisearch_test;
+
     use crate::{
         client::*,
         key::{Action, KeyBuilder},
     };
-    use meilisearch_test_macro::meilisearch_test;
-    use mockito::mock;
-    use std::mem;
-    use time::OffsetDateTime;
 
     #[meilisearch_test]
     async fn test_methods_has_qualified_version_as_header() {
@@ -1000,7 +1006,6 @@ mod tests {
     }
 
     #[meilisearch_test]
-
     async fn test_error_delete_key(mut client: Client, name: String) {
         // ==> accessing a key that does not exist
         let error = client.delete_key("invalid_key").await.unwrap_err();
@@ -1065,7 +1070,7 @@ mod tests {
             key.expires_at.unwrap().unix_timestamp(),
             expires_at.unix_timestamp()
         );
-        assert_eq!(key.indexes, vec!["*".to_string()]);
+        assert_eq!(key.indexes, vec![S("*")]);
 
         client.delete_key(key).await.unwrap();
     }
@@ -1120,7 +1125,7 @@ mod tests {
         key.with_name("test_update_key");
         let mut key = client.create_key(key).await.unwrap();
 
-        let name = "new name".to_string();
+        let name = S("new name");
         key.with_description(&description);
         key.with_name(&name);
 
@@ -1141,7 +1146,7 @@ mod tests {
             .try_make_index(&client)
             .unwrap();
 
-        assert_eq!(index.uid.to_string(), index_uid);
+        assert_eq!(index.uid, index_uid);
         index
             .delete()
             .await?
