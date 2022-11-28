@@ -449,7 +449,8 @@ impl Index {
     ///
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    /// let movie_index = client.index("get_documents");
+    ///
+    /// let movie_index = client.index("get_documents_with");
     ///
     /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
@@ -938,8 +939,8 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
-        let mut query = TasksQuery::new(&self.client);
-        query.with_index_uid([self.uid.as_str()]);
+        let mut query = TasksSearchQuery::new(&self.client);
+        query.with_index_uids([self.uid.as_str()]);
 
         self.client.get_tasks_with(&query).await
     }
@@ -959,8 +960,8 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     /// # let index = client.create_index("get_tasks_with", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
-    /// let mut query = TasksQuery::new(&client);
-    /// query.with_index_uid(["none_existant"]);
+    /// let mut query = TasksSearchQuery::new(&client);
+    /// query.with_index_uids(["none_existant"]);
     /// let tasks = index.get_tasks_with(&query).await.unwrap();
     ///
     /// assert!(tasks.results.len() > 0);
@@ -969,10 +970,10 @@ impl Index {
     /// ```
     pub async fn get_tasks_with(
         &self,
-        tasks_query: &TasksQuery<'_>,
+        tasks_query: &TasksQuery<'_, TasksPaginationFilters>,
     ) -> Result<TasksResults, Error> {
         let mut query = tasks_query.clone();
-        query.with_index_uid([self.uid.as_str()]);
+        query.with_index_uids([self.uid.as_str()]);
 
         self.client.get_tasks_with(&query).await
     }
