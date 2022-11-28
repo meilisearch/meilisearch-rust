@@ -64,6 +64,7 @@ pub struct DocumentAdditionOrUpdate {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentDeletion {
+    pub provided_ids: Option<usize>,
     pub deleted_documents: Option<usize>,
 }
 
@@ -106,7 +107,7 @@ pub struct IndexSwap {
 pub struct TaskCancelation {
     pub matched_tasks: usize,
     pub canceled_tasks: usize,
-    pub original_filters: String,
+    pub original_filter: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -114,7 +115,7 @@ pub struct TaskCancelation {
 pub struct TaskDeletion {
     pub matched_tasks: usize,
     pub deleted_tasks: usize,
-    pub original_filters: String,
+    pub original_filter: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
