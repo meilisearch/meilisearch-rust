@@ -479,6 +479,9 @@ pub struct TasksQuery<'a, T> {
     // Uids of the tasks to retrieve
     #[serde(skip_serializing_if = "Option::is_none")]
     uids: Option<Vec<&'a u32>>,
+    // Uids of the tasks that canceled other tasks
+    #[serde(skip_serializing_if = "Option::is_none")]
+    canceled_by: Option<Vec<&'a u32>>,
     // Date to retrieve all tasks that were enqueued before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
@@ -592,6 +595,13 @@ impl<'a, T> TasksQuery<'a, T> {
         self.after_finished_at = Some(*after_finished_at);
         self
     }
+    pub fn with_canceled_by<'b>(
+        &'b mut self,
+        task_uids: impl IntoIterator<Item = &'a u32>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.canceled_by = Some(task_uids.into_iter().collect());
+        self
+    }
 }
 
 impl<'a> TasksQuery<'a, TasksCancelFilters> {
@@ -602,6 +612,7 @@ impl<'a> TasksQuery<'a, TasksCancelFilters> {
             statuses: None,
             task_types: None,
             uids: None,
+            canceled_by: None,
             before_enqueued_at: None,
             after_enqueued_at: None,
             before_started_at: None,
@@ -625,6 +636,7 @@ impl<'a> TasksQuery<'a, TasksDeleteFilters> {
             statuses: None,
             task_types: None,
             uids: None,
+            canceled_by: None,
             before_enqueued_at: None,
             after_enqueued_at: None,
             before_started_at: None,
@@ -648,6 +660,7 @@ impl<'a> TasksQuery<'a, TasksPaginationFilters> {
             statuses: None,
             task_types: None,
             uids: None,
+            canceled_by: None,
             before_enqueued_at: None,
             after_enqueued_at: None,
             before_started_at: None,
@@ -938,7 +951,8 @@ mod test {
     async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
         let mock_server_url = &mockito::server_url();
         let client = Client::new(mock_server_url, "masterKey");
-        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion";
+        let path =
+            "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&canceledBy=9";
 
         let mock_res = mock("GET", path).with_status(200).create();
 
@@ -947,6 +961,7 @@ mod test {
             .with_index_uids(["movies", "test"])
             .with_statuses(["equeued"])
             .with_types(["documentDeletion"])
+            .with_canceled_by([&9])
             .execute()
             .await;
 
