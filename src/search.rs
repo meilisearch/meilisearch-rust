@@ -53,11 +53,19 @@ pub struct SearchResults<T> {
     /// Results of the query
     pub hits: Vec<SearchResult<T>>,
     /// Number of documents skipped
-    pub offset: usize,
+    pub offset: Option<usize>,
     /// Number of results returned
-    pub limit: usize,
-    /// Total number of matches
-    pub estimated_total_hits: usize,
+    pub limit: Option<usize>,
+    /// Estimated total number of matches
+    pub estimated_total_hits: Option<usize>,
+    // Current page number
+    pub page: Option<usize>,
+    // Maximum number of hits in a page
+    pub hits_per_page: Option<usize>,
+    // Exhaustive number of matches
+    pub total_hits: Option<usize>,
+    // Exhaustive number of pages
+    pub total_pages: Option<usize>,
     /// Distribution of the given facets
     pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
     /// Processing time of the query
@@ -150,7 +158,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///     .await
 ///     .unwrap();
 ///
-/// assert_eq!(res.limit, 21);
+/// assert_eq!(res.limit, Some(21));
 /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 /// # });
 /// ```
@@ -193,6 +201,17 @@ pub struct SearchQuery<'a> {
     /// Default: `20`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
+    /// The page number on which you paginate.
+    /// Pagination starts at 1. If page is 0, no results are returned.
+    ///
+    /// Default: None unless `hits_per_page` is defined, in which case page is `1`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page: Option<usize>,
+    /// The maximum number of results in a page. A page can contain less results than the number of hits_per_page.
+    ///
+    /// Default: None unless `page` is defined, in which case `20`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hits_per_page: Option<usize>,
     /// Filter applied to documents.
     /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -270,6 +289,8 @@ impl<'a> SearchQuery<'a> {
             query: None,
             offset: None,
             limit: None,
+            page: None,
+            hits_per_page: None,
             filter: None,
             sort: None,
             facets: None,
@@ -295,6 +316,65 @@ impl<'a> SearchQuery<'a> {
     }
     pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut SearchQuery<'a> {
         self.limit = Some(limit);
+        self
+    }
+    /// Add the page number on which to paginate.
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    /// # client.create_index("search_with_page", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # let mut index = client.index("search_with_page");
+    /// let mut query = SearchQuery::new(&index);
+    /// query.with_query("").with_page(2);
+    ///
+    /// let res = query.execute::<Movie>().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_page<'b>(&'b mut self, page: usize) -> &'b mut SearchQuery<'a> {
+        self.page = Some(page);
+        self
+    }
+
+    /// Add the maximum number of results per page.
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    /// # client.create_index("search_with_hits_per_page", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # let mut index = client.index("search_with_hits_per_page");
+    /// let mut query = SearchQuery::new(&index);
+    /// query.with_query("").with_hits_per_page(2);
+    ///
+    /// let res = query.execute::<Movie>().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_hits_per_page<'b>(&'b mut self, hits_per_page: usize) -> &'b mut SearchQuery<'a> {
+        self.hits_per_page = Some(hits_per_page);
         self
     }
     pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a> {
@@ -444,8 +524,25 @@ mod tests {
         let res = query.execute::<Document>().await.unwrap();
 
         assert_eq!(res.query, S("space"));
-        assert_eq!(res.limit, 21);
-        assert_eq!(res.offset, 42);
+        assert_eq!(res.limit, Some(21));
+        assert_eq!(res.offset, Some(42));
+        assert_eq!(res.estimated_total_hits, Some(0));
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_numbered_pagination(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("").with_page(2).with_hits_per_page(2);
+
+        let res = query.execute::<Document>().await.unwrap();
+
+        assert_eq!(res.page, Some(2));
+        assert_eq!(res.hits_per_page, Some(2));
+        assert_eq!(res.total_hits, Some(10));
+        assert_eq!(res.total_pages, Some(5));
         Ok(())
     }
 
@@ -484,6 +581,27 @@ mod tests {
 
         let results: SearchResults<Document> = index.search().with_limit(5).execute().await?;
         assert_eq!(results.hits.len(), 5);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_page(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results: SearchResults<Document> = index.search().with_page(2).execute().await?;
+        assert_eq!(results.page, Some(2));
+        assert_eq!(results.hits_per_page, Some(20));
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_hits_per_page(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results: SearchResults<Document> =
+            index.search().with_hits_per_page(2).execute().await?;
+        assert_eq!(results.page, Some(1));
+        assert_eq!(results.hits_per_page, Some(2));
         Ok(())
     }
 

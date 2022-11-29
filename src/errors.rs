@@ -139,6 +139,7 @@ pub enum ErrorCode {
     MissingAuthorizationHeader,
     TaskNotFound,
     DumpNotFound,
+    MssingMasterKey,
     NoSpaceLeftOnDevice,
     PayloadTooLarge,
     UnretrievableDocument,
@@ -156,6 +157,12 @@ pub enum ErrorCode {
     InvalidApiKeyIndexes,
     InvalidApiKeyExpiresAt,
     ApiKeyNotFound,
+    InvalidTaskTypesFilter,
+    InvalidTaskStatusesFilter,
+    InvalidTaskCanceledByFilter,
+    InvalidTaskUidsFilter,
+    InvalidTaskDateFilter,
+    MissingTaskFilters,
 
     /// That's unexpected. Please open a GitHub issue after ensuring you are
     /// using the supported version of the Meilisearch server.

@@ -132,14 +132,14 @@ get_all_tasks_1: |-
     .await
     .unwrap();
 get_all_tasks_paginating_1: |-
-  let mut query = TasksQuery::new(&client)
+  let mut query = TasksSearchQuery::new(&client)
       .with_limit(2)
       .with_from(10)
       .execute()
       .await
       .unwrap();
 get_all_tasks_paginating_2: |-
-  let mut query = TasksQuery::new(&client)
+  let mut query = TasksSearchQuery::new(&client)
       .with_limit(2)
       .from(8)
       .execute()
@@ -898,7 +898,7 @@ primary_field_guide_add_document_primary_key: |-
 getting_started_add_documents_md: |-
   ```toml
     [dependencies]
-    meilisearch-sdk = "0.20"
+    meilisearch-sdk = "0.21"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
