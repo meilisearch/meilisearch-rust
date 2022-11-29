@@ -199,10 +199,10 @@ async_guide_filter_by_index_uids_1: |-
     .execute()
     .await
     .unwrap();
-async_guide_canceled_by: |-
+async_guide_canceled_by_1: |-
   let mut query = TasksQuery::new(&client);
   let tasks = query
-    .with_canceled_by([9])
+    .with_canceled_by([9, 15])
     .execute()
     .await
     .unwrap();
