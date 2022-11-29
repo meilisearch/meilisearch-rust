@@ -3,6 +3,16 @@
 # the documentation on build
 # You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
 ---
+delete_tasks_1: |-
+  let mut query = tasks::TasksDeleteQuery::new(&client);
+  query.with_uids([1, 2]);
+
+  let res = client.delete_tasks_with(&query).await.unwrap();
+cancel_tasks_1: |-
+  let mut query = tasks::TasksCancelQuery::new(&client);
+  query.with_uids([1, 2]);
+
+  let res = client.cancel_task_with(&query).await.unwrap();
 get_one_index_1: |-
   let movies: Index = client
     .get_index("movies")
@@ -29,6 +39,19 @@ delete_an_index_1: |-
     .delete()
     .await
     .unwrap();
+swap_indexes_1: |-
+  client.swap_indexes([
+    &SwapIndexes {
+      indexes: (
+          "indexA".to_string(),
+          "indexB".to_string(),
+      ),
+    }, &SwapIndexes {
+      indexes: (
+          "indexX".to_string(),
+          "indexY".to_string(),
+      ),
+  }])
 get_one_document_1: |-
   let index = client
     .index("movies");
@@ -108,19 +131,6 @@ get_all_tasks_1: |-
     .get_tasks()
     .await
     .unwrap();
-get_all_tasks_filtering_1: |-
-  let mut query = TasksSearchQuery::new(&client)
-      .with_index_uids(["movies"])
-      .execute()
-      .await
-      .unwrap();
-get_all_tasks_filtering_2: |-
-  let mut query = TasksSearchQuery::new(&client)
-      .with_statuses(["succeeded", "failed"])
-      .with_types(["documentAdditionOrUpdate"])
-      .execute()
-      .await
-      .unwrap();
 get_all_tasks_paginating_1: |-
   let mut query = TasksSearchQuery::new(&client)
       .with_limit(2)
@@ -138,6 +148,62 @@ get_all_tasks_paginating_2: |-
 get_task_1: |-
   let task: Task = client
     .get_task(1)
+    .await
+    .unwrap();
+async_guide_filter_by_date_1: |-
+  let date = OffsetDateTime::parse(
+      "2020-10-11T11:49:53.000Z",
+      &::time::format_description::well_known::Rfc3339,
+  )
+
+  let mut query = TasksQuery::new(&client);
+  let tasks = query
+    .with_after_enqueued_at(&date)
+    .execute()
+    .await
+    .unwrap();
+async_guide_multiple_filters_1: |-
+  let mut query = TasksQuery::new(&client);
+  let tasks = query
+    .with_index_uids(["movies"])
+    .with_types(["documentAdditionOrUpdate","documentDeletion"])
+    .with_statuses(["processing"])
+    .execute()
+    .await
+    .unwrap();
+async_guide_filter_by_ids_1: |-
+  let mut query = TasksQuery::new(&client);
+  let tasks = query
+    .with_uids([5, 10, 13])
+    .execute()
+    .await
+    .unwrap();
+async_guide_filter_by_statuses_1: |-
+  let mut query = TasksQuery::new(&client);
+  let tasks = query
+    .with_statuses(["failed", "canceled"])
+    .execute()
+    .await
+    .unwrap();
+async_guide_filter_by_types_1: |-
+  let mut query = TasksQuery::new(&client);
+  let tasks = query
+    .with_types(["dumpCreation", "indexSwap"])
+    .execute()
+    .await
+    .unwrap();
+async_guide_filter_by_index_uids_1: |-
+  let mut query = TasksQuery::new(&client);
+  let tasks = query
+    .with_index_uids(["movies"])
+    .execute()
+    .await
+    .unwrap();
+async_guide_canceled_by: |-
+  let mut query = TasksQuery::new(&client);
+  let tasks = query
+    .with_canceled_by([9])
+    .execute()
     .await
     .unwrap();
 get_settings_1: |-
@@ -617,6 +683,10 @@ search_parameter_guide_matching_strategy_2: |-
   .execute()
   .await
   .unwrap();
+search_parameter_guide_hitsperpage_1: |-
+  client.index("movies").search().with_hits_per_page(15).execute().await?;
+search_parameter_guide_page_1: |-
+  client.index("movies").search().with_page(2).execute().await?;
 settings_guide_synonyms_1: |-
   let mut synonyms = HashMap::new();
   synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
