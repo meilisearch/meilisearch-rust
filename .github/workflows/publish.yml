@@ -15,9 +15,17 @@ jobs:
           rust-version: stable
       - name: Check release validity
         run: sh .github/scripts/check-release.sh
-      - name: Build
+      - name: Build meilisearch crate
         run: cargo build --release
+      - name: Build meilisearch crate
+        run: |-
+          cd meilisearch-index-setting-macro
+          cargo build --release
       - name: Login
         run: cargo login ${{ secrets.CRATES_TOKEN }}
-      - name: Publish to crates.io
+      - name: Publish meilisearch crate to crates.io
         run: cargo publish
+      - name: Publish meilisearch-index-setting-macro crate to crates.io
+        run: |-
+          cd meilisearch-index-setting-macro
+          cargo publish
