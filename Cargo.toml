@@ -41,7 +41,7 @@ default = ["isahc-static-curl"]
 isahc-static-curl = ["isahc/static-curl"]
 
 [dev-dependencies]
-env_logger = "0.9"
+env_logger = "0.10"
 futures-await-test = "0.3"
 futures = "0.3"
 mockito = "0.31.0"
