@@ -3,6 +3,65 @@
 # the documentation on build
 # You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
 ---
+synonyms_guide_1: |-
+  let mut synonyms = std::collections::HashMap::new();
+  synonyms.insert(String::from("great"), vec![String::from("fantastic")]);
+  synonyms.insert(String::from("fantastic"), vec![String::from("great")]);
+
+  let task: TaskInfo = client
+    .index("movies")
+    .set_synonyms(&synonyms)
+    .await
+    .unwrap();
+date_guide_index_1: |-
+  let mut file = File::open("games.json")
+    .unwrap();
+  let mut content = String::new();
+  file
+    .read_to_string(&mut content)
+    .unwrap();
+  let docs: Vec<Game> = serde_json::from_str(&content)
+    .unwrap();
+
+  client
+    .index("games")
+    .add_documents(&docs, None)
+    .await
+    .unwrap();
+date_guide_filterable_attributes_1: |-
+  let settings = Settings::new()
+    .with_filterable_attributes(["release_timestamp"]);
+
+  let task: TaskInfo = client
+    .index("games")
+    .set_settings(&settings)
+    .await
+    .unwrap();
+date_guide_filter_1: |-
+  let results: SearchResults<Game> = client
+    .index("games")
+    .search()
+    .with_filter("release_timestamp >= 1514761200 AND release_timestamp < 1672527600")
+    .execute()
+    .await
+    .unwrap();
+date_guide_sortable_attributes_1: |-
+  let settings = Settings::new()
+    .with_sortable_attributes(["release_timestamp"]);
+
+  let task: TaskInfo = client
+    .index("games")
+    .set_settings(&settings)
+    .await
+    .unwrap();
+date_guide_sort_1: |-
+  let results: SearchResults<Game> = client
+    .index("games")
+    .search()
+    .with_sort(["release_timestamp:desc"])
+    .execute()
+    .await
+    .unwrap();
 delete_tasks_1: |-
   let mut query = tasks::TasksDeleteQuery::new(&client);
   query.with_uids([1, 2]);
@@ -667,7 +726,7 @@ search_parameter_guide_show_matches_position_1: |-
     .collect();
 search_parameter_guide_matching_strategy_1: |-
   let results: SearchResults<Movie> = client
-  .index('movies')
+  .index("movies")
   .search()
   .with_query("big fat liar")
   .with_matching_strategy(MatchingStrategies::LAST)
@@ -676,7 +735,7 @@ search_parameter_guide_matching_strategy_1: |-
   .unwrap();
 search_parameter_guide_matching_strategy_2: |-
   let results: SearchResults<Movie> = client
-  .index('movies')
+  .index("movies")
   .search()
   .with_query("big fat liar")
   .with_matching_strategy(MatchingStrategies::ALL)
@@ -1145,6 +1204,14 @@ getting_started_faceting: |-
   let task: TaskInfo = client
     .index("movies")
     .set_faceting(&faceting)
+    .await
+    .unwrap();
+getting_started_pagination: |-
+  let pagination = PaginationSetting {max_total_hits:500};
+
+  let task: TaskInfo = client
+    .index("books")
+    .set_pagination(pagination)
     .await
     .unwrap();
 getting_started_filtering: |-
