@@ -559,6 +559,73 @@ impl Index {
         .await
     }
 
+    /// Add a raw and unchecked payload to meilisearch.
+    /// This can be useful if your application is only forwarding data from other sources.
+    ///
+    /// If you send an already existing document (same id) the **whole existing document** will be overwritten by the new document.
+    /// Fields previously in the document not present in the new document are removed.
+    ///
+    /// For a partial update of the document see [Index::add_or_update_unchecked_payload].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let movie_index = client.index("add_or_replace_unchecked_payload");
+    ///
+    /// let task = movie_index.add_or_replace_unchecked_payload(
+    ///     r#"{ "id": 1, "body": "doggo" }
+    ///     { "id": 2, "body": "catto" }"#.as_bytes(),
+    ///     "application/x-ndjson",
+    ///     Some("id"),
+    ///   ).await.unwrap();
+    /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
+    /// client.wait_for_task(task, None, None).await.unwrap();
+    ///
+    /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
+    /// assert!(movies.results.len() == 2);
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn add_or_replace_unchecked_payload<
+        T: futures_io::AsyncRead + Send + Sync + 'static,
+    >(
+        &self,
+        payload: T,
+        content_type: &str,
+        primary_key: Option<&str>,
+    ) -> Result<TaskInfo, Error> {
+        let url = if let Some(primary_key) = primary_key {
+            format!(
+                "{}/indexes/{}/documents?primaryKey={}",
+                self.client.host, self.uid, primary_key
+            )
+        } else {
+            format!("{}/indexes/{}/documents", self.client.host, self.uid)
+        };
+        stream_request::<(), T, TaskInfo>(
+            &url,
+            &self.client.api_key,
+            Method::Post {
+                query: (),
+                body: payload,
+            },
+            content_type,
+            202,
+        )
+        .await
+    }
+
     /// Alias for [Index::add_or_replace].
     pub async fn add_documents<T: Serialize>(
         &self,
@@ -643,6 +710,73 @@ impl Index {
                 query: (),
                 body: documents,
             },
+            202,
+        )
+        .await
+    }
+
+    /// Add a raw and unchecked payload to meilisearch.
+    /// This can be useful if your application is only forwarding data from other sources.
+    ///
+    /// If you send an already existing document (same id) the old document will be only partially updated according to the fields of the new document.
+    /// Thus, any fields not present in the new document are kept and remained unchanged.
+    ///
+    /// To completely overwrite a document, check out the [Index::add_or_replace_unchecked_payload] documents method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let movie_index = client.index("add_or_replace_unchecked_payload");
+    ///
+    /// let task = movie_index.add_or_update_unchecked_payload(
+    ///     r#"{ "id": 1, "body": "doggo" }
+    ///     { "id": 2, "body": "catto" }"#.as_bytes(),
+    ///     "application/x-ndjson",
+    ///     Some("id"),
+    ///   ).await.unwrap();
+    /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
+    /// client.wait_for_task(task, None, None).await.unwrap();
+    ///
+    /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
+    /// assert!(movies.results.len() == 2);
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn add_or_update_unchecked_payload<
+        T: futures_io::AsyncRead + Send + Sync + 'static,
+    >(
+        &self,
+        payload: T,
+        content_type: &str,
+        primary_key: Option<&str>,
+    ) -> Result<TaskInfo, Error> {
+        let url = if let Some(primary_key) = primary_key {
+            format!(
+                "{}/indexes/{}/documents?primaryKey={}",
+                self.client.host, self.uid, primary_key
+            )
+        } else {
+            format!("{}/indexes/{}/documents", self.client.host, self.uid)
+        };
+        stream_request::<(), T, TaskInfo>(
+            &url,
+            &self.client.api_key,
+            Method::Put {
+                query: (),
+                body: payload,
+            },
+            content_type,
             202,
         )
         .await
