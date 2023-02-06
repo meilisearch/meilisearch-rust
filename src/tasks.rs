@@ -319,22 +319,21 @@ impl Task {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    /// # let task = client.create_index("unwrap_failure", None).await.unwrap();
-    /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
-    ///
-    /// let task = index.set_ranking_rules(["wrong_ranking_rule"])
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    /// let task = client.create_index("unwrap_failure", None).await.unwrap();
+    /// let task = client
+    ///     .create_index("unwrap_failure", None)
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(task.is_failure());
     ///
     /// let failure = task.unwrap_failure();
     ///
-    /// assert_eq!(failure.error_code, ErrorCode::InvalidRankingRule);
-    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// assert_eq!(failure.error_code, ErrorCode::IndexAlreadyExists);
+    /// # client.index("unwrap_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub fn unwrap_failure(self) -> MeilisearchError {
@@ -358,19 +357,17 @@ impl Task {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    /// # let task = client.create_index("is_failure", None).await.unwrap();
-    /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
-    ///
-    ///
-    /// let task = index.set_ranking_rules(["wrong_ranking_rule"])
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    /// let task = client.create_index("is_failure", None).await.unwrap();
+    /// let task = client
+    ///     .create_index("is_failure", None)
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(task.is_failure());
-    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # client.index("is_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub fn is_failure(&self) -> bool {
@@ -992,14 +989,16 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_failing_task(client: Client, movies: Index) -> Result<(), Error> {
-        let task_info = movies.set_ranking_rules(["wrong_ranking_rule"]).await?;
-
+    async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
+        let task_info = client
+            .create_index("meilisearch_sdk-tasks-test-test_failing_task", None)
+            .await
+            .unwrap();
         let task = client.get_task(task_info).await?;
         let task = client.wait_for_task(task, None, None).await?;
 
         let error = task.unwrap_failure();
-        assert_eq!(error.error_code, ErrorCode::InvalidRankingRule);
+        assert_eq!(error.error_code, ErrorCode::IndexAlreadyExists);
         assert_eq!(error.error_type, ErrorType::InvalidRequest);
         Ok(())
     }
