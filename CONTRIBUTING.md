@@ -173,6 +173,12 @@ Make a PR modifying the file [`Cargo.toml`](/Cargo.toml):
 version = "X.X.X"
 ```
 
+After the changes on `Cargo.toml`, run the following command: 
+
+```
+sh scripts/update_macro_versions.sh
+```
+
 and the [`README.tpl`](/README.tpl):
 
 ```rust
@@ -181,13 +187,13 @@ and the [`README.tpl`](/README.tpl):
 
 with the right version.
 
-You should run the following command after the changes applied to `lib.rs`:
+After the changes on `lib.rs`, run the following command:
 
 ```bash
 sh scripts/update-readme.sh
 ```
 
-Also, you might need to change the [code-samples file](/.code-samples.meilisearch.yaml) if the minor has been upgraded:
+You might need to change the [code-samples file](/.code-samples.meilisearch.yaml) if the minor has been upgraded:
 
 ```yml
   meilisearch-sdk = "X.X"
