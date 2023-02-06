@@ -23,9 +23,5 @@ jobs:
           cargo build --release
       - name: Login
         run: cargo login ${{ secrets.CRATES_TOKEN }}
-      - name: Publish meilisearch-index-setting-macro crate to crates.io
-        run: |-
-          cd meilisearch-index-setting-macro
-          cargo publish
       - name: Publish meilisearch crate to crates.io
         run: cargo publish
