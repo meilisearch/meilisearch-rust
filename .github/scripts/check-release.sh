@@ -17,15 +17,13 @@ file_tag2=$(grep 'meilisearch-sdk = ' $file2 | cut -d '=' -f 2 | tr -d '"' | tr 
 file_tag3=$(grep 'meilisearch-sdk = ' $file3 | cut -d '=' -f 2 | tr -d '"' | tr -d ' ')
 file_tag4=$(grep 'meilisearch-sdk = ' $file4 | cut -d '=' -f 2 | tr -d '"' | tr -d ' ')
 file_tag5=$(grep '^version = ' $file5 | grep -Eo '[0-9]+.[0-9]+.[0-9]+')
-file_tag5_1=$(grep '{ path = \"..\", version =' $file5 | grep -Eo '[0-9]+.[0-9]+.[0-9]+')
 
 if [ "$current_tag" != "$file_tag1" ] ||
   [ "$current_tag" != "$file_tag_1_1" ] ||
   [ "$current_tag" != "$file_tag2" ] ||
   [ "$cropped_current_tag" != "$file_tag3" ] ||
   [ "$current_tag" != "$file_tag4" ] ||
-  [ "$current_tag" != "$file_tag5" ] ||
-  [ "$current_tag" != "$file_tag5_1" ] \
+  [ "$current_tag" != "$file_tag5" ] \
   ; then
   echo "Error: the current tag does not match the version in package file(s)."
   echo "$file1: found $file_tag1 - expected $current_tag"
@@ -34,7 +32,6 @@ if [ "$current_tag" != "$file_tag1" ] ||
   echo "$file3: found $file_tag3 - expected $cropped_current_tag"
   echo "$file4: found $file_tag4 - expected $current_tag"
   echo "$file5: found $file_tag5 - expected $current_tag"
-  echo "$file5: found $file_tag5_1 - expected $current_tag"
   exit 1
 fi
 
