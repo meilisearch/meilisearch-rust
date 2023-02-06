@@ -1,6 +1,6 @@
 [package]
 name = "meilisearch-index-setting-macro"
-version = "0.1.0"
+version = "0.22.0"
 description = "Helper tool to generate settings of an Meilisearch index"
 edition = "2021"
 license = "MIT"
@@ -17,5 +17,5 @@ proc-macro2 = "1.0.46"
 convert_case = "0.6.0"
 
 [dev-dependencies]
-meilisearch-sdk = "0.20.1"
+meilisearch-sdk = { path = "..", version = "0.22.0" }
 
