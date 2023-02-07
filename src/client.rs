@@ -63,6 +63,38 @@ impl Client {
         Ok(indexes_results)
     }
 
+    /// Return the host associated with this index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*};
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// // create the client
+    /// let client = Client::new("http://doggo.dog", MEILISEARCH_API_KEY);
+    ///
+    /// assert_eq!(client.get_host(), "http://doggo.dog");
+    /// ```
+    pub fn get_host(&self) -> &str {
+        &self.host
+    }
+
+    /// Return the api key associated with this index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*};
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// // create the client
+    /// let client = Client::new(MEILISEARCH_URL, "doggo");
+    ///
+    /// assert_eq!(client.get_api_key(), "doggo");
+    /// ```
+    pub fn get_api_key(&self) -> &str {
+        &self.api_key
+    }
+
     /// List all [Index]es with query parameters and returns values as instances of [Index].
     ///
     /// # Example
