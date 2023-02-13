@@ -38,9 +38,23 @@ pub enum Error {
     InvalidTenantToken(#[from] jsonwebtoken::errors::Error),
 
     /// The http client encountered an error.
+    #[cfg(feature = "isahc-static-curl")]
     #[cfg(not(target_arch = "wasm32"))]
     #[error("HTTP request failed: {}", .0)]
     HttpError(isahc::Error),
+
+    /// The http client encountered an error.
+    #[cfg(feature = "awc")]
+    #[cfg(not(target_arch = "wasm32"))]
+    #[error("HTTP request failed: {}", .0)]
+    HttpError(awc::error::SendRequestError),
+
+    /// The http client encountered an error parsing response.
+    #[cfg(feature = "awc")]
+    #[cfg(not(target_arch = "wasm32"))]
+    #[error("HTTP request failed: {}", .0)]
+    // TODO: ? make two error types (`awc::error::SendRequestError`, `awc::error::JsonPayloadError`) or map jsonerror into parse error?
+    ResponseParseError(awc::error::JsonPayloadError),
 
     /// The http client encountered an error.
     #[cfg(target_arch = "wasm32")]
@@ -240,6 +254,7 @@ impl std::fmt::Display for ErrorCode {
     }
 }
 
+#[cfg(feature = "isahc-static-curl")]
 #[cfg(not(target_arch = "wasm32"))]
 impl From<isahc::Error> for Error {
     fn from(error: isahc::Error) -> Error {
@@ -247,6 +262,24 @@ impl From<isahc::Error> for Error {
             Error::UnreachableServer
         } else {
             Error::HttpError(error)
+        }
+    }
+}
+#[cfg(feature = "awc")]
+#[cfg(not(target_arch = "wasm32"))]
+impl From<awc::error::SendRequestError> for Error {
+    fn from(error: awc::error::SendRequestError) -> Error {
+        use awc::error::SendRequestError::*;
+        match error {
+            Url(_) => Error::InvalidRequest,
+            Send(e) => {
+                if e.kind() == std::io::ErrorKind::ConnectionRefused {
+                    Error::UnreachableServer
+                } else {
+                    Error::HttpError(awc::error::SendRequestError::Send(e))
+                }
+            }
+            other => Error::HttpError(other),
         }
     }
 }
@@ -351,11 +384,20 @@ mod test {
             "Error parsing response JSON: invalid type: map, expected a string at line 2 column 8"
         );
 
-        let error = Error::HttpError(isahc::post("test_url", "test_body").unwrap_err());
-        assert_eq!(
-            error.to_string(),
-            "HTTP request failed: failed to resolve host name"
-        );
+        #[cfg(feature = "isahc-static-curl")]
+        {
+                    let error = Error::HttpError(isahc::post("test_url", "test_body").unwrap_err());
+                    assert_eq!(
+                        error.to_string(),
+                        "HTTP request failed: failed to resolve host name"
+                    );
+        }
+
+        #[cfg(feature = "awc")]
+        {
+// TODO
+        }
+
 
         let error = Error::InvalidTenantToken(jsonwebtoken::errors::Error::from(InvalidToken));
         assert_eq!(
