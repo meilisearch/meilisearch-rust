@@ -1,8 +1,9 @@
 [package]
 name = "web_app"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["Mubelotix <mubelotix@gmail.com>"]
 edition = "2018"
+publish = false
 
 [lib]
 crate-type = ["cdylib", "rlib"]

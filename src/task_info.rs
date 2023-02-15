@@ -165,12 +165,15 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_failing_task(client: Client, movies: Index) -> Result<(), Error> {
-        let task_info = movies.set_ranking_rules(["wrong_ranking_rule"]).await?;
+    async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
+        let task_info = client
+            .create_index("meilisearch_sdk-task_info-test-test_failing_task", None)
+            .await
+            .unwrap();
         let task = client.wait_for_task(task_info, None, None).await?;
 
         let error = task.unwrap_failure();
-        assert_eq!(error.error_code, ErrorCode::InvalidRankingRule);
+        assert_eq!(error.error_code, ErrorCode::IndexAlreadyExists);
         assert_eq!(error.error_type, ErrorType::InvalidRequest);
         Ok(())
     }

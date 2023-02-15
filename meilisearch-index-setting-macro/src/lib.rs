@@ -176,10 +176,7 @@ fn extract_all_attr_values(
                                         return std::result::Result::Err(
                                             syn::Error::new(
                                                 ident.span(),
-                                                format!(
-                                                    "`{}` already exists for this field",
-                                                    ident
-                                                ),
+                                                format!("`{ident}` already exists for this field"),
                                             )
                                             .to_compile_error(),
                                         );
@@ -190,8 +187,7 @@ fn extract_all_attr_values(
                                                 syn::Error::new(
                                                     ident.span(),
                                                     format!(
-                                                        "Property `{}` does not exist for type `document`",
-                                                        ident
+                                                        "Property `{ident}` does not exist for type `document`"
                                                     ),
                                                 )
                                                     .to_compile_error(),
@@ -213,7 +209,6 @@ fn extract_all_attr_values(
                 }
             }
             std::result::Result::Err(e) => {
-                println!("{:#?}", attr);
                 for token_stream in attr.tokens.clone().into_iter() {
                     if let TokenTree::Group(group) = token_stream {
                         for token in group.stream() {
