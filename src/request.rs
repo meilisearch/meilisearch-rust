@@ -131,7 +131,7 @@ pub(crate) async fn stream_request<
     use isahc::http::header;
     use isahc::*;
 
-    let auth = format!("Bearer {}", apikey);
+    let auth = format!("Bearer {apikey}");
     let user_agent = qualified_version();
 
     let mut response = match method {
