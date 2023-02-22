@@ -1,6 +1,6 @@
 [package]
 name = "meilisearch-sdk"
-version = "0.22.0"
+version = "0.22.1"
 authors = ["Mubelotix <mubelotix@gmail.com>"]
 edition = "2018"
 description = "Rust wrapper for the Meilisearch API. Meilisearch is a powerful, fast, open-source, easy to use and deploy search engine."
@@ -22,11 +22,12 @@ jsonwebtoken = { version = "8", default-features = false }
 yaup = "0.2.0"
 either = { version = "1.8.0", features = ["serde"] }
 thiserror = "1.0.37"
-meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", version = "0.22.0" }
+meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", version = "0.22.1" }
 awc = {version = "3.1.0" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 futures = "0.3"
+futures-io = "0.3.26"
 isahc = { version = "1.0", features = ["http2", "text-decoding"], default_features = false }
 uuid = { version = "1.1.2", features = ["v4"] }
 
@@ -46,7 +47,7 @@ awc = ["awc/rustls"]
 env_logger = "0.10"
 futures-await-test = "0.3"
 futures = "0.3"
-mockito = "0.31.0"
+mockito = "0.32.3"
 meilisearch-test-macro = { path = "meilisearch-test-macro" }
 tokio = { version = "1", features = ["rt", "macros"] }
 
