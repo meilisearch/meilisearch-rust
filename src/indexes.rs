@@ -11,7 +11,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
 use time::OffsetDateTime;
 
-/// An index containing [Document]s.
+/// An index containing \[Document\]s.
 ///
 /// # Example
 ///
@@ -271,7 +271,7 @@ impl Index {
         SearchQuery::new(self)
     }
 
-    /// Get one [Document] using its unique id.
+    /// Get one \[Document\] using its unique id.
     /// Serde is needed. Add `serde = {version="1.0", features=["derive"]}` in the dependencies section of your Cargo.toml.
     ///
     /// # Example
@@ -377,7 +377,7 @@ impl Index {
         .await
     }
 
-    /// Get [Document]s by batch.
+    /// Get \[Document\]s by batch.
     ///
     /// # Example
     ///
@@ -425,7 +425,7 @@ impl Index {
         .await
     }
 
-    /// Get [Document]s by batch with parameters.
+    /// Get \[Document\]s by batch with parameters.
     /// ```
     /// use serde::{Serialize, Deserialize};
     ///
@@ -480,7 +480,7 @@ impl Index {
         .await
     }
 
-    /// Add a list of [Document]s or replace them if they already exist.
+    /// Add a list of \[Document\]s or replace them if they already exist.
     ///
     /// If you send an already existing document (same id) the **whole existing document** will be overwritten by the new document.
     /// Fields previously in the document not present in the new document are removed.
