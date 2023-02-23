@@ -5,7 +5,7 @@ use crate::{client::Client, errors::Error};
 
 /// Represent a [meilisearch key](https://docs.meilisearch.com/reference/api/keys.html#returned-fields)
 /// You can get a [Key] from the [Client::get_key] method.
-/// Or you can create a [Key] with the [KeyBuilder::create] or [Client::create_key] methods.
+/// Or you can create a [Key] with the [KeyBuilder::new] or [Client::create_key] methods.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Key {
