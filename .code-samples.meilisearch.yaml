@@ -605,6 +605,15 @@ filtering_guide_3: |-
     .execute()
     .await
     .unwrap();
+filtering_guide_nested_1: |-
+  let results: SearchResults<MovieRatings> = client
+    .index("movie_rating")
+    .search()
+    .with_query("thriller")
+    .with_filter("rating.users >= 90")
+    .execute()
+    .await
+    .unwrap();
 search_parameter_guide_query_1: |-
   let results: SearchResults<Movie> = client
     .index("movies")
@@ -746,124 +755,12 @@ search_parameter_guide_hitsperpage_1: |-
   client.index("movies").search().with_hits_per_page(15).execute().await?;
 search_parameter_guide_page_1: |-
   client.index("movies").search().with_page(2).execute().await?;
-settings_guide_synonyms_1: |-
-  let mut synonyms = HashMap::new();
-  synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
-  synonyms.insert(String::from("jumper"), vec![String::from("sweater")]);
-
-  let settings = Settings::new()
-    .with_synonyms(synonyms);
-
-  let task = client
-    .index("tops")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_stop_words_1: |-
-  let settings = Settings::new()
-    .with_stop_words([
-      "the",
-      "a",
-      "an"
-    ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
 settings_guide_filterable_attributes_1: |-
   let settings = Settings::new()
     .with_filterable_attributes([
       "director",
       "genres"
     ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_ranking_rules_1: |-
-  let settings = Settings::new()
-    .with_ranking_rules([
-      "words",
-      "typo",
-      "proximity",
-      "attribute",
-      "sort",
-      "exactness",
-      "release_date:asc",
-      "rank:desc",
-    ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_distinct_1: |-
-  let settings = Settings::new()
-    .with_distinct_attribute("product_id");
-
-  let task: TaskInfo = client
-    .index("jackets")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_searchable_1: |-
-  let settings = Settings::new()
-    .with_searchable_attributes([
-      "title",
-      "overview",
-      "genres"
-    ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_pagination_1: |-
-  let pagination = PaginationSetting {max_total_hits:100};
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_pagination(pagination)
-    .await
-    .unwrap();
-settings_guide_displayed_1: |-
-  let settings = Settings::new()
-    .with_displayed_attributes([
-      "title",
-      "overview",
-      "genres",
-      "release_date"
-    ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_sortable_1: |-
-  let settings = Settings::new()
-    .with_sortable_attributes([
-      "author",
-      "price"
-    ]);
-
-  let task: TaskInfo = client
-    .index("books")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_faceting_1: |-
-  let faceting = FacetingSettings {
-      max_values_per_facet: 5,
-  };
-  let settings = Settings::new()
-    .with_faceting(&faceting);
 
   let task: TaskInfo = client
     .index("movies")
@@ -1313,6 +1210,15 @@ sorting_guide_sort_parameter_2: |-
     .search()
     .with_query("butler")
     .with_sort(&["author:desc"])
+    .execute()
+    .await
+    .unwrap();
+sorting_guide_sort_nested_1: |-
+  let results: SearchResults<Books> = client
+    .index("books")
+    .search()
+    .with_query("science fiction")
+    .with_sort(&["rating.users:asc"])
     .execute()
     .await
     .unwrap();
