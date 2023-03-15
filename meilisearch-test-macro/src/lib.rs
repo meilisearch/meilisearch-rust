@@ -169,9 +169,7 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
 
         outer_fn.sig.inputs.clear();
         outer_fn.sig.asyncness = inner_fn.sig.asyncness.clone();
-        outer_fn
-            .attrs
-            .push(parse_quote!(#[futures_await_test::async_test]));
+        outer_fn.attrs.push(parse_quote!(#[tokio::test]));
         outer_fn.block.stmts = outer_block;
     } else {
         panic!("#[meilisearch_test] can only be applied to async functions")
