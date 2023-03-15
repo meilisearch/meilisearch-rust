@@ -112,6 +112,8 @@ fn get_document_implementation(
     quote! {
         #[::meilisearch_sdk::macro_helper::async_trait]
         impl ::meilisearch_sdk::documents::Document for #struct_ident {
+            const INDEX_STR: &'static str = #index_name;
+
             fn generate_settings() -> ::meilisearch_sdk::settings::Settings {
             ::meilisearch_sdk::settings::Settings::new()
             #display_attr_tokens

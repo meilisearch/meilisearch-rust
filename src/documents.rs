@@ -53,6 +53,8 @@ use crate::{errors::Error, indexes::Index};
 
 #[async_trait]
 pub trait Document {
+    const INDEX_STR: &'static str;
+
     fn generate_settings() -> Settings;
     async fn generate_index(client: &crate::client::Client) -> Result<Index, Task>;
 }
