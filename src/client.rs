@@ -1039,10 +1039,7 @@ pub struct Version {
 
 #[cfg(test)]
 mod tests {
-    use std::mem;
-
     use big_s::S;
-    use mockito::mock;
     use time::OffsetDateTime;
 
     use meilisearch_test_macro::meilisearch_test;
@@ -1108,22 +1105,25 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_methods_has_qualified_version_as_header() {
-        let mock_server_url = &mockito::server_url();
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
         let path = "/hello";
         let address = &format!("{}{}", mock_server_url, path);
         let user_agent = &*qualified_version();
 
         let assertions = vec![
             (
-                mock("GET", path)
+                s.mock("GET", path)
                     .match_header("User-Agent", user_agent)
-                    .create(),
+                    .create_async()
+                    .await,
                 request::<(), (), ()>(address, "", Method::Get { query: () }, 200),
             ),
             (
-                mock("POST", path)
+                s.mock("POST", path)
                     .match_header("User-Agent", user_agent)
-                    .create(),
+                    .create_async()
+                    .await,
                 request::<(), (), ()>(
                     address,
                     "",
@@ -1135,15 +1135,17 @@ mod tests {
                 ),
             ),
             (
-                mock("DELETE", path)
+                s.mock("DELETE", path)
                     .match_header("User-Agent", user_agent)
-                    .create(),
+                    .create_async()
+                    .await,
                 request::<(), (), ()>(address, "", Method::Delete { query: () }, 200),
             ),
             (
-                mock("PUT", path)
+                s.mock("PUT", path)
                     .match_header("User-Agent", user_agent)
-                    .create(),
+                    .create_async()
+                    .await,
                 request::<(), (), ()>(
                     address,
                     "",
@@ -1155,9 +1157,10 @@ mod tests {
                 ),
             ),
             (
-                mock("PATCH", path)
+                s.mock("PATCH", path)
                     .match_header("User-Agent", user_agent)
-                    .create(),
+                    .create_async()
+                    .await,
                 request::<(), (), ()>(
                     address,
                     "",
@@ -1173,8 +1176,7 @@ mod tests {
         for (m, req) in assertions {
             let _ = req.await;
 
-            m.assert();
-            mem::drop(m);
+            m.assert_async().await;
         }
     }
 

@@ -698,7 +698,6 @@ mod test {
     };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
-    use mockito::mock;
     use serde::{Deserialize, Serialize};
     use std::time::Duration;
 
@@ -846,25 +845,27 @@ mod test {
 
     #[meilisearch_test]
     async fn test_get_tasks_no_params() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
         let client = Client::new(mock_server_url, "masterKey");
         let path = "/tasks";
 
-        let mock_res = mock("GET", path).with_status(200).create();
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
         let _ = client.get_tasks().await;
-        mock_res.assert();
+        mock_res.assert_async().await;
 
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_get_tasks_with_params() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
         let client = Client::new(mock_server_url, "masterKey");
         let path =
             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
 
-        let mock_res = mock("GET", path).with_status(200).create();
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
 
         let mut query = TasksSearchQuery::new(&client);
         query
@@ -877,13 +878,15 @@ mod test {
 
         let _ = client.get_tasks_with(&query).await;
 
-        mock_res.assert();
+        mock_res.assert_async().await;
+
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_get_tasks_with_date_params() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
         let client = Client::new(mock_server_url, "masterKey");
         let path = "/tasks?\
             beforeEnqueuedAt=2022-02-03T13%3A02%3A38.369634Z\
@@ -893,7 +896,7 @@ mod test {
             &beforeFinishedAt=2026-02-03T13%3A02%3A38.369634Z\
             &afterFinishedAt=2027-02-03T13%3A02%3A38.369634Z";
 
-        let mock_res = mock("GET", path).with_status(200).create();
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
 
         let before_enqueued_at = OffsetDateTime::parse(
             "2022-02-03T13:02:38.369634Z",
@@ -940,18 +943,20 @@ mod test {
 
         let _ = client.get_tasks_with(&query).await;
 
-        mock_res.assert();
+        mock_res.assert_async().await;
+
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
         let client = Client::new(mock_server_url, "masterKey");
         let path =
             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&canceledBy=9";
 
-        let mock_res = mock("GET", path).with_status(200).create();
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
 
         let mut query = TasksSearchQuery::new(&client);
         let _ = query
@@ -962,7 +967,8 @@ mod test {
             .execute()
             .await;
 
-        mock_res.assert();
+        mock_res.assert_async().await;
+
         Ok(())
     }
 
@@ -1005,12 +1011,13 @@ mod test {
 
     #[meilisearch_test]
     async fn test_cancel_tasks_with_params() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
         let client = Client::new(mock_server_url, "masterKey");
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
-        let mock_res = mock("POST", path).with_status(200).create();
+        let mock_res = s.mock("POST", path).with_status(200).create_async().await;
 
         let mut query = TasksCancelQuery::new(&client);
         query
@@ -1021,18 +1028,20 @@ mod test {
 
         let _ = client.cancel_tasks_with(&query).await;
 
-        mock_res.assert();
+        mock_res.assert_async().await;
+
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_cancel_tasks_with_params_execute() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
         let client = Client::new(mock_server_url, "masterKey");
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
-        let mock_res = mock("POST", path).with_status(200).create();
+        let mock_res = s.mock("POST", path).with_status(200).create_async().await;
 
         let mut query = TasksCancelQuery::new(&client);
         let _ = query
@@ -1043,17 +1052,20 @@ mod test {
             .execute()
             .await;
 
-        mock_res.assert();
+        mock_res.assert_async().await;
+
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_delete_tasks_with_params() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
+        let mut s = mockito::Server::new_async().await;
+        //         let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
         let client = Client::new(mock_server_url, "masterKey");
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
-        let mock_res = mock("DELETE", path).with_status(200).create();
+        let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
 
         let mut query = TasksDeleteQuery::new(&client);
         query
@@ -1064,17 +1076,19 @@ mod test {
 
         let _ = client.delete_tasks_with(&query).await;
 
-        mock_res.assert();
+        mock_res.assert_async().await;
+
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_delete_tasks_with_params_execute() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
         let client = Client::new(mock_server_url, "masterKey");
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
-        let mock_res = mock("DELETE", path).with_status(200).create();
+        let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
 
         let mut query = TasksDeleteQuery::new(&client);
         let _ = query
@@ -1085,7 +1099,8 @@ mod test {
             .execute()
             .await;
 
-        mock_res.assert();
+        mock_res.assert_async().await;
+
         Ok(())
     }
 }
