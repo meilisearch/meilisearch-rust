@@ -55,6 +55,9 @@ use crate::{errors::Error, indexes::Index};
 pub trait Document {
     const INDEX_STR: &'static str;
 
+    fn index(client: &crate::client::Client) -> Index {
+        client.index(Self::INDEX_STR)
+    }
     fn generate_settings() -> Settings;
     async fn generate_index(client: &crate::client::Client) -> Result<Index, Task>;
 }
