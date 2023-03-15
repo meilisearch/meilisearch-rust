@@ -971,7 +971,7 @@ getting_started_add_documents_md: |-
   ```rust
   #[derive(Serialize, Deserialize)]
   struct Movie {
-    id: String,
+    id: i64,
     title: String,
     poster: String,
     overview: String,
@@ -986,7 +986,7 @@ getting_started_add_documents_md: |-
   ```rust
   #[derive(Serialize, Deserialize)]
   struct Movie {
-    id: String,
+    id: i64,
     #[serde(flatten)]
     value: serde_json::Value,
   }
