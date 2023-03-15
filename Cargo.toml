@@ -45,7 +45,7 @@ isahc-static-curl = ["isahc/static-curl"]
 env_logger = "0.10"
 futures-await-test = "0.3"
 futures = "0.3"
-mockito = "0.32.3"
+mockito = "1.0.0"
 meilisearch-test-macro = { path = "meilisearch-test-macro" }
 tokio = { version = "1", features = ["rt", "macros"] }
 
