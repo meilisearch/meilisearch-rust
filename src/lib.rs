@@ -227,7 +227,7 @@
 pub mod client;
 /// Module representing the [documents] structures.
 pub mod documents;
-/// Module containing the [documents::Document] trait.
+/// Module containing the [dumps] trait.
 pub mod dumps;
 /// Module containing the [errors::Error] struct.
 pub mod errors;
