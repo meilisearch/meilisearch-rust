@@ -16,7 +16,6 @@ pub struct PaginationSetting {
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetingSettings {
-    #[serde()]
     pub max_values_per_facet: usize,
 }
 
