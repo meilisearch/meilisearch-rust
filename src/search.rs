@@ -48,6 +48,12 @@ pub struct SearchResult<T> {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct FacetStats {
+    pub min: u32,
+    pub max: u32,
+}
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
 pub struct SearchResults<T> {
     /// Results of the query
@@ -68,6 +74,8 @@ pub struct SearchResults<T> {
     pub total_pages: Option<usize>,
     /// Distribution of the given facets
     pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
+    /// facet stats of the numerical facets requested in the `facet` search parameter.
+    pub facet_stats: Option<HashMap<String, FacetStats>>,
     /// Processing time of the query
     pub processing_time_ms: usize,
     /// Query originating the response

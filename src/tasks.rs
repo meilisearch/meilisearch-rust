@@ -1057,7 +1057,6 @@ mod test {
     #[meilisearch_test]
     async fn test_delete_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
-        //         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
         let client = Client::new(mock_server_url, Some("masterKey"));
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
