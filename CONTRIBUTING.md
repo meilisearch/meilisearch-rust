@@ -40,6 +40,8 @@ To install dependencies:
 cargo build --release
 ```
 
+To ensure the same dependency versions in all environments, for example the CI, update the dependencies by running: `cargo update`.
+
 ### Tests <!-- omit in toc -->
 
 To run the tests, run:
