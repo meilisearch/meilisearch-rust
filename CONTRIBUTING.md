@@ -175,30 +175,31 @@ Make a PR modifying the file [`Cargo.toml`](/Cargo.toml):
 version = "X.X.X"
 ```
 
+the [`README.tpl`](/README.tpl):
+
+```rust
+//! meilisearch-sdk = "X.X.X"
+```
+
+and the [code-samples file](/.code-samples.meilisearch.yaml):
+
+```yml
+  meilisearch-sdk = "X.X.X"
+```
+
+with the right version.
+
+
 After the changes on `Cargo.toml`, run the following command: 
 
 ```
 sh scripts/update_macro_versions.sh
 ```
 
-and the [`README.tpl`](/README.tpl):
-
-```rust
-//! meilisearch-sdk = "X.X.X"
-```
-
-with the right version.
-
 After the changes on `lib.rs`, run the following command:
 
 ```bash
 sh scripts/update-readme.sh
-```
-
-You might need to change the [code-samples file](/.code-samples.meilisearch.yaml) if the minor has been upgraded:
-
-```yml
-  meilisearch-sdk = "X.X"
 ```
 
 Once the changes are merged on `main`, you can publish the current draft release via the [GitHub interface](https://github.com/meilisearch/meilisearch-rust/releases): on this page, click on `Edit` (related to the draft release) > update the description (be sure you apply [these recommendations](https://github.com/meilisearch/integration-guides/blob/main/resources/integration-release.md#writting-the-release-description)) > when you are ready, click on `Publish release`.
