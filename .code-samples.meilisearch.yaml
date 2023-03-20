@@ -957,7 +957,7 @@ primary_field_guide_add_document_primary_key: |-
 getting_started_add_documents_md: |-
   ```toml
     [dependencies]
-    meilisearch-sdk = "0.22.1"
+    meilisearch-sdk = "0.22.0"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
@@ -971,7 +971,7 @@ getting_started_add_documents_md: |-
   ```rust
   #[derive(Serialize, Deserialize)]
   struct Movie {
-    id: String,
+    id: i64,
     title: String,
     poster: String,
     overview: String,
@@ -986,7 +986,7 @@ getting_started_add_documents_md: |-
   ```rust
   #[derive(Serialize, Deserialize)]
   struct Movie {
-    id: String,
+    id: i64,
     #[serde(flatten)]
     value: serde_json::Value,
   }
