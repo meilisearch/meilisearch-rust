@@ -49,17 +49,18 @@ pub use meilisearch_index_setting_macro::Document;
 
 use crate::settings::Settings;
 use crate::tasks::Task;
+use crate::Client;
 use crate::{errors::Error, indexes::Index};
 
 #[async_trait]
 pub trait Document {
     const INDEX_STR: &'static str;
 
-    fn index(client: &crate::client::Client) -> Index {
+    fn index(client: &Client) -> Index {
         client.index(Self::INDEX_STR)
     }
     fn generate_settings() -> Settings;
-    async fn generate_index(client: &crate::client::Client) -> Result<Index, Task>;
+    async fn generate_index(client: &Client) -> Result<Index, Task>;
 }
 
 #[derive(Debug, Clone, Deserialize)]
