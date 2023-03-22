@@ -13,7 +13,6 @@ pub struct Crate {
     version: String,
 }
 
-// Implement the IndexConfig trait so that we can use our struct with Meilisearch
 fn get_readable_download_count(this: &Map<String, Value>) -> String {
     if let Some(downloads) = this["downloads"].as_f64() {
         if downloads < 1000.0 {
