@@ -37,7 +37,7 @@ pub fn display(this: &Map<String, Value>) -> Html {
     url = url.replace("</em>", "");
 
     html! {
-        <li><a href=url>
+        <li><a href={url}>
             <div class="h">
                 <h4>
                     {
@@ -52,7 +52,7 @@ pub fn display(this: &Map<String, Value>) -> Html {
                     <span>{"v"}</span>
                     {&this["version"].as_str().unwrap_or_default()}
                 </span>
-                <span class="downloads" title=format!("{} recent downloads", this["downloads"].as_f64().unwrap_or(0.0))>
+                <span class="downloads" title={format!("{} recent downloads", this["downloads"].as_f64().unwrap_or(0.0))}>
                     {get_readable_download_count(this)}
                 </span>
                 {for this["keywords"].as_array().unwrap().iter().map(|keyword|
