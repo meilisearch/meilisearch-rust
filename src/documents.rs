@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-/// Derive the [`Document`](crate::documents::Document) trait.
+/// Derive the [`IndexConfig`](crate::documents::IndexConfig) trait.
 ///
 /// ## Field attribute
-/// Use the `#[document(..)]` field attribute to generate the correct settings
+/// Use the `#[index_config(..)]` field attribute to generate the correct settings
 /// for each field. The available parameters are:
 /// - `primary_key` (can only be used once)
 /// - `distinct` (can only be used once)
@@ -19,22 +19,22 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// ## Sample usage:
 /// ```
 /// use serde::{Serialize, Deserialize};
-/// use meilisearch_sdk::documents::Document;
+/// use meilisearch_sdk::documents::IndexConfig;
 /// use meilisearch_sdk::settings::Settings;
 /// use meilisearch_sdk::indexes::Index;
 /// use meilisearch_sdk::client::Client;
 ///
-/// #[derive(Serialize, Deserialize, Document)]
+/// #[derive(Serialize, Deserialize, IndexConfig)]
 /// struct Movie {
-///     #[document(primary_key)]
+///     #[index_config(primary_key)]
 ///     movie_id: u64,
-///     #[document(displayed, searchable)]
+///     #[index_config(displayed, searchable)]
 ///     title: String,
-///     #[document(displayed)]
+///     #[index_config(displayed)]
 ///     description: String,
-///     #[document(filterable, sortable, displayed)]
+///     #[index_config(filterable, sortable, displayed)]
 ///     release_date: String,
-///     #[document(filterable, displayed)]
+///     #[index_config(filterable, displayed)]
 ///     genres: Vec<String>,
 /// }
 ///
@@ -45,16 +45,22 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 ///     let index: Index = Movie::generate_index(&client).await.unwrap();
 /// }
 /// ```
-pub use meilisearch_index_setting_macro::Document;
+pub use meilisearch_index_setting_macro::IndexConfig;
 
 use crate::settings::Settings;
 use crate::tasks::Task;
+use crate::Client;
 use crate::{errors::Error, indexes::Index};
 
 #[async_trait]
-pub trait Document {
+pub trait IndexConfig {
+    const INDEX_STR: &'static str;
+
+    fn index(client: &Client) -> Index {
+        client.index(Self::INDEX_STR)
+    }
     fn generate_settings() -> Settings;
-    async fn generate_index(client: &crate::client::Client) -> Result<Index, Task>;
+    async fn generate_index(client: &Client) -> Result<Index, Task>;
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -296,7 +302,7 @@ impl<'a> DocumentsQuery<'a> {
 mod tests {
     use super::*;
     use crate::{client::*, indexes::*};
-    use ::meilisearch_sdk::documents::Document;
+    use ::meilisearch_sdk::documents::IndexConfig;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
 
@@ -307,24 +313,24 @@ mod tests {
     }
 
     #[allow(unused)]
-    #[derive(Document)]
+    #[derive(IndexConfig)]
     struct MovieClips {
-        #[document(primary_key)]
+        #[index_config(primary_key)]
         movie_id: u64,
-        #[document(distinct)]
+        #[index_config(distinct)]
         owner: String,
-        #[document(displayed, searchable)]
+        #[index_config(displayed, searchable)]
         title: String,
-        #[document(displayed)]
+        #[index_config(displayed)]
         description: String,
-        #[document(filterable, sortable, displayed)]
+        #[index_config(filterable, sortable, displayed)]
         release_date: String,
-        #[document(filterable, displayed)]
+        #[index_config(filterable, displayed)]
         genres: Vec<String>,
     }
 
     #[allow(unused)]
-    #[derive(Document)]
+    #[derive(IndexConfig)]
     struct VideoClips {
         video_id: u64,
     }
@@ -443,17 +449,17 @@ mod tests {
 
         Ok(())
     }
-    #[derive(Serialize, Deserialize, Document)]
+    #[derive(Serialize, Deserialize, IndexConfig)]
     struct Movie {
-        #[document(primary_key)]
+        #[index_config(primary_key)]
         movie_id: u64,
-        #[document(displayed, searchable)]
+        #[index_config(displayed, searchable)]
         title: String,
-        #[document(displayed)]
+        #[index_config(displayed)]
         description: String,
-        #[document(filterable, sortable, displayed)]
+        #[index_config(filterable, sortable, displayed)]
         release_date: String,
-        #[document(filterable, displayed)]
+        #[index_config(filterable, displayed)]
         genres: Vec<String>,
     }
 }
