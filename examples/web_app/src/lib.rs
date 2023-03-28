@@ -126,7 +126,7 @@ impl Component for Model {
                     <ol id="handlebars-list">
                         {
                             // Display the results
-                            for self.results.iter().map(|r| display(r))
+                            for self.results.iter().map(display)
                         }
                     </ol>
                 </div>

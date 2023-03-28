@@ -42,10 +42,10 @@ pub fn display(this: &Map<String, Value>) -> Html {
                 <h4>
                     {
                         // This field is formatted so we don't want Yew to escape the HTML tags
-                        unescaped_html(&this["name"].as_str().unwrap_or_default())
+                        unescaped_html(this["name"].as_str().unwrap_or_default())
                     }
                 </h4>
-                <p class="desc">{unescaped_html(&this["description"].as_str().unwrap_or_default())}</p>
+                <p class="desc">{unescaped_html(this["description"].as_str().unwrap_or_default())}</p>
             </div>
             <div class="meta">
                 <span class="version stable">
