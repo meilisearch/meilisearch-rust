@@ -587,6 +587,7 @@ impl Index {
     ///     { "id": 2, "body": "catto" }"#.as_bytes(),
     ///     "application/x-ndjson",
     ///     Some("id"),
+    ///     None
     ///   ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -604,15 +605,16 @@ impl Index {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
+        csv_delimiter: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let mut url = format!("{}/indexes/{}/documents?", self.client.host, self.uid);
+        if let Some(primary_key) = primary_key {
+            url = format!("{}primaryKey={}&", url, primary_key)
+        }
+
+        if let Some(csv_delimiter) = csv_delimiter {
+            url = format!("{}csvDelimiter={}", url, csv_delimiter)
+        }
         stream_request::<(), T, TaskInfo>(
             &url,
             &self.client.api_key,
@@ -736,13 +738,14 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// # futures::executor::block_on(async move {
     /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    /// let movie_index = client.index("add_or_replace_unchecked_payload");
+    /// let movie_index = client.index("add_or_update_unchecked_payload");
     ///
     /// let task = movie_index.add_or_update_unchecked_payload(
     ///     r#"{ "id": 1, "body": "doggo" }
     ///     { "id": 2, "body": "catto" }"#.as_bytes(),
     ///     "application/x-ndjson",
     ///     Some("id"),
+    ///     None
     ///   ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -760,15 +763,18 @@ impl Index {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
+        csv_delimiter: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let mut url = format!("{}/indexes/{}/documents?", self.client.host, self.uid);
+
+        if let Some(primary_key) = primary_key {
+            url = format!("{}primaryKey={}&", url, primary_key)
+        }
+
+        if let Some(csv_delimiter) = csv_delimiter {
+            url = format!("{}csvDelimiter={}", url, csv_delimiter)
+        }
+
         stream_request::<(), T, TaskInfo>(
             &url,
             &self.client.api_key,
@@ -1777,6 +1783,36 @@ mod tests {
 
         assert_eq!(res.limit, 1);
         assert_eq!(res.offset, 2);
+    }
+
+    #[meilisearch_test]
+    async fn test_add_documents_in_csv_with_custom_delimiter(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        #[derive(Serialize, Deserialize, Debug)]
+        struct Movie {
+            name: String,
+            description: String,
+        }
+
+        let task = index
+            .add_or_replace_unchecked_payload(
+                r#"name;description
+wonderwoman;She's incredible"#
+                    .as_bytes(),
+                "text/csv",
+                Some("name"),
+                Some(";"),
+            )
+            .await
+            .unwrap();
+
+        client.wait_for_task(task, None, None).await.unwrap();
+        let movies = index.get_documents::<Movie>().await.unwrap();
+
+        assert_eq!(movies.results.len(), 1);
+        Ok(())
     }
 
     #[meilisearch_test]
