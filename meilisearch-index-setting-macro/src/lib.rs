@@ -6,7 +6,7 @@ use quote::quote;
 use syn::parse_macro_input;
 use syn::spanned::Spanned;
 
-#[proc_macro_derive(Document, attributes(document))]
+#[proc_macro_derive(IndexConfig, attributes(index_config))]
 pub fn generate_index_settings(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast = parse_macro_input!(input as syn::DeriveInput);
 
@@ -21,13 +21,13 @@ pub fn generate_index_settings(input: proc_macro::TokenStream) -> proc_macro::To
 
     let struct_ident = &ast.ident;
 
-    let document_implementation = get_document_implementation(struct_ident, fields);
+    let index_config_implementation = get_index_config_implementation(struct_ident, fields);
     proc_macro::TokenStream::from(quote! {
-        #document_implementation
+        #index_config_implementation
     })
 }
 
-fn get_document_implementation(
+fn get_index_config_implementation(
     struct_ident: &syn::Ident,
     fields: &syn::Fields,
 ) -> proc_macro2::TokenStream {
@@ -111,7 +111,9 @@ fn get_document_implementation(
 
     quote! {
         #[::meilisearch_sdk::macro_helper::async_trait]
-        impl ::meilisearch_sdk::documents::Document for #struct_ident {
+        impl ::meilisearch_sdk::documents::IndexConfig for #struct_ident {
+            const INDEX_STR: &'static str = #index_name;
+
             fn generate_settings() -> ::meilisearch_sdk::settings::Settings {
             ::meilisearch_sdk::settings::Settings::new()
             #display_attr_tokens
@@ -142,7 +144,7 @@ fn extract_all_attr_values(
     for attr in attrs {
         match attr.parse_meta() {
             std::result::Result::Ok(syn::Meta::List(list)) => {
-                if !list.path.is_ident("document") {
+                if !list.path.is_ident("index_config") {
                     continue;
                 }
                 for token_stream in attr.tokens.clone().into_iter() {
@@ -187,7 +189,7 @@ fn extract_all_attr_values(
                                                 syn::Error::new(
                                                     ident.span(),
                                                     format!(
-                                                        "Property `{ident}` does not exist for type `document`"
+                                                        "Property `{ident}` does not exist for type `index_config`"
                                                     ),
                                                 )
                                                     .to_compile_error(),
