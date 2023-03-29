@@ -487,7 +487,6 @@ impl<'a> SearchQuery<'a> {
 pub struct MultiSearchQuery<'a, 'b> {
     #[serde(skip_serializing)]
     client: &'a Client,
-    // pub sort: Option<&'a [&'a str]>,
     pub queries: Vec<SearchQuery<'b>>,
 }
 
