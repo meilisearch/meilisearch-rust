@@ -1,3 +1,4 @@
+use futures::Future;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{collections::HashMap, time::Duration};
@@ -18,6 +19,12 @@ use crate::{
 pub struct Client {
     pub(crate) host: String,
     pub(crate) api_key: String,
+    request_method: fn(
+        &str,
+        &str,
+        Method<Value, Value>,
+        u16,
+    ) -> Box<dyn Future<Output = Result<Value, Error>> + Send>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,10 +47,11 @@ impl Client {
     /// // create the client
     /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     /// ```
-    pub fn new(host: impl Into<String>, api_key: impl Into<String>) -> Client {
+    pub fn new(host: impl Into<String>, api_key: impl Into<String>) -> Self {
         Client {
             host: host.into(),
             api_key: api_key.into(),
+            request_method: request,
         }
     }
 
