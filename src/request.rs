@@ -30,23 +30,27 @@ pub(crate) async fn request<
     Output: DeserializeOwned + 'static,
 >(
     url: &str,
-    apikey: &str,
+    apikey: Option<&str>,
     method: Method<Query, Body>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
     use isahc::http::header;
+    use isahc::http::method::Method as HttpMethod;
     use isahc::*;
 
-    let auth = format!("Bearer {apikey}");
-    let user_agent = qualified_version();
+    let builder = Request::builder().header(header::USER_AGENT, qualified_version());
+    let builder = match apikey {
+        Some(apikey) => builder.header(header::AUTHORIZATION, format!("Bearer {apikey}")),
+        None => builder,
+    };
 
     let mut response = match &method {
         Method::Get { query } => {
             let url = add_query_parameters(url, query)?;
 
-            Request::get(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
+            builder
+                .method(HttpMethod::GET)
+                .uri(url)
                 .body(())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -55,9 +59,9 @@ pub(crate) async fn request<
         Method::Delete { query } => {
             let url = add_query_parameters(url, query)?;
 
-            Request::delete(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
+            builder
+                .method(HttpMethod::DELETE)
+                .uri(url)
                 .body(())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -66,10 +70,10 @@ pub(crate) async fn request<
         Method::Post { query, body } => {
             let url = add_query_parameters(url, query)?;
 
-            Request::post(url)
-                .header(header::AUTHORIZATION, auth)
+            builder
+                .method(HttpMethod::POST)
+                .uri(url)
                 .header(header::CONTENT_TYPE, "application/json")
-                .header(header::USER_AGENT, user_agent)
                 .body(to_string(&body).unwrap())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -78,10 +82,10 @@ pub(crate) async fn request<
         Method::Patch { query, body } => {
             let url = add_query_parameters(url, query)?;
 
-            Request::patch(url)
-                .header(header::AUTHORIZATION, auth)
+            builder
+                .method(HttpMethod::PATCH)
+                .uri(url)
                 .header(header::CONTENT_TYPE, "application/json")
-                .header(header::USER_AGENT, user_agent)
                 .body(to_string(&body).unwrap())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -90,10 +94,10 @@ pub(crate) async fn request<
         Method::Put { query, body } => {
             let url = add_query_parameters(url, query)?;
 
-            Request::put(url)
-                .header(header::AUTHORIZATION, auth)
+            builder
+                .method(HttpMethod::PUT)
+                .uri(url)
                 .header(header::CONTENT_TYPE, "application/json")
-                .header(header::USER_AGENT, user_agent)
                 .body(to_string(&body).unwrap())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -123,24 +127,28 @@ pub(crate) async fn stream_request<
     Output: DeserializeOwned + 'static,
 >(
     url: &str,
-    apikey: &str,
+    apikey: Option<&str>,
     method: Method<Query, Body>,
     content_type: &str,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
     use isahc::http::header;
+    use isahc::http::method::Method as HttpMethod;
     use isahc::*;
 
-    let auth = format!("Bearer {apikey}");
-    let user_agent = qualified_version();
+    let builder = Request::builder().header(header::USER_AGENT, qualified_version());
+    let builder = match apikey {
+        Some(apikey) => builder.header(header::AUTHORIZATION, format!("Bearer {apikey}")),
+        None => builder,
+    };
 
     let mut response = match method {
         Method::Get { query } => {
             let url = add_query_parameters(url, &query)?;
 
-            Request::get(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
+            builder
+                .method(HttpMethod::GET)
+                .uri(url)
                 .body(())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -149,9 +157,9 @@ pub(crate) async fn stream_request<
         Method::Delete { query } => {
             let url = add_query_parameters(url, &query)?;
 
-            Request::delete(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
+            builder
+                .method(HttpMethod::DELETE)
+                .uri(url)
                 .body(())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -160,9 +168,9 @@ pub(crate) async fn stream_request<
         Method::Post { query, body } => {
             let url = add_query_parameters(url, &query)?;
 
-            Request::post(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
+            builder
+                .method(HttpMethod::POST)
+                .uri(url)
                 .header(header::CONTENT_TYPE, content_type)
                 .body(AsyncBody::from_reader(body))
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
@@ -172,9 +180,9 @@ pub(crate) async fn stream_request<
         Method::Patch { query, body } => {
             let url = add_query_parameters(url, &query)?;
 
-            Request::patch(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
+            builder
+                .method(HttpMethod::PATCH)
+                .uri(url)
                 .header(header::CONTENT_TYPE, content_type)
                 .body(AsyncBody::from_reader(body))
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
@@ -184,9 +192,9 @@ pub(crate) async fn stream_request<
         Method::Put { query, body } => {
             let url = add_query_parameters(url, &query)?;
 
-            Request::put(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
+            builder
+                .method(HttpMethod::PUT)
+                .uri(url)
                 .header(header::CONTENT_TYPE, content_type)
                 .body(AsyncBody::from_reader(body))
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
@@ -228,7 +236,7 @@ pub(crate) async fn request<
     Output: DeserializeOwned + 'static,
 >(
     url: &str,
-    apikey: &str,
+    apikey: Option<&str>,
     method: Method<Query, Body>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
@@ -242,9 +250,11 @@ pub(crate) async fn request<
     // The 2 following unwraps should not be able to fail
     let mut mut_url = url.clone().to_string();
     let headers = Headers::new().unwrap();
-    headers
-        .append("Authorization", format!("Bearer {}", apikey).as_str())
-        .unwrap();
+    if let Some(apikey) = apikey {
+        headers
+            .append("Authorization", format!("Bearer {}", apikey).as_str())
+            .unwrap();
+    }
     headers
         .append("X-Meilisearch-Client", qualified_version().as_str())
         .unwrap();

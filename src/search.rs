@@ -960,7 +960,7 @@ mod tests {
             .execute(&client)
             .await
             .unwrap();
-        let allowed_client = Client::new(meilisearch_url, key.key);
+        let allowed_client = Client::new(meilisearch_url, Some(key.key));
 
         let search_rules = vec![
             json!({ "*": {}}),
@@ -975,7 +975,7 @@ mod tests {
                 .generate_tenant_token(key.uid.clone(), rules, None, None)
                 .expect("Cannot generate tenant token.");
 
-            let new_client = Client::new(meilisearch_url, token.clone());
+            let new_client = Client::new(meilisearch_url, Some(token.clone()));
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())

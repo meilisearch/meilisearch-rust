@@ -847,7 +847,7 @@ mod test {
     async fn test_get_tasks_no_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path = "/tasks";
 
         let mock_res = s.mock("GET", path).with_status(200).create_async().await;
@@ -861,7 +861,7 @@ mod test {
     async fn test_get_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path =
             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
 
@@ -887,7 +887,7 @@ mod test {
     async fn test_get_tasks_with_date_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path = "/tasks?\
             beforeEnqueuedAt=2022-02-03T13%3A02%3A38.369634Z\
             &afterEnqueuedAt=2023-02-03T13%3A02%3A38.369634Z\
@@ -952,7 +952,7 @@ mod test {
     async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path =
             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&canceledBy=9";
 
@@ -1013,7 +1013,7 @@ mod test {
     async fn test_cancel_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
@@ -1037,7 +1037,7 @@ mod test {
     async fn test_cancel_tasks_with_params_execute() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
@@ -1062,7 +1062,7 @@ mod test {
         let mut s = mockito::Server::new_async().await;
         //         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
         let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
@@ -1085,7 +1085,7 @@ mod test {
     async fn test_delete_tasks_with_params_execute() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
         let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;

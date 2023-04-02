@@ -25,6 +25,9 @@ pub enum Error {
     #[error("Unable to generate a valid HTTP request. It probably comes from an invalid API key.")]
     InvalidRequest,
 
+    /// Can't call this method without setting an api key in the client.
+    #[error("You need to provide an api key to use the `{0}` method.")]
+    CantUseWithoutApiKey(String),
     /// It is not possible to generate a tenant token with a invalid api key.
     /// Empty strings or with less than 8 characters are considered invalid.
     #[error("The provided api_key is invalid.")]

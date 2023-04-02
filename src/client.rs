@@ -17,7 +17,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Client {
     pub(crate) host: String,
-    pub(crate) api_key: String,
+    pub(crate) api_key: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,10 +40,10 @@ impl Client {
     /// // create the client
     /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
     /// ```
-    pub fn new(host: impl Into<String>, api_key: impl Into<String>) -> Client {
+    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
         Client {
             host: host.into(),
-            api_key: api_key.into(),
+            api_key: api_key.map(|key| key.into()),
         }
     }
 
@@ -91,8 +91,8 @@ impl Client {
     ///
     /// assert_eq!(client.get_api_key(), "doggo");
     /// ```
-    pub fn get_api_key(&self) -> &str {
-        &self.api_key
+    pub fn get_api_key(&self) -> Option<&str> {
+        self.api_key.as_deref()
     }
 
     /// List all [Index]es with query parameters and returns values as instances of [Index].
@@ -170,7 +170,7 @@ impl Client {
     pub async fn list_all_indexes_raw(&self) -> Result<Value, Error> {
         let json_indexes = request::<(), (), Value>(
             &format!("{}/indexes", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -206,7 +206,7 @@ impl Client {
     ) -> Result<Value, Error> {
         let json_indexes = request::<&IndexesQuery, (), Value>(
             &format!("{}/indexes", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get {
                 query: indexes_query,
             },
@@ -269,7 +269,7 @@ impl Client {
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<Value, Error> {
         request::<(), (), Value>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -316,7 +316,7 @@ impl Client {
     ) -> Result<TaskInfo, Error> {
         request::<(), Value, TaskInfo>(
             &format!("{}/indexes", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Post {
                 query: (),
                 body: json!({
@@ -334,7 +334,7 @@ impl Client {
     pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            &self.api_key,
+            self.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -407,7 +407,7 @@ impl Client {
     ) -> Result<TaskInfo, Error> {
         request::<(), Vec<&SwapIndexes>, TaskInfo>(
             &format!("{}/swap-indexes", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Post {
                 query: (),
                 body: indexes.into_iter().collect(),
@@ -435,7 +435,7 @@ impl Client {
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
         request::<(), (), ClientStats>(
             &format!("{}/stats", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -461,7 +461,7 @@ impl Client {
     pub async fn health(&self) -> Result<Health, Error> {
         request::<(), (), Health>(
             &format!("{}/health", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -517,7 +517,7 @@ impl Client {
     pub async fn get_keys_with(&self, keys_query: &KeysQuery) -> Result<KeysResults, Error> {
         let keys = request::<&KeysQuery, (), KeysResults>(
             &format!("{}/keys", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: keys_query },
             200,
         )
@@ -549,7 +549,7 @@ impl Client {
     pub async fn get_keys(&self) -> Result<KeysResults, Error> {
         let keys = request::<(), (), KeysResults>(
             &format!("{}/keys", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -585,7 +585,7 @@ impl Client {
     pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
         request::<(), (), Key>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -620,7 +620,7 @@ impl Client {
     pub async fn delete_key(&self, key: impl AsRef<str>) -> Result<(), Error> {
         request::<(), (), ()>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
-            &self.api_key,
+            self.get_api_key(),
             Method::Delete { query: () },
             204,
         )
@@ -654,7 +654,7 @@ impl Client {
     pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
         request::<(), &KeyBuilder, Key>(
             &format!("{}/keys", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Post {
                 query: (),
                 body: key.as_ref(),
@@ -693,7 +693,7 @@ impl Client {
     pub async fn update_key(&self, key: impl AsRef<KeyUpdater>) -> Result<Key, Error> {
         request::<(), &KeyUpdater, Key>(
             &format!("{}/keys/{}", self.host, key.as_ref().key),
-            &self.api_key,
+            self.get_api_key(),
             Method::Patch {
                 body: key.as_ref(),
                 query: (),
@@ -721,7 +721,7 @@ impl Client {
     pub async fn get_version(&self) -> Result<Version, Error> {
         request::<(), (), Version>(
             &format!("{}/version", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -822,7 +822,7 @@ impl Client {
     pub async fn get_task(&self, task_id: impl AsRef<u32>) -> Result<Task, Error> {
         request::<(), (), Task>(
             &format!("{}/tasks/{}", self.host, task_id.as_ref()),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -853,7 +853,7 @@ impl Client {
     ) -> Result<TasksResults, Error> {
         let tasks = request::<&TasksSearchQuery, (), TasksResults>(
             &format!("{}/tasks", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: tasks_query },
             200,
         )
@@ -887,7 +887,7 @@ impl Client {
     ) -> Result<TaskInfo, Error> {
         let tasks = request::<&TasksCancelQuery, (), TaskInfo>(
             &format!("{}/tasks/cancel", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Post {
                 query: filters,
                 body: (),
@@ -924,7 +924,7 @@ impl Client {
     ) -> Result<TaskInfo, Error> {
         let tasks = request::<&TasksDeleteQuery, (), TaskInfo>(
             &format!("{}/tasks", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Delete { query: filters },
             200,
         )
@@ -953,7 +953,7 @@ impl Client {
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
         let tasks = request::<(), (), TasksResults>(
             &format!("{}/tasks", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -987,7 +987,14 @@ impl Client {
         api_key: Option<&str>,
         expires_at: Option<OffsetDateTime>,
     ) -> Result<String, Error> {
-        let api_key = api_key.unwrap_or(&self.api_key);
+        let api_key = match self.get_api_key() {
+            Some(key) => api_key.unwrap_or(key),
+            None => {
+                return Err(Error::CantUseWithoutApiKey(
+                    "generate_tenant_token".to_string(),
+                ))
+            }
+        };
 
         crate::tenant_tokens::generate_tenant_token(api_key_uid, search_rules, api_key, expires_at)
     }
@@ -1117,7 +1124,7 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(address, "", Method::Get { query: () }, 200),
+                request::<(), (), ()>(address, None, Method::Get { query: () }, 200),
             ),
             (
                 s.mock("POST", path)
@@ -1126,7 +1133,7 @@ mod tests {
                     .await,
                 request::<(), (), ()>(
                     address,
-                    "",
+                    None,
                     Method::Post {
                         query: (),
                         body: {},
@@ -1139,7 +1146,7 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(address, "", Method::Delete { query: () }, 200),
+                request::<(), (), ()>(address, None, Method::Delete { query: () }, 200),
             ),
             (
                 s.mock("PUT", path)
@@ -1148,7 +1155,7 @@ mod tests {
                     .await,
                 request::<(), (), ()>(
                     address,
-                    "",
+                    None,
                     Method::Put {
                         query: (),
                         body: (),
@@ -1163,7 +1170,7 @@ mod tests {
                     .await,
                 request::<(), (), ()>(
                     address,
-                    "",
+                    None,
                     Method::Patch {
                         query: (),
                         body: (),
@@ -1237,7 +1244,7 @@ mod tests {
         let key = client.create_key(key).await.unwrap();
         let master_key = client.api_key.clone();
         // this key has no right
-        client.api_key = key.key.clone();
+        client.api_key = Some(key.key.clone());
         // with a wrong key
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
@@ -1312,7 +1319,7 @@ mod tests {
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
-        client.api_key = no_right_key.key.clone();
+        client.api_key = Some(no_right_key.key.clone());
 
         let mut key = KeyBuilder::new();
         key.with_name(format!("{name}_2"));
@@ -1328,7 +1335,10 @@ mod tests {
         ));
 
         // cleanup
-        master_client.delete_key(&*client.api_key).await.unwrap();
+        master_client
+            .delete_key(client.api_key.unwrap())
+            .await
+            .unwrap();
     }
 
     #[meilisearch_test]

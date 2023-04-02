@@ -249,7 +249,7 @@ impl Index {
     pub async fn get_settings(&self) -> Result<Settings, Error> {
         request::<(), (), Settings>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -278,7 +278,7 @@ impl Index {
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -307,7 +307,7 @@ impl Index {
                 "{}/indexes/{}/settings/pagination",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -336,7 +336,7 @@ impl Index {
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -365,7 +365,7 @@ impl Index {
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -394,7 +394,7 @@ impl Index {
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -423,7 +423,7 @@ impl Index {
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -452,7 +452,7 @@ impl Index {
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -481,7 +481,7 @@ impl Index {
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -510,7 +510,7 @@ impl Index {
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -539,7 +539,7 @@ impl Index {
                 "{}/indexes/{}/settings/faceting",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
@@ -575,7 +575,7 @@ impl Index {
     pub async fn set_settings(&self, settings: &Settings) -> Result<TaskInfo, Error> {
         request::<(), &Settings, TaskInfo>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Patch {
                 query: (),
                 body: settings,
@@ -618,7 +618,7 @@ impl Index {
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: synonyms,
@@ -653,7 +653,7 @@ impl Index {
                 "{}/indexes/{}/settings/pagination",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Patch {
                 query: (),
                 body: &pagination,
@@ -692,7 +692,7 @@ impl Index {
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: stop_words
@@ -743,7 +743,7 @@ impl Index {
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: ranking_rules
@@ -785,7 +785,7 @@ impl Index {
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: filterable_attributes
@@ -827,7 +827,7 @@ impl Index {
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: sortable_attributes
@@ -868,7 +868,7 @@ impl Index {
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: distinct_attribute.as_ref().to_string(),
@@ -906,7 +906,7 @@ impl Index {
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: searchable_attributes
@@ -947,7 +947,7 @@ impl Index {
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: displayed_attributes
@@ -989,7 +989,7 @@ impl Index {
                 "{}/indexes/{}/settings/faceting",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Patch {
                 query: (),
                 body: faceting,
@@ -1022,7 +1022,7 @@ impl Index {
     pub async fn reset_settings(&self) -> Result<TaskInfo, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1054,7 +1054,7 @@ impl Index {
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1086,7 +1086,7 @@ impl Index {
                 "{}/indexes/{}/settings/pagination",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1117,7 +1117,7 @@ impl Index {
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1150,7 +1150,7 @@ impl Index {
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1182,7 +1182,7 @@ impl Index {
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1214,7 +1214,7 @@ impl Index {
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1246,7 +1246,7 @@ impl Index {
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1278,7 +1278,7 @@ impl Index {
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1310,7 +1310,7 @@ impl Index {
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1342,7 +1342,7 @@ impl Index {
                 "{}/indexes/{}/settings/faceting",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
