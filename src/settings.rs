@@ -239,7 +239,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_settings");
     /// let settings = index.get_settings().await.unwrap();
@@ -265,7 +265,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_synonyms");
     /// let synonyms = index.get_synonyms().await.unwrap();
@@ -294,7 +294,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_pagination");
     /// let pagination = index.get_pagination().await.unwrap();
@@ -323,7 +323,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_stop_words");
     /// let stop_words = index.get_stop_words().await.unwrap();
@@ -352,7 +352,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_ranking_rules");
     /// let ranking_rules = index.get_ranking_rules().await.unwrap();
@@ -381,7 +381,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_filterable_attributes");
     /// let filterable_attributes = index.get_filterable_attributes().await.unwrap();
@@ -410,7 +410,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_sortable_attributes");
     /// let sortable_attributes = index.get_sortable_attributes().await.unwrap();
@@ -439,7 +439,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_distinct_attribute");
     /// let distinct_attribute = index.get_distinct_attribute().await.unwrap();
@@ -468,7 +468,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_searchable_attributes");
     /// let searchable_attributes = index.get_searchable_attributes().await.unwrap();
@@ -497,7 +497,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_displayed_attributes");
     /// let displayed_attributes = index.get_displayed_attributes().await.unwrap();
@@ -526,7 +526,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_faceting", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_faceting");
     /// let faceting = index.get_faceting().await.unwrap();
@@ -558,7 +558,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_settings");
     ///
@@ -596,7 +596,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_synonyms");
     ///
@@ -639,7 +639,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_pagination");
     /// let pagination = PaginationSetting {max_total_hits:100};
@@ -674,7 +674,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_stop_words");
     ///
@@ -716,7 +716,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_ranking_rules");
     ///
@@ -767,7 +767,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_filterable_attributes");
     ///
@@ -809,7 +809,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_sortable_attributes");
     ///
@@ -851,7 +851,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_distinct_attribute");
     ///
@@ -889,7 +889,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_searchable_attributes");
     ///
@@ -930,7 +930,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_displayed_attributes");
     ///
@@ -971,7 +971,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_faceting", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_faceting");
     ///
@@ -1011,7 +1011,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_settings");
     ///
@@ -1040,7 +1040,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_synonyms");
     ///
@@ -1072,7 +1072,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_pagination");
     ///
@@ -1103,7 +1103,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_stop_words");
     ///
@@ -1136,7 +1136,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_ranking_rules");
     ///
@@ -1168,7 +1168,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_filterable_attributes");
     ///
@@ -1200,7 +1200,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_sortable_attributes");
     ///
@@ -1232,7 +1232,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_distinct_attribute");
     ///
@@ -1264,7 +1264,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_searchable_attributes");
     ///
@@ -1296,7 +1296,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_displayed_attributes");
     ///
@@ -1328,7 +1328,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_faceting", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_faceting");
     ///

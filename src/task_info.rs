@@ -51,7 +51,7 @@ impl TaskInfo {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
@@ -166,10 +166,7 @@ mod test {
 
     #[meilisearch_test]
     async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
-        let task_info = client
-            .create_index("meilisearch_sdk-task_info-test-test_failing_task", None)
-            .await
-            .unwrap();
+        let task_info = client.create_index(index.uid, None).await.unwrap();
         let task = client.wait_for_task(task_info, None, None).await?;
 
         let error = task.unwrap_failure();

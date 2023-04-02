@@ -240,7 +240,7 @@ impl Task {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
@@ -280,7 +280,7 @@ impl Task {
     /// #
     /// # futures::executor::block_on(async move {
     /// // create the client
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     ///
     /// let task = client.create_index("try_make_index", None).await.unwrap();
     /// let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
@@ -318,7 +318,7 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client.create_index("unwrap_failure", None).await.unwrap();
     /// let task = client
     ///     .create_index("unwrap_failure", None)
@@ -356,7 +356,7 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client.create_index("is_failure", None).await.unwrap();
     /// let task = client
     ///     .create_index("is_failure", None)
@@ -385,7 +385,7 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client
     ///   .create_index("is_success", None)
     ///   .await
@@ -414,7 +414,7 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task_info = client
     ///   .create_index("is_pending", None)
     ///   .await
@@ -996,10 +996,7 @@ mod test {
 
     #[meilisearch_test]
     async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
-        let task_info = client
-            .create_index("meilisearch_sdk-tasks-test-test_failing_task", None)
-            .await
-            .unwrap();
+        let task_info = client.create_index(index.uid, None).await.unwrap();
         let task = client.get_task(task_info).await?;
         let task = client.wait_for_task(task, None, None).await?;
 

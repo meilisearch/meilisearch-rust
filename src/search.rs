@@ -140,7 +140,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// }
 ///
 /// # futures::executor::block_on(async move {
-/// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 /// # let index = client
 /// #  .create_index("search_query_builder", None)
 /// #  .await
@@ -169,7 +169,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
-/// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 /// # let index = client.index("search_query_builder_build");
 /// let query = index.search()
 ///     .with_query("space")
@@ -328,7 +328,7 @@ impl<'a> SearchQuery<'a> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
@@ -358,7 +358,7 @@ impl<'a> SearchQuery<'a> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
     ///     name: String,
