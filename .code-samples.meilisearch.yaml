@@ -1119,7 +1119,7 @@ getting_started_filtering: |-
     .execute()
     .await
     .unwrap();
-faceted_search_update_settings_1: |-
+filtering_update_settings_1: |-
   let task: TaskInfo = client
     .index("movies")
     .set_filterable_attributes(["director", "genres"])
@@ -1156,6 +1156,44 @@ faceted_search_walkthrough_filter_1: |-
     .execute()
     .await
     .unwrap();
+faceted_search_update_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .set_filterable_attributes(&["genres", "rating", "language"])
+    .await
+    .unwrap();
+faceted_search_1: |-
+  let books = client.index("books");
+
+  let results: SearchResults<Book> = SearchQuery::new(&books)
+    .with_query("classic")
+    .with_facets(Selectors::Some(&["genres", "rating", "language"]))
+    .execute()
+    .await
+    .unwrap();
+faceted_search_2: |-
+  let books = client.index("books");
+  let search_query_1 = SearchQuery::new(&books)
+      .with_facets(Selectors::Some(&["language", "genres", "author", "format"]))
+      .with_filter("(language = English OR language = French) AND genres = Fiction")
+      .build();
+  let search_query_2 = SearchQuery::new(&books)
+      .with_facets(Selectors::Some(&["language"]))
+      .with_filter("genres = Fiction")
+      .build();
+  let search_query_3 = SearchQuery::new(&books)
+      .with_facets(Selectors::Some(&["genres"]))
+      .with_filter("language = English OR language = French")  
+      .build();
+
+  let books_response = client
+      .multi_search()
+      .with_search_query(search_query_1)
+      .with_search_query(search_query_2)
+      .with_search_query(search_query_3)
+      .execute::<Book>()
+      .await
+      .unwrap();
 post_dump_1: |-
   client
     .create_dump()
@@ -1298,6 +1336,14 @@ geosearch_guide_sort_usage_2: |-
     .execute()
     .await
     .unwrap();
+geosearch_guide_filter_usage_3: |-
+  let results: SearchResults<Restaurant> = client
+    .index("restaurants")
+    .search()
+    .with_filter("_geoBoundingBox([45.494181, 9.179175], [45.449484, 9.214024])")
+    .execute()
+    .await
+    .unwrap();
 get_one_key_1: |-
   let key = client
     .get_key("6062abda-a5aa-4414-ac91-ecd7944c0f8d")
@@ -1422,5 +1468,35 @@ tenant_token_guide_search_sdk_1: |-
     .search()
     .with_query("blood test")
     .execute()
+    .await
+    .unwrap();
+multi_search_1: |-
+  let movie = client.index("movie");
+  let search_query_1 = SearchQuery::new(&movie)
+      .with_query("pooh")
+      .with_limit(5)
+      .build();
+  let search_query_2 = SearchQuery::new(&movie)
+      .with_query("nemo")
+      .with_limit(5)      
+      .build();
+
+  let movie_response = client
+      .multi_search()
+      .with_search_query(search_query_1)
+      .with_search_query(search_query_2)
+      .execute::<Movie>()
+      .await
+      .unwrap();
+
+  let movie_ratings = client.index("movie_ratings");
+  let search_query_3 = SearchQuery::new(&movie_ratings)
+      .with_query("us")
+      .build();
+
+  let movie_ratings_response = client
+    .multi_search()
+    .with_search_query(search_query_3)
+    .execute::<MovieRatings>()
     .await
     .unwrap();
