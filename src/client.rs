@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{collections::HashMap, time::Duration};
 use time::OffsetDateTime;
@@ -8,6 +8,7 @@ use crate::{
     indexes::*,
     key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
     request::*,
+    search::*,
     task_info::TaskInfo,
     tasks::{Task, TasksCancelQuery, TasksDeleteQuery, TasksResults, TasksSearchQuery},
     utils::async_sleep,
@@ -61,6 +62,67 @@ impl Client {
         };
 
         Ok(indexes_results)
+    }
+
+    pub async fn execute_multi_search_query<T: 'static + DeserializeOwned>(
+        &self,
+        body: &MultiSearchQuery<'_, '_>,
+    ) -> Result<MultiSearchResponse<T>, Error> {
+        request::<(), &MultiSearchQuery, MultiSearchResponse<T>>(
+            &format!("{}/multi-search", &self.host),
+            self.get_api_key(),
+            Method::Post { body, query: () },
+            200,
+        )
+        .await
+    }
+
+    /// Make multiple search requests.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+    ///
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    ///
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let mut movies = client.index("search");
+    ///
+    /// // add some documents
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let search_query_1 = SearchQuery::new(&movies)
+    ///     .with_query("Interstellar")
+    ///     .build();
+    /// let search_query_2 = SearchQuery::new(&movies)
+    ///     .with_query("")
+    ///     .build();
+    ///
+    /// let response = client
+    ///     .multi_search()
+    ///     .with_search_query(search_query_1)
+    ///     .with_search_query(search_query_2)
+    ///     .execute::<Movie>()
+    ///     .await
+    ///     .unwrap();
+    ///
+    /// assert_eq!(response.results.len(), 2);
+    /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub fn multi_search(&self) -> MultiSearchQuery {
+        MultiSearchQuery::new(self)
     }
 
     /// Return the host associated with this index.

@@ -1,10 +1,10 @@
-use crate::{errors::Error, indexes::Index};
+use crate::{client::Client, errors::Error, indexes::Index};
 use either::Either;
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, Eq, PartialEq)]
+#[derive(Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct MatchRange {
     pub start: usize,
     pub length: usize,
@@ -33,7 +33,7 @@ pub enum MatchingStrategies {
 
 /// A single result.
 /// Contains the complete object, optionally the formatted object, and optionally an object that contains information about the matches.
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct SearchResult<T> {
     /// The full result.
     #[serde(flatten)]
@@ -46,6 +46,12 @@ pub struct SearchResult<T> {
     pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct FacetStats {
+    pub min: u32,
+    pub max: u32,
+}
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
@@ -68,10 +74,14 @@ pub struct SearchResults<T> {
     pub total_pages: Option<usize>,
     /// Distribution of the given facets
     pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
+    /// facet stats of the numerical facets requested in the `facet` search parameter.
+    pub facet_stats: Option<HashMap<String, FacetStats>>,
     /// Processing time of the query
     pub processing_time_ms: usize,
     /// Query originating the response
     pub query: String,
+    /// Index uid on which the search was made
+    pub index_uid: Option<String>,
 }
 
 fn serialize_with_wildcard<S: Serializer, T: Serialize>(
@@ -279,6 +289,9 @@ pub struct SearchQuery<'a> {
     /// Defines the strategy on how to handle queries containing multiple words.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) index_uid: Option<&'a str>,
 }
 
 #[allow(missing_docs)]
@@ -303,6 +316,7 @@ impl<'a> SearchQuery<'a> {
             highlight_post_tag: None,
             show_matches_position: None,
             matching_strategy: None,
+            index_uid: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a> {
@@ -453,6 +467,10 @@ impl<'a> SearchQuery<'a> {
         self.matching_strategy = Some(matching_strategy);
         self
     }
+    pub fn with_index_uid<'b>(&'b mut self) -> &'b mut SearchQuery<'a> {
+        self.index_uid = Some(&self.index.uid);
+        self
+    }
     pub fn build(&mut self) -> SearchQuery<'a> {
         self.clone()
     }
@@ -462,6 +480,43 @@ impl<'a> SearchQuery<'a> {
     ) -> Result<SearchResults<T>, Error> {
         self.index.execute_query::<T>(self).await
     }
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MultiSearchQuery<'a, 'b> {
+    #[serde(skip_serializing)]
+    client: &'a Client,
+    pub queries: Vec<SearchQuery<'b>>,
+}
+
+#[allow(missing_docs)]
+impl<'a, 'b> MultiSearchQuery<'a, 'b> {
+    pub fn new(client: &'a Client) -> MultiSearchQuery<'a, 'b> {
+        MultiSearchQuery {
+            client,
+            queries: Vec::new(),
+        }
+    }
+    pub fn with_search_query(
+        &mut self,
+        mut search_query: SearchQuery<'b>,
+    ) -> &mut MultiSearchQuery<'a, 'b> {
+        search_query.with_index_uid();
+        self.queries.push(search_query);
+        self
+    }
+
+    /// Execute the query and fetch the results.
+    pub async fn execute<T: 'static + DeserializeOwned>(
+        &'a self,
+    ) -> Result<MultiSearchResponse<T>, Error> {
+        self.client.execute_multi_search_query::<T>(self).await
+    }
+}
+#[derive(Debug, Deserialize)]
+pub struct MultiSearchResponse<T> {
+    pub results: Vec<SearchResults<T>>,
 }
 
 #[cfg(test)]
@@ -513,6 +568,28 @@ mod tests {
         t1.wait_for_completion(client, None, None).await?;
         t0.wait_for_completion(client, None, None).await?;
 
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_multi_search(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let search_query_1 = SearchQuery::new(&index)
+            .with_query("Sorcerer's Stone")
+            .build();
+        let search_query_2 = SearchQuery::new(&index)
+            .with_query("Chamber of Secrets")
+            .build();
+
+        let response = client
+            .multi_search()
+            .with_search_query(search_query_1)
+            .with_search_query(search_query_2)
+            .execute::<Document>()
+            .await
+            .unwrap();
+
+        assert_eq!(response.results.len(), 2);
         Ok(())
     }
 
