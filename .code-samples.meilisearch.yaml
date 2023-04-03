@@ -779,7 +779,7 @@ add_movies_json_1: |-
   use futures::executor::block_on;
 
   fn main() { block_on(async move {
-    let client = Client::new("http://localhost:7700", "masterKey");
+    let client = Client::new("http://localhost:7700", Some("masterKey"));
 
     // reading and parsing the file
     let mut file = File::open("movies.json")
@@ -903,7 +903,7 @@ getting_started_add_documents_md: |-
   use futures::executor::block_on;
 
   fn main() { block_on(async move {
-    let client = Client::new("http://localhost:7700", "masterKey");
+    let client = Client::new("http://localhost:7700", Some("masterKey"));
 
     // reading and parsing the file
     let mut file = File::open("movies.json")
@@ -1022,7 +1022,7 @@ getting_started_update_displayed_attributes: |-
     .await
     .unwrap();
 getting_started_communicating_with_a_protected_instance: |-
-  let client = Client::new("http://localhost:7700", "apiKey");
+  let client = Client::new("http://localhost:7700", Some("apiKey"));
   client
     .index("movies")
     .search()
@@ -1385,20 +1385,20 @@ delete_a_key_1: |-
     .delete_key(&key)
     .await?;
 authorization_header_1:
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
   let keys = client
   .get_keys()
   .await
   .unwrap();
 security_guide_search_key_1: |-
-  let client = Client::new("http://localhost:7700", "apiKey");
+  let client = Client::new("http://localhost:7700", Some("apiKey"));
   let result = client.index("patient_medical_records")
     .search()
     .execute()
     .await
     .unwrap();
 security_guide_update_key_1: |-
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
   let mut key = client
     .get_key("74c9c733-3368-4738-bbe5-1d18a5fecb37")
     .await
@@ -1407,7 +1407,7 @@ security_guide_update_key_1: |-
     .with_description("Default Search API key".to_string())
     .update(&client);
 security_guide_create_key_1: |-
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
   let mut key_options = KeyBuilder::new("Search patient records key");
   key_options
     .with_action(Action::Search)
@@ -1418,13 +1418,13 @@ security_guide_create_key_1: |-
     .await
     .unwrap();
 security_guide_list_keys_1: |-
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
   let keys = client
     .get_keys()
     .await
     .unwrap();
 security_guide_delete_key_1: |-
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
   let key = client
     .get_key("ac5cd97d-5a4b-4226-a868-2d0eb6d197ab")
     .await
@@ -1433,7 +1433,7 @@ security_guide_delete_key_1: |-
     .delete_key(&key)
     .await?;
 landing_getting_started_1: |-
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
 
   #[derive(Serialize, Deserialize)]
   struct Movie {
@@ -1462,7 +1462,7 @@ tenant_token_guide_generate_sdk_1: |-
     .generate_tenant_token(api_key_uid, search_rules, api_key, expires_at)
     .unwrap();
 tenant_token_guide_search_sdk_1: |-
-  let front_end_client = Client::new("http://localhost:7700", token);
+  let front_end_client = Client::new("http://localhost:7700", Some(token));
   let results: SearchResults<Patient> = front_end_client
     .index("patient_medical_records")
     .search()

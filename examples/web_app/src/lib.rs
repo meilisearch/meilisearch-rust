@@ -16,7 +16,7 @@ mod document;
 use crate::document::{display, Crate};
 
 lazy_static! {
-    static ref CLIENT: Client = Client::new("http://localhost:7700", "masterKey",);
+    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey"));
 }
 
 struct Model {

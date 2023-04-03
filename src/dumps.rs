@@ -23,7 +23,7 @@
 //! # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //! #
-//! let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+//! let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 //!
 //! // Create a dump
 //! let task_info = client.create_dump().await.unwrap();
@@ -57,7 +57,7 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// #
     /// let task_info = client.create_dump().await.unwrap();
     /// assert!(matches!(
@@ -72,7 +72,7 @@ impl Client {
     pub async fn create_dump(&self) -> Result<TaskInfo, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/dumps", self.host),
-            &self.api_key,
+            self.get_api_key(),
             Method::Post {
                 query: (),
                 body: (),
