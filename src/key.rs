@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::{client::Client, errors::Error};
+use crate::{client::Client, errors::Error, request::HttpClient};
 
 /// Represent a [meilisearch key](https://docs.meilisearch.com/reference/api/keys.html#returned-fields)
 /// You can get a [Key] from the [Client::get_key] method.
 /// Or you can create a [Key] with the [KeyBuilder::new] or [Client::create_key] methods.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Key {
+pub struct Key<Http: HttpClient> {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub actions: Vec<Action>,
     #[serde(skip_serializing, with = "time::serde::rfc3339")]
@@ -27,7 +27,7 @@ pub struct Key {
     pub updated_at: OffsetDateTime,
 }
 
-impl Key {
+impl<Http: HttpClient> Key<Http> {
     /// Update the description of the key.
     ///
     /// # Example
@@ -106,7 +106,7 @@ impl Key {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn update(&self, client: &Client) -> Result<Key, Error> {
+    pub async fn update(&self, client: &Client<Http>) -> Result<Key<Http>, Error> {
         // only send description and name
         let mut key_update = KeyUpdater::new(self);
 
@@ -138,34 +138,34 @@ impl Key {
     /// client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete(&self, client: &Client) -> Result<(), Error> {
+    pub async fn delete(&self, client: &Client<Http>) -> Result<(), Error> {
         client.delete_key(self).await
     }
 }
 
-impl AsRef<str> for Key {
+impl<Http: HttpClient> AsRef<str> for Key<Http> {
     fn as_ref(&self) -> &str {
         &self.key
     }
 }
 
-impl AsRef<Key> for Key {
-    fn as_ref(&self) -> &Key {
+impl<Http: HttpClient> AsRef<Key<Http>> for Key<Http> {
+    fn as_ref(&self) -> &Key<Http> {
         self
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct KeyUpdater {
+pub struct KeyUpdater<Http: HttpClient> {
     pub description: Option<String>,
     pub name: Option<String>,
     #[serde(skip_serializing)]
     pub key: String,
 }
 
-impl KeyUpdater {
-    pub fn new(key_or_uid: impl AsRef<str>) -> KeyUpdater {
+impl<Http: HttpClient> KeyUpdater<Http> {
+    pub fn new(key_or_uid: impl AsRef<str>) -> KeyUpdater<Http> {
         KeyUpdater {
             description: None,
             name: None,
@@ -263,26 +263,26 @@ impl KeyUpdater {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute(&self, client: &Client) -> Result<Key, Error> {
+    pub async fn execute(&self, client: &Client<Http>) -> Result<Key<Http>, Error> {
         client.update_key(self).await
     }
 }
 
-impl AsRef<str> for KeyUpdater {
+impl<Http: HttpClient> AsRef<str> for KeyUpdater<Http> {
     fn as_ref(&self) -> &str {
         &self.key
     }
 }
 
-impl AsRef<KeyUpdater> for KeyUpdater {
-    fn as_ref(&self) -> &KeyUpdater {
+impl<Http: HttpClient> AsRef<KeyUpdater<Http>> for KeyUpdater<Http> {
+    fn as_ref(&self) -> &KeyUpdater<Http> {
         self
     }
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct KeysQuery {
+pub struct KeysQuery<Http: HttpClient> {
     /// The number of documents to skip.
     /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
     /// This is helpful for pagination.
@@ -300,7 +300,7 @@ pub struct KeysQuery {
     pub limit: Option<usize>,
 }
 
-impl KeysQuery {
+impl<Http: HttpClient> KeysQuery<Http> {
     /// Create a [KeysQuery] with only a description.
     ///
     /// # Example
@@ -309,7 +309,7 @@ impl KeysQuery {
     /// # use meilisearch_sdk::{key::KeysQuery};
     /// let builder = KeysQuery::new();
     /// ```
-    pub fn new() -> KeysQuery {
+    pub fn new() -> KeysQuery<Http> {
         Self::default()
     }
 
@@ -332,7 +332,7 @@ impl KeysQuery {
     /// # assert_eq!(keys.offset, 1);
     /// # });
     /// ```
-    pub fn with_offset(&mut self, offset: usize) -> &mut KeysQuery {
+    pub fn with_offset(&mut self, offset: usize) -> &mut KeysQuery<Http> {
         self.offset = Some(offset);
         self
     }
@@ -356,7 +356,7 @@ impl KeysQuery {
     /// # assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
-    pub fn with_limit(&mut self, limit: usize) -> &mut KeysQuery {
+    pub fn with_limit(&mut self, limit: usize) -> &mut KeysQuery<Http> {
         self.limit = Some(limit);
         self
     }
@@ -380,7 +380,7 @@ impl KeysQuery {
     /// # assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
-    pub async fn execute(&self, client: &Client) -> Result<KeysResults, Error> {
+    pub async fn execute(&self, client: &Client<Http>) -> Result<KeysResults<Http>, Error> {
         client.get_keys_with(self).await
     }
 }
@@ -409,7 +409,7 @@ impl KeysQuery {
 /// ```
 #[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct KeyBuilder {
+pub struct KeyBuilder<Http: HttpClient> {
     pub actions: Vec<Action>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
@@ -422,7 +422,7 @@ pub struct KeyBuilder {
     pub indexes: Vec<String>,
 }
 
-impl KeyBuilder {
+impl<Http: HttpClient> KeyBuilder<Http> {
     /// Create a [KeyBuilder].
     ///
     /// # Example
@@ -431,7 +431,7 @@ impl KeyBuilder {
     /// # use meilisearch_sdk::{key::KeyBuilder};
     /// let builder = KeyBuilder::new();
     /// ```
-    pub fn new() -> KeyBuilder {
+    pub fn new() -> KeyBuilder<Http> {
         Self::default()
     }
 
@@ -629,13 +629,13 @@ impl KeyBuilder {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute(&self, client: &Client) -> Result<Key, Error> {
+    pub async fn execute(&self, client: &Client<Http>) -> Result<Key<Http>, Error> {
         client.create_key(self).await
     }
 }
 
-impl AsRef<KeyBuilder> for KeyBuilder {
-    fn as_ref(&self) -> &KeyBuilder {
+impl<Http: HttpClient> AsRef<KeyBuilder<Http>> for KeyBuilder<Http> {
+    fn as_ref(&self) -> &KeyBuilder<Http> {
         self
     }
 }
@@ -705,8 +705,8 @@ pub enum Action {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct KeysResults {
-    pub results: Vec<Key>,
+pub struct KeysResults<Http: HttpClient> {
+    pub results: Vec<Key<Http>>,
     pub limit: u32,
     pub offset: u32,
 }

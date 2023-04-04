@@ -47,20 +47,21 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// ```
 pub use meilisearch_index_setting_macro::IndexConfig;
 
+use crate::request::HttpClient;
 use crate::settings::Settings;
 use crate::tasks::Task;
 use crate::Client;
 use crate::{errors::Error, indexes::Index};
 
 #[async_trait]
-pub trait IndexConfig {
+pub trait IndexConfig<Http: HttpClient> {
     const INDEX_STR: &'static str;
 
-    fn index(client: &Client) -> Index {
+    fn index(client: &Client<Http>) -> Index<Http> {
         client.index(Self::INDEX_STR)
     }
     fn generate_settings() -> Settings;
-    async fn generate_index(client: &Client) -> Result<Index, Task>;
+    async fn generate_index(client: &Client<Http>) -> Result<Index<Http>, Task<Http>>;
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -72,17 +73,17 @@ pub struct DocumentsResults<T> {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct DocumentQuery<'a> {
+pub struct DocumentQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub index: &'a Index,
+    pub index: &'a Index<Http>,
 
     /// The fields that should appear in the documents. By default all of the fields are present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
 }
 
-impl<'a> DocumentQuery<'a> {
-    pub fn new(index: &Index) -> DocumentQuery {
+impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
+    pub fn new(index: &Index<Http>) -> DocumentQuery<Http> {
         DocumentQuery {
             index,
             fields: None,
@@ -108,7 +109,7 @@ impl<'a> DocumentQuery<'a> {
     pub fn with_fields(
         &mut self,
         fields: impl IntoIterator<Item = &'a str>,
-    ) -> &mut DocumentQuery<'a> {
+    ) -> &mut DocumentQuery<'a, Http> {
         self.fields = Some(fields.into_iter().collect());
         self
     }
@@ -157,9 +158,9 @@ impl<'a> DocumentQuery<'a> {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct DocumentsQuery<'a> {
+pub struct DocumentsQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub index: &'a Index,
+    pub index: &'a Index<Http>,
 
     /// The number of documents to skip.
     /// If the value of the parameter `offset` is `n`, the `n` first documents will not be returned.
@@ -183,8 +184,8 @@ pub struct DocumentsQuery<'a> {
     pub fields: Option<Vec<&'a str>>,
 }
 
-impl<'a> DocumentsQuery<'a> {
-    pub fn new(index: &Index) -> DocumentsQuery {
+impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
+    pub fn new(index: &Index<Http>) -> DocumentsQuery<Http> {
         DocumentsQuery {
             index,
             offset: None,
@@ -208,7 +209,7 @@ impl<'a> DocumentsQuery<'a> {
     ///
     /// let mut documents_query = DocumentsQuery::new(&index).with_offset(1);
     /// ```
-    pub fn with_offset(&mut self, offset: usize) -> &mut DocumentsQuery<'a> {
+    pub fn with_offset(&mut self, offset: usize) -> &mut DocumentsQuery<'a, Http> {
         self.offset = Some(offset);
         self
     }
@@ -230,7 +231,7 @@ impl<'a> DocumentsQuery<'a> {
     ///
     /// documents_query.with_limit(1);
     /// ```
-    pub fn with_limit(&mut self, limit: usize) -> &mut DocumentsQuery<'a> {
+    pub fn with_limit(&mut self, limit: usize) -> &mut DocumentsQuery<'a, Http> {
         self.limit = Some(limit);
         self
     }
@@ -255,7 +256,7 @@ impl<'a> DocumentsQuery<'a> {
     pub fn with_fields(
         &mut self,
         fields: impl IntoIterator<Item = &'a str>,
-    ) -> &mut DocumentsQuery<'a> {
+    ) -> &mut DocumentsQuery<'a, Http> {
         self.fields = Some(fields.into_iter().collect());
         self
     }
@@ -335,7 +336,7 @@ mod tests {
         video_id: u64,
     }
 
-    async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
+    async fn setup_test_index(client: &Client<dyn HttpClient>, index: &Index) -> Result<(), Error> {
         let t0 = index
             .add_documents(
                 &[
@@ -436,7 +437,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_generate_index(client: Client) -> Result<(), Error> {
+    async fn test_generate_index(client: Client<dyn HttpClient>) -> Result<(), Error> {
         let index: Index = MovieClips::generate_index(&client).await.unwrap();
 
         assert_eq!(index.uid, "movie_clips");

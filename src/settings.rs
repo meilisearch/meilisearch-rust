@@ -1,7 +1,7 @@
 use crate::{
     errors::Error,
     indexes::Index,
-    request::{request, Method},
+    request::{request, HttpClient, Method},
     task_info::TaskInfo,
 };
 use serde::{Deserialize, Serialize};
@@ -229,7 +229,7 @@ impl Settings {
     }
 }
 
-impl Index {
+impl<Http: HttpClient> Index<Http> {
     /// Get [Settings] of the [Index].
     ///
     /// ```
@@ -572,7 +572,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn set_settings(&self, settings: &Settings) -> Result<TaskInfo, Error> {
+    pub async fn set_settings(&self, settings: &Settings) -> Result<TaskInfo<Http>, Error> {
         request::<(), &Settings, TaskInfo>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.get_api_key(),
@@ -612,7 +612,7 @@ impl Index {
     pub async fn set_synonyms(
         &self,
         synonyms: &HashMap<String, Vec<String>>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), &HashMap<String, Vec<String>>, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/synonyms",
@@ -647,7 +647,10 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn set_pagination(&self, pagination: PaginationSetting) -> Result<TaskInfo, Error> {
+    pub async fn set_pagination(
+        &self,
+        pagination: PaginationSetting,
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), &PaginationSetting, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/pagination",
@@ -686,7 +689,7 @@ impl Index {
     pub async fn set_stop_words(
         &self,
         stop_words: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), Vec<String>, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/stop-words",
@@ -737,7 +740,7 @@ impl Index {
     pub async fn set_ranking_rules(
         &self,
         ranking_rules: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), Vec<String>, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/ranking-rules",
@@ -779,7 +782,7 @@ impl Index {
     pub async fn set_filterable_attributes(
         &self,
         filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), Vec<String>, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/filterable-attributes",
@@ -821,7 +824,7 @@ impl Index {
     pub async fn set_sortable_attributes(
         &self,
         sortable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), Vec<String>, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/sortable-attributes",
@@ -862,7 +865,7 @@ impl Index {
     pub async fn set_distinct_attribute(
         &self,
         distinct_attribute: impl AsRef<str>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), String, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/distinct-attribute",
@@ -900,7 +903,7 @@ impl Index {
     pub async fn set_searchable_attributes(
         &self,
         searchable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), Vec<String>, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/searchable-attributes",
@@ -941,7 +944,7 @@ impl Index {
     pub async fn set_displayed_attributes(
         &self,
         displayed_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), Vec<String>, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
@@ -983,7 +986,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn set_faceting(&self, faceting: &FacetingSettings) -> Result<TaskInfo, Error> {
+    pub async fn set_faceting(&self, faceting: &FacetingSettings) -> Result<TaskInfo<Http>, Error> {
         request::<(), &FacetingSettings, TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/faceting",
@@ -1019,7 +1022,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_settings(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_settings(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
             self.client.get_api_key(),
@@ -1048,7 +1051,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_synonyms(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_synonyms(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/synonyms",
@@ -1080,7 +1083,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_pagination(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_pagination(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/pagination",
@@ -1111,7 +1114,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_stop_words(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_stop_words(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/stop-words",
@@ -1144,7 +1147,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_ranking_rules(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_ranking_rules(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/ranking-rules",
@@ -1176,7 +1179,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_filterable_attributes(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_filterable_attributes(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/filterable-attributes",
@@ -1208,7 +1211,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_sortable_attributes(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_sortable_attributes(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/sortable-attributes",
@@ -1240,7 +1243,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_distinct_attribute(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_distinct_attribute(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/distinct-attribute",
@@ -1272,7 +1275,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_searchable_attributes(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_searchable_attributes(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/searchable-attributes",
@@ -1304,7 +1307,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_displayed_attributes(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_displayed_attributes(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/displayed-attributes",
@@ -1336,7 +1339,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn reset_faceting(&self) -> Result<TaskInfo, Error> {
+    pub async fn reset_faceting(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/settings/faceting",

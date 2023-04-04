@@ -16,9 +16,10 @@ use crate::{
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
-pub struct Client {
+pub struct Client<Http: HttpClient> {
     pub(crate) host: String,
     pub(crate) api_key: Option<String>,
+    http_client: Http,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +27,7 @@ pub struct SwapIndexes {
     pub indexes: (String, String),
 }
 
-impl Client {
+impl<Http: HttpClient> Client<Http> {
     /// Create a client using the specified server.
     /// Don't put a '/' at the end of the host.
     /// In production mode, see [the documentation about authentication](https://docs.meilisearch.com/reference/features/authentication.html#authentication).
@@ -41,14 +42,18 @@ impl Client {
     /// // create the client
     /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// ```
-    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
+    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client<Http> {
         Client {
             host: host.into(),
             api_key: api_key.map(|key| key.into()),
+            http_client: Box::new(IsahcClient),
         }
     }
 
-    fn parse_indexes_results_from_value(&self, value: Value) -> Result<IndexesResults, Error> {
+    fn parse_indexes_results_from_value(
+        &self,
+        value: Value,
+    ) -> Result<IndexesResults<Http>, Error> {
         let raw_indexes = value["results"].as_array().unwrap();
 
         let indexes_results = IndexesResults {
@@ -66,7 +71,7 @@ impl Client {
 
     pub async fn execute_multi_search_query<T: 'static + DeserializeOwned>(
         &self,
-        body: &MultiSearchQuery<'_, '_>,
+        body: &MultiSearchQuery<'_, '_, Http>,
     ) -> Result<MultiSearchResponse<T>, Error> {
         request::<(), &MultiSearchQuery, MultiSearchResponse<T>>(
             &format!("{}/multi-search", &self.host),
@@ -121,7 +126,7 @@ impl Client {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn multi_search(&self) -> MultiSearchQuery {
+    pub fn multi_search(&self) -> MultiSearchQuery<Http> {
         MultiSearchQuery::new(self)
     }
 
@@ -175,7 +180,7 @@ impl Client {
     /// println!("{:?}", indexes);
     /// # });
     /// ```
-    pub async fn list_all_indexes(&self) -> Result<IndexesResults, Error> {
+    pub async fn list_all_indexes(&self) -> Result<IndexesResults<Http>, Error> {
         let value = self.list_all_indexes_raw().await?;
         let indexes_results = self.parse_indexes_results_from_value(value)?;
         Ok(indexes_results)
@@ -203,8 +208,8 @@ impl Client {
     /// ```
     pub async fn list_all_indexes_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
-    ) -> Result<IndexesResults, Error> {
+        indexes_query: &IndexesQuery<'_, Http>,
+    ) -> Result<IndexesResults<Http>, Error> {
         let value = self.list_all_indexes_raw_with(indexes_query).await?;
         let indexes_results = self.parse_indexes_results_from_value(value)?;
 
@@ -264,7 +269,7 @@ impl Client {
     /// ```
     pub async fn list_all_indexes_raw_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
+        indexes_query: &IndexesQuery<'_, Http>,
     ) -> Result<Value, Error> {
         let json_indexes = request::<&IndexesQuery, (), Value>(
             &format!("{}/indexes", self.host),
@@ -300,7 +305,7 @@ impl Client {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
+    pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index<Http>, Error> {
         let mut idx = self.index(uid.as_ref());
         idx.fetch_info().await?;
         Ok(idx)
@@ -339,7 +344,7 @@ impl Client {
     }
 
     /// Create a corresponding object of an [Index] without any check or doing an HTTP call.
-    pub fn index(&self, uid: impl Into<String>) -> Index {
+    pub fn index(&self, uid: impl Into<String>) -> Index<Http> {
         Index::new(uid, self.clone())
     }
 
@@ -375,7 +380,7 @@ impl Client {
         &self,
         uid: impl AsRef<str>,
         primary_key: Option<&str>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), Value, TaskInfo>(
             &format!("{}/indexes", self.host),
             self.get_api_key(),
@@ -393,7 +398,7 @@ impl Client {
 
     /// Delete an index from its UID.
     /// To delete an [Index], use the [Index::delete] method.
-    pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo, Error> {
+    pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
             self.get_api_key(),
@@ -404,15 +409,15 @@ impl Client {
     }
 
     /// Alias for [Client::list_all_indexes].
-    pub async fn get_indexes(&self) -> Result<IndexesResults, Error> {
+    pub async fn get_indexes(&self) -> Result<IndexesResults<Http>, Error> {
         self.list_all_indexes().await
     }
 
     /// Alias for [Client::list_all_indexes_with].
     pub async fn get_indexes_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
-    ) -> Result<IndexesResults, Error> {
+        indexes_query: &IndexesQuery<'_, Http>,
+    ) -> Result<IndexesResults<Http>, Error> {
         self.list_all_indexes_with(indexes_query).await
     }
 
@@ -424,7 +429,7 @@ impl Client {
     /// Alias for [Client::list_all_indexes_raw_with].
     pub async fn get_indexes_raw_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
+        indexes_query: &IndexesQuery<'_, Http>,
     ) -> Result<Value, Error> {
         self.list_all_indexes_raw_with(indexes_query).await
     }
@@ -466,7 +471,7 @@ impl Client {
     pub async fn swap_indexes(
         &self,
         indexes: impl IntoIterator<Item = &SwapIndexes>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), Vec<&SwapIndexes>, TaskInfo>(
             &format!("{}/swap-indexes", self.host),
             self.get_api_key(),
@@ -576,7 +581,10 @@ impl Client {
     /// assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
-    pub async fn get_keys_with(&self, keys_query: &KeysQuery) -> Result<KeysResults, Error> {
+    pub async fn get_keys_with(
+        &self,
+        keys_query: &KeysQuery<Http>,
+    ) -> Result<KeysResults<Http>, Error> {
         let keys = request::<&KeysQuery, (), KeysResults>(
             &format!("{}/keys", self.host),
             self.get_api_key(),
@@ -608,7 +616,7 @@ impl Client {
     /// assert_eq!(keys.limit, 20);
     /// # });
     /// ```
-    pub async fn get_keys(&self) -> Result<KeysResults, Error> {
+    pub async fn get_keys(&self) -> Result<KeysResults<Http>, Error> {
         let keys = request::<(), (), KeysResults>(
             &format!("{}/keys", self.host),
             self.get_api_key(),
@@ -644,7 +652,7 @@ impl Client {
     /// assert_eq!(key.name, Some("Default Search API Key".to_string()));
     /// # });
     /// ```
-    pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
+    pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key<Http>, Error> {
         request::<(), (), Key>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
             self.get_api_key(),
@@ -713,7 +721,7 @@ impl Client {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
+    pub async fn create_key(&self, key: impl AsRef<KeyBuilder<Http>>) -> Result<Key<Http>, Error> {
         request::<(), &KeyBuilder, Key>(
             &format!("{}/keys", self.host),
             self.get_api_key(),
@@ -752,7 +760,7 @@ impl Client {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn update_key(&self, key: impl AsRef<KeyUpdater>) -> Result<Key, Error> {
+    pub async fn update_key(&self, key: impl AsRef<KeyUpdater<Http>>) -> Result<Key<Http>, Error> {
         request::<(), &KeyUpdater, Key>(
             &format!("{}/keys/{}", self.host, key.as_ref().key),
             self.get_api_key(),
@@ -837,7 +845,7 @@ impl Client {
         task_id: impl AsRef<u32>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
-    ) -> Result<Task, Error> {
+    ) -> Result<Task<Http>, Error> {
         let interval = interval.unwrap_or_else(|| Duration::from_millis(50));
         let timeout = timeout.unwrap_or_else(|| Duration::from_millis(5000));
 
@@ -881,7 +889,7 @@ impl Client {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_task(&self, task_id: impl AsRef<u32>) -> Result<Task, Error> {
+    pub async fn get_task(&self, task_id: impl AsRef<u32>) -> Result<Task<Http>, Error> {
         request::<(), (), Task>(
             &format!("{}/tasks/{}", self.host, task_id.as_ref()),
             self.get_api_key(),
@@ -911,8 +919,8 @@ impl Client {
     /// ```
     pub async fn get_tasks_with(
         &self,
-        tasks_query: &TasksSearchQuery<'_>,
-    ) -> Result<TasksResults, Error> {
+        tasks_query: &TasksSearchQuery<'_, Http>,
+    ) -> Result<TasksResults<Http>, Error> {
         let tasks = request::<&TasksSearchQuery, (), TasksResults>(
             &format!("{}/tasks", self.host),
             self.get_api_key(),
@@ -945,8 +953,8 @@ impl Client {
     /// ```
     pub async fn cancel_tasks_with(
         &self,
-        filters: &TasksCancelQuery<'_>,
-    ) -> Result<TaskInfo, Error> {
+        filters: &TasksCancelQuery<'_, Http>,
+    ) -> Result<TaskInfo<Http>, Error> {
         let tasks = request::<&TasksCancelQuery, (), TaskInfo>(
             &format!("{}/tasks/cancel", self.host),
             self.get_api_key(),
@@ -982,8 +990,8 @@ impl Client {
     /// ```
     pub async fn delete_tasks_with(
         &self,
-        filters: &TasksDeleteQuery<'_>,
-    ) -> Result<TaskInfo, Error> {
+        filters: &TasksDeleteQuery<'_, Http>,
+    ) -> Result<TaskInfo<Http>, Error> {
         let tasks = request::<&TasksDeleteQuery, (), TaskInfo>(
             &format!("{}/tasks", self.host),
             self.get_api_key(),
@@ -1012,7 +1020,7 @@ impl Client {
     /// # assert!(tasks.results.len() > 0);
     /// # });
     /// ```
-    pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
+    pub async fn get_tasks(&self) -> Result<TasksResults<Http>, Error> {
         let tasks = request::<(), (), TasksResults>(
             &format!("{}/tasks", self.host),
             self.get_api_key(),
@@ -1373,7 +1381,6 @@ mod tests {
             }
         ));
         */
-
         // ==> executing the action without enough right
         let mut no_right_key = KeyBuilder::new();
         no_right_key.with_name(&format!("{name}_1"));
