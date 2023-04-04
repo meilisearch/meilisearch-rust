@@ -1,12 +1,12 @@
 use serde::Deserialize;
-use std::time::Duration;
+use std::{marker::PhantomData, time::Duration};
 use time::OffsetDateTime;
 
-use crate::{client::Client, errors::Error, tasks::*};
+use crate::{client::Client, errors::Error, request::HttpClient, tasks::*};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TaskInfo {
+pub struct TaskInfo<Http: HttpClient> {
     #[serde(with = "time::serde::rfc3339")]
     pub enqueued_at: OffsetDateTime,
     pub index_uid: Option<String>,
@@ -14,15 +14,16 @@ pub struct TaskInfo {
     #[serde(flatten)]
     pub update_type: TaskType,
     pub task_uid: u32,
+    phantom: PhantomData<Http>,
 }
 
-impl AsRef<u32> for TaskInfo {
+impl<Http: HttpClient> AsRef<u32> for TaskInfo<Http> {
     fn as_ref(&self) -> &u32 {
         &self.task_uid
     }
 }
 
-impl TaskInfo {
+impl<Http: HttpClient> TaskInfo<Http> {
     pub fn get_task_uid(&self) -> u32 {
         self.task_uid
     }
@@ -73,10 +74,10 @@ impl TaskInfo {
     /// ```
     pub async fn wait_for_completion(
         self,
-        client: &Client,
+        client: &Client<Http>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
-    ) -> Result<Task, Error> {
+    ) -> Result<Task<Http>, Error> {
         client.wait_for_task(self, interval, timeout).await
     }
 }

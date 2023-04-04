@@ -1,5 +1,4 @@
 use crate::{
-    client::Client,
     documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
     errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
     request::*,
@@ -64,9 +63,9 @@ use time::OffsetDateTime;
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Index {
+pub struct Index<Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub client: Client,
+    pub client: Http,
     pub uid: String,
     #[serde(with = "time::serde::rfc3339::option")]
     pub updated_at: Option<OffsetDateTime>,
@@ -75,8 +74,8 @@ pub struct Index {
     pub primary_key: Option<String>,
 }
 
-impl Index {
-    pub fn new(uid: impl Into<String>, client: Client) -> Index {
+impl<Http: HttpClient> Index<Http> {
+    pub fn new(uid: impl Into<String>, client: Http) -> Index<Http> {
         Index {
             uid: uid.into(),
             client,
@@ -86,7 +85,10 @@ impl Index {
         }
     }
     /// Internal Function to create an [Index] from `serde_json::Value` and [Client].
-    pub(crate) fn from_value(raw_index: serde_json::Value, client: Client) -> Result<Index, Error> {
+    pub(crate) fn from_value(
+        raw_index: serde_json::Value,
+        client: Http,
+    ) -> Result<Index<Http>, Error> {
         #[derive(Deserialize, Debug)]
         #[allow(non_snake_case)]
         struct IndexFromSerde {
@@ -146,7 +148,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn update(&self) -> Result<TaskInfo, Error> {
+    pub async fn update(&self) -> Result<TaskInfo<Http>, Error> {
         let mut index_update = IndexUpdater::new(self, &self.client);
 
         if let Some(ref primary_key) = self.primary_key {
@@ -177,7 +179,7 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete(self) -> Result<TaskInfo, Error> {
+    pub async fn delete(self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             self.client.get_api_key(),
@@ -221,7 +223,7 @@ impl Index {
     /// ```
     pub async fn execute_query<T: 'static + DeserializeOwned>(
         &self,
-        body: &SearchQuery<'_>,
+        body: &SearchQuery<'_, Http>,
     ) -> Result<SearchResults<T>, Error> {
         request::<(), &SearchQuery, SearchResults<T>>(
             &format!("{}/indexes/{}/search", self.client.host, self.uid),
@@ -268,7 +270,7 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn search(&self) -> SearchQuery {
+    pub fn search(&self) -> SearchQuery<Http> {
         SearchQuery::new(self)
     }
 
@@ -364,7 +366,7 @@ impl Index {
     pub async fn get_document_with<T: 'static + DeserializeOwned>(
         &self,
         document_id: &str,
-        document_query: &DocumentQuery<'_>,
+        document_query: &DocumentQuery<'_, Http>,
     ) -> Result<T, Error> {
         let url = format!(
             "{}/indexes/{}/documents/{}",
@@ -464,7 +466,7 @@ impl Index {
     /// ```
     pub async fn get_documents_with<T: DeserializeOwned + 'static>(
         &self,
-        documents_query: &DocumentsQuery<'_>,
+        documents_query: &DocumentsQuery<'_, Http>,
     ) -> Result<DocumentsResults<T>, Error> {
         if documents_query.filter.is_some() {
             let url = format!("{}/indexes/{}/documents/fetch", self.client.host, self.uid);
@@ -568,7 +570,7 @@ impl Index {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -634,7 +636,7 @@ impl Index {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -661,7 +663,7 @@ impl Index {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         self.add_or_replace(documents, primary_key).await
     }
 
@@ -721,7 +723,7 @@ impl Index {
         &self,
         documents: &[T],
         primary_key: Option<impl AsRef<str>>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -790,7 +792,7 @@ impl Index {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -848,7 +850,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_all_documents(&self) -> Result<TaskInfo, Error> {
+    pub async fn delete_all_documents(&self) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             self.client.get_api_key(),
@@ -891,7 +893,7 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_document<T: Display>(&self, uid: T) -> Result<TaskInfo, Error> {
+    pub async fn delete_document<T: Display>(&self, uid: T) -> Result<TaskInfo<Http>, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/documents/{}",
@@ -943,7 +945,7 @@ impl Index {
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
         &self,
         uids: &[T],
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         request::<(), &[T], TaskInfo>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
@@ -1018,7 +1020,7 @@ impl Index {
     pub async fn set_primary_key(
         &mut self,
         primary_key: impl AsRef<str>,
-    ) -> Result<TaskInfo, Error> {
+    ) -> Result<TaskInfo<Http>, Error> {
         self.primary_key = Some(primary_key.as_ref().to_string());
 
         self.update().await
@@ -1128,7 +1130,7 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_task(&self, uid: impl AsRef<u32>) -> Result<Task, Error> {
+    pub async fn get_task(&self, uid: impl AsRef<u32>) -> Result<Task<Http>, Error> {
         request::<(), (), Task>(
             &format!("{}/tasks/{}", self.client.host, uid.as_ref()),
             self.client.get_api_key(),
@@ -1158,7 +1160,7 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
+    pub async fn get_tasks(&self) -> Result<TasksResults<Http>, Error> {
         let mut query = TasksSearchQuery::new(&self.client);
         query.with_index_uids([self.uid.as_str()]);
 
@@ -1190,8 +1192,8 @@ impl Index {
     /// ```
     pub async fn get_tasks_with(
         &self,
-        tasks_query: &TasksQuery<'_, TasksPaginationFilters>,
-    ) -> Result<TasksResults, Error> {
+        tasks_query: &TasksQuery<'_, TasksPaginationFilters, Http>,
+    ) -> Result<TasksResults<Http>, Error> {
         let mut query = tasks_query.clone();
         query.with_index_uids([self.uid.as_str()]);
 
@@ -1274,7 +1276,7 @@ impl Index {
         task_id: impl AsRef<u32>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
-    ) -> Result<Task, Error> {
+    ) -> Result<Task<Http>, Error> {
         self.client.wait_for_task(task_id, interval, timeout).await
     }
 
@@ -1336,7 +1338,7 @@ impl Index {
         documents: &[T],
         batch_size: Option<usize>,
         primary_key: Option<&str>,
-    ) -> Result<Vec<TaskInfo>, Error> {
+    ) -> Result<Vec<TaskInfo<Http>>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
             task.push(self.add_documents(document_batch, primary_key).await?);
@@ -1424,7 +1426,7 @@ impl Index {
         documents: &[T],
         batch_size: Option<usize>,
         primary_key: Option<&str>,
-    ) -> Result<Vec<TaskInfo>, Error> {
+    ) -> Result<Vec<TaskInfo<Http>>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
             task.push(self.add_or_update(document_batch, primary_key).await?);
@@ -1433,7 +1435,7 @@ impl Index {
     }
 }
 
-impl AsRef<str> for Index {
+impl<Http: HttpClient> AsRef<str> for Index<Http> {
     fn as_ref(&self) -> &str {
         &self.uid
     }
@@ -1476,16 +1478,16 @@ impl AsRef<str> for Index {
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct IndexUpdater<'a> {
+pub struct IndexUpdater<'a, Http: HttpClient> {
     #[serde(skip)]
-    pub client: &'a Client,
+    pub client: &'a Http,
     #[serde(skip_serializing)]
     pub uid: String,
     pub primary_key: Option<String>,
 }
 
-impl<'a> IndexUpdater<'a> {
-    pub fn new(uid: impl AsRef<str>, client: &Client) -> IndexUpdater {
+impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
+    pub fn new(uid: impl AsRef<str>, client: &Http) -> IndexUpdater<Http> {
         IndexUpdater {
             client,
             primary_key: None,
@@ -1571,7 +1573,7 @@ impl<'a> IndexUpdater<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
+    pub async fn execute(&'a self) -> Result<TaskInfo<Http>, Error> {
         request::<(), &IndexUpdater, TaskInfo>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             self.client.get_api_key(),
@@ -1585,14 +1587,14 @@ impl<'a> IndexUpdater<'a> {
     }
 }
 
-impl AsRef<str> for IndexUpdater<'_> {
+impl<Http: HttpClient> AsRef<str> for IndexUpdater<'_, Http> {
     fn as_ref(&self) -> &str {
         &self.uid
     }
 }
 
-impl<'a> AsRef<IndexUpdater<'a>> for IndexUpdater<'a> {
-    fn as_ref(&self) -> &IndexUpdater<'a> {
+impl<'a, Http: HttpClient> AsRef<IndexUpdater<'a, Http>> for IndexUpdater<'a, Http> {
+    fn as_ref(&self) -> &IndexUpdater<'a, Http> {
         self
     }
 }
@@ -1637,9 +1639,9 @@ pub struct IndexStats {
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct IndexesQuery<'a> {
+pub struct IndexesQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub client: &'a Client,
+    pub client: &'a Http,
     /// The number of [Indexes](Index) to skip.
     ///
     /// If the value of the parameter `offset` is `n`, the `n` first indexes will not be returned.
@@ -1661,8 +1663,8 @@ pub struct IndexesQuery<'a> {
     pub limit: Option<usize>,
 }
 
-impl<'a> IndexesQuery<'a> {
-    pub fn new(client: &Client) -> IndexesQuery {
+impl<'a, Http: HttpClient> IndexesQuery<'a, Http> {
+    pub fn new(client: &Http) -> IndexesQuery<Http> {
         IndexesQuery {
             client,
             offset: None,
@@ -1700,7 +1702,7 @@ impl<'a> IndexesQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn with_offset(&mut self, offset: usize) -> &mut IndexesQuery<'a> {
+    pub fn with_offset(&mut self, offset: usize) -> &mut IndexesQuery<'a, Http> {
         self.offset = Some(offset);
         self
     }
@@ -1735,7 +1737,7 @@ impl<'a> IndexesQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn with_limit(&mut self, limit: usize) -> &mut IndexesQuery<'a> {
+    pub fn with_limit(&mut self, limit: usize) -> &mut IndexesQuery<'a, Http> {
         self.limit = Some(limit);
         self
     }
@@ -1769,14 +1771,14 @@ impl<'a> IndexesQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute(&self) -> Result<IndexesResults, Error> {
+    pub async fn execute(&self) -> Result<IndexesResults<Http>, Error> {
         self.client.list_all_indexes_with(self).await
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct IndexesResults {
-    pub results: Vec<Index>,
+pub struct IndexesResults<Http: HttpClient> {
+    pub results: Vec<Index<Http>>,
     pub limit: u32,
     pub offset: u32,
     pub total: u32,
