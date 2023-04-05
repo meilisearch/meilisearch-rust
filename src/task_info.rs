@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::{marker::PhantomData, time::Duration};
+use std::time::Duration;
 use time::OffsetDateTime;
 
 use crate::{client::Client, errors::Error, request::HttpClient, tasks::*};

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Deserializer, Serialize};
-use std::{marker::PhantomData, time::Duration};
+use std::time::Duration;
 use time::OffsetDateTime;
 
 use crate::{
