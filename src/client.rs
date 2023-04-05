@@ -48,7 +48,7 @@ impl<Http: HttpClient> Client<Http> {
         Client {
             host: host.into(),
             api_key: api_key.map(std::convert::Into::into),
-            http_client: Box::new(IsahcClient),
+            http_client: IsahcClinet,
         }
     }
 
@@ -75,7 +75,7 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         body: &MultiSearchQuery<'_, '_, Http>,
     ) -> Result<MultiSearchResponse<T>, Error> {
-        request::<(), &MultiSearchQuery, MultiSearchResponse<T>>(
+        request::<(), &MultiSearchQuery<Http>, MultiSearchResponse<T>>(
             &format!("{}/multi-search", &self.host),
             self.get_api_key(),
             Method::Post { body, query: () },
@@ -266,7 +266,7 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         indexes_query: &IndexesQuery<'_, Http>,
     ) -> Result<Value, Error> {
-        let json_indexes = request::<&IndexesQuery, (), Value>(
+        let json_indexes = request::<&IndexesQuery<Http>, (), Value>(
             &format!("{}/indexes", self.host),
             self.get_api_key(),
             Method::Get {
@@ -911,7 +911,7 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         tasks_query: &TasksSearchQuery<'_, Http>,
     ) -> Result<TasksResults, Error> {
-        let tasks = request::<&TasksSearchQuery, (), TasksResults>(
+        let tasks = request::<&TasksSearchQuery<Http>, (), TasksResults>(
             &format!("{}/tasks", self.host),
             self.get_api_key(),
             Method::Get { query: tasks_query },
@@ -944,7 +944,7 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         filters: &TasksCancelQuery<'_, Http>,
     ) -> Result<TaskInfo, Error> {
-        let tasks = request::<&TasksCancelQuery, (), TaskInfo>(
+        let tasks = request::<&TasksCancelQuery<Http>, (), TaskInfo>(
             &format!("{}/tasks/cancel", self.host),
             self.get_api_key(),
             Method::Post {
@@ -980,7 +980,7 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         filters: &TasksDeleteQuery<'_, Http>,
     ) -> Result<TaskInfo, Error> {
-        let tasks = request::<&TasksDeleteQuery, (), TaskInfo>(
+        let tasks = request::<&TasksDeleteQuery<Http>, (), TaskInfo>(
             &format!("{}/tasks", self.host),
             self.get_api_key(),
             Method::Delete { query: filters },

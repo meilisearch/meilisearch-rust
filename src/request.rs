@@ -14,26 +14,30 @@ pub(crate) enum Method<Q, B> {
 }
 
 #[async_trait]
-pub trait HttpClient {
-    async fn request<Query: Serialize, Body: Serialize, Output: DeserializeOwned + 'static>(
+pub trait HttpClient: Clone + Serialize {
+    async fn request<Query: Serialize, Body: Serialize, Output: DeserializeOwned + 'static + Send>(
         url: &str,
         apikey: Option<&str>,
         method: Method<Query, Body>,
         expected_status_code: u16,
-    ) -> Result<Output, Error>;
+    ) -> Result<Box<dyn futures::Future<Output = Result<Box<dyn Send>, Error>> + Send>, Error>;
 }
 
-#[derive(Debug, Clone)]
-pub struct IsahcClient;
+#[derive(Debug, Clone, Serialize)]
+pub struct IsahcClinet;
 
 #[async_trait]
-impl HttpClient for IsahcClient {
-    async fn request<Query: Serialize, Body: Serialize, Output: DeserializeOwned + 'static>(
+impl HttpClient for IsahcClinet {
+    async fn request<
+        Query: Serialize,
+        Body: Serialize,
+        Output: DeserializeOwned + 'static + Send,
+    >(
         url: &str,
         apikey: Option<&str>,
         method: Method<Query, Body>,
         expected_status_code: u16,
-    ) -> Result<Output, Error> {
+    ) -> Result<Box<dyn futures::Future<Output = Result<Box<dyn Send>, Error>> + Send>, Error> {
         use isahc::http::header;
         use isahc::http::method::Method as HttpMethod;
         use isahc::*;
