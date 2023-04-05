@@ -42,10 +42,10 @@ impl Key {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let description = "My not so little lovely test key".to_string();
     /// let mut key = KeyBuilder::new()
-    ///   .with_action(Action::DocumentsAdd)
-    ///   .with_index("*")
-    ///   .with_description(&description)
-    ///   .execute(&client).await.unwrap();
+    ///     .with_action(Action::DocumentsAdd)
+    ///     .with_index("*")
+    ///     .with_description(&description)
+    ///     .execute(&client).await.unwrap();
     ///
     /// # assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();

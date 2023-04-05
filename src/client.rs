@@ -344,8 +344,10 @@ impl Client {
     }
 
     /// Create an [Index].
+    /// 
     /// The second parameter will be used as the primary key of the new index.
     /// If it is not specified, Meilisearch will **try** to infer the primary key.
+    /// 
     /// # Example
     ///
     /// ```
