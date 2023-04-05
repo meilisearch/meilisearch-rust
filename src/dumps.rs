@@ -69,7 +69,7 @@ impl<Http: HttpClient> Client<Http> {
     /// ));
     /// # });
     /// ```
-    pub async fn create_dump(&self) -> Result<TaskInfo<Http>, Error> {
+    pub async fn create_dump(&self) -> Result<TaskInfo, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/dumps", self.host),
             self.get_api_key(),
@@ -84,7 +84,7 @@ impl<Http: HttpClient> Client<Http> {
 }
 
 /// Alias for [create_dump](Client::create_dump).
-pub async fn create_dump<Http: HttpClient>(client: &Client<Http>) -> Result<TaskInfo<Http>, Error> {
+pub async fn create_dump<Http: HttpClient>(client: &Client<Http>) -> Result<TaskInfo, Error> {
     client.create_dump().await
 }
 
