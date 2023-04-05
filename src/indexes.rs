@@ -436,7 +436,7 @@ impl Index {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// # 
-    /// #[derive(Serialize, Deserialize, PartialEq Debug)]
+    /// #[derive(Serialize, Deserialize, PartialEq, Debug)]
     /// struct Movie {
     ///     name: String,
     ///     description: String,
