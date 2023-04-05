@@ -28,18 +28,18 @@
 //! // Create a dump
 //! let task_info = client.create_dump().await.unwrap();
 //! assert!(matches!(
-//!    task_info,
-//!    TaskInfo {
-//!        update_type: TaskType::DumpCreation { .. },
-//!        ..
-//!    }
-//!));
+//!     task_info,
+//!     TaskInfo {
+//!         update_type: TaskType::DumpCreation { .. },
+//!         ..
+//!     }
+//! ));
 //! # });
 //! ```
 
 use crate::{client::Client, errors::Error, request::*, task_info::TaskInfo};
 
-/// Dump related methods.\
+/// Dump related methods.
 /// See the [dumps](crate::dumps) module.
 impl Client {
     /// Triggers a dump creation process.
@@ -61,11 +61,11 @@ impl Client {
     /// #
     /// let task_info = client.create_dump().await.unwrap();
     /// assert!(matches!(
-    ///    task_info,
-    ///    TaskInfo {
-    ///        update_type: TaskType::DumpCreation { .. },
-    ///        ..
-    ///    }
+    ///     task_info,
+    ///     TaskInfo {
+    ///         update_type: TaskType::DumpCreation { .. },
+    ///         ..
+    ///     }
     /// ));
     /// # });
     /// ```

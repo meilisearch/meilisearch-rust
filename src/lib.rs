@@ -2,7 +2,7 @@
 //!
 //! ### Add Documents <!-- omit in TOC -->
 //!
-//! ```rust
+//! ```
 //! use meilisearch_sdk::client::*;
 //! use serde::{Serialize, Deserialize};
 //! use futures::executor::block_on;
@@ -42,7 +42,7 @@
 //!
 //! ### Basic Search <!-- omit in TOC -->
 //!
-//! ```rust
+//! ```
 //! # use meilisearch_sdk::client::*;
 //! # use serde::{Serialize, Deserialize};
 //! # use futures::executor::block_on;
@@ -85,7 +85,7 @@
 //!
 //! ### Custom Search <!-- omit in toc -->
 //!
-//! ```rust
+//! ```
 //! # use meilisearch_sdk::{client::*, search::*};
 //! # use serde::{Serialize, Deserialize};
 //! # use futures::executor::block_on;

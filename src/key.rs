@@ -3,9 +3,9 @@ use time::OffsetDateTime;
 
 use crate::{client::Client, errors::Error};
 
-/// Represent a [meilisearch key](https://docs.meilisearch.com/reference/api/keys.html#returned-fields)
-/// You can get a [Key] from the [Client::get_key] method.
-/// Or you can create a [Key] with the [KeyBuilder::new] or [Client::create_key] methods.
+/// Represents a [meilisearch key](https://docs.meilisearch.com/reference/api/keys.html#returned-fields).
+///
+/// You can get a [Key] from the [Client::get_key] method, or you can create a [Key] with the [KeyBuilder::new] or [Client::create_key] methods.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Key {
@@ -95,7 +95,7 @@ impl Key {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let mut key = KeyBuilder::new()
     ///   .execute(&client).await.unwrap();
     /// let description = "My not so little lovely test key".to_string();
@@ -131,9 +131,9 @@ impl Key {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let mut key = KeyBuilder::new()
-    ///   .execute(&client).await.unwrap();
+    ///     .execute(&client).await.unwrap();
     ///
     /// client.delete_key(key).await.unwrap();
     /// # });
@@ -185,7 +185,7 @@ impl KeyUpdater {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///  let mut new_key = KeyBuilder::new()
+    /// let mut new_key = KeyBuilder::new()
     ///     .execute(&client)
     ///     .await
     ///     .unwrap();
@@ -218,13 +218,12 @@ impl KeyUpdater {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///  let mut new_key = KeyBuilder::new()
+    /// let mut new_key = KeyBuilder::new()
     ///     .execute(&client)
     ///     .await
     ///     .unwrap();
     ///
     /// let name = "lovely key".to_string();
-    ///
     /// let mut key_update = KeyUpdater::new(new_key)
     ///     .with_name(&name)
     ///     .execute(&client)
@@ -251,15 +250,15 @@ impl KeyUpdater {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let description = "My little lovely test key".to_string();
     /// let key = KeyBuilder::new()
-    ///   .execute(&client).await.unwrap();
+    ///     .execute(&client).await.unwrap();
     ///
     /// let mut key_update = KeyUpdater::new(&key.key);
     /// key_update.with_description(&description).execute(&client).await;
     ///
-    /// assert_eq!(key_update.description, Some(description));
+    /// # assert_eq!(key_update.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -284,6 +283,7 @@ impl AsRef<KeyUpdater> for KeyUpdater {
 #[serde(rename_all = "camelCase")]
 pub struct KeysQuery {
     /// The number of documents to skip.
+    ///
     /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
     /// This is helpful for pagination.
     ///
@@ -291,6 +291,7 @@ pub struct KeysQuery {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<usize>,
     /// The maximum number of documents returned.
+    ///
     /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.
     /// This is helpful for pagination.
     ///
@@ -325,9 +326,9 @@ impl KeysQuery {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///  let mut keys = KeysQuery::new()
-    ///   .with_offset(1)
-    ///   .execute(&client).await.unwrap();
+    /// let mut keys = KeysQuery::new()
+    ///     .with_offset(1)
+    ///     .execute(&client).await.unwrap();
     ///
     /// # assert_eq!(keys.offset, 1);
     /// # });
@@ -349,9 +350,9 @@ impl KeysQuery {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///  let mut keys = KeysQuery::new()
-    ///   .with_limit(1)
-    ///   .execute(&client).await.unwrap();
+    /// let mut keys = KeysQuery::new()
+    ///     .with_limit(1)
+    ///     .execute(&client).await.unwrap();
     ///
     /// # assert_eq!(keys.results.len(), 1);
     /// # });
@@ -373,9 +374,9 @@ impl KeysQuery {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///  let mut keys = KeysQuery::new()
-    ///   .with_limit(1)
-    ///   .execute(&client).await.unwrap();
+    /// let mut keys = KeysQuery::new()
+    ///     .with_limit(1)
+    ///     .execute(&client).await.unwrap();
     ///
     /// # assert_eq!(keys.results.len(), 1);
     /// # });
@@ -386,6 +387,7 @@ impl KeysQuery {
 }
 
 /// The [KeyBuilder] is an analog to the [Key] type but without all the fields managed by Meilisearch.
+///
 /// It's used to create [Key].
 ///
 /// # Example
@@ -397,11 +399,11 @@ impl KeysQuery {
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
 /// # futures::executor::block_on(async move {
-/// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 /// let description = "My little lovely test key".to_string();
 /// let key = KeyBuilder::new()
-///   .with_description(&description)
-///   .execute(&client).await.unwrap();
+///     .with_description(&description)
+///     .execute(&client).await.unwrap();
 ///
 /// # assert_eq!(key.description, Some(description));
 /// # client.delete_key(key).await.unwrap();
@@ -469,7 +471,7 @@ impl KeyBuilder {
     ///
     /// ```
     /// # use meilisearch_sdk::{key::KeyBuilder};
-    /// use time::{OffsetDateTime, Duration};
+    /// # use time::{OffsetDateTime, Duration};
     /// let mut builder = KeyBuilder::new();
     /// // create a key that expires in two weeks from now
     /// builder.with_expires_at(OffsetDateTime::now_utc() + Duration::WEEK * 2);
@@ -492,10 +494,10 @@ impl KeyBuilder {
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let mut key = KeyBuilder::new()
-    ///   .with_indexes(vec!["test", "movies"])
-    ///   .execute(&client)
-    ///   .await
-    ///   .unwrap();
+    ///     .with_indexes(vec!["test", "movies"])
+    ///     .execute(&client)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert_eq!(vec!["test", "movies"], key.indexes);
     /// # client.delete_key(key).await.unwrap();
@@ -538,11 +540,10 @@ impl KeyBuilder {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///  let description = "My not so little lovely test key".to_string();
-    ///
-    ///  let mut key = KeyBuilder::new()
-    ///   .with_description(&description)
-    ///   .execute(&client).await.unwrap();
+    /// let description = "My not so little lovely test key".to_string();
+    /// let mut key = KeyBuilder::new()
+    ///     .with_description(&description)
+    ///     .execute(&client).await.unwrap();
     ///
     /// # assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
@@ -565,11 +566,10 @@ impl KeyBuilder {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///  let name = "lovely key".to_string();
-    ///
-    ///  let mut key = KeyBuilder::new()
-    ///   .with_name(&name)
-    ///   .execute(&client).await.unwrap();
+    /// let name = "lovely key".to_string();
+    /// let mut key = KeyBuilder::new()
+    ///     .with_name(&name)
+    ///     .execute(&client).await.unwrap();
     ///
     /// # assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
@@ -592,12 +592,10 @@ impl KeyBuilder {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///  let uid = "93bcd7fb-2196-4fd9-acb7-3fca8a96e78f".to_string();
-    ///
-    ///  let mut key = KeyBuilder::new()
-    ///   .with_uid(&uid)
-    ///   .execute(&client).await.unwrap();
-    ///  
+    /// let uid = "93bcd7fb-2196-4fd9-acb7-3fca8a96e78f".to_string();
+    /// let mut key = KeyBuilder::new()
+    ///     .with_uid(&uid)
+    ///     .execute(&client).await.unwrap();
     ///
     /// # assert_eq!(key.uid, uid);
     /// # client.delete_key(key).await.unwrap();
@@ -619,11 +617,11 @@ impl KeyBuilder {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let description = "My little lovely test key".to_string();
     /// let key = KeyBuilder::new()
-    ///    .with_description(&description)
-    ///   .execute(&client).await.unwrap();
+    ///     .with_description(&description)
+    ///     .execute(&client).await.unwrap();
     ///
     /// # assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
