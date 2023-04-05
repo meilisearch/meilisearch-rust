@@ -287,8 +287,8 @@ impl Index {
     /// #
     /// #[derive(Serialize, Deserialize, Debug, PartialEq)]
     /// struct Movie {
-    ///    name: String,
-    ///    description: String
+    ///     name: String,
+    ///     description: String
     /// }
     ///
     /// # futures::executor::block_on(async move {
@@ -356,8 +356,8 @@ impl Index {
     /// let document = index.get_document_with::<MyObjectReduced>("1", &document_query).await.unwrap();
     ///
     /// assert_eq!(
-    ///    document,
-    ///    MyObjectReduced { id: "1".to_string() }
+    ///     document,
+    ///     MyObjectReduced { id: "1".to_string() }
     /// );
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -395,8 +395,8 @@ impl Index {
     /// #
     /// #[derive(Serialize, Deserialize, PartialEq, Debug)]
     /// struct Movie {
-    ///    name: String,
-    ///    description: String,
+    ///     name: String,
+    ///     description: String,
     /// }
     ///
     /// # futures::executor::block_on(async move {
@@ -438,13 +438,13 @@ impl Index {
     /// # 
     /// #[derive(Serialize, Deserialize, PartialEq Debug)]
     /// struct Movie {
-    ///    name: String,
-    ///    description: String,
+    ///     name: String,
+    ///     description: String,
     /// }
     ///
     /// #[derive(Deserialize, Debug, PartialEq)]
     /// struct ReturnedMovie {
-    ///    name: String,
+    ///     name: String,
     /// }
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
@@ -500,8 +500,8 @@ impl Index {
     /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
-    ///    name: String,
-    ///    description: String,
+    ///     name: String,
+    ///     description: String,
     /// }
     ///
     /// # futures::executor::block_on(async move {
@@ -652,8 +652,8 @@ impl Index {
     /// #
     /// #[derive(Serialize, Deserialize, Debug)]
     /// struct Movie {
-    ///    name: String,
-    ///    description: String,
+    ///     name: String,
+    ///     description: String,
     /// }
     /// 
     /// # futures::executor::block_on(async move {

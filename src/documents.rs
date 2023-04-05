@@ -145,8 +145,8 @@ impl<'a> DocumentQuery<'a> {
     ///     .unwrap();
     ///
     /// assert_eq!(
-    ///    document,
-    ///    MyObjectReduced { id: "1".to_string() }
+    ///     document,
+    ///     MyObjectReduced { id: "1".to_string() }
     /// );
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
