@@ -1,4 +1,4 @@
-use crate::{errors::Error, indexes::Index, request::HttpClient};
+use crate::{errors::Error, indexes::Index, request::HttpClient, Client};
 use either::Either;
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
@@ -495,13 +495,13 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
 #[serde(rename_all = "camelCase")]
 pub struct MultiSearchQuery<'a, 'b, Http: HttpClient> {
     #[serde(skip_serializing)]
-    client: &'a Http,
+    client: &'a Client<Http>,
     pub queries: Vec<SearchQuery<'b, Http>>,
 }
 
 #[allow(missing_docs)]
 impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
-    pub fn new(client: &'a Http) -> MultiSearchQuery<'a, 'b, Http> {
+    pub fn new(client: &'a Client<Http>) -> MultiSearchQuery<'a, 'b, Http> {
         MultiSearchQuery {
             client,
             queries: Vec::new(),
