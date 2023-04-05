@@ -937,6 +937,8 @@ impl Index {
     }
 
     /// Fetch the information of the index as a raw JSON [Index], this index should already exist.
+    /// 
+    /// If you use it directly from the [Client], you can use the method [Client::get_raw_index], which is the equivalent method from the client.
     ///
     /// # Example
     ///
@@ -956,10 +958,6 @@ impl Index {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    /// 
-    /// # Note
-    /// 
-    /// If you use it directly from the [Client], you can use the method [Client::get_raw_index], which is the equivalent method from the client.
     pub async fn fetch_info(&mut self) -> Result<(), Error> {
         let v = self.client.get_raw_index(&self.uid).await?;
         *self = Index::from_value(v, self.client.clone())?;

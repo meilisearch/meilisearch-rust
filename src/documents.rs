@@ -125,22 +125,24 @@ impl<'a> DocumentQuery<'a> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///
     /// # futures::executor::block_on(async move {
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// struct MyObject {
     ///     id: String,
     ///     kind: String,
     /// }
+    /// 
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// struct MyObjectReduced {
     ///     id: String,
     /// }
-    ///
     /// # let index = client.index("document_query_execute");
     /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
-    /// let document = DocumentQuery::new(&index).with_fields(["id"]).execute::<MyObjectReduced>("1").await.unwrap();
+    /// let document = DocumentQuery::new(&index).with_fields(["id"])
+    ///     .execute::<MyObjectReduced>("1")
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert_eq!(
     ///    document,
@@ -162,6 +164,7 @@ pub struct DocumentsQuery<'a> {
     pub index: &'a Index,
 
     /// The number of documents to skip.
+    /// 
     /// If the value of the parameter `offset` is `n`, the `n` first documents will not be returned.
     /// This is helpful for pagination.
     ///
@@ -174,7 +177,8 @@ pub struct DocumentsQuery<'a> {
     /// This is helpful for pagination.
     ///
     /// Example: If you don't want to get more than two documents, set limit to `2`.
-    /// Default: `20`
+    /// 
+    /// **Default: `20`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
 
@@ -272,7 +276,6 @@ impl<'a> DocumentsQuery<'a> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///
     /// # futures::executor::block_on(async move {
     /// # let index = client.create_index("documents_query_execute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -283,10 +286,10 @@ impl<'a> DocumentsQuery<'a> {
     /// let index = client.index("documents_query_execute");
     ///
     /// let document = DocumentsQuery::new(&index)
-    ///   .with_offset(1)
-    ///   .execute::<MyObject>()
-    ///   .await
-    ///   .unwrap();
+    ///     .with_offset(1)
+    ///     .execute::<MyObject>()
+    ///     .await
+    ///     .unwrap();
     ///
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
