@@ -47,12 +47,11 @@ pub enum TaskType {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct TasksResults<Http: HttpClient> {
-    pub results: Vec<Task<Http>>,
+pub struct TasksResults {
+    pub results: Vec<Task>,
     pub limit: u32,
     pub from: Option<u32>,
     pub next: Option<u32>,
-    phantom: PhantomData<Http>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -187,7 +186,7 @@ impl AsRef<u32> for EnqueuedTask {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "status")]
-pub enum Task<Http: HttpClient> {
+pub enum Task {
     Enqueued {
         #[serde(flatten)]
         content: EnqueuedTask,
@@ -206,7 +205,7 @@ pub enum Task<Http: HttpClient> {
     },
 }
 
-impl<Http: HttpClient> Task<Http> {
+impl Task {
     pub fn get_uid(&self) -> u32 {
         match self {
             Self::Enqueued { content } | Self::Processing { content } => *content.as_ref(),
@@ -260,7 +259,7 @@ impl<Http: HttpClient> Task<Http> {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn wait_for_completion(
+    pub async fn wait_for_completion<Http: HttpClient>(
         self,
         client: &Client<Http>,
         interval: Option<Duration>,
@@ -293,7 +292,10 @@ impl<Http: HttpClient> Task<Http> {
     /// # });
     /// ```
     #[allow(clippy::result_large_err)] // Since `self` has been consumed, this is not an issue
-    pub fn try_make_index(self, client: &Client<Http>) -> Result<Index<Http>, Self> {
+    pub fn try_make_index<Http: HttpClient>(
+        self,
+        client: &Client<Http>,
+    ) -> Result<Index<Http>, Self> {
         match self {
             Self::Succeeded {
                 content:
@@ -433,7 +435,7 @@ impl<Http: HttpClient> Task<Http> {
     }
 }
 
-impl<Http: HttpClient> AsRef<u32> for Task<Http> {
+impl AsRef<u32> for Task {
     fn as_ref(&self) -> &u32 {
         match self {
             Self::Enqueued { content } | Self::Processing { content } => content.as_ref(),
@@ -624,7 +626,7 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksCancelFilters, Http> {
         }
     }
 
-    pub async fn execute(&'a self) -> Result<TaskInfo<Http>, Error> {
+    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
         self.client.cancel_tasks_with(self).await
     }
 }
@@ -648,7 +650,7 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksDeleteFilters, Http> {
         }
     }
 
-    pub async fn execute(&'a self) -> Result<TaskInfo<Http>, Error> {
+    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
         self.client.delete_tasks_with(self).await
     }
 }
@@ -688,7 +690,7 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksPaginationFilters, Http> {
         self.pagination.from = Some(from);
         self
     }
-    pub async fn execute(&'a self) -> Result<TasksResults<Http>, Error> {
+    pub async fn execute(&'a self) -> Result<TasksResults, Error> {
         self.client.get_tasks_with(self).await
     }
 }

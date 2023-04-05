@@ -372,7 +372,7 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         uid: impl AsRef<str>,
         primary_key: Option<&str>,
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         request::<(), Value, TaskInfo>(
             &format!("{}/indexes", self.host),
             self.get_api_key(),
@@ -391,7 +391,7 @@ impl<Http: HttpClient> Client<Http> {
     /// Delete an index from its UID.
     ///
     /// To delete an [Index], use the [`Index::delete`] method.
-    pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo<Http>, Error> {
+    pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
             self.get_api_key(),
@@ -462,7 +462,7 @@ impl<Http: HttpClient> Client<Http> {
     pub async fn swap_indexes(
         &self,
         indexes: impl IntoIterator<Item = &SwapIndexes>,
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         request::<(), Vec<&SwapIndexes>, TaskInfo>(
             &format!("{}/swap-indexes", self.host),
             self.get_api_key(),
@@ -574,10 +574,7 @@ impl<Http: HttpClient> Client<Http> {
     /// assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
-    pub async fn get_keys_with(
-        &self,
-        keys_query: &KeysQuery<Http>,
-    ) -> Result<KeysResults<Http>, Error> {
+    pub async fn get_keys_with(&self, keys_query: &KeysQuery) -> Result<KeysResults, Error> {
         let keys = request::<&KeysQuery, (), KeysResults>(
             &format!("{}/keys", self.host),
             self.get_api_key(),
@@ -608,7 +605,7 @@ impl<Http: HttpClient> Client<Http> {
     /// assert_eq!(keys.limit, 20);
     /// # });
     /// ```
-    pub async fn get_keys(&self) -> Result<KeysResults<Http>, Error> {
+    pub async fn get_keys(&self) -> Result<KeysResults, Error> {
         let keys = request::<(), (), KeysResults>(
             &format!("{}/keys", self.host),
             self.get_api_key(),
@@ -642,7 +639,7 @@ impl<Http: HttpClient> Client<Http> {
     /// assert_eq!(key.name, Some("Default Search API Key".to_string()));
     /// # });
     /// ```
-    pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key<Http>, Error> {
+    pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
         request::<(), (), Key>(
             &format!("{}/keys/{}", self.host, key.as_ref()),
             self.get_api_key(),
@@ -711,7 +708,7 @@ impl<Http: HttpClient> Client<Http> {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn create_key(&self, key: impl AsRef<KeyBuilder<Http>>) -> Result<Key<Http>, Error> {
+    pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
         request::<(), &KeyBuilder, Key>(
             &format!("{}/keys", self.host),
             self.get_api_key(),
@@ -751,7 +748,7 @@ impl<Http: HttpClient> Client<Http> {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn update_key(&self, key: impl AsRef<KeyUpdater<Http>>) -> Result<Key<Http>, Error> {
+    pub async fn update_key(&self, key: impl AsRef<KeyUpdater>) -> Result<Key, Error> {
         request::<(), &KeyUpdater, Key>(
             &format!("{}/keys/{}", self.host, key.as_ref().key),
             self.get_api_key(),
@@ -837,7 +834,7 @@ impl<Http: HttpClient> Client<Http> {
         task_id: impl AsRef<u32>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
-    ) -> Result<Task<Http>, Error> {
+    ) -> Result<Task, Error> {
         let interval = interval.unwrap_or_else(|| Duration::from_millis(50));
         let timeout = timeout.unwrap_or_else(|| Duration::from_millis(5000));
 
@@ -882,7 +879,7 @@ impl<Http: HttpClient> Client<Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_task(&self, task_id: impl AsRef<u32>) -> Result<Task<Http>, Error> {
+    pub async fn get_task(&self, task_id: impl AsRef<u32>) -> Result<Task, Error> {
         request::<(), (), Task>(
             &format!("{}/tasks/{}", self.host, task_id.as_ref()),
             self.get_api_key(),
@@ -913,7 +910,7 @@ impl<Http: HttpClient> Client<Http> {
     pub async fn get_tasks_with(
         &self,
         tasks_query: &TasksSearchQuery<'_, Http>,
-    ) -> Result<TasksResults<Http>, Error> {
+    ) -> Result<TasksResults, Error> {
         let tasks = request::<&TasksSearchQuery, (), TasksResults>(
             &format!("{}/tasks", self.host),
             self.get_api_key(),
@@ -946,7 +943,7 @@ impl<Http: HttpClient> Client<Http> {
     pub async fn cancel_tasks_with(
         &self,
         filters: &TasksCancelQuery<'_, Http>,
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         let tasks = request::<&TasksCancelQuery, (), TaskInfo>(
             &format!("{}/tasks/cancel", self.host),
             self.get_api_key(),
@@ -982,7 +979,7 @@ impl<Http: HttpClient> Client<Http> {
     pub async fn delete_tasks_with(
         &self,
         filters: &TasksDeleteQuery<'_, Http>,
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         let tasks = request::<&TasksDeleteQuery, (), TaskInfo>(
             &format!("{}/tasks", self.host),
             self.get_api_key(),
@@ -1011,7 +1008,7 @@ impl<Http: HttpClient> Client<Http> {
     /// assert!(tasks.results.len() > 0);
     /// # });
     /// ```
-    pub async fn get_tasks(&self) -> Result<TasksResults<Http>, Error> {
+    pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
         let tasks = request::<(), (), TasksResults>(
             &format!("{}/tasks", self.host),
             self.get_api_key(),

@@ -148,7 +148,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn update(&self) -> Result<TaskInfo<Http>, Error> {
+    pub async fn update(&self) -> Result<TaskInfo, Error> {
         let mut index_update = IndexUpdater::new(self, &self.client);
 
         if let Some(ref primary_key) = self.primary_key {
@@ -179,7 +179,7 @@ impl<Http: HttpClient> Index<Http> {
     /// client.wait_for_task(task, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete(self) -> Result<TaskInfo<Http>, Error> {
+    pub async fn delete(self) -> Result<TaskInfo, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             self.client.get_api_key(),
@@ -570,7 +570,7 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -636,7 +636,7 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -663,7 +663,7 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         self.add_or_replace(documents, primary_key).await
     }
 
@@ -723,7 +723,7 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents: &[T],
         primary_key: Option<impl AsRef<str>>,
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -792,7 +792,7 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
@@ -850,7 +850,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_all_documents(&self) -> Result<TaskInfo<Http>, Error> {
+    pub async fn delete_all_documents(&self) -> Result<TaskInfo, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}/documents", self.client.host, self.uid),
             self.client.get_api_key(),
@@ -893,7 +893,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_document<T: Display>(&self, uid: T) -> Result<TaskInfo<Http>, Error> {
+    pub async fn delete_document<T: Display>(&self, uid: T) -> Result<TaskInfo, Error> {
         request::<(), (), TaskInfo>(
             &format!(
                 "{}/indexes/{}/documents/{}",
@@ -945,7 +945,7 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
         &self,
         uids: &[T],
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         request::<(), &[T], TaskInfo>(
             &format!(
                 "{}/indexes/{}/documents/delete-batch",
@@ -1020,7 +1020,7 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn set_primary_key(
         &mut self,
         primary_key: impl AsRef<str>,
-    ) -> Result<TaskInfo<Http>, Error> {
+    ) -> Result<TaskInfo, Error> {
         self.primary_key = Some(primary_key.as_ref().to_string());
 
         self.update().await
@@ -1130,7 +1130,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_task(&self, uid: impl AsRef<u32>) -> Result<Task<Http>, Error> {
+    pub async fn get_task(&self, uid: impl AsRef<u32>) -> Result<Task, Error> {
         request::<(), (), Task>(
             &format!("{}/tasks/{}", self.client.host, uid.as_ref()),
             self.client.get_api_key(),
@@ -1160,7 +1160,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_tasks(&self) -> Result<TasksResults<Http>, Error> {
+    pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
         let mut query = TasksSearchQuery::new(&self.client);
         query.with_index_uids([self.uid.as_str()]);
 
@@ -1193,7 +1193,7 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_tasks_with(
         &self,
         tasks_query: &TasksQuery<'_, TasksPaginationFilters, Http>,
-    ) -> Result<TasksResults<Http>, Error> {
+    ) -> Result<TasksResults, Error> {
         let mut query = tasks_query.clone();
         query.with_index_uids([self.uid.as_str()]);
 
@@ -1276,7 +1276,7 @@ impl<Http: HttpClient> Index<Http> {
         task_id: impl AsRef<u32>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
-    ) -> Result<Task<Http>, Error> {
+    ) -> Result<Task, Error> {
         self.client.wait_for_task(task_id, interval, timeout).await
     }
 
@@ -1338,7 +1338,7 @@ impl<Http: HttpClient> Index<Http> {
         documents: &[T],
         batch_size: Option<usize>,
         primary_key: Option<&str>,
-    ) -> Result<Vec<TaskInfo<Http>>, Error> {
+    ) -> Result<Vec<TaskInfo>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
             task.push(self.add_documents(document_batch, primary_key).await?);
@@ -1426,7 +1426,7 @@ impl<Http: HttpClient> Index<Http> {
         documents: &[T],
         batch_size: Option<usize>,
         primary_key: Option<&str>,
-    ) -> Result<Vec<TaskInfo<Http>>, Error> {
+    ) -> Result<Vec<TaskInfo>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
             task.push(self.add_or_update(document_batch, primary_key).await?);
@@ -1573,7 +1573,7 @@ impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute(&'a self) -> Result<TaskInfo<Http>, Error> {
+    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
         request::<(), &IndexUpdater, TaskInfo>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             self.client.get_api_key(),

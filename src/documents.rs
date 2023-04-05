@@ -62,7 +62,7 @@ pub trait IndexConfig<Http: HttpClient> {
         client.index(Self::INDEX_STR)
     }
     fn generate_settings() -> Settings;
-    async fn generate_index(client: &Client<Http>) -> Result<Index<Http>, Task<Http>>;
+    async fn generate_index(client: &Client<Http>) -> Result<Index<Http>, Task>;
 }
 
 #[derive(Debug, Clone, Deserialize)]

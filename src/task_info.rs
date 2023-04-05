@@ -6,7 +6,7 @@ use crate::{client::Client, errors::Error, request::HttpClient, tasks::*};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TaskInfo<Http: HttpClient> {
+pub struct TaskInfo {
     #[serde(with = "time::serde::rfc3339")]
     pub enqueued_at: OffsetDateTime,
     pub index_uid: Option<String>,
@@ -14,16 +14,15 @@ pub struct TaskInfo<Http: HttpClient> {
     #[serde(flatten)]
     pub update_type: TaskType,
     pub task_uid: u32,
-    phantom: PhantomData<Http>,
 }
 
-impl<Http: HttpClient> AsRef<u32> for TaskInfo<Http> {
+impl AsRef<u32> for TaskInfo {
     fn as_ref(&self) -> &u32 {
         &self.task_uid
     }
 }
 
-impl<Http: HttpClient> TaskInfo<Http> {
+impl TaskInfo {
     pub fn get_task_uid(&self) -> u32 {
         self.task_uid
     }
@@ -72,12 +71,12 @@ impl<Http: HttpClient> TaskInfo<Http> {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn wait_for_completion(
+    pub async fn wait_for_completion<Http: HttpClient>(
         self,
         client: &Client<Http>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
-    ) -> Result<Task<Http>, Error> {
+    ) -> Result<Task, Error> {
         client.wait_for_task(self, interval, timeout).await
     }
 }
