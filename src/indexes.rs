@@ -5,6 +5,7 @@ use crate::{
     search::*,
     task_info::TaskInfo,
     tasks::*,
+    Client,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
@@ -65,7 +66,7 @@ use time::OffsetDateTime;
 #[serde(rename_all = "camelCase")]
 pub struct Index<Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub client: Http,
+    pub client: Client<Http>,
     pub uid: String,
     #[serde(with = "time::serde::rfc3339::option")]
     pub updated_at: Option<OffsetDateTime>,
@@ -75,7 +76,7 @@ pub struct Index<Http: HttpClient> {
 }
 
 impl<Http: HttpClient> Index<Http> {
-    pub fn new(uid: impl Into<String>, client: Http) -> Index<Http> {
+    pub fn new(uid: impl Into<String>, client: Client<Http>) -> Index<Http> {
         Index {
             uid: uid.into(),
             client,
@@ -87,7 +88,7 @@ impl<Http: HttpClient> Index<Http> {
     /// Internal Function to create an [Index] from `serde_json::Value` and [Client].
     pub(crate) fn from_value(
         raw_index: serde_json::Value,
-        client: Http,
+        client: Client<Http>,
     ) -> Result<Index<Http>, Error> {
         #[derive(Deserialize, Debug)]
         #[allow(non_snake_case)]
@@ -225,7 +226,7 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         body: &SearchQuery<'_, Http>,
     ) -> Result<SearchResults<T>, Error> {
-        request::<(), &SearchQuery, SearchResults<T>>(
+        request::<(), &SearchQuery<Http>, SearchResults<T>>(
             &format!("{}/indexes/{}/search", self.client.host, self.uid),
             self.client.get_api_key(),
             Method::Post { body, query: () },
@@ -373,7 +374,7 @@ impl<Http: HttpClient> Index<Http> {
             self.client.host, self.uid, document_id
         );
 
-        request::<&DocumentQuery, (), T>(
+        request::<&DocumentQuery<Http>, (), T>(
             &url,
             self.client.get_api_key(),
             Method::Get {
@@ -502,7 +503,7 @@ impl<Http: HttpClient> Index<Http> {
         }
 
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
-        request::<&DocumentsQuery, (), DocumentsResults<T>>(
+        request::<&DocumentsQuery<Http>, (), DocumentsResults<T>>(
             &url,
             self.client.get_api_key(),
             Method::Get {
@@ -1480,14 +1481,14 @@ impl<Http: HttpClient> AsRef<str> for Index<Http> {
 #[serde(rename_all = "camelCase")]
 pub struct IndexUpdater<'a, Http: HttpClient> {
     #[serde(skip)]
-    pub client: &'a Http,
+    pub client: &'a Client<Http>,
     #[serde(skip_serializing)]
     pub uid: String,
     pub primary_key: Option<String>,
 }
 
 impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
-    pub fn new(uid: impl AsRef<str>, client: &Http) -> IndexUpdater<Http> {
+    pub fn new(uid: impl AsRef<str>, client: &Client<Http>) -> IndexUpdater<Http> {
         IndexUpdater {
             client,
             primary_key: None,
@@ -1574,7 +1575,7 @@ impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
     /// # });
     /// ```
     pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
-        request::<(), &IndexUpdater, TaskInfo>(
+        request::<(), &IndexUpdater<Http>, TaskInfo>(
             &format!("{}/indexes/{}", self.client.host, self.uid),
             self.client.get_api_key(),
             Method::Patch {
@@ -1641,7 +1642,7 @@ pub struct IndexStats {
 #[serde(rename_all = "camelCase")]
 pub struct IndexesQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub client: &'a Http,
+    pub client: &'a Client<Http>,
     /// The number of [Indexes](Index) to skip.
     ///
     /// If the value of the parameter `offset` is `n`, the `n` first indexes will not be returned.
@@ -1664,7 +1665,7 @@ pub struct IndexesQuery<'a, Http: HttpClient> {
 }
 
 impl<'a, Http: HttpClient> IndexesQuery<'a, Http> {
-    pub fn new(client: &Http) -> IndexesQuery<Http> {
+    pub fn new(client: &Client<Http>) -> IndexesQuery<Http> {
         IndexesQuery {
             client,
             offset: None,
@@ -1793,7 +1794,7 @@ mod tests {
     use serde_json::json;
 
     #[meilisearch_test]
-    async fn test_from_value(client: Client) {
+    async fn test_from_value<Http: HttpClient>(client: Client<Http>) {
         let t = OffsetDateTime::now_utc();
         let trfc3339 = t
             .format(&time::format_description::well_known::Rfc3339)
@@ -1825,7 +1826,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_fetch_info(mut index: Index) {
+    async fn test_fetch_info<Http: HttpClient>(mut index: Index<Http>) {
         let res = index.fetch_info().await;
         assert!(res.is_ok());
         assert!(index.updated_at.is_some());
@@ -1834,7 +1835,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_documents(index: Index) {
+    async fn test_get_documents<Http: HttpClient>(index: Index<Http>) {
         #[derive(Debug, Serialize, Deserialize, PartialEq)]
         struct Object {
             id: usize,
@@ -1847,7 +1848,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_documents_with(index: Index) {
+    async fn test_get_documents_with<Http: HttpClient>(index: Index<Http>) {
         #[derive(Debug, Serialize, Deserialize, PartialEq)]
         struct Object {
             id: usize,
@@ -1868,7 +1869,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_one_task(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_get_one_task(client: Client<Http>, index: Index<Http>) -> Result<(), Error> {
         let task = index
             .delete_all_documents()
             .await?
