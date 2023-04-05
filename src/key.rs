@@ -28,7 +28,7 @@ pub struct Key {
 }
 
 impl Key {
-    /// Update the description of the key.
+    /// Update the description of the [Key].
     ///
     /// # Example
     ///
@@ -47,7 +47,7 @@ impl Key {
     ///     .with_description(&description)
     ///     .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(key.description, Some(description));
+    /// assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -56,7 +56,7 @@ impl Key {
         self
     }
 
-    /// Update the name of the key.
+    /// Update the name of the [Key].
     ///
     /// # Example
     ///
@@ -68,14 +68,17 @@ impl Key {
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///  let name = "lovely key".to_string();
-    ///  let mut key = KeyBuilder::new()
-    ///   .with_action(Action::DocumentsAdd)
-    ///   .with_index("*")
-    ///   .execute(&client).await.unwrap();
+    /// let name = "lovely key".to_string();
+    /// let mut key = KeyBuilder::new()
+    ///     .with_action(Action::DocumentsAdd)
+    ///     .with_index("*")
+    ///     .execute(&client)
+    ///     .await
+    ///     .unwrap();
     ///
-    ///  key.with_name(&name);
-    /// # assert_eq!(key.name, Some(name));
+    /// key.with_name(&name);
+    /// 
+    /// assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -97,12 +100,16 @@ impl Key {
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let mut key = KeyBuilder::new()
-    ///   .execute(&client).await.unwrap();
+    ///     .execute(&client)
+    ///     .await
+    ///     .unwrap();
+    /// 
     /// let description = "My not so little lovely test key".to_string();
     /// key.with_description(&description);
+    /// 
     /// let key = key.update(&client).await.unwrap();
     ///
-    /// # assert_eq!(key.description, Some(description));
+    /// assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -173,7 +180,7 @@ impl KeyUpdater {
         }
     }
 
-    /// Update the description of the key.
+    /// Update the description of the [Key].
     ///
     /// # Example
     ///
@@ -197,7 +204,7 @@ impl KeyUpdater {
     ///     .await
     ///     .unwrap();
     ///
-    /// # assert_eq!(key_update.description, Some(description));
+    /// assert_eq!(key_update.description, Some(description));
     /// # client.delete_key(key_update).await.unwrap();
     /// # });
     /// ```
@@ -206,7 +213,7 @@ impl KeyUpdater {
         self
     }
 
-    /// Update the name of the key.
+    /// Update the name of the [Key].
     ///
     /// # Example
     ///
@@ -230,7 +237,7 @@ impl KeyUpdater {
     ///     .await
     ///     .unwrap();
     ///
-    /// # assert_eq!(key_update.name, Some(name));
+    /// assert_eq!(key_update.name, Some(name));
     /// # client.delete_key(key_update).await.unwrap();
     /// # });
     /// ```
@@ -258,7 +265,7 @@ impl KeyUpdater {
     /// let mut key_update = KeyUpdater::new(&key.key);
     /// key_update.with_description(&description).execute(&client).await;
     ///
-    /// # assert_eq!(key_update.description, Some(description));
+    /// assert_eq!(key_update.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -296,7 +303,8 @@ pub struct KeysQuery {
     /// This is helpful for pagination.
     ///
     /// Example: If you don't want to get more than two documents, set limit to `2`.
-    /// Default: `20`
+    /// 
+    /// **Default: `20`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
 }
@@ -330,7 +338,7 @@ impl KeysQuery {
     ///     .with_offset(1)
     ///     .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(keys.offset, 1);
+    /// assert_eq!(keys.offset, 1);
     /// # });
     /// ```
     pub fn with_offset(&mut self, offset: usize) -> &mut KeysQuery {
@@ -354,7 +362,7 @@ impl KeysQuery {
     ///     .with_limit(1)
     ///     .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(keys.results.len(), 1);
+    /// assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
     pub fn with_limit(&mut self, limit: usize) -> &mut KeysQuery {
@@ -378,7 +386,7 @@ impl KeysQuery {
     ///     .with_limit(1)
     ///     .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(keys.results.len(), 1);
+    /// assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
     pub async fn execute(&self, client: &Client) -> Result<KeysResults, Error> {
@@ -405,7 +413,7 @@ impl KeysQuery {
 ///     .with_description(&description)
 ///     .execute(&client).await.unwrap();
 ///
-/// # assert_eq!(key.description, Some(description));
+/// assert_eq!(key.description, Some(description));
 /// # client.delete_key(key).await.unwrap();
 /// # });
 /// ```
@@ -528,7 +536,7 @@ impl KeyBuilder {
         self
     }
 
-    /// Add a description to the key.
+    /// Add a description to the [Key].
     ///
     /// # Example
     ///
@@ -545,7 +553,7 @@ impl KeyBuilder {
     ///     .with_description(&description)
     ///     .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(key.description, Some(description));
+    /// assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -554,7 +562,7 @@ impl KeyBuilder {
         self
     }
 
-    /// Add a name to the key.
+    /// Add a name to the [Key].
     ///
     /// # Example
     ///
@@ -571,7 +579,7 @@ impl KeyBuilder {
     ///     .with_name(&name)
     ///     .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(key.name, Some(name));
+    /// assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -580,7 +588,7 @@ impl KeyBuilder {
         self
     }
 
-    /// Add an uid to the key.
+    /// Add an uid to the [Key].
     ///
     /// # Example
     ///
@@ -597,7 +605,7 @@ impl KeyBuilder {
     ///     .with_uid(&uid)
     ///     .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(key.uid, uid);
+    /// assert_eq!(key.uid, uid);
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
@@ -623,7 +631,7 @@ impl KeyBuilder {
     ///     .with_description(&description)
     ///     .execute(&client).await.unwrap();
     ///
-    /// # assert_eq!(key.description, Some(description));
+    /// assert_eq!(key.description, Some(description));
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```

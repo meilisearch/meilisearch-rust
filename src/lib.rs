@@ -252,7 +252,7 @@ mod utils;
 pub use client::*;
 
 #[cfg(test)]
-/// Support for the `IndexConfig` derive proc macro in the crate's tests
+/// Support for the `IndexConfig` derive proc macro in the crate's tests.
 extern crate self as meilisearch_sdk;
 /// Can't assume that the user of proc_macro will have access to `async_trait` crate. So exporting the `async-trait` crate from `meilisearch_sdk` in a hidden module.
 #[doc(hidden)]
