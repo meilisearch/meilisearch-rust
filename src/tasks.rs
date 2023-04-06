@@ -461,9 +461,9 @@ pub struct TasksCancelFilters {}
 #[derive(Debug, Serialize, Clone)]
 pub struct TasksDeleteFilters {}
 
-pub type TasksSearchQuery<'a, Http: HttpClient> = TasksQuery<'a, TasksPaginationFilters, Http>;
-pub type TasksCancelQuery<'a, Http: HttpClient> = TasksQuery<'a, TasksCancelFilters, Http>;
-pub type TasksDeleteQuery<'a, Http: HttpClient> = TasksQuery<'a, TasksDeleteFilters, Http>;
+pub type TasksSearchQuery<'a, Http> = TasksQuery<'a, TasksPaginationFilters, Http>;
+pub type TasksCancelQuery<'a, Http> = TasksQuery<'a, TasksCancelFilters, Http>;
+pub type TasksDeleteQuery<'a, Http> = TasksQuery<'a, TasksDeleteFilters, Http>;
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
