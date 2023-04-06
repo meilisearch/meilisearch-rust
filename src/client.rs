@@ -19,7 +19,7 @@ use crate::{
 pub struct Client<Http: HttpClient> {
     pub(crate) host: String,
     pub(crate) api_key: Option<String>,
-    http_client: Http,
+    pub http_client: Http,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,7 +27,7 @@ pub struct SwapIndexes {
     pub indexes: (String, String),
 }
 
-impl<Http: HttpClient> Client<Http> {
+impl Client<IsahcClinet> {
     /// Create a client using the specified server.
     ///
     /// Don't put a '/' at the end of the host.
@@ -44,14 +44,16 @@ impl<Http: HttpClient> Client<Http> {
     ///
     /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// ```
-    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client<Http> {
+    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client<IsahcClinet> {
         Client {
             host: host.into(),
             api_key: api_key.map(std::convert::Into::into),
-            http_client: IsahcClinet,
+            http_client: IsahcClinet::new(),
         }
     }
+}
 
+impl<Http: HttpClient> Client<Http> {
     fn parse_indexes_results_from_value(
         &self,
         value: &Value,
