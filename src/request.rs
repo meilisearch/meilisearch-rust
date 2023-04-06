@@ -5,7 +5,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
 
 #[derive(Debug)]
-pub(crate) enum Method<Q, B> {
+pub enum Method<Q, B> {
     Get { query: Q },
     Post { query: Q, body: B },
     Patch { query: Q, body: B },
@@ -14,30 +14,43 @@ pub(crate) enum Method<Q, B> {
 }
 
 #[async_trait]
-pub trait HttpClient: Clone + Serialize {
-    async fn request<Query: Serialize, Body: Serialize, Output: DeserializeOwned + 'static + Send>(
+pub trait HttpClient: Clone + Serialize + Send + Sync {
+    async fn request<Query, Body, Output>(
+        self,
         url: &str,
         apikey: Option<&str>,
         method: Method<Query, Body>,
         expected_status_code: u16,
-    ) -> Result<Box<dyn futures::Future<Output = Result<Box<dyn Send>, Error>> + Send>, Error>;
+    ) -> Result<Output, Error>
+    where
+        Query: Serialize + Send + Sync,
+        Body: Serialize + Send + Sync,
+        Output: DeserializeOwned + 'static + Send;
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct IsahcClinet;
 
+impl IsahcClinet {
+    pub fn new() -> Self {
+        return IsahcClinet;
+    }
+}
+
 #[async_trait]
 impl HttpClient for IsahcClinet {
-    async fn request<
-        Query: Serialize,
-        Body: Serialize,
-        Output: DeserializeOwned + 'static + Send,
-    >(
+    async fn request<Query, Body, Output>(
+        self,
         url: &str,
         apikey: Option<&str>,
         method: Method<Query, Body>,
         expected_status_code: u16,
-    ) -> Result<Box<dyn futures::Future<Output = Result<Box<dyn Send>, Error>> + Send>, Error> {
+    ) -> Result<Output, Error>
+    where
+        Query: Serialize + Send + Sync,
+        Body: Serialize + Send + Sync,
+        Output: DeserializeOwned + 'static + Send,
+    {
         use isahc::http::header;
         use isahc::http::method::Method as HttpMethod;
         use isahc::*;
