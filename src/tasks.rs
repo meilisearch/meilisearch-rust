@@ -695,414 +695,423 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksPaginationFilters, Http> {
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-//     use crate::{
-//         client::*,
-//         errors::{ErrorCode, ErrorType},
-//     };
-//     use big_s::S;
-//     use meilisearch_test_macro::meilisearch_test;
-//     use serde::{Deserialize, Serialize};
-//     use std::time::Duration;
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{
+        client::*,
+        errors::{ErrorCode, ErrorType},
+        request::IsahcClient,
+    };
+    use big_s::S;
+    use meilisearch_test_macro::meilisearch_test;
+    use serde::{Deserialize, Serialize};
+    use std::time::Duration;
 
-//     #[derive(Debug, Serialize, Deserialize, PartialEq)]
-//     struct Document {
-//         id: usize,
-//         value: String,
-//         kind: String,
-//     }
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Document {
+        id: usize,
+        value: String,
+        kind: String,
+    }
 
-//     #[test]
-//     fn test_deserialize_task() {
-//         let datetime = OffsetDateTime::parse(
-//             "2022-02-03T13:02:38.369634Z",
-//             &::time::format_description::well_known::Rfc3339,
-//         )
-//         .unwrap();
+    #[test]
+    fn test_deserialize_task() {
+        let datetime = OffsetDateTime::parse(
+            "2022-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
 
-//         let task: Task = serde_json::from_str(
-//             r#"
-// {
-//   "enqueuedAt": "2022-02-03T13:02:38.369634Z",
-//   "indexUid": "mieli",
-//   "status": "enqueued",
-//   "type": "documentAdditionOrUpdate",
-//   "uid": 12
-// }"#,
-//         )
-//         .unwrap();
+        let task: Task = serde_json::from_str(
+            r#"
+{
+  "enqueuedAt": "2022-02-03T13:02:38.369634Z",
+  "indexUid": "mieli",
+  "status": "enqueued",
+  "type": "documentAdditionOrUpdate",
+  "uid": 12
+}"#,
+        )
+        .unwrap();
 
-//         assert!(matches!(
-//             task,
-//             Task::Enqueued {
-//                 content: EnqueuedTask {
-//                     enqueued_at,
-//                     index_uid: Some(index_uid),
-//                     update_type: TaskType::DocumentAdditionOrUpdate { details: None },
-//                     uid: 12,
-//                 }
-//             }
-//         if enqueued_at == datetime && index_uid == "mieli"));
+        assert!(matches!(
+            task,
+            Task::Enqueued {
+                content: EnqueuedTask {
+                    enqueued_at,
+                    index_uid: Some(index_uid),
+                    update_type: TaskType::DocumentAdditionOrUpdate { details: None },
+                    uid: 12,
+                }
+            }
+        if enqueued_at == datetime && index_uid == "mieli"));
 
-//         let task: Task = serde_json::from_str(
-//             r#"
-// {
-//   "details": {
-//     "indexedDocuments": null,
-//     "receivedDocuments": 19547
-//   },
-//   "duration": null,
-//   "enqueuedAt": "2022-02-03T15:17:02.801341Z",
-//   "finishedAt": null,
-//   "indexUid": "mieli",
-//   "startedAt": "2022-02-03T15:17:02.812338Z",
-//   "status": "processing",
-//   "type": "documentAdditionOrUpdate",
-//   "uid": 14
-// }"#,
-//         )
-//         .unwrap();
+        let task: Task = serde_json::from_str(
+            r#"
+{
+  "details": {
+    "indexedDocuments": null,
+    "receivedDocuments": 19547
+  },
+  "duration": null,
+  "enqueuedAt": "2022-02-03T15:17:02.801341Z",
+  "finishedAt": null,
+  "indexUid": "mieli",
+  "startedAt": "2022-02-03T15:17:02.812338Z",
+  "status": "processing",
+  "type": "documentAdditionOrUpdate",
+  "uid": 14
+}"#,
+        )
+        .unwrap();
 
-//         assert!(matches!(
-//             task,
-//             Task::Processing {
-//                 content: EnqueuedTask {
-//                     update_type: TaskType::DocumentAdditionOrUpdate {
-//                         details: Some(DocumentAdditionOrUpdate {
-//                             received_documents: 19547,
-//                             indexed_documents: None,
-//                         })
-//                     },
-//                     uid: 14,
-//                     ..
-//                 }
-//             }
-//         ));
+        assert!(matches!(
+            task,
+            Task::Processing {
+                content: EnqueuedTask {
+                    update_type: TaskType::DocumentAdditionOrUpdate {
+                        details: Some(DocumentAdditionOrUpdate {
+                            received_documents: 19547,
+                            indexed_documents: None,
+                        })
+                    },
+                    uid: 14,
+                    ..
+                }
+            }
+        ));
 
-//         let task: Task = serde_json::from_str(
-//             r#"
-// {
-//   "details": {
-//     "indexedDocuments": 19546,
-//     "receivedDocuments": 19547
-//   },
-//   "duration": "PT10.848957S",
-//   "enqueuedAt": "2022-02-03T15:17:02.801341Z",
-//   "finishedAt": "2022-02-03T15:17:13.661295Z",
-//   "indexUid": "mieli",
-//   "startedAt": "2022-02-03T15:17:02.812338Z",
-//   "status": "succeeded",
-//   "type": "documentAdditionOrUpdate",
-//   "uid": 14
-// }"#,
-//         )
-//         .unwrap();
+        let task: Task = serde_json::from_str(
+            r#"
+{
+  "details": {
+    "indexedDocuments": 19546,
+    "receivedDocuments": 19547
+  },
+  "duration": "PT10.848957S",
+  "enqueuedAt": "2022-02-03T15:17:02.801341Z",
+  "finishedAt": "2022-02-03T15:17:13.661295Z",
+  "indexUid": "mieli",
+  "startedAt": "2022-02-03T15:17:02.812338Z",
+  "status": "succeeded",
+  "type": "documentAdditionOrUpdate",
+  "uid": 14
+}"#,
+        )
+        .unwrap();
 
-//         assert!(matches!(
-//             task,
-//             Task::Succeeded {
-//                 content: SucceededTask {
-//                     update_type: TaskType::DocumentAdditionOrUpdate {
-//                         details: Some(DocumentAdditionOrUpdate {
-//                             received_documents: 19547,
-//                             indexed_documents: Some(19546),
-//                         })
-//                     },
-//                     uid: 14,
-//                     duration,
-//                     ..
-//                 }
-//             }
-//             if duration == Duration::from_millis(10_848)
-//         ));
-//     }
+        assert!(matches!(
+            task,
+            Task::Succeeded {
+                content: SucceededTask {
+                    update_type: TaskType::DocumentAdditionOrUpdate {
+                        details: Some(DocumentAdditionOrUpdate {
+                            received_documents: 19547,
+                            indexed_documents: Some(19546),
+                        })
+                    },
+                    uid: 14,
+                    duration,
+                    ..
+                }
+            }
+            if duration == Duration::from_millis(10_848)
+        ));
+    }
 
-//     #[meilisearch_test]
-//     async fn test_wait_for_task_with_args(client: Client, movies: Index) -> Result<(), Error> {
-//         let task = movies
-//             .add_documents(
-//                 &[
-//                     Document {
-//                         id: 0,
-//                         kind: "title".into(),
-//                         value: S("The Social Network"),
-//                     },
-//                     Document {
-//                         id: 1,
-//                         kind: "title".into(),
-//                         value: S("Harry Potter and the Sorcerer's Stone"),
-//                     },
-//                 ],
-//                 None,
-//             )
-//             .await?
-//             .wait_for_completion(
-//                 &client,
-//                 Some(Duration::from_millis(1)),
-//                 Some(Duration::from_millis(6000)),
-//             )
-//             .await?;
+    #[meilisearch_test]
+    async fn test_wait_for_task_with_args(
+        client: Client<IsahcClient>,
+        movies: Index<IsahcClient>,
+    ) -> Result<(), Error> {
+        let task = movies
+            .add_documents(
+                &[
+                    Document {
+                        id: 0,
+                        kind: "title".into(),
+                        value: S("The Social Network"),
+                    },
+                    Document {
+                        id: 1,
+                        kind: "title".into(),
+                        value: S("Harry Potter and the Sorcerer's Stone"),
+                    },
+                ],
+                None,
+            )
+            .await?
+            .wait_for_completion(
+                &client,
+                Some(Duration::from_millis(1)),
+                Some(Duration::from_millis(6000)),
+            )
+            .await?;
 
-//         assert!(matches!(task, Task::Succeeded { .. }));
-//         Ok(())
-//     }
+        assert!(matches!(task, Task::Succeeded { .. }));
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_get_tasks_no_params() -> Result<(), Error> {
-//         let mut s = mockito::Server::new_async().await;
-//         let mock_server_url = s.url();
-//         let client = Client::new(mock_server_url, Some("masterKey"));
-//         let path = "/tasks";
+    #[meilisearch_test]
+    async fn test_get_tasks_no_params() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path = "/tasks";
 
-//         let mock_res = s.mock("GET", path).with_status(200).create_async().await;
-//         let _ = client.get_tasks().await;
-//         mock_res.assert_async().await;
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
+        let _ = client.get_tasks().await;
+        mock_res.assert_async().await;
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_get_tasks_with_params() -> Result<(), Error> {
-//         let mut s = mockito::Server::new_async().await;
-//         let mock_server_url = s.url();
-//         let client = Client::new(mock_server_url, Some("masterKey"));
-//         let path =
-//             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
+    #[meilisearch_test]
+    async fn test_get_tasks_with_params() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path =
+            "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
 
-//         let mock_res = s.mock("GET", path).with_status(200).create_async().await;
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
 
-//         let mut query = TasksSearchQuery::new(&client);
-//         query
-//             .with_index_uids(["movies", "test"])
-//             .with_statuses(["equeued"])
-//             .with_types(["documentDeletion"])
-//             .with_from(1)
-//             .with_limit(0)
-//             .with_uids([&1]);
+        let mut query = TasksSearchQuery::new(&client);
+        query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_from(1)
+            .with_limit(0)
+            .with_uids([&1]);
 
-//         let _ = client.get_tasks_with(&query).await;
+        let _ = client.get_tasks_with(&query).await;
 
-//         mock_res.assert_async().await;
+        mock_res.assert_async().await;
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_get_tasks_with_date_params() -> Result<(), Error> {
-//         let mut s = mockito::Server::new_async().await;
-//         let mock_server_url = s.url();
-//         let client = Client::new(mock_server_url, Some("masterKey"));
-//         let path = "/tasks?\
-//             beforeEnqueuedAt=2022-02-03T13%3A02%3A38.369634Z\
-//             &afterEnqueuedAt=2023-02-03T13%3A02%3A38.369634Z\
-//             &beforeStartedAt=2024-02-03T13%3A02%3A38.369634Z\
-//             &afterStartedAt=2025-02-03T13%3A02%3A38.369634Z\
-//             &beforeFinishedAt=2026-02-03T13%3A02%3A38.369634Z\
-//             &afterFinishedAt=2027-02-03T13%3A02%3A38.369634Z";
+    #[meilisearch_test]
+    async fn test_get_tasks_with_date_params() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path = "/tasks?\
+            beforeEnqueuedAt=2022-02-03T13%3A02%3A38.369634Z\
+            &afterEnqueuedAt=2023-02-03T13%3A02%3A38.369634Z\
+            &beforeStartedAt=2024-02-03T13%3A02%3A38.369634Z\
+            &afterStartedAt=2025-02-03T13%3A02%3A38.369634Z\
+            &beforeFinishedAt=2026-02-03T13%3A02%3A38.369634Z\
+            &afterFinishedAt=2027-02-03T13%3A02%3A38.369634Z";
 
-//         let mock_res = s.mock("GET", path).with_status(200).create_async().await;
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
 
-//         let before_enqueued_at = OffsetDateTime::parse(
-//             "2022-02-03T13:02:38.369634Z",
-//             &::time::format_description::well_known::Rfc3339,
-//         )
-//         .unwrap();
-//         let after_enqueued_at = OffsetDateTime::parse(
-//             "2023-02-03T13:02:38.369634Z",
-//             &::time::format_description::well_known::Rfc3339,
-//         )
-//         .unwrap();
-//         let before_started_at = OffsetDateTime::parse(
-//             "2024-02-03T13:02:38.369634Z",
-//             &::time::format_description::well_known::Rfc3339,
-//         )
-//         .unwrap();
+        let before_enqueued_at = OffsetDateTime::parse(
+            "2022-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+        let after_enqueued_at = OffsetDateTime::parse(
+            "2023-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+        let before_started_at = OffsetDateTime::parse(
+            "2024-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
 
-//         let after_started_at = OffsetDateTime::parse(
-//             "2025-02-03T13:02:38.369634Z",
-//             &::time::format_description::well_known::Rfc3339,
-//         )
-//         .unwrap();
+        let after_started_at = OffsetDateTime::parse(
+            "2025-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
 
-//         let before_finished_at = OffsetDateTime::parse(
-//             "2026-02-03T13:02:38.369634Z",
-//             &::time::format_description::well_known::Rfc3339,
-//         )
-//         .unwrap();
+        let before_finished_at = OffsetDateTime::parse(
+            "2026-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
 
-//         let after_finished_at = OffsetDateTime::parse(
-//             "2027-02-03T13:02:38.369634Z",
-//             &::time::format_description::well_known::Rfc3339,
-//         )
-//         .unwrap();
+        let after_finished_at = OffsetDateTime::parse(
+            "2027-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
 
-//         let mut query = TasksSearchQuery::new(&client);
-//         query
-//             .with_before_enqueued_at(&before_enqueued_at)
-//             .with_after_enqueued_at(&after_enqueued_at)
-//             .with_before_started_at(&before_started_at)
-//             .with_after_started_at(&after_started_at)
-//             .with_before_finished_at(&before_finished_at)
-//             .with_after_finished_at(&after_finished_at);
+        let mut query = TasksSearchQuery::new(&client);
+        query
+            .with_before_enqueued_at(&before_enqueued_at)
+            .with_after_enqueued_at(&after_enqueued_at)
+            .with_before_started_at(&before_started_at)
+            .with_after_started_at(&after_started_at)
+            .with_before_finished_at(&before_finished_at)
+            .with_after_finished_at(&after_finished_at);
 
-//         let _ = client.get_tasks_with(&query).await;
+        let _ = client.get_tasks_with(&query).await;
 
-//         mock_res.assert_async().await;
+        mock_res.assert_async().await;
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
-//         let mut s = mockito::Server::new_async().await;
-//         let mock_server_url = s.url();
-//         let client = Client::new(mock_server_url, Some("masterKey"));
-//         let path =
-//             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&canceledBy=9";
+    #[meilisearch_test]
+    async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path =
+            "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&canceledBy=9";
 
-//         let mock_res = s.mock("GET", path).with_status(200).create_async().await;
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
 
-//         let mut query = TasksSearchQuery::new(&client);
-//         let _ = query
-//             .with_index_uids(["movies", "test"])
-//             .with_statuses(["equeued"])
-//             .with_types(["documentDeletion"])
-//             .with_canceled_by([&9])
-//             .execute()
-//             .await;
+        let mut query = TasksSearchQuery::new(&client);
+        let _ = query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_canceled_by([&9])
+            .execute()
+            .await;
 
-//         mock_res.assert_async().await;
+        mock_res.assert_async().await;
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_get_tasks_with_none_existant_index_uids(client: Client) -> Result<(), Error> {
-//         let mut query = TasksSearchQuery::new(&client);
-//         query.with_index_uids(["no_name"]);
-//         let tasks = client.get_tasks_with(&query).await.unwrap();
+    #[meilisearch_test]
+    async fn test_get_tasks_with_none_existant_index_uids(
+        client: Client<IsahcClient>,
+    ) -> Result<(), Error> {
+        let mut query = TasksSearchQuery::new(&client);
+        query.with_index_uids(["no_name"]);
+        let tasks = client.get_tasks_with(&query).await.unwrap();
 
-//         assert_eq!(tasks.results.len(), 0);
-//         Ok(())
-//     }
+        assert_eq!(tasks.results.len(), 0);
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_get_tasks_with_execute(client: Client) -> Result<(), Error> {
-//         let tasks = TasksSearchQuery::new(&client)
-//             .with_index_uids(["no_name"])
-//             .execute()
-//             .await
-//             .unwrap();
+    #[meilisearch_test]
+    async fn test_get_tasks_with_execute(client: Client<IsahcClient>) -> Result<(), Error> {
+        let tasks = TasksSearchQuery::new(&client)
+            .with_index_uids(["no_name"])
+            .execute()
+            .await
+            .unwrap();
 
-//         assert_eq!(tasks.results.len(), 0);
-//         Ok(())
-//     }
+        assert_eq!(tasks.results.len(), 0);
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
-//         let task_info = client.create_index(index.uid, None).await.unwrap();
-//         let task = client.get_task(task_info).await?;
-//         let task = client.wait_for_task(task, None, None).await?;
+    #[meilisearch_test]
+    async fn test_failing_task(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
+        let task_info = client.create_index(index.uid, None).await.unwrap();
+        let task = client.get_task(task_info).await?;
+        let task = client.wait_for_task(task, None, None).await?;
 
-//         let error = task.unwrap_failure();
-//         assert_eq!(error.error_code, ErrorCode::IndexAlreadyExists);
-//         assert_eq!(error.error_type, ErrorType::InvalidRequest);
-//         Ok(())
-//     }
+        let error = task.unwrap_failure();
+        assert_eq!(error.error_code, ErrorCode::IndexAlreadyExists);
+        assert_eq!(error.error_type, ErrorType::InvalidRequest);
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_cancel_tasks_with_params() -> Result<(), Error> {
-//         let mut s = mockito::Server::new_async().await;
-//         let mock_server_url = s.url();
-//         let client = Client::new(mock_server_url, Some("masterKey"));
-//         let path =
-//             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+    #[meilisearch_test]
+    async fn test_cancel_tasks_with_params() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path =
+            "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
-//         let mock_res = s.mock("POST", path).with_status(200).create_async().await;
+        let mock_res = s.mock("POST", path).with_status(200).create_async().await;
 
-//         let mut query = TasksCancelQuery::new(&client);
-//         query
-//             .with_index_uids(["movies", "test"])
-//             .with_statuses(["equeued"])
-//             .with_types(["documentDeletion"])
-//             .with_uids([&1]);
+        let mut query = TasksCancelQuery::new(&client);
+        query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1]);
 
-//         let _ = client.cancel_tasks_with(&query).await;
+        let _ = client.cancel_tasks_with(&query).await;
 
-//         mock_res.assert_async().await;
+        mock_res.assert_async().await;
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_cancel_tasks_with_params_execute() -> Result<(), Error> {
-//         let mut s = mockito::Server::new_async().await;
-//         let mock_server_url = s.url();
-//         let client = Client::new(mock_server_url, Some("masterKey"));
-//         let path =
-//             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+    #[meilisearch_test]
+    async fn test_cancel_tasks_with_params_execute() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path =
+            "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
-//         let mock_res = s.mock("POST", path).with_status(200).create_async().await;
+        let mock_res = s.mock("POST", path).with_status(200).create_async().await;
 
-//         let mut query = TasksCancelQuery::new(&client);
-//         let _ = query
-//             .with_index_uids(["movies", "test"])
-//             .with_statuses(["equeued"])
-//             .with_types(["documentDeletion"])
-//             .with_uids([&1])
-//             .execute()
-//             .await;
+        let mut query = TasksCancelQuery::new(&client);
+        let _ = query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1])
+            .execute()
+            .await;
 
-//         mock_res.assert_async().await;
+        mock_res.assert_async().await;
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_delete_tasks_with_params() -> Result<(), Error> {
-//         let mut s = mockito::Server::new_async().await;
-//         let mock_server_url = s.url();
-//         let client = Client::new(mock_server_url, Some("masterKey"));
-//         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+    #[meilisearch_test]
+    async fn test_delete_tasks_with_params() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
-//         let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
+        let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
 
-//         let mut query = TasksDeleteQuery::new(&client);
-//         query
-//             .with_index_uids(["movies", "test"])
-//             .with_statuses(["equeued"])
-//             .with_types(["documentDeletion"])
-//             .with_uids([&1]);
+        let mut query = TasksDeleteQuery::new(&client);
+        query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1]);
 
-//         let _ = client.delete_tasks_with(&query).await;
+        let _ = client.delete_tasks_with(&query).await;
 
-//         mock_res.assert_async().await;
+        mock_res.assert_async().await;
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_delete_tasks_with_params_execute() -> Result<(), Error> {
-//         let mut s = mockito::Server::new_async().await;
-//         let mock_server_url = s.url();
-//         let client = Client::new(mock_server_url, Some("masterKey"));
-//         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+    #[meilisearch_test]
+    async fn test_delete_tasks_with_params_execute() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
-//         let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
+        let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
 
-//         let mut query = TasksDeleteQuery::new(&client);
-//         let _ = query
-//             .with_index_uids(["movies", "test"])
-//             .with_statuses(["equeued"])
-//             .with_types(["documentDeletion"])
-//             .with_uids([&1])
-//             .execute()
-//             .await;
+        let mut query = TasksDeleteQuery::new(&client);
+        let _ = query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1])
+            .execute()
+            .await;
 
-//         mock_res.assert_async().await;
+        mock_res.assert_async().await;
 
-//         Ok(())
-//     }
-// }
+        Ok(())
+    }
+}

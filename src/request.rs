@@ -29,16 +29,16 @@ pub trait HttpClient: Clone + Serialize + Send + Sync {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct IsahcClinet;
+pub struct IsahcClient;
 
-impl IsahcClinet {
+impl IsahcClient {
     pub fn new() -> Self {
-        return IsahcClinet;
+        return IsahcClient;
     }
 }
 
 #[async_trait]
-impl HttpClient for IsahcClinet {
+impl HttpClient for IsahcClient {
     async fn request<Query, Body, Output>(
         self,
         url: &str,
@@ -456,7 +456,7 @@ pub(crate) async fn request<
     }
 }
 
-fn parse_response<Output: DeserializeOwned>(
+pub fn parse_response<Output: DeserializeOwned>(
     status_code: u16,
     expected_status_code: u16,
     body: &str,
