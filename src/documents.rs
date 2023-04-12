@@ -153,7 +153,7 @@ impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
     /// );
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
-    pub async fn execute<T: DeserializeOwned + 'static>(
+    pub async fn execute<T: DeserializeOwned + 'static + Send + Sync>(
         &self,
         document_id: &str,
     ) -> Result<T, Error> {
@@ -310,7 +310,7 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute<T: DeserializeOwned + 'static>(
+    pub async fn execute<T: DeserializeOwned + 'static + Send + Sync>(
         &self,
     ) -> Result<DocumentsResults<T>, Error> {
         self.index.get_documents_with::<T>(self).await
