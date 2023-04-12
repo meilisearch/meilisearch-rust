@@ -235,7 +235,7 @@ pub mod errors;
 pub mod indexes;
 /// Module containing the [`key::Key`] struct.
 pub mod key;
-mod request;
+pub mod request;
 /// Module related to search queries and results.
 pub mod search;
 /// Module containing [`settings::Settings`].
