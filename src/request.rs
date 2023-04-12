@@ -26,6 +26,21 @@ pub trait HttpClient: Clone + Serialize + Send + Sync {
         Query: Serialize + Send + Sync,
         Body: Serialize + Send + Sync,
         Output: DeserializeOwned + 'static + Send;
+
+    #[cfg(not(target_arch = "wasm32"))]
+    async fn stream_request<
+        'a,
+        Query: Serialize + Send + Sync,
+        Body: futures_io::AsyncRead + Send + Sync + 'static,
+        Output: DeserializeOwned + 'static,
+    >(
+        self,
+        url: &str,
+        apikey: Option<&str>,
+        method: Method<Query, Body>,
+        content_type: &str,
+        expected_status_code: u16,
+    ) -> Result<Output, Error>;
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -33,7 +48,13 @@ pub struct IsahcClient;
 
 impl IsahcClient {
     pub fn new() -> Self {
-        return IsahcClient;
+        IsahcClient
+    }
+}
+
+impl Default for IsahcClient {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -136,7 +157,104 @@ impl HttpClient for IsahcClient {
         parse_response(status, expected_status_code, body)
     }
 
-    // todo stream_request
+    #[cfg(not(target_arch = "wasm32"))]
+    async fn stream_request<
+        'a,
+        Query: Serialize + Send + Sync,
+        Body: futures_io::AsyncRead + Send + Sync + 'static,
+        Output: DeserializeOwned + 'static,
+    >(
+        self,
+        url: &str,
+        apikey: Option<&str>,
+        method: Method<Query, Body>,
+        content_type: &str,
+        expected_status_code: u16,
+    ) -> Result<Output, Error> {
+        use isahc::http::header;
+        use isahc::http::method::Method as HttpMethod;
+        use isahc::*;
+
+        let builder = Request::builder().header(header::USER_AGENT, qualified_version());
+        let builder = match apikey {
+            Some(apikey) => builder.header(header::AUTHORIZATION, format!("Bearer {apikey}")),
+            None => builder,
+        };
+
+        let mut response = match method {
+            Method::Get { query } => {
+                let url = add_query_parameters(url, &query)?;
+
+                builder
+                    .method(HttpMethod::GET)
+                    .uri(url)
+                    .body(())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            }
+            Method::Delete { query } => {
+                let url = add_query_parameters(url, &query)?;
+
+                builder
+                    .method(HttpMethod::DELETE)
+                    .uri(url)
+                    .body(())
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            }
+            Method::Post { query, body } => {
+                let url = add_query_parameters(url, &query)?;
+
+                builder
+                    .method(HttpMethod::POST)
+                    .uri(url)
+                    .header(header::CONTENT_TYPE, content_type)
+                    .body(AsyncBody::from_reader(body))
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            }
+            Method::Patch { query, body } => {
+                let url = add_query_parameters(url, &query)?;
+
+                builder
+                    .method(HttpMethod::PATCH)
+                    .uri(url)
+                    .header(header::CONTENT_TYPE, content_type)
+                    .body(AsyncBody::from_reader(body))
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            }
+            Method::Put { query, body } => {
+                let url = add_query_parameters(url, &query)?;
+
+                builder
+                    .method(HttpMethod::PUT)
+                    .uri(url)
+                    .header(header::CONTENT_TYPE, content_type)
+                    .body(AsyncBody::from_reader(body))
+                    .map_err(|_| crate::errors::Error::InvalidRequest)?
+                    .send_async()
+                    .await?
+            }
+        };
+
+        let status = response.status().as_u16();
+
+        let mut body = response
+            .text()
+            .await
+            .map_err(|e| crate::errors::Error::HttpError(e.into()))?;
+
+        if body.is_empty() {
+            body = "null".to_string();
+        }
+
+        parse_response(status, expected_status_code, body)
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -245,104 +363,6 @@ pub(crate) async fn request<
 
     parse_response(status, expected_status_code, &body, url.to_string())
     // parse_response(status, expected_status_code, body)
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn stream_request<
-    'a,
-    Query: Serialize,
-    Body: futures_io::AsyncRead + Send + Sync + 'static,
-    Output: DeserializeOwned + 'static,
->(
-    url: &str,
-    apikey: Option<&str>,
-    method: Method<Query, Body>,
-    content_type: &str,
-    expected_status_code: u16,
-) -> Result<Output, Error> {
-    use isahc::http::header;
-    use isahc::http::method::Method as HttpMethod;
-    use isahc::*;
-
-    let builder = Request::builder().header(header::USER_AGENT, qualified_version());
-    let builder = match apikey {
-        Some(apikey) => builder.header(header::AUTHORIZATION, format!("Bearer {apikey}")),
-        None => builder,
-    };
-
-    let mut response = match method {
-        Method::Get { query } => {
-            let url = add_query_parameters(url, &query)?;
-
-            builder
-                .method(HttpMethod::GET)
-                .uri(url)
-                .body(())
-                .map_err(|_| crate::errors::Error::InvalidRequest)?
-                .send_async()
-                .await?
-        }
-        Method::Delete { query } => {
-            let url = add_query_parameters(url, &query)?;
-
-            builder
-                .method(HttpMethod::DELETE)
-                .uri(url)
-                .body(())
-                .map_err(|_| crate::errors::Error::InvalidRequest)?
-                .send_async()
-                .await?
-        }
-        Method::Post { query, body } => {
-            let url = add_query_parameters(url, &query)?;
-
-            builder
-                .method(HttpMethod::POST)
-                .uri(url)
-                .header(header::CONTENT_TYPE, content_type)
-                .body(AsyncBody::from_reader(body))
-                .map_err(|_| crate::errors::Error::InvalidRequest)?
-                .send_async()
-                .await?
-        }
-        Method::Patch { query, body } => {
-            let url = add_query_parameters(url, &query)?;
-
-            builder
-                .method(HttpMethod::PATCH)
-                .uri(url)
-                .header(header::CONTENT_TYPE, content_type)
-                .body(AsyncBody::from_reader(body))
-                .map_err(|_| crate::errors::Error::InvalidRequest)?
-                .send_async()
-                .await?
-        }
-        Method::Put { query, body } => {
-            let url = add_query_parameters(url, &query)?;
-
-            builder
-                .method(HttpMethod::PUT)
-                .uri(url)
-                .header(header::CONTENT_TYPE, content_type)
-                .body(AsyncBody::from_reader(body))
-                .map_err(|_| crate::errors::Error::InvalidRequest)?
-                .send_async()
-                .await?
-        }
-    };
-
-    let status = response.status().as_u16();
-
-    let mut body = response
-        .text()
-        .await
-        .map_err(|e| crate::errors::Error::HttpError(e.into()))?;
-
-    if body.is_empty() {
-        body = "null".to_string();
-    }
-
-    parse_response(status, expected_status_code, &body, url.to_string())
 }
 
 #[cfg(target_arch = "wasm32")]
