@@ -88,6 +88,7 @@ mod test {
         client::*,
         errors::{ErrorCode, ErrorType},
         indexes::Index,
+        request::IsahcClient,
     };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
@@ -134,7 +135,10 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_wait_for_task_with_args(client: Client, movies: Index) -> Result<(), Error> {
+    async fn test_wait_for_task_with_args(
+        client: Client<IsahcClient>,
+        movies: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let task_info = movies
             .add_documents(
                 &[
@@ -168,7 +172,10 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_failing_task(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let task_info = client.create_index(index.uid, None).await.unwrap();
         let task = client.wait_for_task(task_info, None, None).await?;
 
