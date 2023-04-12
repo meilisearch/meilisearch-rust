@@ -1,7 +1,7 @@
 use crate::{
     errors::Error,
     indexes::Index,
-    request::{request, HttpClient, Method},
+    request::{HttpClient, Method},
     task_info::TaskInfo,
 };
 use serde::{Deserialize, Serialize};
@@ -268,13 +268,16 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_settings(&self) -> Result<Settings, Error> {
-        request::<(), (), Settings>(
-            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), Settings>(
+                &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [synonyms](https://www.meilisearch.com/docs/reference/api/settings#get-synonyms) of the [Index].
@@ -298,16 +301,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_synonyms(&self) -> Result<HashMap<String, Vec<String>>, Error> {
-        request::<(), (), HashMap<String, Vec<String>>>(
-            &format!(
-                "{}/indexes/{}/settings/synonyms",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), HashMap<String, Vec<String>>>(
+                &format!(
+                    "{}/indexes/{}/settings/synonyms",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [pagination](https://www.meilisearch.com/docs/reference/api/settings#pagination) of the [Index].
@@ -331,16 +337,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_pagination(&self) -> Result<PaginationSetting, Error> {
-        request::<(), (), PaginationSetting>(
-            &format!(
-                "{}/indexes/{}/settings/pagination",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), PaginationSetting>(
+                &format!(
+                    "{}/indexes/{}/settings/pagination",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
@@ -363,16 +372,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_stop_words(&self) -> Result<Vec<String>, Error> {
-        request::<(), (), Vec<String>>(
-            &format!(
-                "{}/indexes/{}/settings/stop-words",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), Vec<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/stop-words",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [ranking rules](https://www.meilisearch.com/docs/reference/api/settings#ranking-rules) of the [Index].
@@ -396,16 +408,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_ranking_rules(&self) -> Result<Vec<String>, Error> {
-        request::<(), (), Vec<String>>(
-            &format!(
-                "{}/indexes/{}/settings/ranking-rules",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), Vec<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/ranking-rules",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
@@ -429,16 +444,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_filterable_attributes(&self) -> Result<Vec<String>, Error> {
-        request::<(), (), Vec<String>>(
-            &format!(
-                "{}/indexes/{}/settings/filterable-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), Vec<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/filterable-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
@@ -462,16 +480,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_sortable_attributes(&self) -> Result<Vec<String>, Error> {
-        request::<(), (), Vec<String>>(
-            &format!(
-                "{}/indexes/{}/settings/sortable-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), Vec<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/sortable-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
@@ -495,16 +516,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_distinct_attribute(&self) -> Result<Option<String>, Error> {
-        request::<(), (), Option<String>>(
-            &format!(
-                "{}/indexes/{}/settings/distinct-attribute",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), Option<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/distinct-attribute",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings#searchable-attributes) of the [Index].
@@ -528,16 +552,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_searchable_attributes(&self) -> Result<Vec<String>, Error> {
-        request::<(), (), Vec<String>>(
-            &format!(
-                "{}/indexes/{}/settings/searchable-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), Vec<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/searchable-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings#displayed-attributes) of the [Index].
@@ -561,16 +588,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_displayed_attributes(&self) -> Result<Vec<String>, Error> {
-        request::<(), (), Vec<String>>(
-            &format!(
-                "{}/indexes/{}/settings/displayed-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), Vec<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/displayed-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
@@ -594,16 +624,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_faceting(&self) -> Result<FacetingSettings, Error> {
-        request::<(), (), FacetingSettings>(
-            &format!(
-                "{}/indexes/{}/settings/faceting",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), FacetingSettings>(
+                &format!(
+                    "{}/indexes/{}/settings/faceting",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) of the [Index].
@@ -664,16 +697,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn set_settings(&self, settings: &Settings) -> Result<TaskInfo, Error> {
-        request::<(), &Settings, TaskInfo>(
-            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Patch {
-                query: (),
-                body: settings,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &Settings, TaskInfo>(
+                &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+                self.client.get_api_key(),
+                Method::Patch {
+                    query: (),
+                    body: settings,
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [synonyms](https://www.meilisearch.com/docs/reference/api/settings#synonyms) of the [Index].
@@ -704,19 +740,22 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         synonyms: &HashMap<String, Vec<String>>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), &HashMap<String, Vec<String>>, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/synonyms",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: synonyms,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &HashMap<String, Vec<String>>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/synonyms",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: synonyms,
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [pagination](https://www.meilisearch.com/docs/reference/api/settings#pagination) of the [Index].
@@ -740,19 +779,22 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn set_pagination(&self, pagination: PaginationSetting) -> Result<TaskInfo, Error> {
-        request::<(), &PaginationSetting, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/pagination",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Patch {
-                query: (),
-                body: &pagination,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &PaginationSetting, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/pagination",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Patch {
+                    query: (),
+                    body: &pagination,
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
@@ -779,22 +821,25 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         stop_words: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Vec<String>, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/stop-words",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: stop_words
-                    .into_iter()
-                    .map(|v| v.as_ref().to_string())
-                    .collect(),
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), Vec<String>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/stop-words",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: stop_words
+                        .into_iter()
+                        .map(|v| v.as_ref().to_string())
+                        .collect(),
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [ranking rules](https://www.meilisearch.com/docs/reference/api/settings#ranking-rules) of the [Index].
@@ -830,22 +875,25 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         ranking_rules: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Vec<String>, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/ranking-rules",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: ranking_rules
-                    .into_iter()
-                    .map(|v| v.as_ref().to_string())
-                    .collect(),
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), Vec<String>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/ranking-rules",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: ranking_rules
+                        .into_iter()
+                        .map(|v| v.as_ref().to_string())
+                        .collect(),
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
@@ -872,22 +920,25 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Vec<String>, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/filterable-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: filterable_attributes
-                    .into_iter()
-                    .map(|v| v.as_ref().to_string())
-                    .collect(),
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), Vec<String>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/filterable-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: filterable_attributes
+                        .into_iter()
+                        .map(|v| v.as_ref().to_string())
+                        .collect(),
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
@@ -914,22 +965,25 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         sortable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Vec<String>, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/sortable-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: sortable_attributes
-                    .into_iter()
-                    .map(|v| v.as_ref().to_string())
-                    .collect(),
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), Vec<String>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/sortable-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: sortable_attributes
+                        .into_iter()
+                        .map(|v| v.as_ref().to_string())
+                        .collect(),
+                },
+                202,
+            )
+            .await
     }
 
     /// Update the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
@@ -955,19 +1009,22 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         distinct_attribute: impl AsRef<str>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), String, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/distinct-attribute",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: distinct_attribute.as_ref().to_string(),
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), String, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/distinct-attribute",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: distinct_attribute.as_ref().to_string(),
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings#searchable-attributes) of the [Index].
@@ -993,22 +1050,25 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         searchable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Vec<String>, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/searchable-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: searchable_attributes
-                    .into_iter()
-                    .map(|v| v.as_ref().to_string())
-                    .collect(),
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), Vec<String>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/searchable-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: searchable_attributes
+                        .into_iter()
+                        .map(|v| v.as_ref().to_string())
+                        .collect(),
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [displayed attributes](https://www.meilisearch.com/docs/reference/features/settings#displayed-attributes) of the [Index].
@@ -1034,22 +1094,25 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         displayed_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Vec<String>, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/displayed-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: displayed_attributes
-                    .into_iter()
-                    .map(|v| v.as_ref().to_string())
-                    .collect(),
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), Vec<String>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/displayed-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: displayed_attributes
+                        .into_iter()
+                        .map(|v| v.as_ref().to_string())
+                        .collect(),
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
@@ -1076,19 +1139,22 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn set_faceting(&self, faceting: &FacetingSettings) -> Result<TaskInfo, Error> {
-        request::<(), &FacetingSettings, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/faceting",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Patch {
-                query: (),
-                body: faceting,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &FacetingSettings, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/faceting",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Patch {
+                    query: (),
+                    body: faceting,
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) settings of the [Index].
@@ -1158,13 +1224,16 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_settings(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset [synonyms](https://www.meilisearch.com/docs/reference/features/synonyms.html) of the [Index].
@@ -1187,16 +1256,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_synonyms(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/synonyms",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/synonyms",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset [pagination](https://www.meilisearch.com/docs/learn/configuration/settings#pagination) of the [Index].
@@ -1219,16 +1291,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_pagination(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/pagination",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/pagination",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
     /// Reset [stop-words](https://www.meilisearch.com/docs/reference/features/stop_words.html) of the [Index].
     ///
@@ -1250,16 +1325,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_stop_words(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/stop-words",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/stop-words",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset [ranking rules](https://www.meilisearch.com/docs/learn/core_concepts/relevancy#ranking-rules) of the [Index] to default value.
@@ -1284,16 +1362,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_ranking_rules(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/ranking-rules",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/ranking-rules",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset [filterable attributes](https://www.meilisearch.com/docs/reference/features/filtering_and_faceted_search.html) of the [Index].
@@ -1316,16 +1397,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_filterable_attributes(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/filterable-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/filterable-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset [sortable attributes](https://www.meilisearch.com/docs/reference/features/sorting.html) of the [Index].
@@ -1348,16 +1432,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_sortable_attributes(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/sortable-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/sortable-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset the [distinct attribute](https://www.meilisearch.com/docs/reference/features/settings#distinct-attribute) of the [Index].
@@ -1380,16 +1467,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_distinct_attribute(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/distinct-attribute",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/distinct-attribute",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset [searchable attributes](https://www.meilisearch.com/docs/reference/features/field_properties.html#searchable-fields) of
@@ -1413,16 +1503,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_searchable_attributes(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/searchable-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/searchable-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset [displayed attributes](https://www.meilisearch.com/docs/reference/features/settings#displayed-attributes) of the [Index] (enable all attributes).
@@ -1445,16 +1538,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_displayed_attributes(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/displayed-attributes",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/displayed-attributes",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
@@ -1477,16 +1573,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_faceting(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/faceting",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/faceting",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) settings of the [Index].
