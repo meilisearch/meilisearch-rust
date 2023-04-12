@@ -70,16 +70,18 @@ impl<Http: HttpClient> Client<Http> {
     /// # });
     /// ```
     pub async fn create_dump(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!("{}/dumps", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: (),
-                body: (),
-            },
-            202,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!("{}/dumps", self.host),
+                self.get_api_key(),
+                Method::Post {
+                    query: (),
+                    body: (),
+                },
+                202,
+            )
+            .await
     }
 }
 
