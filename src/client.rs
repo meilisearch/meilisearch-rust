@@ -1243,6 +1243,7 @@ mod tests {
         let path = "/hello";
         let address = &format!("{}{}", mock_server_url, path);
         let user_agent = &*qualified_version();
+        let client = Client::new(mock_server_url, None::<String>);
 
         let assertions = vec![
             (
@@ -1250,14 +1251,19 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(address, None, Method::Get { query: () }, 200),
+                client.http_client.clone().request::<(), (), ()>(
+                    address,
+                    None,
+                    Method::Get { query: () },
+                    200,
+                ),
             ),
             (
                 s.mock("POST", path)
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(
+                client.http_client.clone().request::<(), (), ()>(
                     address,
                     None,
                     Method::Post {
@@ -1272,14 +1278,19 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(address, None, Method::Delete { query: () }, 200),
+                client.http_client.clone().request::<(), (), ()>(
+                    address,
+                    None,
+                    Method::Delete { query: () },
+                    200,
+                ),
             ),
             (
                 s.mock("PUT", path)
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(
+                client.http_client.clone().request::<(), (), ()>(
                     address,
                     None,
                     Method::Put {
@@ -1294,7 +1305,7 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(
+                client.http_client.clone().request::<(), (), ()>(
                     address,
                     None,
                     Method::Patch {
