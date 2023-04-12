@@ -27,7 +27,7 @@ pub struct SwapIndexes {
     pub indexes: (String, String),
 }
 
-impl Client<IsahcClinet> {
+impl Client<IsahcClient> {
     /// Create a client using the specified server.
     /// Don't put a '/' at the end of the host.
     /// In production mode, see [the documentation about authentication](https://docs.meilisearch.com/reference/features/authentication.html#authentication).
@@ -42,16 +42,29 @@ impl Client<IsahcClinet> {
     /// // create the client
     /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// ```
-    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client<IsahcClinet> {
+    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client<IsahcClient> {
         Client {
             host: host.into(),
             api_key: api_key.map(|key| key.into()),
-            http_client: IsahcClinet::new(),
+            http_client: IsahcClient::new(),
         }
     }
 }
 
 impl<Http: HttpClient> Client<Http> {
+    // Create a client with a custom http client
+    pub fn new_with_client(
+        host: impl Into<String>,
+        api_key: Option<impl Into<String>>,
+        http_client: Http,
+    ) -> Client<Http> {
+        Client {
+            host: host.into(),
+            api_key: api_key.map(|key| key.into()),
+            http_client,
+        }
+    }
+
     fn parse_indexes_results_from_value(
         &self,
         value: Value,
