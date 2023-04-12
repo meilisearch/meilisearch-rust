@@ -110,7 +110,7 @@ fn get_index_config_implementation(
         get_settings_token_for_string(&distinct_key_attribute, "with_distinct_attribute");
 
     quote! {
-        #[::meilisearch_sdk::macro_helper::async_trait]
+        #[::meilisearch_sdk::macro_helper::async_trait(?Send)]
         impl ::meilisearch_sdk::documents::IndexConfig<::meilisearch_sdk::request::IsahcClient> for #struct_ident {
             const INDEX_STR: &'static str = #index_name;
 
