@@ -504,7 +504,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.clone()
     }
     /// Execute the query and fetch the results.
-    pub async fn execute<T: 'static + DeserializeOwned>(
+    pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
     ) -> Result<SearchResults<T>, Error> {
         self.index.execute_query::<T>(self).await
@@ -537,7 +537,7 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
     }
 
     /// Execute the query and fetch the results.
-    pub async fn execute<T: 'static + DeserializeOwned>(
+    pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
     ) -> Result<MultiSearchResponse<T>, Error> {
         self.client.execute_multi_search_query::<T>(self).await

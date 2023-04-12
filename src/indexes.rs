@@ -222,7 +222,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute_query<T: 'static + DeserializeOwned>(
+    pub async fn execute_query<T: 'static + DeserializeOwned + Send + Sync>(
         &self,
         body: &SearchQuery<'_, Http>,
     ) -> Result<SearchResults<T>, Error> {
@@ -720,7 +720,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_or_update<T: Serialize>(
+    pub async fn add_or_update<T: Serialize + Send + Sync>(
         &self,
         documents: &[T],
         primary_key: Option<impl AsRef<str>>,
@@ -1422,7 +1422,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # None).await.unwrap();
     /// # });
     /// ```
-    pub async fn update_documents_in_batches<T: Serialize>(
+    pub async fn update_documents_in_batches<T: Serialize + Send + Sync>(
         &self,
         documents: &[T],
         batch_size: Option<usize>,
