@@ -181,13 +181,14 @@ impl<Http: HttpClient> Client<Http> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    /// #
+    /// # use meilisearch_sdk::request::IsahcClient;
+    ///
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// let indexes: IndexesResults = client.list_all_indexes().await.unwrap();
+    /// let indexes: IndexesResults<IsahcClient> = client.list_all_indexes().await.unwrap();
     ///
     /// println!("{:?}", indexes);
     /// # });
@@ -204,6 +205,7 @@ impl<Http: HttpClient> Client<Http> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::request::IsahcClient;
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -213,7 +215,7 @@ impl<Http: HttpClient> Client<Http> {
     /// let mut query = IndexesQuery::new(&client);
     /// query.with_limit(1);
     ///
-    /// let indexes: IndexesResults = client.list_all_indexes_with(&query).await.unwrap();
+    /// let indexes: IndexesResults<IsahcClient> = client.list_all_indexes_with(&query).await.unwrap();
     ///
     /// assert_eq!(indexes.limit, 1);
     /// # });
@@ -1137,7 +1139,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_swapping_two_indexes(client: Client) {
+    async fn test_swapping_two_indexes(client: Client<IsahcClient>) {
         let index_1 = client.index("test_swapping_two_indexes_1");
         let index_2 = client.index("test_swapping_two_indexes_2");
 
@@ -1262,13 +1264,13 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks(client: Client) {
+    async fn test_get_tasks(client: Client<IsahcClient>) {
         let tasks = client.get_tasks().await.unwrap();
         assert!(tasks.limit == 20);
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks_with_params(client: Client) {
+    async fn test_get_tasks_with_params(client: Client<IsahcClient>) {
         let query = TasksSearchQuery::new(&client);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
@@ -1276,14 +1278,14 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_keys(client: Client) {
+    async fn test_get_keys(client: Client<IsahcClient>) {
         let keys = client.get_keys().await.unwrap();
 
         assert!(keys.results.len() >= 2);
     }
 
     #[meilisearch_test]
-    async fn test_delete_key(client: Client, name: String) {
+    async fn test_delete_key(client: Client<IsahcClient>, name: String) {
         let mut key = KeyBuilder::new();
         key.with_name(&name);
         let key = client.create_key(key).await.unwrap();
@@ -1299,7 +1301,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_delete_key(mut client: Client, name: String) {
+    async fn test_error_delete_key(mut client: Client<IsahcClient>, name: String) {
         // ==> accessing a key that does not exist
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
@@ -1346,7 +1348,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_create_key(client: Client, name: String) {
+    async fn test_create_key(client: Client<IsahcClient>, name: String) {
         let expires_at = OffsetDateTime::now_utc() + time::Duration::HOUR;
         let mut key = KeyBuilder::new();
         key.with_action(Action::DocumentsAdd)
@@ -1369,7 +1371,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_create_key(mut client: Client, name: String) {
+    async fn test_error_create_key(mut client: Client<IsahcClient>, name: String) {
         // ==> Invalid index name
         /* TODO: uncomment once meilisearch fix this bug: https://github.com/meilisearch/meilisearch/issues/2158
         let mut key = KeyBuilder::new();
@@ -1415,7 +1417,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_update_key(client: Client, description: String) {
+    async fn test_update_key(client: Client<IsahcClient>, description: String) {
         let mut key = KeyBuilder::new();
         key.with_name("test_update_key");
         let mut key = client.create_key(key).await.unwrap();
@@ -1433,7 +1435,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_index(client: Client, index_uid: String) -> Result<(), Error> {
+    async fn test_get_index(client: Client<IsahcClient>, index_uid: String) -> Result<(), Error> {
         let task = client.create_index(&index_uid, None).await?;
         let index = client
             .wait_for_task(task, None, None)
@@ -1451,7 +1453,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_create_index(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_error_create_index(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let error = client
             .create_index("Wrong index name", None)
             .await
@@ -1486,7 +1491,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes(client: Client) {
+    async fn test_list_all_indexes(client: Client<IsahcClient>) {
         let all_indexes = client.list_all_indexes().await.unwrap();
 
         assert_eq!(all_indexes.limit, 20);
@@ -1494,7 +1499,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes_with_params(client: Client) {
+    async fn test_list_all_indexes_with_params(client: Client<IsahcClient>) {
         let mut query = IndexesQuery::new(&client);
         query.with_limit(1);
         let all_indexes = client.list_all_indexes_with(&query).await.unwrap();
@@ -1504,7 +1509,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes_raw(client: Client) {
+    async fn test_list_all_indexes_raw(client: Client<IsahcClient>) {
         let all_indexes_raw = client.list_all_indexes_raw().await.unwrap();
 
         assert_eq!(all_indexes_raw["limit"], json!(20));
@@ -1512,7 +1517,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes_raw_with_params(client: Client) {
+    async fn test_list_all_indexes_raw_with_params(client: Client<IsahcClient>) {
         let mut query = IndexesQuery::new(&client);
         query.with_limit(1);
         let all_indexes_raw = client.list_all_indexes_raw_with(&query).await.unwrap();
@@ -1522,7 +1527,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_primary_key_is_none(mut index: Index) {
+    async fn test_get_primary_key_is_none(mut index: Index<IsahcClient>) {
         let primary_key = index.get_primary_key().await;
 
         assert!(primary_key.is_ok());
@@ -1530,7 +1535,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_primary_key(client: Client, index_uid: String) -> Result<(), Error> {
+    async fn test_get_primary_key(
+        client: Client<IsahcClient>,
+        index_uid: String,
+    ) -> Result<(), Error> {
         let mut index = client
             .create_index(index_uid, Some("primary_key"))
             .await?

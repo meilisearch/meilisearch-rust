@@ -1787,6 +1787,8 @@ pub struct IndexesResults<Http: HttpClient> {
 
 #[cfg(test)]
 mod tests {
+    use crate::request::IsahcClient;
+
     use super::*;
 
     use big_s::S;
@@ -1794,7 +1796,7 @@ mod tests {
     use serde_json::json;
 
     #[meilisearch_test]
-    async fn test_from_value<Http: HttpClient>(client: Client<Http>) {
+    async fn test_from_value(client: Client<IsahcClient>) {
         let t = OffsetDateTime::now_utc();
         let trfc3339 = t
             .format(&time::format_description::well_known::Rfc3339)
@@ -1826,7 +1828,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_fetch_info<Http: HttpClient>(mut index: Index<Http>) {
+    async fn test_fetch_info(mut index: Index<IsahcClient>) {
         let res = index.fetch_info().await;
         assert!(res.is_ok());
         assert!(index.updated_at.is_some());
@@ -1835,7 +1837,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_documents<Http: HttpClient>(index: Index<Http>) {
+    async fn test_get_documents(index: Index<IsahcClient>) {
         #[derive(Debug, Serialize, Deserialize, PartialEq)]
         struct Object {
             id: usize,
@@ -1848,7 +1850,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_documents_with<Http: HttpClient>(index: Index<Http>) {
+    async fn test_get_documents_with(index: Index<IsahcClient>) {
         #[derive(Debug, Serialize, Deserialize, PartialEq)]
         struct Object {
             id: usize,
@@ -1869,7 +1871,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_one_task(client: Client<Http>, index: Index<Http>) -> Result<(), Error> {
+    async fn test_get_one_task(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let task = index
             .delete_all_documents()
             .await?
