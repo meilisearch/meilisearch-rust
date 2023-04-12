@@ -55,7 +55,7 @@ use crate::tasks::Task;
 use crate::Client;
 use crate::{errors::Error, indexes::Index};
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait IndexConfig<Http: HttpClient> {
     const INDEX_STR: &'static str;
 
