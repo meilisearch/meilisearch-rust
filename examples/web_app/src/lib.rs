@@ -3,6 +3,7 @@ use lazy_static::lazy_static;
 use meilisearch_sdk::{
     client::Client,
     indexes::Index,
+    request::IsahcClient,
     search::{SearchResults, Selectors::All},
 };
 use serde_json::{Map, Value};
@@ -16,11 +17,12 @@ mod document;
 use crate::document::{display, Crate};
 
 lazy_static! {
-    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey"));
+    static ref CLIENT: Client<IsahcClient> =
+        Client::new("http://localhost:7700", Some("masterKey"));
 }
 
 struct Model {
-    index: Rc<Index>,
+    index: Rc<Index<IsahcClient>>,
     results: Vec<Map<String, Value>>,
     processing_time_ms: usize,
 
