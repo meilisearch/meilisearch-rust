@@ -1354,11 +1354,11 @@ impl<Http: HttpClient> Index<Http> {
 mod tests {
     use super::*;
 
-    use crate::client::*;
+    use crate::{client::*, request::IsahcClient};
     use meilisearch_test_macro::meilisearch_test;
 
     #[meilisearch_test]
-    async fn test_set_faceting_settings(client: Client, index: Index) {
+    async fn test_set_faceting_settings(client: Client<IsahcClient>, index: Index<IsahcClient>) {
         let faceting = FacetingSettings {
             max_values_per_facet: 5,
         };
@@ -1373,7 +1373,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_faceting(index: Index) {
+    async fn test_get_faceting(index: Index<IsahcClient>) {
         let faceting = FacetingSettings {
             max_values_per_facet: 100,
         };
@@ -1384,7 +1384,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_faceting(client: Client, index: Index) {
+    async fn test_set_faceting(client: Client<IsahcClient>, index: Index<IsahcClient>) {
         let faceting = FacetingSettings {
             max_values_per_facet: 5,
         };
@@ -1397,7 +1397,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_reset_faceting(client: Client, index: Index) {
+    async fn test_reset_faceting(client: Client<IsahcClient>, index: Index<IsahcClient>) {
         let task_info = index.reset_faceting().await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
         let faceting = FacetingSettings {
@@ -1410,7 +1410,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_pagination(index: Index) {
+    async fn test_get_pagination(index: Index<IsahcClient>) {
         let pagination = PaginationSetting {
             max_total_hits: 1000,
         };
@@ -1421,7 +1421,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_pagination(index: Index) {
+    async fn test_set_pagination(index: Index<IsahcClient>) {
         let pagination = PaginationSetting { max_total_hits: 11 };
         let task = index.set_pagination(pagination).await.unwrap();
         index.wait_for_task(task, None, None).await.unwrap();
@@ -1432,7 +1432,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_reset_pagination(index: Index) {
+    async fn test_reset_pagination(index: Index<IsahcClient>) {
         let pagination = PaginationSetting { max_total_hits: 10 };
         let default = PaginationSetting {
             max_total_hits: 1000,

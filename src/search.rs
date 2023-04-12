@@ -530,7 +530,7 @@ pub struct MultiSearchResponse<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*, search::*};
+    use crate::{client::*, request::IsahcClient, search::*};
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
@@ -557,7 +557,10 @@ mod tests {
         }
     }
 
-    async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
+    async fn setup_test_index(
+        client: &Client<IsahcClient>,
+        index: &Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let t0 = index.add_documents(&[
             Document { id: 0, kind: "text".into(), value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") } },
             Document { id: 1, kind: "text".into(), value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") } },
@@ -581,7 +584,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_multi_search(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_multi_search(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         let search_query_1 = SearchQuery::new(&index)
             .with_query("Sorcerer's Stone")
@@ -603,7 +609,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_builder(_client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_builder(
+        _client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let mut query = SearchQuery::new(&index);
         query.with_query("space").with_offset(42).with_limit(21);
 
@@ -617,7 +626,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_numbered_pagination(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_numbered_pagination(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = SearchQuery::new(&index);
@@ -633,7 +645,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_string(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_string(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index.search().with_query("dolor").execute().await?;
@@ -642,7 +657,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_string_on_nested_field(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_string_on_nested_field(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> =
@@ -662,7 +680,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_limit(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_limit(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index.search().with_limit(5).execute().await?;
@@ -671,7 +692,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_page(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_page(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index.search().with_page(2).execute().await?;
@@ -681,7 +705,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_hits_per_page(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_hits_per_page(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> =
@@ -692,7 +719,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_offset(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_offset(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index.search().with_offset(6).execute().await?;
@@ -701,7 +731,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_filter(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_filter(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index
@@ -721,7 +754,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_filter_with_array(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_filter_with_array(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index
@@ -738,7 +774,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_facet_distribution(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_facet_distribution(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = SearchQuery::new(&index);
@@ -783,7 +822,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_attributes_to_retrieve(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_attributes_to_retrieve(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index
@@ -800,7 +842,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_sort(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_sort(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = SearchQuery::new(&index);
@@ -812,7 +857,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_attributes_to_crop(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_attributes_to_crop(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = SearchQuery::new(&index);
@@ -846,7 +894,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_crop_length(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_crop_length(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = SearchQuery::new(&index);
@@ -880,7 +931,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_customized_crop_marker(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_customized_crop_marker(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = SearchQuery::new(&index);
@@ -905,8 +959,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_query_customized_highlight_pre_tag(
-        client: Client,
-        index: Index,
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -931,7 +985,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_attributes_to_highlight(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_attributes_to_highlight(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = SearchQuery::new(&index);
@@ -965,7 +1022,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_show_matches_position(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_show_matches_position(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = SearchQuery::new(&index);
@@ -989,7 +1049,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_phrase_search(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_phrase_search(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = SearchQuery::new(&index);
@@ -1001,7 +1064,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_matching_strategy_all(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_matching_strategy_all(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results = SearchQuery::new(&index)
@@ -1016,7 +1082,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_matching_strategy_left(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_matching_strategy_left(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results = SearchQuery::new(&index)
@@ -1032,8 +1101,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_generate_tenant_token_from_client(
-        client: Client,
-        index: Index,
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
     ) -> Result<(), Error> {
         use crate::key::{Action, KeyBuilder};
 
