@@ -29,8 +29,9 @@ impl TaskInfo {
 
     /// Wait until Meilisearch processes a task provided by [TaskInfo], and get its status.
     ///
-    /// `interval` = The frequency at which the server should be polled. Default = 50ms
-    /// `timeout` = The maximum time to wait for processing to complete. Default = 5000ms
+    /// `interval` = The frequency at which the server should be polled. **Default = 50ms**
+    ///
+    /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
     /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
     ///
@@ -51,18 +52,18 @@ impl TaskInfo {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", Some("masterKey"));
+    /// # let client = Client::new("http://localhost:7700", Some("masterKey"));
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
     /// ], None)
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(matches!(status, Task::Succeeded { .. }));
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();

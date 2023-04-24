@@ -215,8 +215,9 @@ impl Task {
 
     /// Wait until Meilisearch processes a [Task], and get its status.
     ///
-    /// `interval` = The frequency at which the server should be polled. Default = 50ms
-    /// `timeout` = The maximum time to wait for processing to complete. Default = 5000ms
+    /// `interval` = The frequency at which the server should be polled. **Default = 50ms**
+    ///
+    /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
     /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
     ///
@@ -240,18 +241,18 @@ impl Task {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
     /// ], None)
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(matches!(status, Task::Succeeded { .. }));
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -279,9 +280,8 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// // create the client
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    ///
+    /// # // create the client
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client.create_index("try_make_index", None).await.unwrap();
     /// let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
@@ -358,6 +358,7 @@ impl Task {
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client.create_index("is_failure", None).await.unwrap();
+    /// // create an index with a conflicting uid
     /// let task = client
     ///     .create_index("is_failure", None)
     ///     .await
@@ -387,12 +388,12 @@ impl Task {
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client
-    ///   .create_index("is_success", None)
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    ///     .create_index("is_success", None)
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(task.is_success());
     /// # task.try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -416,10 +417,11 @@ impl Task {
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task_info = client
-    ///   .create_index("is_pending", None)
-    ///   .await
-    ///   .unwrap();
+    ///     .create_index("is_pending", None)
+    ///     .await
+    ///     .unwrap();
     /// let task = client.get_task(task_info).await.unwrap();
+    ///
     /// assert!(task.is_pending());
     /// # task.wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -441,10 +443,10 @@ impl AsRef<u32> for Task {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct TasksPaginationFilters {
-    // Maximum number of tasks to return
+    // Maximum number of tasks to return.
     #[serde(skip_serializing_if = "Option::is_none")]
     limit: Option<u32>,
-    // The first task uid that should be returned
+    // The first task uid that should be returned.
     #[serde(skip_serializing_if = "Option::is_none")]
     from: Option<u32>,
 }
@@ -473,10 +475,10 @@ pub struct TasksQuery<'a, T> {
     // Types array to only retrieve the tasks with these [TaskType].
     #[serde(skip_serializing_if = "Option::is_none", rename = "types")]
     task_types: Option<Vec<&'a str>>,
-    // Uids of the tasks to retrieve
+    // Uids of the tasks to retrieve.
     #[serde(skip_serializing_if = "Option::is_none")]
     uids: Option<Vec<&'a u32>>,
-    // Uids of the tasks that canceled other tasks
+    // Uids of the tasks that canceled other tasks.
     #[serde(skip_serializing_if = "Option::is_none")]
     canceled_by: Option<Vec<&'a u32>>,
     // Date to retrieve all tasks that were enqueued before it.

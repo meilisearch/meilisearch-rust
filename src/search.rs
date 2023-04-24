@@ -32,6 +32,7 @@ pub enum MatchingStrategies {
 }
 
 /// A single result.
+///
 /// Contains the complete object, optionally the formatted object, and optionally an object that contains information about the matches.
 #[derive(Deserialize, Debug, Clone)]
 pub struct SearchResult<T> {
@@ -56,31 +57,31 @@ pub struct FacetStats {
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
 pub struct SearchResults<T> {
-    /// Results of the query
+    /// Results of the query.
     pub hits: Vec<SearchResult<T>>,
-    /// Number of documents skipped
+    /// Number of documents skipped.
     pub offset: Option<usize>,
-    /// Number of results returned
+    /// Number of results returned.
     pub limit: Option<usize>,
-    /// Estimated total number of matches
+    /// Estimated total number of matches.
     pub estimated_total_hits: Option<usize>,
     // Current page number
     pub page: Option<usize>,
-    // Maximum number of hits in a page
+    // Maximum number of hits in a page.
     pub hits_per_page: Option<usize>,
-    // Exhaustive number of matches
+    // Exhaustive number of matches.
     pub total_hits: Option<usize>,
-    // Exhaustive number of pages
+    // Exhaustive number of pages.
     pub total_pages: Option<usize>,
-    /// Distribution of the given facets
+    /// Distribution of the given facets.
     pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
     /// facet stats of the numerical facets requested in the `facet` search parameter.
     pub facet_stats: Option<HashMap<String, FacetStats>>,
-    /// Processing time of the query
+    /// Processing time of the query.
     pub processing_time_ms: usize,
-    /// Query originating the response
+    /// Query originating the response.
     pub query: String,
-    /// Index uid on which the search was made
+    /// Index uid on which the search was made.
     pub index_uid: Option<String>,
 }
 
@@ -119,25 +120,28 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
 }
 
 /// Some list fields in a `SearchQuery` can be set to a wildcard value.
+///
 /// This structure allows you to choose between the wildcard value and an exhaustive list of selectors.
 #[derive(Debug, Clone)]
 pub enum Selectors<T> {
-    /// A list of selectors
+    /// A list of selectors.
     Some(T),
-    /// The wildcard
+    /// The wildcard.
     All,
 }
 
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
 /// A struct representing a query.
+///
 /// You can add search parameters using the builder syntax.
+///
 /// See [this page](https://docs.meilisearch.com/reference/features/search_parameters.html#query-q) for the official list and description of all parameters.
 ///
 /// # Examples
 ///
 /// ```
-/// use serde::{Serialize, Deserialize};
+/// # use serde::{Serialize, Deserialize};
 /// # use meilisearch_sdk::{client::Client, search::SearchQuery, indexes::Index};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
@@ -148,7 +152,6 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///     name: String,
 ///     description: String,
 /// }
-///
 /// # futures::executor::block_on(async move {
 /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 /// # let index = client
@@ -197,6 +200,7 @@ pub struct SearchQuery<'a> {
     #[serde(rename = "q")]
     pub query: Option<&'a str>,
     /// The number of documents to skip.
+    ///
     /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
     /// This is helpful for pagination.
     ///
@@ -204,32 +208,37 @@ pub struct SearchQuery<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<usize>,
     /// The maximum number of documents returned.
+    ///
     /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.
     /// This is helpful for pagination.
     ///
     /// Example: If you don't want to get more than two documents, set limit to `2`.
-    /// Default: `20`
+    ///
+    /// **Default: `20`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
     /// The page number on which you paginate.
+    ///
     /// Pagination starts at 1. If page is 0, no results are returned.
     ///
-    /// Default: None unless `hits_per_page` is defined, in which case page is `1`
+    /// **Default: None unless `hits_per_page` is defined, in which case page is `1`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub page: Option<usize>,
     /// The maximum number of results in a page. A page can contain less results than the number of hits_per_page.
     ///
-    /// Default: None unless `page` is defined, in which case `20`
+    /// **Default: None unless `page` is defined, in which case `20`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hits_per_page: Option<usize>,
     /// Filter applied to documents.
+    ///
     /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
     /// Facets for which to retrieve the matching count.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    /// Default: all attributes found in the documents.
+    ///
+    /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub facets: Option<Selectors<&'a [&'a str]>>,
@@ -239,11 +248,13 @@ pub struct SearchQuery<'a> {
     /// Attributes to display in the returned documents.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    /// Default: all attributes found in the documents.
+    ///
+    /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
     /// Attributes whose values have to be cropped.
+    ///
     /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -251,15 +262,17 @@ pub struct SearchQuery<'a> {
     #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
     /// Maximum number of words including the matched query term(s) contained in the returned cropped value(s).
+    ///
     /// See [attributes_to_crop](#structfield.attributes_to_crop).
     ///
-    /// Default: `10`
+    /// **Default: `10`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_length: Option<usize>,
     /// Marker at the start and the end of a cropped value.
+    ///
     /// ex: `...middle of a crop...`
     ///
-    /// Default: `...`
+    /// **Default: `...`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_marker: Option<&'a str>,
     /// Attributes whose values will contain **highlighted matching terms**.
@@ -269,20 +282,22 @@ pub struct SearchQuery<'a> {
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
     /// Tag in front of a highlighted term.
+    ///
     /// ex: `<mytag>hello world`
     ///
-    /// Default: `<em>`
+    /// **Default: `<em>`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight_pre_tag: Option<&'a str>,
     /// Tag after the a highlighted term.
+    ///
     /// ex: `hello world</ mytag>`
     ///
-    /// Default: `</em>`
+    /// **Default: `</em>`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight_post_tag: Option<&'a str>,
     /// Defines whether an object that contains information about the matches should be returned or not.
     ///
-    /// Default: `false`
+    /// **Default: `false`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_matches_position: Option<bool>,
 
@@ -334,25 +349,27 @@ impl<'a> SearchQuery<'a> {
     }
     /// Add the page number on which to paginate.
     ///
+    /// # Example
+    ///
     /// ```
-    /// use serde::{Serialize, Deserialize};
+    /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// #[derive(Serialize, Deserialize, Debug)]
-    /// struct Movie {
-    ///     name: String,
-    ///     description: String,
-    /// }
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # #[derive(Serialize, Deserialize, Debug)]
+    /// # struct Movie {
+    /// #     name: String,
+    /// #     description: String,
+    /// # }
     /// # client.create_index("search_with_page", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-    /// # let mut index = client.index("search_with_page");
+    /// let mut index = client.index("search_with_page");
+    ///
     /// let mut query = SearchQuery::new(&index);
     /// query.with_query("").with_page(2);
-    ///
     /// let res = query.execute::<Movie>().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -364,25 +381,27 @@ impl<'a> SearchQuery<'a> {
 
     /// Add the maximum number of results per page.
     ///
+    /// # Example
+    ///
     /// ```
-    /// use serde::{Serialize, Deserialize};
+    /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// #[derive(Serialize, Deserialize, Debug)]
-    /// struct Movie {
-    ///     name: String,
-    ///     description: String,
-    /// }
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # #[derive(Serialize, Deserialize, Debug)]
+    /// # struct Movie {
+    /// #     name: String,
+    /// #     description: String,
+    /// # }
     /// # client.create_index("search_with_hits_per_page", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-    /// # let mut index = client.index("search_with_hits_per_page");
+    /// let mut index = client.index("search_with_hits_per_page");
+    ///
     /// let mut query = SearchQuery::new(&index);
     /// query.with_query("").with_hits_per_page(2);
-    ///
     /// let res = query.execute::<Movie>().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });

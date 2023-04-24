@@ -7,6 +7,7 @@ use thiserror::Error;
 #[non_exhaustive]
 pub enum Error {
     /// The exhaustive list of Meilisearch errors: <https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md>
+    ///
     /// Also check out: <https://github.com/meilisearch/Meilisearch/blob/main/meilisearch-error/src/lib.rs>
     #[error(transparent)]
     Meilisearch(#[from] MeilisearchError),
@@ -21,6 +22,7 @@ pub enum Error {
     #[error("A task did not succeed in time.")]
     Timeout,
     /// This Meilisearch SDK generated an invalid request (which was not sent).
+    ///
     /// It probably comes from an invalid API key resulting in an invalid HTTP header.
     #[error("Unable to generate a valid HTTP request. It probably comes from an invalid API key.")]
     InvalidRequest,
@@ -29,6 +31,7 @@ pub enum Error {
     #[error("You need to provide an api key to use the `{0}` method.")]
     CantUseWithoutApiKey(String),
     /// It is not possible to generate a tenant token with a invalid api key.
+    ///
     /// Empty strings or with less than 8 characters are considered invalid.
     #[error("The provided api_key is invalid.")]
     TenantTokensInvalidApiKey,
@@ -73,8 +76,7 @@ pub struct MeilisearchError {
     /// <https://docs.meilisearch.com/errors>.
     #[serde(rename = "code")]
     pub error_code: ErrorCode,
-    /// The type of error (invalid request, internal error, or authentication
-    /// error)
+    /// The type of error (invalid request, internal error, or authentication error)
     #[serde(rename = "type")]
     pub error_type: ErrorType,
     /// A link to the Meilisearch documentation for an error.
