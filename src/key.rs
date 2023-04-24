@@ -77,7 +77,7 @@ impl Key {
     ///     .unwrap();
     ///
     /// key.with_name(&name);
-    /// 
+    ///
     /// assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
     /// # });
@@ -103,10 +103,10 @@ impl Key {
     ///     .execute(&client)
     ///     .await
     ///     .unwrap();
-    /// 
+    ///
     /// let description = "My not so little lovely test key".to_string();
     /// key.with_description(&description);
-    /// 
+    ///
     /// let key = key.update(&client).await.unwrap();
     ///
     /// assert_eq!(key.description, Some(description));
@@ -303,7 +303,7 @@ pub struct KeysQuery {
     /// This is helpful for pagination.
     ///
     /// Example: If you don't want to get more than two documents, set limit to `2`.
-    /// 
+    ///
     /// **Default: `20`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,

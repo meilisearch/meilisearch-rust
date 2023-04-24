@@ -216,7 +216,7 @@ impl Task {
     /// Wait until Meilisearch processes a [Task], and get its status.
     ///
     /// `interval` = The frequency at which the server should be polled. **Default = 50ms**
-    /// 
+    ///
     /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
     /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
@@ -421,7 +421,7 @@ impl Task {
     ///     .await
     ///     .unwrap();
     /// let task = client.get_task(task_info).await.unwrap();
-    /// 
+    ///
     /// assert!(task.is_pending());
     /// # task.wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });

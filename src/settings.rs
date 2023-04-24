@@ -20,7 +20,7 @@ pub struct FacetingSettings {
 }
 
 /// Struct reprensenting a set of settings.
-/// 
+///
 /// You can build this struct using the builder syntax.
 ///
 /// # Example
@@ -234,7 +234,7 @@ impl Index {
     /// Get [Settings] of the [Index].
     ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
@@ -245,7 +245,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_settings");
-    /// 
+    ///
     /// let settings = index.get_settings().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -261,9 +261,9 @@ impl Index {
     }
 
     /// Get [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the [Index].
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -275,7 +275,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_synonyms");
-    /// 
+    ///
     /// let synonyms = index.get_synonyms().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -294,9 +294,9 @@ impl Index {
     }
 
     /// Get [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -308,7 +308,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_pagination");
-    /// 
+    ///
     /// let pagination = index.get_pagination().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -329,7 +329,7 @@ impl Index {
     /// Get [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
     ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
@@ -340,7 +340,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_stop_words");
-    /// 
+    ///
     /// let stop_words = index.get_stop_words().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -359,9 +359,9 @@ impl Index {
     }
 
     /// Get [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index].
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -373,7 +373,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_ranking_rules");
-    /// 
+    ///
     /// let ranking_rules = index.get_ranking_rules().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -392,9 +392,9 @@ impl Index {
     }
 
     /// Get [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the [Index].
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -406,7 +406,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_filterable_attributes");
-    /// 
+    ///
     /// let filterable_attributes = index.get_filterable_attributes().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -425,9 +425,9 @@ impl Index {
     }
 
     /// Get [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the [Index].
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -439,7 +439,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_sortable_attributes");
-    /// 
+    ///
     /// let sortable_attributes = index.get_sortable_attributes().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -458,9 +458,9 @@ impl Index {
     }
 
     /// Get the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the [Index].
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -472,7 +472,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_distinct_attribute");
-    /// 
+    ///
     /// let distinct_attribute = index.get_distinct_attribute().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -491,9 +491,9 @@ impl Index {
     }
 
     /// Get [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the [Index].
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -505,7 +505,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_searchable_attributes");
-    /// 
+    ///
     /// let searchable_attributes = index.get_searchable_attributes().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -524,9 +524,9 @@ impl Index {
     }
 
     /// Get [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the [Index].
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -538,7 +538,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_displayed_attributes");
-    /// 
+    ///
     /// let displayed_attributes = index.get_displayed_attributes().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -557,9 +557,9 @@ impl Index {
     }
 
     /// Get [faceting](https://docs.meilisearch.com/reference/api/settings.html#faceting) settings of the [Index].
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -571,7 +571,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_faceting", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_faceting");
-    /// 
+    ///
     /// let faceting = index.get_faceting().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -590,7 +590,7 @@ impl Index {
     }
 
     /// Update [settings](../settings/struct.Settings.html) of the [Index].
-    /// 
+    ///
     /// Updates in the settings are partial. This means that any parameters corresponding to a `None` value will be left unchanged.
     ///
     /// # Example
@@ -686,7 +686,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_pagination");
-    /// 
+    ///
     /// let pagination = PaginationSetting {max_total_hits:100};
     /// let task = index.set_pagination(pagination).await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -1045,7 +1045,7 @@ impl Index {
     }
 
     /// Reset [Settings] of the [Index].
-    /// 
+    ///
     /// All settings will be reset to their [default value](https://docs.meilisearch.com/reference/api/settings.html#reset-settings).
     ///
     /// # Example
@@ -1171,7 +1171,7 @@ impl Index {
     }
 
     /// Reset [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index] to default value.
-    /// 
+    ///
     /// **Default value: `["words", "typo", "proximity", "attribute", "sort", "exactness"]`.**
     ///
     /// # Example
@@ -1300,7 +1300,7 @@ impl Index {
         .await
     }
 
-    /// Reset [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of 
+    /// Reset [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of
     /// the [Index] (enable all attributes).
     ///
     /// # Example

@@ -30,7 +30,7 @@ impl TaskInfo {
     /// Wait until Meilisearch processes a task provided by [TaskInfo], and get its status.
     ///
     /// `interval` = The frequency at which the server should be polled. **Default = 50ms**
-    /// 
+    ///
     /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
     /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.

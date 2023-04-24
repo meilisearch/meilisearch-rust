@@ -40,7 +40,7 @@ impl Client {
     /// #
     /// let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-    /// 
+    ///
     /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// ```
     pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
@@ -665,7 +665,7 @@ impl Client {
     /// client.delete_key(key).await.unwrap();
     ///
     /// let keys = client.get_keys().await.unwrap();
-    /// 
+    ///
     /// assert!(keys.results.iter().all(|key| key.key != inner_key));
     /// # });
     /// ```
@@ -698,7 +698,7 @@ impl Client {
     /// key.with_name(&name);
     ///
     /// let key = client.create_key(key).await.unwrap();
-    /// 
+    ///
     /// assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
     /// # });
@@ -733,12 +733,12 @@ impl Client {
     /// let new_key = KeyBuilder::new();
     /// let mut new_key = client.create_key(new_key).await.unwrap();
     /// let mut key_update = KeyUpdater::new(new_key);
-    /// 
+    ///
     /// let name = "my name".to_string();
     /// key_update.with_name(&name);
     ///
     /// let key = client.update_key(key_update).await.unwrap();
-    /// 
+    ///
     /// assert_eq!(key.name, Some(name));
     /// # client.delete_key(key).await.unwrap();
     /// # });
@@ -784,7 +784,7 @@ impl Client {
     /// Wait until Meilisearch processes a [Task], and get its status.
     ///
     /// `interval` = The frequency at which the server should be polled. **Default = 50ms**
-    /// 
+    ///
     /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
     /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
@@ -869,7 +869,7 @@ impl Client {
     /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # let index = client.create_index("movies_get_task", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// let task = index.delete_all_documents().await.unwrap();
-    /// 
+    ///
     /// let task = client.get_task(task).await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -898,7 +898,7 @@ impl Client {
     /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let mut query = tasks::TasksSearchQuery::new(&client);
     /// query.with_index_uids(["get_tasks_with"]);
-    /// 
+    ///
     /// let tasks = client.get_tasks_with(&query).await.unwrap();
     /// # });
     /// ```

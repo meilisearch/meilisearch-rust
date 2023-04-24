@@ -32,7 +32,7 @@ pub enum MatchingStrategies {
 }
 
 /// A single result.
-/// 
+///
 /// Contains the complete object, optionally the formatted object, and optionally an object that contains information about the matches.
 #[derive(Deserialize, Debug, Clone)]
 pub struct SearchResult<T> {
@@ -120,7 +120,7 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
 }
 
 /// Some list fields in a `SearchQuery` can be set to a wildcard value.
-/// 
+///
 /// This structure allows you to choose between the wildcard value and an exhaustive list of selectors.
 #[derive(Debug, Clone)]
 pub enum Selectors<T> {
@@ -133,9 +133,9 @@ pub enum Selectors<T> {
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
 /// A struct representing a query.
-/// 
+///
 /// You can add search parameters using the builder syntax.
-/// 
+///
 /// See [this page](https://docs.meilisearch.com/reference/features/search_parameters.html#query-q) for the official list and description of all parameters.
 ///
 /// # Examples
@@ -162,7 +162,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// #  .await.unwrap()
 /// #  .try_make_index(&client)
 /// #  .unwrap();
-/// 
+///
 /// let mut res = SearchQuery::new(&index)
 ///     .with_query("space")
 ///     .with_offset(42)
@@ -200,7 +200,7 @@ pub struct SearchQuery<'a> {
     #[serde(rename = "q")]
     pub query: Option<&'a str>,
     /// The number of documents to skip.
-    /// 
+    ///
     /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
     /// This is helpful for pagination.
     ///
@@ -208,17 +208,17 @@ pub struct SearchQuery<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<usize>,
     /// The maximum number of documents returned.
-    /// 
+    ///
     /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.
     /// This is helpful for pagination.
     ///
     /// Example: If you don't want to get more than two documents, set limit to `2`.
-    /// 
+    ///
     /// **Default: `20`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
     /// The page number on which you paginate.
-    /// 
+    ///
     /// Pagination starts at 1. If page is 0, no results are returned.
     ///
     /// **Default: None unless `hits_per_page` is defined, in which case page is `1`**
@@ -230,14 +230,14 @@ pub struct SearchQuery<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hits_per_page: Option<usize>,
     /// Filter applied to documents.
-    /// 
+    ///
     /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
     /// Facets for which to retrieve the matching count.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    /// 
+    ///
     /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
@@ -248,13 +248,13 @@ pub struct SearchQuery<'a> {
     /// Attributes to display in the returned documents.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    /// 
+    ///
     /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
     /// Attributes whose values have to be cropped.
-    /// 
+    ///
     /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -262,14 +262,14 @@ pub struct SearchQuery<'a> {
     #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
     /// Maximum number of words including the matched query term(s) contained in the returned cropped value(s).
-    /// 
+    ///
     /// See [attributes_to_crop](#structfield.attributes_to_crop).
     ///
     /// **Default: `10`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_length: Option<usize>,
     /// Marker at the start and the end of a cropped value.
-    /// 
+    ///
     /// ex: `...middle of a crop...`
     ///
     /// **Default: `...`**
@@ -282,14 +282,14 @@ pub struct SearchQuery<'a> {
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
     /// Tag in front of a highlighted term.
-    /// 
+    ///
     /// ex: `<mytag>hello world`
     ///
     /// **Default: `<em>`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight_pre_tag: Option<&'a str>,
     /// Tag after the a highlighted term.
-    /// 
+    ///
     /// ex: `hello world</ mytag>`
     ///
     /// **Default: `</em>`**
@@ -348,7 +348,7 @@ impl<'a> SearchQuery<'a> {
         self
     }
     /// Add the page number on which to paginate.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -367,7 +367,7 @@ impl<'a> SearchQuery<'a> {
     /// # }
     /// # client.create_index("search_with_page", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("search_with_page");
-    /// 
+    ///
     /// let mut query = SearchQuery::new(&index);
     /// query.with_query("").with_page(2);
     /// let res = query.execute::<Movie>().await.unwrap();
@@ -380,7 +380,7 @@ impl<'a> SearchQuery<'a> {
     }
 
     /// Add the maximum number of results per page.
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -399,7 +399,7 @@ impl<'a> SearchQuery<'a> {
     /// # }
     /// # client.create_index("search_with_hits_per_page", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("search_with_hits_per_page");
-    /// 
+    ///
     /// let mut query = SearchQuery::new(&index);
     /// query.with_query("").with_hits_per_page(2);
     /// let res = query.execute::<Movie>().await.unwrap();

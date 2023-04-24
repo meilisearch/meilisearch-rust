@@ -131,7 +131,7 @@ impl<'a> DocumentQuery<'a> {
     ///     id: String,
     ///     kind: String,
     /// }
-    /// 
+    ///
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// struct MyObjectReduced {
     ///     id: String,
@@ -164,7 +164,7 @@ pub struct DocumentsQuery<'a> {
     pub index: &'a Index,
 
     /// The number of documents to skip.
-    /// 
+    ///
     /// If the value of the parameter `offset` is `n`, the `n` first documents will not be returned.
     /// This is helpful for pagination.
     ///
@@ -177,7 +177,7 @@ pub struct DocumentsQuery<'a> {
     /// This is helpful for pagination.
     ///
     /// Example: If you don't want to get more than two documents, set limit to `2`.
-    /// 
+    ///
     /// **Default: `20`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,

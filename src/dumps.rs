@@ -1,7 +1,7 @@
 //! The `dumps` module allows the creation of database dumps.
-//! 
+//!
 //! - Dumps are `.dump` files that can be used to launch Meilisearch.
-//! 
+//!
 //! - Dumps are compatible between Meilisearch versions.
 //!
 //! - Creating a dump is also referred to as exporting it, whereas launching Meilisearch with a dump is referred to as importing it.
@@ -45,7 +45,7 @@ use crate::{client::Client, errors::Error, request::*, task_info::TaskInfo};
 /// See the [dumps](crate::dumps) module.
 impl Client {
     /// Triggers a dump creation process.
-    /// 
+    ///
     /// Once the process is complete, a dump is created in the [dumps directory](https://docs.meilisearch.com/reference/features/configuration.html#dumps-destination).
     /// If the dumps directory does not exist yet, it will be created.
     ///
@@ -63,7 +63,7 @@ impl Client {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// #
     /// let task_info = client.create_dump().await.unwrap();
-    /// 
+    ///
     /// assert!(matches!(
     ///     task_info,
     ///     TaskInfo {
