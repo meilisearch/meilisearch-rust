@@ -137,8 +137,8 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    let iso_duration = iso8601_duration::Duration::parse(&s).map_err(serde::de::Error::custom)?;
-    Ok(iso_duration.to_std())
+    let iso_duration = iso8601::duration(&s).map_err(serde::de::Error::custom)?;
+    Ok(iso_duration.into())
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -811,7 +811,7 @@ mod test {
                     ..
                 }
             }
-            if duration == Duration::from_secs_f32(10.848957061)
+            if duration == Duration::from_millis(10_848)
         ));
     }
 
