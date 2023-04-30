@@ -123,11 +123,11 @@ impl HttpClient for ReqwestClient {
         Output: DeserializeOwned + 'static,
     >(
         self,
-        url: &str,
-        apikey: Option<&str>,
-        method: Method<Query, Body>,
-        content_type: &str,
-        expected_status_code: u16,
+        _url: &str,
+        _apikey: Option<&str>,
+        _method: Method<Query, Body>,
+        _content_type: &str,
+        _expected_status_code: u16,
     ) -> Result<Output, Error> {
         unimplemented!("stream_request is not implemented for ReqwestClient")
     }
