@@ -57,18 +57,12 @@ pub trait HttpClient: Clone + Serialize + Send + Sync {
     ) -> Result<Output, Error>;
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize)]
 pub struct IsahcClient;
 
 impl IsahcClient {
     pub fn new() -> Self {
         IsahcClient
-    }
-}
-
-impl Default for IsahcClient {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
