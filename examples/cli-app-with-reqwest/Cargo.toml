@@ -1,5 +1,5 @@
 [package]
-name = "cli-app-with-requwest"
+name = "cli-app-with-reqwest"
 version = "0.0.0"
 edition = "2021"
 publish = false
