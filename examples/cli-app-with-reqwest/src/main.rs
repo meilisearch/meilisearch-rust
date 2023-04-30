@@ -129,7 +129,7 @@ impl HttpClient for ReqwestClient {
         content_type: &str,
         expected_status_code: u16,
     ) -> Result<Output, Error> {
-        unimplemented!("stream_request is not implemented for RequwestClient")
+        unimplemented!("stream_request is not implemented for ReqwestClient")
     }
 }
 
