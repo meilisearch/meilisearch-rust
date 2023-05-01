@@ -27,6 +27,7 @@ pub struct SwapIndexes {
     pub indexes: (String, String),
 }
 
+#[cfg(feature = "isahc")]
 impl Client<IsahcClient> {
     /// Create a client using the specified server.
     ///
