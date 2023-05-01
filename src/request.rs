@@ -43,15 +43,18 @@ pub trait HttpClient: Clone + Serialize + Send + Sync {
     ) -> Result<Output, Error>;
 }
 
+#[cfg(feature = "isahc")]
 #[derive(Debug, Clone, Copy, Default, Serialize)]
 pub struct IsahcClient;
 
+#[cfg(feature = "isahc")]
 impl IsahcClient {
     pub fn new() -> Self {
         IsahcClient
     }
 }
 
+#[cfg(feature = "isahc")]
 #[cfg(not(target_arch = "wasm32"))]
 #[async_trait(?Send)]
 impl HttpClient for IsahcClient {
@@ -251,6 +254,7 @@ impl HttpClient for IsahcClient {
     }
 }
 
+#[cfg(feature = "isahc")]
 #[cfg(target_arch = "wasm32")]
 #[async_trait(?Send)]
 impl HttpClient for IsahcClient {
