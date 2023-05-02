@@ -2,7 +2,7 @@ use crate::errors::{Error, MeilisearchCommunicationError, MeilisearchError};
 use async_trait::async_trait;
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::{from_str, to_string};
+use serde_json::from_str;
 
 #[derive(Debug)]
 pub enum Method<Q, B> {
@@ -73,6 +73,7 @@ impl HttpClient for IsahcClient {
         use isahc::http::header;
         use isahc::http::method::Method as HttpMethod;
         use isahc::*;
+        use serde_json::to_string;
 
         let builder = Request::builder().header(header::USER_AGENT, qualified_version());
         let builder = match apikey {
@@ -270,6 +271,7 @@ impl HttpClient for IsahcClient {
         Body: Serialize + Send + Sync,
         Output: DeserializeOwned + 'static,
     {
+        use serde_json::to_string;
         use wasm_bindgen::JsValue;
         use wasm_bindgen_futures::JsFuture;
         use web_sys::{Headers, RequestInit, Response};
@@ -396,6 +398,7 @@ pub(crate) async fn request<
     method: Method<Query, Body>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
+    use serde_json::to_string;
     use wasm_bindgen::JsValue;
     use wasm_bindgen_futures::JsFuture;
     use web_sys::{Headers, RequestInit, Response};
