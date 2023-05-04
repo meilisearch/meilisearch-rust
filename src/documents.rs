@@ -48,10 +48,10 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// ```
 pub use meilisearch_index_setting_macro::IndexConfig;
 
+use crate::client::Client;
 use crate::request::HttpClient;
 use crate::settings::Settings;
 use crate::tasks::Task;
-use crate::Client;
 use crate::{errors::Error, indexes::Index};
 
 #[async_trait(?Send)]
@@ -303,7 +303,7 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{client::*, indexes::*, request::IsahcClient};
+    use crate::{client::Client, indexes::*, request::IsahcClient};
     use ::meilisearch_sdk::documents::IndexConfig;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};

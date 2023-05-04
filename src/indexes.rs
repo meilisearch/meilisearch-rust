@@ -1,11 +1,11 @@
 use crate::{
+    client::Client,
     documents::{DocumentQuery, DocumentsQuery, DocumentsResults},
     errors::Error,
     request::*,
     search::*,
     task_info::TaskInfo,
     tasks::*,
-    Client,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
