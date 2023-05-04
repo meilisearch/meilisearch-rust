@@ -1,4 +1,4 @@
-use crate::{errors::Error, indexes::Index, request::HttpClient, Client};
+use crate::{client::Client, errors::Error, indexes::Index, request::HttpClient};
 use either::Either;
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};

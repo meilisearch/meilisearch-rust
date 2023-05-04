@@ -250,6 +250,12 @@ mod tenant_tokens;
 mod utils;
 
 pub use client::*;
+#[cfg(feature = "isahc")]
+use request::IsahcClient;
+#[cfg(feature = "isahc")]
+pub type Client = client::Client<IsahcClient>;
+#[cfg(feature = "isahc")]
+pub type Index = indexes::Index<IsahcClient>;
 
 #[cfg(test)]
 /// Support for the `IndexConfig` derive proc macro in the crate's tests.

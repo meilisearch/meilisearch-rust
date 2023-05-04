@@ -1,11 +1,11 @@
 use crate::{
+    client::Client,
     documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
     errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
     request::*,
     search::*,
     task_info::TaskInfo,
     tasks::*,
-    Client,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};

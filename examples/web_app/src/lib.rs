@@ -1,10 +1,10 @@
 #![recursion_limit = "512"]
 use lazy_static::lazy_static;
 use meilisearch_sdk::{
-    client::Client,
     indexes::Index,
     request::IsahcClient,
     search::{SearchResults, Selectors::All},
+    Client,
 };
 use serde_json::{Map, Value};
 use std::rc::Rc;
@@ -17,8 +17,7 @@ mod document;
 use crate::document::{display, Crate};
 
 lazy_static! {
-    static ref CLIENT: Client<IsahcClient> =
-        Client::new("http://localhost:7700", Some("masterKey"));
+    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey"));
 }
 
 struct Model {

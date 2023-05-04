@@ -1,15 +1,14 @@
-use meilisearch_sdk::client::Client;
-use meilisearch_sdk::indexes::Index;
-use meilisearch_sdk::request::IsahcClient;
 use meilisearch_sdk::settings::Settings;
+use meilisearch_sdk::Client;
+use meilisearch_sdk::Index;
 
 // we need an async runtime
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let client: Client<IsahcClient> = Client::new("http://localhost:7700", Some("masterKey"));
+    let client: Client = Client::new("http://localhost:7700", Some("masterKey"));
 
     // We try to create an index called `movies` with a primary_key of `movie_id`.
-    let my_index: Index<IsahcClient> = client
+    let my_index: Index = client
         .create_index("movies", Some("movie_id"))
         .await
         .expect("Could not join the remote server.")
