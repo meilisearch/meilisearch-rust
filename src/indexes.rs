@@ -16,7 +16,7 @@ use time::OffsetDateTime;
 /// # Example
 ///
 /// You can create an index remotly and, if that succeed, make an `Index` out of it.
-/// See the [Client::create_index] method.
+/// See the [`Client::create_index`] method.
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
 /// #
@@ -189,7 +189,7 @@ impl Index {
 
     /// Search for documents matching a specific query in the index.
     ///
-    /// See also [Index::search].
+    /// See also [`Index::search`].
     ///
     /// # Example
     ///
@@ -234,7 +234,7 @@ impl Index {
 
     /// Search for documents matching a specific query in the index.
     ///
-    /// See also [Index::execute_query].
+    /// See also [`Index::execute_query`].
     ///
     /// # Example
     ///
@@ -268,6 +268,7 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn search(&self) -> SearchQuery {
         SearchQuery::new(self)
     }
@@ -483,9 +484,9 @@ impl Index {
     /// If you send an already existing document (same id) the **whole existing document** will be overwritten by the new document.
     /// Fields previously in the document not present in the new document are removed.
     ///
-    /// For a partial update of the document see [Index::add_or_update].
+    /// For a partial update of the document see [`Index::add_or_update`].
     ///
-    /// You can use the alias [Index::add_documents] if you prefer.
+    /// You can use the alias [`Index::add_documents`] if you prefer.
     ///
     /// # Example
     ///
@@ -563,7 +564,7 @@ impl Index {
     /// If you send an already existing document (same id) the **whole existing document** will be overwritten by the new document.
     /// Fields previously in the document not present in the new document are removed.
     ///
-    /// For a partial update of the document see [Index::add_or_update_unchecked_payload].
+    /// For a partial update of the document see [`Index::add_or_update_unchecked_payload`].
     ///
     /// # Example
     ///
@@ -623,7 +624,7 @@ impl Index {
         .await
     }
 
-    /// Alias for [Index::add_or_replace].
+    /// Alias for [`Index::add_or_replace`].
     pub async fn add_documents<T: Serialize>(
         &self,
         documents: &[T],
@@ -637,7 +638,7 @@ impl Index {
     /// If you send an already existing document (same id) the old document will be only partially updated according to the fields of the new document.
     /// Thus, any fields not present in the new document are kept and remained unchanged.
     ///
-    /// To completely overwrite a document, check out the [Index::add_or_replace] documents method.
+    /// To completely overwrite a document, check out the [`Index::add_or_replace`] documents method.
     ///
     /// # Example
     ///
@@ -718,7 +719,7 @@ impl Index {
     /// If you send an already existing document (same id) the old document will be only partially updated according to the fields of the new document.
     /// Thus, any fields not present in the new document are kept and remained unchanged.
     ///
-    /// To completely overwrite a document, check out the [Index::add_or_replace_unchecked_payload] documents method.
+    /// To completely overwrite a document, check out the [`Index::add_or_replace_unchecked_payload`] documents method.
     ///
     /// # Example
     ///
@@ -926,7 +927,7 @@ impl Index {
         .await
     }
 
-    /// Alias for the [Index::update] method.
+    /// Alias for the [`Index::update`] method.
     pub async fn set_primary_key(
         &mut self,
         primary_key: impl AsRef<str>,
@@ -938,7 +939,7 @@ impl Index {
 
     /// Fetch the information of the index as a raw JSON [Index], this index should already exist.
     ///
-    /// If you use it directly from the [Client], you can use the method [Client::get_raw_index], which is the equivalent method from the client.
+    /// If you use it directly from the [Client], you can use the method [`Client::get_raw_index`], which is the equivalent method from the client.
     ///
     /// # Example
     ///
@@ -1145,9 +1146,9 @@ impl Index {
     ///
     /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
-    /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
+    /// If the waited time exceeds `timeout` then an [`Error::Timeout`] will be returned.
     ///
-    /// See also [Client::wait_for_task, Task::wait_for_completion].
+    /// See also [`Client::wait_for_task`, `Task::wait_for_completion`].
     ///
     /// # Example
     ///
@@ -1351,7 +1352,7 @@ impl AsRef<str> for Index {
     }
 }
 
-/// An [IndexUpdater] used to update the specifics of an index.
+/// An [`IndexUpdater`] used to update the specifics of an index.
 ///
 /// # Example
 ///
@@ -1404,7 +1405,7 @@ impl<'a> IndexUpdater<'a> {
             uid: uid.as_ref().to_string(),
         }
     }
-    /// Define the new primary_key to set on the [Index].
+    /// Define the new `primary_key` to set on the [Index].
     ///
     /// # Example
     ///
@@ -1446,7 +1447,7 @@ impl<'a> IndexUpdater<'a> {
         self
     }
 
-    /// Execute the update of an [Index] using the [IndexUpdater].
+    /// Execute the update of an [Index] using the [`IndexUpdater`].
     ///
     /// # Example
     ///
@@ -1509,7 +1510,7 @@ impl<'a> AsRef<IndexUpdater<'a>> for IndexUpdater<'a> {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStats {
     pub number_of_documents: usize,
@@ -1517,7 +1518,7 @@ pub struct IndexStats {
     pub field_distribution: HashMap<String, usize>,
 }
 
-/// An [IndexesQuery] containing filter and pagination parameters when searching for [Indexes](Index).
+/// An [`IndexesQuery`] containing filter and pagination parameters when searching for [Indexes](Index).
 ///
 /// # Example
 ///
@@ -1574,6 +1575,7 @@ pub struct IndexesQuery<'a> {
 }
 
 impl<'a> IndexesQuery<'a> {
+    #[must_use]
     pub fn new(client: &Client) -> IndexesQuery {
         IndexesQuery {
             client,

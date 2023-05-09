@@ -5,7 +5,7 @@ use crate::{client::Client, errors::Error};
 
 /// Represents a [meilisearch key](https://docs.meilisearch.com/reference/api/keys.html#returned-fields).
 ///
-/// You can get a [Key] from the [Client::get_key] method, or you can create a [Key] with the [KeyBuilder::new] or [Client::create_key] methods.
+/// You can get a [Key] from the [`Client::get_key`] method, or you can create a [Key] with the [`KeyBuilder::new`] or [`Client::create_key`] methods.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Key {
@@ -246,7 +246,7 @@ impl KeyUpdater {
         self
     }
 
-    /// Update a [Key] using the [KeyUpdater].
+    /// Update a [Key] using the [`KeyUpdater`].
     ///
     /// # Example
     ///
@@ -310,7 +310,7 @@ pub struct KeysQuery {
 }
 
 impl KeysQuery {
-    /// Create a [KeysQuery] with only a description.
+    /// Create a [`KeysQuery`] with only a description.
     ///
     /// # Example
     ///
@@ -318,6 +318,7 @@ impl KeysQuery {
     /// # use meilisearch_sdk::{key::KeysQuery};
     /// let builder = KeysQuery::new();
     /// ```
+    #[must_use]
     pub fn new() -> KeysQuery {
         Self::default()
     }
@@ -394,7 +395,7 @@ impl KeysQuery {
     }
 }
 
-/// The [KeyBuilder] is an analog to the [Key] type but without all the fields managed by Meilisearch.
+/// The [`KeyBuilder`] is an analog to the [Key] type but without all the fields managed by Meilisearch.
 ///
 /// It's used to create [Key].
 ///
@@ -417,7 +418,7 @@ impl KeysQuery {
 /// # client.delete_key(key).await.unwrap();
 /// # });
 /// ```
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct KeyBuilder {
     pub actions: Vec<Action>,
@@ -433,7 +434,7 @@ pub struct KeyBuilder {
 }
 
 impl KeyBuilder {
-    /// Create a [KeyBuilder].
+    /// Create a [`KeyBuilder`].
     ///
     /// # Example
     ///
@@ -441,6 +442,7 @@ impl KeyBuilder {
     /// # use meilisearch_sdk::{key::KeyBuilder};
     /// let builder = KeyBuilder::new();
     /// ```
+    #[must_use]
     pub fn new() -> KeyBuilder {
         Self::default()
     }

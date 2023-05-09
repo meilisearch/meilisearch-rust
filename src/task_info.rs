@@ -23,19 +23,20 @@ impl AsRef<u32> for TaskInfo {
 }
 
 impl TaskInfo {
+    #[must_use]
     pub fn get_task_uid(&self) -> u32 {
         self.task_uid
     }
 
-    /// Wait until Meilisearch processes a task provided by [TaskInfo], and get its status.
+    /// Wait until Meilisearch processes a task provided by [`TaskInfo`], and get its status.
     ///
     /// `interval` = The frequency at which the server should be polled. **Default = 50ms**
     ///
     /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
-    /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
+    /// If the waited time exceeds `timeout` then an [`Error::Timeout`] will be returned.
     ///
-    /// See also [Client::wait_for_task, Index::wait_for_task].
+    /// See also [`Client::wait_for_task`, `Index::wait_for_task`].
     ///
     /// # Example
     ///

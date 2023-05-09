@@ -18,6 +18,7 @@ pub struct Filter<'a> {
 }
 
 impl<'a> Filter<'a> {
+    #[must_use]
     pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter {
         Filter { inner }
     }
@@ -47,13 +48,13 @@ pub struct SearchResult<T> {
     pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetStats {
     pub min: u32,
     pub max: u32,
 }
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
 pub struct SearchResults<T> {
@@ -111,7 +112,7 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
                     result.push(':');
                     result.push_str(value.to_string().as_str());
                 }
-                results.push(result)
+                results.push(result);
             }
             results.serialize(s)
         }
@@ -311,6 +312,7 @@ pub struct SearchQuery<'a> {
 
 #[allow(missing_docs)]
 impl<'a> SearchQuery<'a> {
+    #[must_use]
     pub fn new(index: &'a Index) -> SearchQuery<'a> {
         SearchQuery {
             index,
@@ -490,7 +492,8 @@ impl<'a> SearchQuery<'a> {
         self.index_uid = Some(&self.index.uid);
         self
     }
-    pub fn build(&mut self) -> SearchQuery<'a> {
+    #[must_use]
+    pub fn build(&mut self) -> Self {
         self.clone()
     }
     /// Execute the query and fetch the results.
@@ -511,6 +514,7 @@ pub struct MultiSearchQuery<'a, 'b> {
 
 #[allow(missing_docs)]
 impl<'a, 'b> MultiSearchQuery<'a, 'b> {
+    #[must_use]
     pub fn new(client: &'a Client) -> MultiSearchQuery<'a, 'b> {
         MultiSearchQuery {
             client,
@@ -533,7 +537,7 @@ impl<'a, 'b> MultiSearchQuery<'a, 'b> {
         self.client.execute_multi_search_query::<T>(self).await
     }
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct MultiSearchResponse<T> {
     pub results: Vec<SearchResults<T>>,
 }

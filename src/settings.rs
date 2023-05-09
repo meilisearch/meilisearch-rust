@@ -13,7 +13,7 @@ pub struct PaginationSetting {
     pub max_total_hits: usize,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetingSettings {
     pub max_values_per_facet: usize,
@@ -82,8 +82,9 @@ pub struct Settings {
 #[allow(missing_docs)]
 impl Settings {
     /// Create undefined settings.
-    pub fn new() -> Settings {
-        Settings {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
             synonyms: None,
             stop_words: None,
             ranking_rules: None,
@@ -96,13 +97,15 @@ impl Settings {
             faceting: None,
         }
     }
-    pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
+
+    #[must_use]
+    pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Self
     where
         S: AsRef<str>,
         V: AsRef<str>,
         U: IntoIterator<Item = V>,
     {
-        Settings {
+        Self {
             synonyms: Some(
                 synonyms
                     .into_iter()
@@ -118,11 +121,9 @@ impl Settings {
         }
     }
 
-    pub fn with_stop_words(
-        self,
-        stop_words: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Settings {
-        Settings {
+    #[must_use]
+    pub fn with_stop_words(self, stop_words: impl IntoIterator<Item = impl AsRef<str>>) -> Self {
+        Self {
             stop_words: Some(
                 stop_words
                     .into_iter()
@@ -133,18 +134,20 @@ impl Settings {
         }
     }
 
-    pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Settings {
-        Settings {
+    #[must_use]
+    pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Self {
+        Self {
             pagination: Some(pagination_settings),
             ..self
         }
     }
 
+    #[must_use]
     pub fn with_ranking_rules(
         self,
         ranking_rules: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Settings {
-        Settings {
+    ) -> Self {
+        Self {
             ranking_rules: Some(
                 ranking_rules
                     .into_iter()
@@ -155,11 +158,12 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_filterable_attributes(
         self,
         filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Settings {
-        Settings {
+    ) -> Self {
+        Self {
             filterable_attributes: Some(
                 filterable_attributes
                     .into_iter()
@@ -170,11 +174,12 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_sortable_attributes(
         self,
         sortable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Settings {
-        Settings {
+    ) -> Self {
+        Self {
             sortable_attributes: Some(
                 sortable_attributes
                     .into_iter()
@@ -185,18 +190,20 @@ impl Settings {
         }
     }
 
-    pub fn with_distinct_attribute(self, distinct_attribute: impl AsRef<str>) -> Settings {
-        Settings {
+    #[must_use]
+    pub fn with_distinct_attribute(self, distinct_attribute: impl AsRef<str>) -> Self {
+        Self {
             distinct_attribute: Some(distinct_attribute.as_ref().to_string()),
             ..self
         }
     }
 
+    #[must_use]
     pub fn with_searchable_attributes(
         self,
         searchable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Settings {
-        Settings {
+    ) -> Self {
+        Self {
             searchable_attributes: Some(
                 searchable_attributes
                     .into_iter()
@@ -207,11 +214,12 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_displayed_attributes(
         self,
         displayed_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Settings {
-        Settings {
+    ) -> Self {
+        Self {
             displayed_attributes: Some(
                 displayed_attributes
                     .into_iter()
@@ -222,9 +230,10 @@ impl Settings {
         }
     }
 
-    pub fn with_faceting(self, faceting: &FacetingSettings) -> Settings {
-        Settings {
-            faceting: Some(faceting.clone()),
+    #[must_use]
+    pub fn with_faceting(self, faceting: &FacetingSettings) -> Self {
+        Self {
+            faceting: Some(*faceting),
             ..self
         }
     }

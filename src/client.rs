@@ -46,11 +46,11 @@ impl Client {
     pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
         Client {
             host: host.into(),
-            api_key: api_key.map(|key| key.into()),
+            api_key: api_key.map(std::convert::Into::into),
         }
     }
 
-    fn parse_indexes_results_from_value(&self, value: Value) -> Result<IndexesResults, Error> {
+    fn parse_indexes_results_from_value(&self, value: &Value) -> Result<IndexesResults, Error> {
         let raw_indexes = value["results"].as_array().unwrap();
 
         let indexes_results = IndexesResults {
@@ -121,6 +121,7 @@ impl Client {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn multi_search(&self) -> MultiSearchQuery {
         MultiSearchQuery::new(self)
     }
@@ -136,6 +137,7 @@ impl Client {
     ///
     /// assert_eq!(client.get_host(), "http://doggo.dog");
     /// ```
+    #[must_use]
     pub fn get_host(&self) -> &str {
         &self.host
     }
@@ -151,6 +153,7 @@ impl Client {
     ///
     /// assert_eq!(client.get_api_key(), Some("doggo"));
     /// ```
+    #[must_use]
     pub fn get_api_key(&self) -> Option<&str> {
         self.api_key.as_deref()
     }
@@ -174,7 +177,7 @@ impl Client {
     /// ```
     pub async fn list_all_indexes(&self) -> Result<IndexesResults, Error> {
         let value = self.list_all_indexes_raw().await?;
-        let indexes_results = self.parse_indexes_results_from_value(value)?;
+        let indexes_results = self.parse_indexes_results_from_value(&value)?;
         Ok(indexes_results)
     }
 
@@ -203,7 +206,7 @@ impl Client {
         indexes_query: &IndexesQuery<'_>,
     ) -> Result<IndexesResults, Error> {
         let value = self.list_all_indexes_raw_with(indexes_query).await?;
-        let indexes_results = self.parse_indexes_results_from_value(value)?;
+        let indexes_results = self.parse_indexes_results_from_value(&value)?;
 
         Ok(indexes_results)
     }
@@ -301,7 +304,7 @@ impl Client {
 
     /// Get a raw JSON [Index], this index should already exist.
     ///
-    /// If you use it directly from an [Index], you can use the method [Index::fetch_info], which is the equivalent method from an index.
+    /// If you use it directly from an [Index], you can use the method [`Index::fetch_info`], which is the equivalent method from an index.
     ///
     /// # Example
     ///
@@ -385,7 +388,7 @@ impl Client {
 
     /// Delete an index from its UID.
     ///
-    /// To delete an [Index], use the [Index::delete] method.
+    /// To delete an [Index], use the [`Index::delete`] method.
     pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}", self.host, uid.as_ref()),
@@ -396,12 +399,12 @@ impl Client {
         .await
     }
 
-    /// Alias for [Client::list_all_indexes].
+    /// Alias for [`Client::list_all_indexes`].
     pub async fn get_indexes(&self) -> Result<IndexesResults, Error> {
         self.list_all_indexes().await
     }
 
-    /// Alias for [Client::list_all_indexes_with].
+    /// Alias for [`Client::list_all_indexes_with`].
     pub async fn get_indexes_with(
         &self,
         indexes_query: &IndexesQuery<'_>,
@@ -409,12 +412,12 @@ impl Client {
         self.list_all_indexes_with(indexes_query).await
     }
 
-    /// Alias for [Client::list_all_indexes_raw].
+    /// Alias for [`Client::list_all_indexes_raw`].
     pub async fn get_indexes_raw(&self) -> Result<Value, Error> {
         self.list_all_indexes_raw().await
     }
 
-    /// Alias for [Client::list_all_indexes_raw_with].
+    /// Alias for [`Client::list_all_indexes_raw_with`].
     pub async fn get_indexes_raw_with(
         &self,
         indexes_query: &IndexesQuery<'_>,
@@ -549,7 +552,7 @@ impl Client {
 
     /// Get the API [Keys](Key) from Meilisearch with parameters.
     ///
-    /// See [Client::create_key], [Client::get_key], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
+    /// See [`Client::create_key`], [`Client::get_key`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
     ///
     /// # Example
     ///
@@ -583,7 +586,7 @@ impl Client {
 
     /// Get the API [Keys](Key) from Meilisearch.
     ///
-    /// See [Client::create_key], [Client::get_key], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
+    /// See [`Client::create_key`], [`Client::get_key`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
     ///
     /// # Example
     ///
@@ -614,7 +617,7 @@ impl Client {
 
     /// Get one API [Key] from Meilisearch.
     ///
-    /// See also [Client::create_key], [Client::get_keys], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-one-key).
+    /// See also [`Client::create_key`], [`Client::get_keys`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-one-key).
     ///
     /// # Example
     ///
@@ -646,7 +649,7 @@ impl Client {
 
     /// Delete an API [Key] from Meilisearch.
     ///
-    /// See also [Client::create_key], [Client::update_key], [Client::get_key], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#delete-a-key).
+    /// See also [`Client::create_key`], [`Client::update_key`], [`Client::get_key`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#delete-a-key).
     ///
     /// # Example
     ///
@@ -681,7 +684,7 @@ impl Client {
 
     /// Create an API [Key] in Meilisearch.
     ///
-    /// See also [Client::update_key], [Client::delete_key], [Client::get_key], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#create-a-key).
+    /// See also [`Client::update_key`], [`Client::delete_key`], [`Client::get_key`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#create-a-key).
     ///
     /// # Example
     ///
@@ -718,7 +721,7 @@ impl Client {
 
     /// Update an API [Key] in Meilisearch.
     ///
-    /// See also [Client::create_key], [Client::delete_key], [Client::get_key], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#update-a-key).
+    /// See also [`Client::create_key`], [`Client::delete_key`], [`Client::get_key`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#update-a-key).
     ///
     /// # Example
     ///
@@ -787,9 +790,9 @@ impl Client {
     ///
     /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
-    /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
+    /// If the waited time exceeds `timeout` then an [`Error::Timeout`] will be returned.
     ///
-    /// See also [Index::wait_for_task, Task::wait_for_completion, TaskInfo::wait_for_completion].
+    /// See also [`Index::wait_for_task`, `Task::wait_for_completion`, `TaskInfo::wait_for_completion`].
     ///
     /// # Example
     ///
@@ -917,7 +920,7 @@ impl Client {
         Ok(tasks)
     }
 
-    /// Cancel tasks with filters [TasksCancelQuery].
+    /// Cancel tasks with filters [`TasksCancelQuery`].
     ///
     /// # Example
     ///
@@ -953,7 +956,7 @@ impl Client {
         Ok(tasks)
     }
 
-    /// Delete tasks with filters [TasksDeleteQuery].
+    /// Delete tasks with filters [`TasksDeleteQuery`].
     ///
     /// # Example
     ///
@@ -1054,7 +1057,7 @@ impl Client {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ClientStats {
     pub database_size: usize,
@@ -1073,7 +1076,7 @@ pub struct ClientStats {
 ///     status: "available".to_string(),
 /// };
 /// ```
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Health {
     pub status: String,
 }
@@ -1090,7 +1093,7 @@ pub struct Health {
 ///     pkg_version: "0.1.1".to_string(),
 /// };
 /// ```
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Version {
     pub commit_sha: String,
@@ -1331,7 +1334,7 @@ mod tests {
         let mut key = KeyBuilder::new();
         key.with_action(Action::DocumentsAdd)
             .with_name(&name)
-            .with_expires_at(expires_at.clone())
+            .with_expires_at(expires_at)
             .with_description("a description")
             .with_index("*");
         let key = client.create_key(key).await.unwrap();

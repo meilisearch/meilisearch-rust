@@ -94,7 +94,7 @@ mod tests {
     fn test_generate_token_without_uid() {
         let api_key_uid = S("");
         let key = S("");
-        let token = generate_tenant_token(api_key_uid, json!(SEARCH_RULES), &key, None);
+        let token = generate_tenant_token(api_key_uid, json!(SEARCH_RULES), key, None);
 
         assert!(token.is_err());
     }
@@ -163,7 +163,7 @@ mod tests {
     fn test_generate_token_with_wrongly_formated_uid() {
         let api_key_uid = S("xxx");
         let key = "Ëa1ทt9bVcL-vãUทtP3OpXW5qPc%bWH5ทvw09";
-        let token = generate_tenant_token(api_key_uid.clone(), json!(SEARCH_RULES), key, None);
+        let token = generate_tenant_token(api_key_uid, json!(SEARCH_RULES), key, None);
 
         assert!(token.is_err());
     }
@@ -172,7 +172,7 @@ mod tests {
     fn test_generate_token_with_wrong_uid_version() {
         let api_key_uid = S("6a11eb96-2485-11ed-861d-0242ac120002");
         let key = "Ëa1ทt9bVcL-vãUทtP3OpXW5qPc%bWH5ทvw09";
-        let token = generate_tenant_token(api_key_uid.clone(), json!(SEARCH_RULES), key, None);
+        let token = generate_tenant_token(api_key_uid, json!(SEARCH_RULES), key, None);
 
         assert!(token.is_err());
     }
