@@ -1,6 +1,6 @@
 use crate::{
     client::Client,
-    documents::{DocumentQuery, DocumentsQuery, DocumentsResults},
+    documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
     errors::Error,
     request::*,
     search::*,
@@ -920,6 +920,61 @@ impl Index {
             Method::Post {
                 query: (),
                 body: uids,
+            },
+            202,
+        )
+        .await
+    }
+
+    /// Delete a selection of documents with filters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, documents::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # #[derive(Serialize, Deserialize, Debug)]
+    /// # struct Movie {
+    /// #    name: String,
+    /// #    id: String,
+    /// # }
+    /// #
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// #
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let index = client.index("delete_documents_with");
+    /// #
+    /// # index.set_filterable_attributes(["id"]);
+    /// # // add some documents
+    /// # index.add_or_replace(&[Movie{id:String::from("1"), name: String::from("First movie") }, Movie{id:String::from("1"), name: String::from("First movie") }], Some("id")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let mut query = DocumentDeletionQuery::new(&index);
+    /// query.with_filter("id = 1");
+    /// // delete some documents
+    /// index.delete_documents_with(&query)
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn delete_documents_with(
+        &self,
+        query: &DocumentDeletionQuery<'_>,
+    ) -> Result<TaskInfo, Error> {
+        request::<(), &DocumentDeletionQuery, TaskInfo>(
+            &format!("{}/indexes/{}/documents/delete", self.client.host, self.uid),
+            self.client.get_api_key(),
+            Method::Post {
+                query: (),
+                body: query,
             },
             202,
         )
