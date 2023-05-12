@@ -1,3 +1,4 @@
+use crate::task_info::TaskInfo;
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -301,11 +302,36 @@ impl<'a> DocumentsQuery<'a> {
     }
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct DocumentDeletionQuery<'a> {
+    #[serde(skip_serializing)]
+    pub index: &'a Index,
+
+    /// Filters to apply.
+    ///
+    /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
+    pub filter: &'a str,
+}
+
+impl<'a> DocumentDeletionQuery<'a> {
+    pub fn new(index: &Index) -> DocumentDeletionQuery {
+        DocumentDeletionQuery { index, filter: "" }
+    }
+
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentDeletionQuery<'a> {
+        self.filter = filter;
+        self
+    }
+
+    pub async fn execute<T: DeserializeOwned + 'static>(&self) -> Result<TaskInfo, Error> {
+        self.index.delete_documents_with(self).await
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{client::*, indexes::*};
-    use ::meilisearch_sdk::documents::IndexConfig;
+    use crate::{client::*, errors::*, indexes::*};
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
 
@@ -371,7 +397,6 @@ mod tests {
     #[meilisearch_test]
     async fn test_get_documents_with_execute(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
-        // let documents = index.get_documents(None, None, None).await.unwrap();
         let documents = DocumentsQuery::new(&index)
             .with_limit(1)
             .with_offset(1)
@@ -383,6 +408,41 @@ mod tests {
         assert_eq!(documents.limit, 1);
         assert_eq!(documents.offset, 1);
         assert_eq!(documents.results.len(), 1);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_documents_with(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        index
+            .set_filterable_attributes(["id"])
+            .await
+            .unwrap()
+            .wait_for_completion(&client, None, None)
+            .await
+            .unwrap();
+        let mut query = DocumentDeletionQuery::new(&index);
+        query.with_filter("id = 1");
+
+        index
+            .delete_documents_with(&query)
+            .await
+            .unwrap()
+            .wait_for_completion(&client, None, None)
+            .await
+            .unwrap();
+        let document_result = index.get_document::<MyObject>("1").await;
+
+        match document_result {
+            Ok(_) => panic!("The test was expecting no documents to be returned but got one."),
+            Err(e) => match e {
+                Error::Meilisearch(err) => {
+                    assert_eq!(err.error_code, ErrorCode::DocumentNotFound);
+                }
+                _ => panic!("The error was expected to be a Meilisearch error, but it was not."),
+            },
+        }
 
         Ok(())
     }
