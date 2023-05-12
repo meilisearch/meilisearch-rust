@@ -40,6 +40,7 @@ wasm-bindgen-futures = "0.4"
 [features]
 default = ["isahc-static-curl"]
 isahc-static-curl = ["isahc/static-curl"]
+isahc-static-ssl = ["isahc/static-ssl"]
 
 [dev-dependencies]
 env_logger = "0.10"
