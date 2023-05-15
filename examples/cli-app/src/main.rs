@@ -7,7 +7,7 @@ use std::io::stdin;
 
 // instantiate the client. load it once
 lazy_static! {
-    static ref CLIENT: Client = Client::new("http://localhost:7700", "masterKey");
+    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey"));
 }
 
 fn main() {
@@ -67,13 +67,13 @@ async fn build_index() {
     // serialize the string to clothes objects
     let clothes: Vec<Clothes> = serde_json::from_str(content).unwrap();
 
-    //create displayed attributes
+    // create displayed attributes
     let displayed_attributes = ["article", "cost", "size", "pattern"];
 
     // Create ranking rules
     let ranking_rules = ["words", "typo", "attribute", "exactness", "cost:asc"];
 
-    //create searchable attributes
+    // create searchable attributes
     let searchable_attributes = ["seaon", "article", "size", "pattern"];
 
     // create the synonyms hashmap
@@ -82,14 +82,14 @@ async fn build_index() {
     synonyms.insert("sweat pants", vec!["joggers", "gym pants"]);
     synonyms.insert("t-shirt", vec!["tees", "tshirt"]);
 
-    //create the settings struct
+    // create the settings struct
     let settings = Settings::new()
         .with_ranking_rules(ranking_rules)
         .with_searchable_attributes(searchable_attributes)
         .with_displayed_attributes(displayed_attributes)
         .with_synonyms(synonyms);
 
-    //add the settings to the index
+    // add the settings to the index
     let result = CLIENT
         .index("clothes")
         .set_settings(&settings)

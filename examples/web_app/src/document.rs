@@ -13,7 +13,6 @@ pub struct Crate {
     version: String,
 }
 
-// Implement the Document trait so that we can use our struct with Meilisearch
 fn get_readable_download_count(this: &Map<String, Value>) -> String {
     if let Some(downloads) = this["downloads"].as_f64() {
         if downloads < 1000.0 {
@@ -37,22 +36,22 @@ pub fn display(this: &Map<String, Value>) -> Html {
     url = url.replace("</em>", "");
 
     html! {
-        <li><a href=url>
+        <li><a href={url}>
             <div class="h">
                 <h4>
                     {
                         // This field is formatted so we don't want Yew to escape the HTML tags
-                        unescaped_html(&this["name"].as_str().unwrap_or_default())
+                        unescaped_html(this["name"].as_str().unwrap_or_default())
                     }
                 </h4>
-                <p class="desc">{unescaped_html(&this["description"].as_str().unwrap_or_default())}</p>
+                <p class="desc">{unescaped_html(this["description"].as_str().unwrap_or_default())}</p>
             </div>
             <div class="meta">
                 <span class="version stable">
                     <span>{"v"}</span>
                     {&this["version"].as_str().unwrap_or_default()}
                 </span>
-                <span class="downloads" title=format!("{} recent downloads", this["downloads"].as_f64().unwrap_or(0.0))>
+                <span class="downloads" title={format!("{} recent downloads", this["downloads"].as_f64().unwrap_or(0.0))}>
                     {get_readable_download_count(this)}
                 </span>
                 {for this["keywords"].as_array().unwrap().iter().map(|keyword|

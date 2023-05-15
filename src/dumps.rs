@@ -1,15 +1,17 @@
 //! The `dumps` module allows the creation of database dumps.
-//! Dumps are `.dump` files that can be used to launch Meilisearch.
-//! Dumps are compatible between Meilisearch versions.
 //!
-//! Creating a dump is also referred to as exporting it, whereas launching Meilisearch with a dump is referred to as importing it.
+//! - Dumps are `.dump` files that can be used to launch Meilisearch.
 //!
-//! During a [dump export](Client::create_dump), all [indexes](crate::indexes::Index) of the current instance are exported—together with their documents and settings—and saved as a single `.dump` file.
+//! - Dumps are compatible between Meilisearch versions.
 //!
-//! During a dump import, all indexes contained in the indicated `.dump` file are imported along with their associated [documents](crate::document::Document) and [settings](crate::settings::Settings).
+//! - Creating a dump is also referred to as exporting it, whereas launching Meilisearch with a dump is referred to as importing it.
+//!
+//! - During a [dump export](Client::create_dump), all [indexes](crate::indexes::Index) of the current instance are exported—together with their documents and settings—and saved as a single `.dump` file.
+//!
+//! - During a dump import, all indexes contained in the indicated `.dump` file are imported along with their associated documents and [settings](crate::settings::Settings).
 //! Any existing [index](crate::indexes::Index) with the same uid as an index in the dump file will be overwritten.
 //!
-//! Dump imports are [performed at launch](https://docs.meilisearch.com/reference/features/configuration.html#import-dump) using an option.
+//! - Dump imports are [performed at launch](https://docs.meilisearch.com/reference/features/configuration.html#import-dump) using an option.
 //! [Batch size](https://docs.meilisearch.com/reference/features/configuration.html#dump-batch-size) can also be set at this time.
 //!
 //! # Example
@@ -23,26 +25,27 @@
 //! # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //! #
-//! let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+//! # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 //!
 //! // Create a dump
 //! let task_info = client.create_dump().await.unwrap();
 //! assert!(matches!(
-//!    task_info,
-//!    TaskInfo {
-//!        update_type: TaskType::DumpCreation { .. },
-//!        ..
-//!    }
-//!));
+//!     task_info,
+//!     TaskInfo {
+//!         update_type: TaskType::DumpCreation { .. },
+//!         ..
+//!     }
+//! ));
 //! # });
 //! ```
 
 use crate::{client::Client, errors::Error, request::*, task_info::TaskInfo};
 
-/// Dump related methods.\
+/// Dump related methods.
 /// See the [dumps](crate::dumps) module.
 impl Client {
     /// Triggers a dump creation process.
+    ///
     /// Once the process is complete, a dump is created in the [dumps directory](https://docs.meilisearch.com/reference/features/configuration.html#dumps-destination).
     /// If the dumps directory does not exist yet, it will be created.
     ///
@@ -57,23 +60,27 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// #
     /// let task_info = client.create_dump().await.unwrap();
+    ///
     /// assert!(matches!(
-    ///    task_info,
-    ///    TaskInfo {
-    ///        update_type: TaskType::DumpCreation { .. },
-    ///        ..
-    ///    }
+    ///     task_info,
+    ///     TaskInfo {
+    ///         update_type: TaskType::DumpCreation { .. },
+    ///         ..
+    ///     }
     /// ));
     /// # });
     /// ```
     pub async fn create_dump(&self) -> Result<TaskInfo, Error> {
-        request::<(), TaskInfo>(
+        request::<(), (), TaskInfo>(
             &format!("{}/dumps", self.host),
-            &self.api_key,
-            Method::Post(()),
+            self.get_api_key(),
+            Method::Post {
+                query: (),
+                body: (),
+            },
             202,
         )
         .await

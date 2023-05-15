@@ -1,0 +1,18 @@
+[package]
+name = "meilisearch-index-setting-macro"
+version = "0.23.1"
+description = "Helper tool to generate settings of an Meilisearch index"
+edition = "2021"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "1.0.102", features = ["extra-traits"] }
+quote = "1.0.21"
+proc-macro2 = "1.0.46"
+convert_case = "0.6.0"
+
