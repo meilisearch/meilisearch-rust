@@ -23,7 +23,6 @@ impl AsRef<u32> for TaskInfo {
 }
 
 impl TaskInfo {
-    #[must_use]
     pub fn get_task_uid(&self) -> u32 {
         self.task_uid
     }
