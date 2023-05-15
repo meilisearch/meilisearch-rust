@@ -121,7 +121,6 @@ impl Client {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    #[must_use]
     pub fn multi_search(&self) -> MultiSearchQuery {
         MultiSearchQuery::new(self)
     }
@@ -137,7 +136,6 @@ impl Client {
     ///
     /// assert_eq!(client.get_host(), "http://doggo.dog");
     /// ```
-    #[must_use]
     pub fn get_host(&self) -> &str {
         &self.host
     }
@@ -153,7 +151,6 @@ impl Client {
     ///
     /// assert_eq!(client.get_api_key(), Some("doggo"));
     /// ```
-    #[must_use]
     pub fn get_api_key(&self) -> Option<&str> {
         self.api_key.as_deref()
     }

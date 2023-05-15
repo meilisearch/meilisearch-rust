@@ -268,7 +268,6 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    #[must_use]
     pub fn search(&self) -> SearchQuery {
         SearchQuery::new(self)
     }
@@ -1575,7 +1574,6 @@ pub struct IndexesQuery<'a> {
 }
 
 impl<'a> IndexesQuery<'a> {
-    #[must_use]
     pub fn new(client: &Client) -> IndexesQuery {
         IndexesQuery {
             client,

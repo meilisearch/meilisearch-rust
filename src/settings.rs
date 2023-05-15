@@ -82,8 +82,7 @@ pub struct Settings {
 #[allow(missing_docs)]
 impl Settings {
     /// Create undefined settings.
-    #[must_use]
-    pub fn new() -> Self {
+    pub fn new() -> Settings {
         Self {
             synonyms: None,
             stop_words: None,
@@ -98,8 +97,7 @@ impl Settings {
         }
     }
 
-    #[must_use]
-    pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Self
+    pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
     where
         S: AsRef<str>,
         V: AsRef<str>,
@@ -121,8 +119,7 @@ impl Settings {
         }
     }
 
-    #[must_use]
-    pub fn with_stop_words(self, stop_words: impl IntoIterator<Item = impl AsRef<str>>) -> Self {
+    pub fn with_stop_words(self, stop_words: impl IntoIterator<Item = impl AsRef<str>>) -> Settings {
         Self {
             stop_words: Some(
                 stop_words
@@ -134,19 +131,17 @@ impl Settings {
         }
     }
 
-    #[must_use]
-    pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Self {
+    pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Settings {
         Self {
             pagination: Some(pagination_settings),
             ..self
         }
     }
 
-    #[must_use]
     pub fn with_ranking_rules(
         self,
         ranking_rules: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Self {
+    ) -> Settings {
         Self {
             ranking_rules: Some(
                 ranking_rules
@@ -158,11 +153,10 @@ impl Settings {
         }
     }
 
-    #[must_use]
     pub fn with_filterable_attributes(
         self,
         filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Self {
+    ) -> Settings {
         Self {
             filterable_attributes: Some(
                 filterable_attributes
@@ -174,11 +168,10 @@ impl Settings {
         }
     }
 
-    #[must_use]
     pub fn with_sortable_attributes(
         self,
         sortable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Self {
+    ) -> Settings {
         Self {
             sortable_attributes: Some(
                 sortable_attributes
@@ -190,19 +183,17 @@ impl Settings {
         }
     }
 
-    #[must_use]
-    pub fn with_distinct_attribute(self, distinct_attribute: impl AsRef<str>) -> Self {
+    pub fn with_distinct_attribute(self, distinct_attribute: impl AsRef<str>) -> Settings {
         Self {
             distinct_attribute: Some(distinct_attribute.as_ref().to_string()),
             ..self
         }
     }
 
-    #[must_use]
     pub fn with_searchable_attributes(
         self,
         searchable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Self {
+    ) -> Settings {
         Self {
             searchable_attributes: Some(
                 searchable_attributes
@@ -214,11 +205,10 @@ impl Settings {
         }
     }
 
-    #[must_use]
     pub fn with_displayed_attributes(
         self,
         displayed_attributes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> Self {
+    ) -> Settings {
         Self {
             displayed_attributes: Some(
                 displayed_attributes
@@ -230,8 +220,7 @@ impl Settings {
         }
     }
 
-    #[must_use]
-    pub fn with_faceting(self, faceting: &FacetingSettings) -> Self {
+    pub fn with_faceting(self, faceting: &FacetingSettings) -> Settings {
         Self {
             faceting: Some(*faceting),
             ..self

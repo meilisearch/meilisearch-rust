@@ -318,7 +318,6 @@ impl KeysQuery {
     /// # use meilisearch_sdk::{key::KeysQuery};
     /// let builder = KeysQuery::new();
     /// ```
-    #[must_use]
     pub fn new() -> KeysQuery {
         Self::default()
     }
@@ -442,7 +441,6 @@ impl KeyBuilder {
     /// # use meilisearch_sdk::{key::KeyBuilder};
     /// let builder = KeyBuilder::new();
     /// ```
-    #[must_use]
     pub fn new() -> KeyBuilder {
         Self::default()
     }

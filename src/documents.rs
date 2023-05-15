@@ -56,7 +56,6 @@ use crate::{errors::Error, indexes::Index};
 pub trait IndexConfig {
     const INDEX_STR: &'static str;
 
-    #[must_use]
     fn index(client: &Client) -> Index {
         client.index(Self::INDEX_STR)
     }
@@ -83,7 +82,6 @@ pub struct DocumentQuery<'a> {
 }
 
 impl<'a> DocumentQuery<'a> {
-    #[must_use]
     pub fn new(index: &Index) -> DocumentQuery {
         DocumentQuery {
             index,
@@ -190,7 +188,6 @@ pub struct DocumentsQuery<'a> {
 }
 
 impl<'a> DocumentsQuery<'a> {
-    #[must_use]
     pub fn new(index: &Index) -> DocumentsQuery {
         DocumentsQuery {
             index,

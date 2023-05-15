@@ -18,7 +18,6 @@ pub struct Filter<'a> {
 }
 
 impl<'a> Filter<'a> {
-    #[must_use]
     pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter {
         Filter { inner }
     }
@@ -312,7 +311,6 @@ pub struct SearchQuery<'a> {
 
 #[allow(missing_docs)]
 impl<'a> SearchQuery<'a> {
-    #[must_use]
     pub fn new(index: &'a Index) -> SearchQuery<'a> {
         SearchQuery {
             index,
@@ -492,8 +490,7 @@ impl<'a> SearchQuery<'a> {
         self.index_uid = Some(&self.index.uid);
         self
     }
-    #[must_use]
-    pub fn build(&mut self) -> Self {
+    pub fn build(&mut self) -> SearchQuery<'a> {
         self.clone()
     }
     /// Execute the query and fetch the results.
@@ -514,7 +511,6 @@ pub struct MultiSearchQuery<'a, 'b> {
 
 #[allow(missing_docs)]
 impl<'a, 'b> MultiSearchQuery<'a, 'b> {
-    #[must_use]
     pub fn new(client: &'a Client) -> MultiSearchQuery<'a, 'b> {
         MultiSearchQuery {
             client,

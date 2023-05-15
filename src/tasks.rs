@@ -205,7 +205,6 @@ pub enum Task {
 }
 
 impl Task {
-    #[must_use]
     pub fn get_uid(&self) -> u32 {
         match self {
             Self::Enqueued { content } | Self::Processing { content } => *content.as_ref(),
@@ -337,7 +336,6 @@ impl Task {
     /// # client.index("unwrap_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    #[must_use]
     pub fn unwrap_failure(self) -> MeilisearchError {
         match self {
             Self::Failed {
@@ -373,7 +371,6 @@ impl Task {
     /// # client.index("is_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    #[must_use]
     pub fn is_failure(&self) -> bool {
         matches!(self, Self::Failed { .. })
     }
@@ -402,7 +399,6 @@ impl Task {
     /// # task.try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    #[must_use]
     pub fn is_success(&self) -> bool {
         matches!(self, Self::Succeeded { .. })
     }
@@ -430,7 +426,6 @@ impl Task {
     /// # task.wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    #[must_use]
     pub fn is_pending(&self) -> bool {
         matches!(self, Self::Enqueued { .. } | Self::Processing { .. })
     }
@@ -609,7 +604,6 @@ impl<'a, T> TasksQuery<'a, T> {
 }
 
 impl<'a> TasksQuery<'a, TasksCancelFilters> {
-    #[must_use]
     pub fn new(client: &'a Client) -> TasksQuery<'a, TasksCancelFilters> {
         TasksQuery {
             client,
@@ -634,7 +628,6 @@ impl<'a> TasksQuery<'a, TasksCancelFilters> {
 }
 
 impl<'a> TasksQuery<'a, TasksDeleteFilters> {
-    #[must_use]
     pub fn new(client: &'a Client) -> TasksQuery<'a, TasksDeleteFilters> {
         TasksQuery {
             client,
@@ -659,7 +652,6 @@ impl<'a> TasksQuery<'a, TasksDeleteFilters> {
 }
 
 impl<'a> TasksQuery<'a, TasksPaginationFilters> {
-    #[must_use]
     pub fn new(client: &'a Client) -> TasksQuery<'a, TasksPaginationFilters> {
         TasksQuery {
             client,
