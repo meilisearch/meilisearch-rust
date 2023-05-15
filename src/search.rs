@@ -103,16 +103,17 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
     match data {
         Some(Selectors::All) => ["*"].serialize(s),
         Some(Selectors::Some(data)) => {
-            let mut results = Vec::new();
-            for (name, value) in data.iter() {
-                let mut result = String::new();
-                result.push_str(name);
-                if let Some(value) = value {
-                    result.push(':');
-                    result.push_str(value.to_string().as_str());
-                }
-                results.push(result);
-            }
+            let results = data
+                .iter()
+                .map(|(name, value)| {
+                    let mut result = name.to_string();
+                    if let Some(value) = value {
+                        result.push(':');
+                        result.push_str(value.to_string().as_str());
+                    }
+                    result
+                })
+                .collect::<Vec<_>>();
             results.serialize(s)
         }
         None => s.serialize_none(),
