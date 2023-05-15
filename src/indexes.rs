@@ -1441,7 +1441,7 @@ impl<'a> IndexUpdater<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn with_primary_key(&mut self, primary_key: impl AsRef<str>) -> &mut Self {
+    pub fn with_primary_key(&mut self, primary_key: impl AsRef<str>) -> &mut IndexUpdater<'a> {
         self.primary_key = Some(primary_key.as_ref().to_string());
         self
     }

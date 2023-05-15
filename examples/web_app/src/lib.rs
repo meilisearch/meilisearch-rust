@@ -44,7 +44,7 @@ impl Component for Model {
     type Message = Msg;
     type Properties = ();
     fn create(_ctx: &Context<Self>) -> Model {
-        Self {
+        Model {
             // The index method avoids checking the existence of the index.
             // It won't make any HTTP request so the function is not async so it's easier to use.
             // Use only if you are sure that the index exists.

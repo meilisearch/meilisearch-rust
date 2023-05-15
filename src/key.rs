@@ -51,7 +51,7 @@ impl Key {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub fn with_description(&mut self, desc: impl AsRef<str>) -> &mut Self {
+    pub fn with_description(&mut self, desc: impl AsRef<str>) -> &mut Key {
         self.description = Some(desc.as_ref().to_string());
         self
     }
@@ -82,7 +82,7 @@ impl Key {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub fn with_name(&mut self, desc: impl AsRef<str>) -> &mut Self {
+    pub fn with_name(&mut self, desc: impl AsRef<str>) -> &mut Key {
         self.name = Some(desc.as_ref().to_string());
         self
     }
@@ -208,7 +208,7 @@ impl KeyUpdater {
     /// # client.delete_key(key_update).await.unwrap();
     /// # });
     /// ```
-    pub fn with_description(&mut self, desc: impl AsRef<str>) -> &mut Self {
+    pub fn with_description(&mut self, desc: impl AsRef<str>) -> &mut KeyUpdater {
         self.description = Some(desc.as_ref().to_string());
         self
     }
@@ -241,7 +241,7 @@ impl KeyUpdater {
     /// # client.delete_key(key_update).await.unwrap();
     /// # });
     /// ```
-    pub fn with_name(&mut self, desc: impl AsRef<str>) -> &mut Self {
+    pub fn with_name(&mut self, desc: impl AsRef<str>) -> &mut KeyUpdater {
         self.name = Some(desc.as_ref().to_string());
         self
     }
@@ -454,7 +454,7 @@ impl KeyBuilder {
     /// let mut builder = KeyBuilder::new();
     /// builder.with_actions(vec![Action::Search, Action::DocumentsAdd]);
     /// ```
-    pub fn with_actions(&mut self, actions: impl IntoIterator<Item = Action>) -> &mut Self {
+    pub fn with_actions(&mut self, actions: impl IntoIterator<Item = Action>) -> &mut KeyBuilder {
         self.actions.extend(actions);
         self
     }
@@ -468,7 +468,7 @@ impl KeyBuilder {
     /// let mut builder = KeyBuilder::new();
     /// builder.with_action(Action::DocumentsAdd);
     /// ```
-    pub fn with_action(&mut self, action: Action) -> &mut Self {
+    pub fn with_action(&mut self, action: Action) -> &mut KeyBuilder {
         self.actions.push(action);
         self
     }
@@ -484,7 +484,7 @@ impl KeyBuilder {
     /// // create a key that expires in two weeks from now
     /// builder.with_expires_at(OffsetDateTime::now_utc() + Duration::WEEK * 2);
     /// ```
-    pub fn with_expires_at(&mut self, expires_at: OffsetDateTime) -> &mut Self {
+    pub fn with_expires_at(&mut self, expires_at: OffsetDateTime) -> &mut KeyBuilder {
         self.expires_at = Some(expires_at);
         self
     }
@@ -514,7 +514,7 @@ impl KeyBuilder {
     pub fn with_indexes(
         &mut self,
         indexes: impl IntoIterator<Item = impl AsRef<str>>,
-    ) -> &mut Self {
+    ) -> &mut KeyBuilder {
         self.indexes = indexes
             .into_iter()
             .map(|index| index.as_ref().to_string())
@@ -531,7 +531,7 @@ impl KeyBuilder {
     /// let mut builder = KeyBuilder::new();
     /// builder.with_index("test");
     /// ```
-    pub fn with_index(&mut self, index: impl AsRef<str>) -> &mut Self {
+    pub fn with_index(&mut self, index: impl AsRef<str>) -> &mut KeyBuilder {
         self.indexes.push(index.as_ref().to_string());
         self
     }
@@ -557,7 +557,7 @@ impl KeyBuilder {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub fn with_description(&mut self, desc: impl AsRef<str>) -> &mut Self {
+    pub fn with_description(&mut self, desc: impl AsRef<str>) -> &mut KeyBuilder {
         self.description = Some(desc.as_ref().to_string());
         self
     }
@@ -583,7 +583,7 @@ impl KeyBuilder {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub fn with_name(&mut self, desc: impl AsRef<str>) -> &mut Self {
+    pub fn with_name(&mut self, desc: impl AsRef<str>) -> &mut KeyBuilder {
         self.name = Some(desc.as_ref().to_string());
         self
     }
@@ -609,7 +609,7 @@ impl KeyBuilder {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub fn with_uid(&mut self, desc: impl AsRef<str>) -> &mut Self {
+    pub fn with_uid(&mut self, desc: impl AsRef<str>) -> &mut KeyBuilder {
         self.uid = Some(desc.as_ref().to_string());
         self
     }

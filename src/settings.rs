@@ -83,7 +83,7 @@ pub struct Settings {
 impl Settings {
     /// Create undefined settings.
     pub fn new() -> Settings {
-        Self {
+        Settings {
             synonyms: None,
             stop_words: None,
             ranking_rules: None,
@@ -103,7 +103,7 @@ impl Settings {
         V: AsRef<str>,
         U: IntoIterator<Item = V>,
     {
-        Self {
+        Settings {
             synonyms: Some(
                 synonyms
                     .into_iter()
@@ -120,7 +120,7 @@ impl Settings {
     }
 
     pub fn with_stop_words(self, stop_words: impl IntoIterator<Item = impl AsRef<str>>) -> Settings {
-        Self {
+        Settings {
             stop_words: Some(
                 stop_words
                     .into_iter()
@@ -132,7 +132,7 @@ impl Settings {
     }
 
     pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Settings {
-        Self {
+        Settings {
             pagination: Some(pagination_settings),
             ..self
         }
@@ -142,7 +142,7 @@ impl Settings {
         self,
         ranking_rules: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Settings {
-        Self {
+        Settings {
             ranking_rules: Some(
                 ranking_rules
                     .into_iter()
@@ -157,7 +157,7 @@ impl Settings {
         self,
         filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Settings {
-        Self {
+        Settings {
             filterable_attributes: Some(
                 filterable_attributes
                     .into_iter()
@@ -172,7 +172,7 @@ impl Settings {
         self,
         sortable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Settings {
-        Self {
+        Settings {
             sortable_attributes: Some(
                 sortable_attributes
                     .into_iter()
@@ -184,7 +184,7 @@ impl Settings {
     }
 
     pub fn with_distinct_attribute(self, distinct_attribute: impl AsRef<str>) -> Settings {
-        Self {
+        Settings {
             distinct_attribute: Some(distinct_attribute.as_ref().to_string()),
             ..self
         }
@@ -194,7 +194,7 @@ impl Settings {
         self,
         searchable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Settings {
-        Self {
+        Settings {
             searchable_attributes: Some(
                 searchable_attributes
                     .into_iter()
@@ -209,7 +209,7 @@ impl Settings {
         self,
         displayed_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Settings {
-        Self {
+        Settings {
             displayed_attributes: Some(
                 displayed_attributes
                     .into_iter()
@@ -221,7 +221,7 @@ impl Settings {
     }
 
     pub fn with_faceting(self, faceting: &FacetingSettings) -> Settings {
-        Self {
+        Settings {
             faceting: Some(*faceting),
             ..self
         }
