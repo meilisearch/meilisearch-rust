@@ -119,7 +119,10 @@ impl Settings {
         }
     }
 
-    pub fn with_stop_words(self, stop_words: impl IntoIterator<Item = impl AsRef<str>>) -> Settings {
+    pub fn with_stop_words(
+        self,
+        stop_words: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Settings {
         Settings {
             stop_words: Some(
                 stop_words
