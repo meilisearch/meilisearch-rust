@@ -235,7 +235,7 @@ pub mod errors;
 pub mod indexes;
 /// Module containing the [key::Key] struct.
 pub mod key;
-/// Module that preludes HttpClient traits.
+/// Module that prelude HttpClient traits.
 pub mod prelude;
 pub mod request;
 /// Module related to search queries and results.
