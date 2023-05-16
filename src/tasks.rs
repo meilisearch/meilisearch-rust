@@ -3,8 +3,8 @@ use std::time::Duration;
 use time::OffsetDateTime;
 
 use crate::{
-    client::Client, errors::Error, errors::MeilisearchError, indexes::Index, request::HttpClient,
-    settings::Settings, task_info::TaskInfo, SwapIndexes,
+    client::Client, client::SwapIndexes, errors::Error, errors::MeilisearchError, indexes::Index,
+    request::HttpClient, settings::Settings, task_info::TaskInfo,
 };
 
 #[derive(Debug, Clone, Deserialize)]
