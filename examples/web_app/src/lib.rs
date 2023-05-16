@@ -1,10 +1,8 @@
 #![recursion_limit = "512"]
 use lazy_static::lazy_static;
 use meilisearch_sdk::{
-    indexes::Index,
-    request::IsahcClient,
+    prelude::*,
     search::{SearchResults, Selectors::All},
-    Client,
 };
 use serde_json::{Map, Value};
 use std::rc::Rc;
@@ -21,7 +19,7 @@ lazy_static! {
 }
 
 struct Model {
-    index: Rc<Index<IsahcClient>>,
+    index: Rc<Index>,
     results: Vec<Map<String, Value>>,
     processing_time_ms: usize,
 
