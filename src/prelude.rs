@@ -1,15 +1,11 @@
-pub use client::*;
-
-use crate::{client, indexes, request};
-
 #[cfg(feature = "isahc")]
 #[cfg(not(target_arch = "wasm32"))]
-pub type Client = client::Client<request::IsahcClient>;
+pub type Client = crate::client::Client<crate::request::IsahcClient>;
 #[cfg(feature = "isahc")]
 #[cfg(not(target_arch = "wasm32"))]
-pub type Index = indexes::Index<request::IsahcClient>;
+pub type Index = crate::indexes::Index<crate::request::IsahcClient>;
 
 #[cfg(target_arch = "wasm32")]
-pub type Client = client::Client<request::WebSysClient>;
+pub type Client = crate::client::Client<crate::request::WebSysClient>;
 #[cfg(target_arch = "wasm32")]
-pub type Index = indexes::Index<request::WebSysClient>;
+pub type Index = crate::indexes::Index<crate::request::WebSysClient>;
