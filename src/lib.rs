@@ -235,6 +235,8 @@ pub mod errors;
 pub mod indexes;
 /// Module containing the [`key::Key`] struct.
 pub mod key;
+/// Module that preludes HttpClient traits.
+pub mod prelude;
 pub mod request;
 /// Module related to search queries and results.
 pub mod search;
@@ -248,14 +250,6 @@ pub mod tasks;
 mod tenant_tokens;
 /// Module containing utilies functions.
 mod utils;
-
-pub use client::*;
-#[cfg(feature = "isahc")]
-use request::IsahcClient;
-#[cfg(feature = "isahc")]
-pub type Client = client::Client<IsahcClient>;
-#[cfg(feature = "isahc")]
-pub type Index = indexes::Index<IsahcClient>;
 
 #[cfg(test)]
 /// Support for the `IndexConfig` derive proc macro in the crate's tests.
