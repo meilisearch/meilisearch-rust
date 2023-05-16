@@ -28,6 +28,7 @@ pub struct SwapIndexes {
 }
 
 #[cfg(feature = "isahc")]
+#[cfg(not(target_arch = "wasm32"))]
 impl Client<IsahcClient> {
     /// Create a client using the specified server.
     /// Don't put a '/' at the end of the host.
@@ -48,6 +49,34 @@ impl Client<IsahcClient> {
             host: host.into(),
             api_key: api_key.map(|key| key.into()),
             http_client: IsahcClient::new(),
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl Client<WebSysClient> {
+    /// Create a client using the specified server.
+    /// Don't put a '/' at the end of the host.
+    /// In production mode, see [the documentation about authentication](https://docs.meilisearch.com/reference/features/authentication.html#authentication).
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// // create the client
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// ```
+    pub fn new(
+        host: impl Into<String>,
+        api_key: Option<impl Into<String>>,
+    ) -> Client<WebSysClient> {
+        Client {
+            host: host.into(),
+            api_key: api_key.map(|key| key.into()),
+            http_client: WebSysClient::new(),
         }
     }
 }

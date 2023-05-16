@@ -54,11 +54,11 @@ impl IsahcClient {
     }
 }
 
-#[cfg(feature = "isahc")]
+#[cfg(target_arch = "wasm32")]
 #[derive(Debug, Clone, Copy, Default, Serialize)]
 pub struct WebSysClient;
 
-#[cfg(feature = "isahc")]
+#[cfg(target_arch = "wasm32")]
 impl WebSysClient {
     pub fn new() -> Self {
         WebSysClient
@@ -266,10 +266,9 @@ impl HttpClient for IsahcClient {
     }
 }
 
-#[cfg(feature = "isahc")]
 #[cfg(target_arch = "wasm32")]
 #[async_trait(?Send)]
-impl HttpClient for IsahcClient {
+impl HttpClient for WebSysClient {
     async fn request<Query, Body, Output>(
         self,
         url: &str,
