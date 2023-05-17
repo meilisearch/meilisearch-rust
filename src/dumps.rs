@@ -87,7 +87,7 @@ impl Client {
     }
 }
 
-/// Alias for [create_dump](Client::create_dump).
+/// Alias for [`create_dump`](Client::create_dump).
 pub async fn create_dump(client: &Client) -> Result<TaskInfo, Error> {
     client.create_dump().await
 }

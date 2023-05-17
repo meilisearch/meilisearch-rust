@@ -39,12 +39,11 @@ async fn main() {
         .expect("Could not join the remote server.");
 
     // We check if the task failed.
-    if task.is_failure() {
-        panic!(
-            "Could not update the settings. {}",
-            task.unwrap_failure().error_message
-        );
-    }
+    assert!(
+        !task.is_failure(),
+        "Could not update the settings. {}",
+        task.unwrap_failure().error_message
+    );
 
     // And finally we delete the `Index`.
     my_index
@@ -56,10 +55,9 @@ async fn main() {
         .expect("Could not join the remote server.");
 
     // We check if the task failed.
-    if task.is_failure() {
-        panic!(
-            "Could not delete the index. {}",
-            task.unwrap_failure().error_message
-        );
-    }
+    assert!(
+        !task.is_failure(),
+        "Could not delete the index. {}",
+        task.unwrap_failure().error_message
+    );
 }

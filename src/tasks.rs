@@ -219,9 +219,9 @@ impl Task {
     ///
     /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
-    /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
+    /// If the waited time exceeds `timeout` then an [`Error::Timeout`] will be returned.
     ///
-    /// See also [Client::wait_for_task, Index::wait_for_task].
+    /// See also [`Client::wait_for_task`, `Index::wait_for_task`].
     ///
     /// # Example
     ///
@@ -305,9 +305,9 @@ impl Task {
         }
     }
 
-    /// Unwrap the [MeilisearchError] from a [Self::Failed] [Task].
+    /// Unwrap the [`MeilisearchError`] from a [`Self::Failed`] [Task].
     ///
-    /// Will panic if the task was not [Self::Failed].
+    /// Will panic if the task was not [`Self::Failed`].
     ///
     /// # Example
     ///
@@ -345,7 +345,7 @@ impl Task {
         }
     }
 
-    /// Returns `true` if the [Task] is [Self::Failed].
+    /// Returns `true` if the [Task] is [`Self::Failed`].
     ///
     /// # Example
     ///
@@ -375,7 +375,7 @@ impl Task {
         matches!(self, Self::Failed { .. })
     }
 
-    /// Returns `true` if the [Task] is [Self::Succeeded].
+    /// Returns `true` if the [Task] is [`Self::Succeeded`].
     ///
     /// # Example
     ///
@@ -403,7 +403,7 @@ impl Task {
         matches!(self, Self::Succeeded { .. })
     }
 
-    /// Returns `true` if the [Task] is pending ([Self::Enqueued] or [Self::Processing]).
+    /// Returns `true` if the [Task] is pending ([`Self::Enqueued`] or [`Self::Processing`]).
     ///
     /// # Example
     /// ```no_run

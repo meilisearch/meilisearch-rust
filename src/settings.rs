@@ -13,7 +13,7 @@ pub struct PaginationSetting {
     pub max_total_hits: usize,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetingSettings {
     pub max_values_per_facet: usize,
@@ -96,6 +96,7 @@ impl Settings {
             faceting: None,
         }
     }
+
     pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
     where
         S: AsRef<str>,
@@ -224,7 +225,7 @@ impl Settings {
 
     pub fn with_faceting(self, faceting: &FacetingSettings) -> Settings {
         Settings {
-            faceting: Some(faceting.clone()),
+            faceting: Some(*faceting),
             ..self
         }
     }

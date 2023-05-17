@@ -47,13 +47,13 @@ pub struct SearchResult<T> {
     pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetStats {
     pub min: u32,
     pub max: u32,
 }
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
 pub struct SearchResults<T> {
@@ -106,8 +106,7 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
             let results = data
                 .iter()
                 .map(|(name, value)| {
-                    let mut result = String::new();
-                    result.push_str(name);
+                    let mut result = name.to_string();
                     if let Some(value) = value {
                         result.push(':');
                         result.push_str(value.to_string().as_str());
@@ -115,7 +114,6 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
                     result
                 })
                 .collect::<Vec<_>>();
-
             results.serialize(s)
         }
         None => s.serialize_none(),
@@ -536,7 +534,7 @@ impl<'a, 'b> MultiSearchQuery<'a, 'b> {
         self.client.execute_multi_search_query::<T>(self).await
     }
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct MultiSearchResponse<T> {
     pub results: Vec<SearchResults<T>>,
 }

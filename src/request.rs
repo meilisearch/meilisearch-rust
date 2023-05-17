@@ -116,7 +116,7 @@ pub(crate) async fn request<
         body = "null".to_string();
     }
 
-    parse_response(status, expected_status_code, body)
+    parse_response(status, expected_status_code, &body)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -214,7 +214,7 @@ pub(crate) async fn stream_request<
         body = "null".to_string();
     }
 
-    parse_response(status, expected_status_code, body)
+    parse_response(status, expected_status_code, &body)
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -318,9 +318,9 @@ pub(crate) async fn request<
 
     if let Some(t) = text.as_string() {
         if t.is_empty() {
-            parse_response(status, expected_status_code, String::from("null"))
+            parse_response(status, expected_status_code, "null")
         } else {
-            parse_response(status, expected_status_code, t)
+            parse_response(status, expected_status_code, &t)
         }
     } else {
         error!("Invalid response");
@@ -331,10 +331,10 @@ pub(crate) async fn request<
 fn parse_response<Output: DeserializeOwned>(
     status_code: u16,
     expected_status_code: u16,
-    body: String,
+    body: &str,
 ) -> Result<Output, Error> {
     if status_code == expected_status_code {
-        match from_str::<Output>(&body) {
+        match from_str::<Output>(body) {
             Ok(output) => {
                 trace!("Request succeed");
                 return Ok(output);
@@ -352,7 +352,7 @@ fn parse_response<Output: DeserializeOwned>(
         "Expected response code {}, got {}",
         expected_status_code, status_code
     );
-    match from_str::<MeilisearchError>(&body) {
+    match from_str::<MeilisearchError>(body) {
         Ok(e) => Err(Error::from(e)),
         Err(e) => Err(Error::ParseError(e)),
     }
