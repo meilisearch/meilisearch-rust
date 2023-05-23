@@ -1,4 +1,4 @@
-use crate::errors::{Error, MeilisearchError};
+use crate::errors::{Error, MeilisearchCommunicationError, MeilisearchError};
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
@@ -116,7 +116,7 @@ pub(crate) async fn request<
         body = "null".to_string();
     }
 
-    parse_response(status, expected_status_code, body)
+    parse_response(status, expected_status_code, body, url.to_string())
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -214,7 +214,7 @@ pub(crate) async fn stream_request<
         body = "null".to_string();
     }
 
-    parse_response(status, expected_status_code, body)
+    parse_response(status, expected_status_code, body, url.to_string())
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -318,9 +318,14 @@ pub(crate) async fn request<
 
     if let Some(t) = text.as_string() {
         if t.is_empty() {
-            parse_response(status, expected_status_code, String::from("null"))
+            parse_response(
+                status,
+                expected_status_code,
+                String::from("null"),
+                url.to_string(),
+            )
         } else {
-            parse_response(status, expected_status_code, t)
+            parse_response(status, expected_status_code, t, url.to_string())
         }
     } else {
         error!("Invalid response");
@@ -332,6 +337,7 @@ fn parse_response<Output: DeserializeOwned>(
     status_code: u16,
     expected_status_code: u16,
     body: String,
+    url: String,
 ) -> Result<Output, Error> {
     if status_code == expected_status_code {
         match from_str::<Output>(&body) {
@@ -345,16 +351,26 @@ fn parse_response<Output: DeserializeOwned>(
             }
         };
     }
-    // TODO: create issue where it is clear what the HTTP error is
-    // ParseError(Error("invalid type: null, expected struct MeilisearchError", line: 1, column: 4))
 
     warn!(
         "Expected response code {}, got {}",
         expected_status_code, status_code
     );
+
     match from_str::<MeilisearchError>(&body) {
         Ok(e) => Err(Error::from(e)),
-        Err(e) => Err(Error::ParseError(e)),
+        Err(e) => {
+            if status_code >= 400 {
+                return Err(Error::MeilisearchCommunication(
+                    MeilisearchCommunicationError {
+                        status_code,
+                        message: None,
+                        url,
+                    },
+                ));
+            }
+            Err(Error::ParseError(e))
+        }
     }
 }
 
