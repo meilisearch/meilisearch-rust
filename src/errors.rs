@@ -162,6 +162,8 @@ pub enum ErrorCode {
     InvalidIndexOffset,
     InvalidIndexLimit,
     InvalidIndexPrimaryKey,
+    InvalidDocumentFilter,
+    MissingDocumentFilter,
     InvalidDocumentFields,
     InvalidDocumentLimit,
     InvalidDocumentOffset,

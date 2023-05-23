@@ -420,21 +420,17 @@ mod tests {
         setup_test_index(&client, &index).await?;
         index
             .set_filterable_attributes(["id"])
-            .await
-            .unwrap()
+            .await?
             .wait_for_completion(&client, None, None)
-            .await
-            .unwrap();
+            .await?;
+
         let mut query = DocumentDeletionQuery::new(&index);
         query.with_filter("id = 1");
-
         index
             .delete_documents_with(&query)
-            .await
-            .unwrap()
+            .await?
             .wait_for_completion(&client, None, None)
-            .await
-            .unwrap();
+            .await?;
         let document_result = index.get_document::<MyObject>("1").await;
 
         match document_result {
@@ -446,6 +442,35 @@ mod tests {
                 _ => panic!("The error was expected to be a Meilisearch error, but it was not."),
             },
         }
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_documents_with_filter_not_filterable(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = DocumentDeletionQuery::new(&index);
+        query.with_filter("id = 1");
+        let error = index
+            .delete_documents_with(&query)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let error = error.unwrap_failure();
+
+        assert!(matches!(
+            error,
+            MeilisearchError {
+                error_code: ErrorCode::InvalidDocumentFilter,
+                error_type: ErrorType::InvalidRequest,
+                ..
+            }
+        ));
 
         Ok(())
     }
