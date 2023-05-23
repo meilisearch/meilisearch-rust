@@ -310,16 +310,19 @@ pub struct DocumentDeletionQuery<'a> {
     /// Filters to apply.
     ///
     /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
-    pub filter: &'a str,
+    pub filter: Option<&'a str>,
 }
 
 impl<'a> DocumentDeletionQuery<'a> {
     pub fn new(index: &Index) -> DocumentDeletionQuery {
-        DocumentDeletionQuery { index, filter: "" }
+        DocumentDeletionQuery {
+            index,
+            filter: None,
+        }
     }
 
     pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentDeletionQuery<'a> {
-        self.filter = filter;
+        self.filter = Some(filter);
         self
     }
 
