@@ -66,7 +66,7 @@ pub struct DocumentAdditionOrUpdate {
 pub struct DocumentDeletion {
     pub provided_ids: Option<usize>,
     pub deleted_documents: Option<usize>,
-    pub original_filter: String,
+    pub original_filter: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

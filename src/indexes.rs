@@ -1,7 +1,7 @@
 use crate::{
     client::Client,
     documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
-    errors::Error,
+    errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
     request::*,
     search::*,
     task_info::TaskInfo,
@@ -466,6 +466,39 @@ impl Index {
         &self,
         documents_query: &DocumentsQuery<'_>,
     ) -> Result<DocumentsResults<T>, Error> {
+        if documents_query.filter.is_some() {
+            let url = format!("{}/indexes/{}/documents/fetch", self.client.host, self.uid);
+            return request::<(), &DocumentsQuery, DocumentsResults<T>>(
+                &url,
+                self.client.get_api_key(),
+                Method::Post {
+                    body: documents_query,
+                    query: (),
+                },
+                200,
+            )
+            .await
+            .map_err(|err| match err {
+                Error::MeilisearchCommunication(error) => {
+                    Error::MeilisearchCommunication(MeilisearchCommunicationError {
+                        status_code: error.status_code,
+                        url: error.url,
+                        message: Some(format!("{}.", MEILISEARCH_VERSION_HINT)),
+                    })
+                }
+                Error::Meilisearch(error) => Error::Meilisearch(MeilisearchError {
+                    error_code: error.error_code,
+                    error_link: error.error_link,
+                    error_type: error.error_type,
+                    error_message: format!(
+                        "{}\n{}.",
+                        error.error_message, MEILISEARCH_VERSION_HINT
+                    ),
+                }),
+                _ => err,
+            });
+        }
+
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
         request::<&DocumentsQuery, (), DocumentsResults<T>>(
             &url,
