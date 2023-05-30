@@ -50,8 +50,8 @@ pub struct SearchResult<T> {
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetStats {
-    pub min: u32,
-    pub max: u32,
+    pub min: f64,
+    pub max: f64,
 }
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
