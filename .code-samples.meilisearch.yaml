@@ -120,9 +120,18 @@ get_one_document_1: |-
     .await
     .unwrap();
 get_documents_1: |-
-  let index = client
-    .index("movies");
+  let index = client.index("movies");
   let documents: DocumentsResults = DocumentsQuery::new(&index)
+    .with_filter("genres = action")
+    .with_limit(2)
+    .execute::<Movies>()
+    .await
+    .unwrap();
+get_documents_post_1: |-
+  let index = client.index("books");
+  let documents: DocumentsResults = DocumentsQuery::new(&index)
+    .with_filter("(rating > 3 AND (genres = Adventure OR genres = Fiction)) AND language = English")
+    .with_fields(["title", "genres", "rating", "language"])
     .with_limit(2)
     .execute::<Movies>()
     .await
@@ -171,10 +180,17 @@ delete_one_document_1: |-
     .delete_document(25684)
     .await
     .unwrap();
-delete_documents_1: |-
+delete_documents_by_batch_1: |-
   let task: TaskInfo = client
     .index("movies")
     .delete_documents(&[23488, 153738, 437035, 363869])
+    .await
+    .unwrap();
+delete_documents_by_filter_1: |-
+  let index = client.index("movies");
+  let task = DocumentDeletionQuery::new(&index)
+    .with_filter("genres = action OR genres = adventure")
+    .execute()
     .await
     .unwrap();
 search_post_1: |-
