@@ -557,6 +557,7 @@ mod tests {
         id: usize,
         value: String,
         kind: String,
+        number: i32,
         nested: Nested,
     }
 
@@ -570,18 +571,18 @@ mod tests {
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
         let t0 = index.add_documents(&[
-            Document { id: 0, kind: "text".into(), value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") } },
-            Document { id: 1, kind: "text".into(), value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") } },
-            Document { id: 2, kind: "title".into(), value: S("The Social Network"), nested: Nested { child: S("third") } },
-            Document { id: 3, kind: "title".into(), value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") } },
-            Document { id: 4, kind: "title".into(), value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") } },
-            Document { id: 5, kind: "title".into(), value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") } },
-            Document { id: 6, kind: "title".into(), value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") } },
-            Document { id: 7, kind: "title".into(), value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") } },
-            Document { id: 8, kind: "title".into(), value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") } },
-            Document { id: 9, kind: "title".into(), value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") } },
+            Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") } },
+            Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") } },
+            Document { id: 2, kind: "title".into(), number: 20, value: S("The Social Network"), nested: Nested { child: S("third") } },
+            Document { id: 3, kind: "title".into(), number: 30, value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") } },
+            Document { id: 4, kind: "title".into(), number: 40, value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") } },
+            Document { id: 5, kind: "title".into(), number: 50, value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") } },
+            Document { id: 6, kind: "title".into(), number: 60, value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") } },
+            Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") } },
+            Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") } },
+            Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") } },
         ], None).await?;
-        let t1 = index.set_filterable_attributes(["kind", "value"]).await?;
+        let t1 = index.set_filterable_attributes(["kind", "value", "number"]).await?;
         let t2 = index.set_sortable_attributes(["title"]).await?;
 
         t2.wait_for_completion(client, None, None).await?;
@@ -664,6 +665,7 @@ mod tests {
                 id: 1,
                 value: S("dolor sit amet, consectetur adipiscing elit"),
                 kind: S("text"),
+                number: 10,
                 nested: Nested { child: S("second") }
             },
             &results.hits[0].result
@@ -794,6 +796,34 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_query_facet_stats(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_facets(Selectors::All);
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
+        let facet_stats = results.facet_stats.unwrap();
+
+        assert_eq!(
+            facet_stats
+                .get("number")
+                .unwrap()
+                .min,
+            0.0
+        );
+
+        assert_eq!(
+            facet_stats
+                .get("number")
+                .unwrap()
+                .max,
+            90.0
+        );
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_query_attributes_to_retrieve(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -835,6 +865,7 @@ mod tests {
                 id: 0,
                 value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do…"),
                 kind: S("text"),
+                number: 0,
                 nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
@@ -849,6 +880,7 @@ mod tests {
                 id: 0,
                 value: S("Lorem ipsum dolor sit amet…"),
                 kind: S("text"),
+                number: 0,
                 nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
@@ -869,6 +901,7 @@ mod tests {
             id: 0,
             value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
             kind: S("text"),
+            number: 0,
             nested: Nested { child: S("first") }
         },
         results.hits[0].formatted_result.as_ref().unwrap());
@@ -883,6 +916,7 @@ mod tests {
                 id: 0,
                 value: S("Lorem ipsum dolor sit amet…"),
                 kind: S("text"),
+                number: 0,
                 nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
@@ -907,6 +941,7 @@ mod tests {
                 id: 0,
                 value: S("(ꈍᴗꈍ) sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)"),
                 kind: S("text"),
+                number: 0,
                 nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
@@ -933,6 +968,7 @@ mod tests {
                 id: 2,
                 value: S("The (⊃｡•́‿•̀｡)⊃ Social ⊂(´• ω •`⊂) Network"),
                 kind: S("title"),
+                number: 20,
                 nested: Nested { child: S("third") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
@@ -954,6 +990,7 @@ mod tests {
                 id: 1,
                 value: S("<em>dolor</em> sit amet, consectetur adipiscing elit"),
                 kind: S("<em>text</em>"),
+                number: 10,
                 nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap(),
@@ -968,6 +1005,7 @@ mod tests {
                 id: 1,
                 value: S("<em>dolor</em> sit amet, consectetur adipiscing elit"),
                 kind: S("text"),
+                number: 10,
                 nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
