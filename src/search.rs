@@ -582,7 +582,9 @@ mod tests {
             Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") } },
             Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") } },
         ], None).await?;
-        let t1 = index.set_filterable_attributes(["kind", "value", "number"]).await?;
+        let t1 = index
+            .set_filterable_attributes(["kind", "value", "number"])
+            .await?;
         let t2 = index.set_sortable_attributes(["title"]).await?;
 
         t2.wait_for_completion(client, None, None).await?;
@@ -804,21 +806,9 @@ mod tests {
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         let facet_stats = results.facet_stats.unwrap();
 
-        assert_eq!(
-            facet_stats
-                .get("number")
-                .unwrap()
-                .min,
-            0.0
-        );
+        assert_eq!(facet_stats.get("number").unwrap().min, 0.0);
 
-        assert_eq!(
-            facet_stats
-                .get("number")
-                .unwrap()
-                .max,
-            90.0
-        );
+        assert_eq!(facet_stats.get("number").unwrap().max, 90.0);
 
         Ok(())
     }
