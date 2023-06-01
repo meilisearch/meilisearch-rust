@@ -11,7 +11,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
 use time::OffsetDateTime;
 
-/// A Meilisearch [index](https://docs.meilisearch.com/learn/core_concepts/indexes.html).
+/// A Meilisearch [index](https://www.meilisearch.com/docs/learn/core_concepts/indexes).
 ///
 /// # Example
 ///
@@ -996,7 +996,7 @@ impl Index {
         Ok(self.primary_key.as_deref())
     }
 
-    /// Get a [Task] from a specific [Index] to keep track of [asynchronous operations](https://docs.meilisearch.com/learn/advanced/asynchronous_operations.html).
+    /// Get a [Task] from a specific [Index] to keep track of [asynchronous operations](https://www.meilisearch.com/docs/learn/advanced/asynchronous_operations).
     ///
     /// # Example
     ///

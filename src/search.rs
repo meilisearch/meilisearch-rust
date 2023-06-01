@@ -137,7 +137,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// You can add search parameters using the builder syntax.
 ///
-/// See [this page](https://docs.meilisearch.com/reference/features/search_parameters.html#query-q) for the official list and description of all parameters.
+/// See [this page](https://www.meilisearch.com/docs/reference/api/search#query-q) for the official list and description of all parameters.
 ///
 /// # Examples
 ///
@@ -232,7 +232,7 @@ pub struct SearchQuery<'a> {
     pub hits_per_page: Option<usize>,
     /// Filter applied to documents.
     ///
-    /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/advanced/filtering) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
     /// Facets for which to retrieve the matching count.

@@ -73,7 +73,7 @@ pub struct MeilisearchError {
     #[serde(rename = "message")]
     pub error_message: String,
     /// The error code of the error.  Officially documented at
-    /// <https://docs.meilisearch.com/errors>.
+    /// <https://www.meilisearch.com/docs/reference/errors/error_codes>.
     #[serde(rename = "code")]
     pub error_code: ErrorCode,
     /// The type of error (invalid request, internal error, or authentication error)
@@ -115,7 +115,7 @@ impl std::fmt::Display for ErrorType {
 
 /// The error code.
 ///
-/// Officially documented at <https://docs.meilisearch.com/errors>.
+/// Officially documented at <https://www.meilisearch.com/docs/reference/errors/error_codes>.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
