@@ -31,7 +31,7 @@ impl Client {
     ///
     /// Don't put a '/' at the end of the host.
     ///
-    /// In production mode, see [the documentation about authentication](https://docs.meilisearch.com/reference/features/authentication.html#authentication).
+    /// In production mode, see [the documentation about authentication](https://www.meilisearch.com/docs/learn/security/master_api_keys#authentication).
     ///
     /// # Example
     ///
@@ -549,7 +549,7 @@ impl Client {
 
     /// Get the API [Keys](Key) from Meilisearch with parameters.
     ///
-    /// See [`Client::create_key`], [`Client::get_key`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
+    /// See [`Client::create_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#get-all-keys).
     ///
     /// # Example
     ///
@@ -583,7 +583,7 @@ impl Client {
 
     /// Get the API [Keys](Key) from Meilisearch.
     ///
-    /// See [`Client::create_key`], [`Client::get_key`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-all-keys).
+    /// See [`Client::create_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#get-all-keys).
     ///
     /// # Example
     ///
@@ -614,7 +614,7 @@ impl Client {
 
     /// Get one API [Key] from Meilisearch.
     ///
-    /// See also [`Client::create_key`], [`Client::get_keys`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#get-one-key).
+    /// See also [`Client::create_key`], [`Client::get_keys`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#get-one-key).
     ///
     /// # Example
     ///
@@ -646,7 +646,7 @@ impl Client {
 
     /// Delete an API [Key] from Meilisearch.
     ///
-    /// See also [`Client::create_key`], [`Client::update_key`], [`Client::get_key`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#delete-a-key).
+    /// See also [`Client::create_key`], [`Client::update_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#delete-a-key).
     ///
     /// # Example
     ///
@@ -681,7 +681,7 @@ impl Client {
 
     /// Create an API [Key] in Meilisearch.
     ///
-    /// See also [`Client::update_key`], [`Client::delete_key`], [`Client::get_key`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#create-a-key).
+    /// See also [`Client::update_key`], [`Client::delete_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#create-a-key).
     ///
     /// # Example
     ///
@@ -718,7 +718,7 @@ impl Client {
 
     /// Update an API [Key] in Meilisearch.
     ///
-    /// See also [`Client::create_key`], [`Client::delete_key`], [`Client::get_key`], and the [meilisearch documentation](https://docs.meilisearch.com/reference/api/keys.html#update-a-key).
+    /// See also [`Client::create_key`], [`Client::delete_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#update-a-key).
     ///
     /// # Example
     ///

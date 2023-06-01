@@ -53,10 +53,10 @@ pub struct Settings {
     /// List of words ignored by Meilisearch when present in search queries.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_words: Option<Vec<String>>,
-    /// List of [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#order-of-the-rules) sorted by order of importance.
+    /// List of [ranking rules](https://www.meilisearch.com/docs/learn/core_concepts/relevancy#order-of-the-rules) sorted by order of importance.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_rules: Option<Vec<String>>,
-    /// Attributes to use for [filtering and faceted search](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html).
+    /// Attributes to use for [filtering](https://www.meilisearch.com/docs/learn/advanced/filtering).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filterable_attributes: Option<Vec<String>>,
     /// Attributes to sort.
@@ -261,7 +261,7 @@ impl Index {
         .await
     }
 
-    /// Get [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the [Index].
+    /// Get [synonyms](https://www.meilisearch.com/docs/reference/api/settings#get-synonyms) of the [Index].
     ///
     /// # Example
     ///
@@ -294,7 +294,7 @@ impl Index {
         .await
     }
 
-    /// Get [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    /// Get [pagination](https://www.meilisearch.com/docs/reference/api/settings#pagination) of the [Index].
     ///
     /// # Example
     ///
@@ -327,7 +327,7 @@ impl Index {
         .await
     }
 
-    /// Get [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
+    /// Get [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
     ///
     /// # Example
     ///
@@ -359,7 +359,7 @@ impl Index {
         .await
     }
 
-    /// Get [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index].
+    /// Get [ranking rules](https://www.meilisearch.com/docs/reference/api/settings#ranking-rules) of the [Index].
     ///
     /// # Example
     ///
@@ -392,7 +392,7 @@ impl Index {
         .await
     }
 
-    /// Get [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the [Index].
+    /// Get [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -425,7 +425,7 @@ impl Index {
         .await
     }
 
-    /// Get [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the [Index].
+    /// Get [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -458,7 +458,7 @@ impl Index {
         .await
     }
 
-    /// Get the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the [Index].
+    /// Get the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -491,7 +491,7 @@ impl Index {
         .await
     }
 
-    /// Get [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the [Index].
+    /// Get [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings#searchable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -524,7 +524,7 @@ impl Index {
         .await
     }
 
-    /// Get [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the [Index].
+    /// Get [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings#displayed-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -557,7 +557,7 @@ impl Index {
         .await
     }
 
-    /// Get [faceting](https://docs.meilisearch.com/reference/api/settings.html#faceting) settings of the [Index].
+    /// Get [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
     ///
     /// # Example
     ///
@@ -590,7 +590,7 @@ impl Index {
         .await
     }
 
-    /// Update [settings](../settings/struct.Settings.html) of the [Index].
+    /// Update [settings](../settings/struct.Settings) of the [Index].
     ///
     /// Updates in the settings are partial. This means that any parameters corresponding to a `None` value will be left unchanged.
     ///
@@ -630,7 +630,7 @@ impl Index {
         .await
     }
 
-    /// Update [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the [Index].
+    /// Update [synonyms](https://www.meilisearch.com/docs/reference/api/settings#synonyms) of the [Index].
     ///
     /// # Example
     ///
@@ -673,7 +673,7 @@ impl Index {
         .await
     }
 
-    /// Update [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    /// Update [pagination](https://www.meilisearch.com/docs/reference/api/settings#pagination) of the [Index].
     ///
     /// # Example
     ///
@@ -709,7 +709,7 @@ impl Index {
         .await
     }
 
-    /// Update [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
+    /// Update [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
     ///
     /// # Example
     ///
@@ -751,7 +751,7 @@ impl Index {
         .await
     }
 
-    /// Update [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index].
+    /// Update [ranking rules](https://www.meilisearch.com/docs/reference/api/settings#ranking-rules) of the [Index].
     ///
     /// # Example
     ///
@@ -802,7 +802,7 @@ impl Index {
         .await
     }
 
-    /// Update [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the [Index].
+    /// Update [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -844,7 +844,7 @@ impl Index {
         .await
     }
 
-    /// Update [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the [Index].
+    /// Update [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -886,7 +886,7 @@ impl Index {
         .await
     }
 
-    /// Update the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the [Index].
+    /// Update the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -924,7 +924,7 @@ impl Index {
         .await
     }
 
-    /// Update [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the [Index].
+    /// Update [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings#searchable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -965,7 +965,7 @@ impl Index {
         .await
     }
 
-    /// Update [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the [Index].
+    /// Update [displayed attributes](https://www.meilisearch.com/docs/reference/features/settings#displayed-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1006,7 +1006,7 @@ impl Index {
         .await
     }
 
-    /// Update [faceting](https://docs.meilisearch.com/reference/api/settings.html#faceting) settings of the [Index].
+    /// Update [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
     ///
     /// # Example
     ///
@@ -1047,7 +1047,7 @@ impl Index {
 
     /// Reset [Settings] of the [Index].
     ///
-    /// All settings will be reset to their [default value](https://docs.meilisearch.com/reference/api/settings.html#reset-settings).
+    /// All settings will be reset to their [default value](https://www.meilisearch.com/docs/reference/api/settings#reset-settings).
     ///
     /// # Example
     ///
@@ -1076,7 +1076,7 @@ impl Index {
         .await
     }
 
-    /// Reset [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the [Index].
+    /// Reset [synonyms](https://www.meilisearch.com/docs/reference/features/synonyms.html) of the [Index].
     ///
     /// # Example
     ///
@@ -1108,7 +1108,7 @@ impl Index {
         .await
     }
 
-    /// Reset [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    /// Reset [pagination](https://www.meilisearch.com/docs/learn/configuration/settings#pagination) of the [Index].
     ///
     /// # Example
     ///
@@ -1139,7 +1139,7 @@ impl Index {
         )
         .await
     }
-    /// Reset [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
+    /// Reset [stop-words](https://www.meilisearch.com/docs/reference/features/stop_words.html) of the [Index].
     ///
     /// # Example
     ///
@@ -1171,7 +1171,7 @@ impl Index {
         .await
     }
 
-    /// Reset [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index] to default value.
+    /// Reset [ranking rules](https://www.meilisearch.com/docs/learn/core_concepts/relevancy#ranking-rules) of the [Index] to default value.
     ///
     /// **Default value: `["words", "typo", "proximity", "attribute", "sort", "exactness"]`.**
     ///
@@ -1205,7 +1205,7 @@ impl Index {
         .await
     }
 
-    /// Reset [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the [Index].
+    /// Reset [filterable attributes](https://www.meilisearch.com/docs/reference/features/filtering_and_faceted_search.html) of the [Index].
     ///
     /// # Example
     ///
@@ -1237,7 +1237,7 @@ impl Index {
         .await
     }
 
-    /// Reset [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the [Index].
+    /// Reset [sortable attributes](https://www.meilisearch.com/docs/reference/features/sorting.html) of the [Index].
     ///
     /// # Example
     ///
@@ -1269,7 +1269,7 @@ impl Index {
         .await
     }
 
-    /// Reset the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the [Index].
+    /// Reset the [distinct attribute](https://www.meilisearch.com/docs/reference/features/settings#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -1301,7 +1301,7 @@ impl Index {
         .await
     }
 
-    /// Reset [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of
+    /// Reset [searchable attributes](https://www.meilisearch.com/docs/reference/features/field_properties.html#searchable-fields) of
     /// the [Index] (enable all attributes).
     ///
     /// # Example
@@ -1334,7 +1334,7 @@ impl Index {
         .await
     }
 
-    /// Reset [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the [Index] (enable all attributes).
+    /// Reset [displayed attributes](https://www.meilisearch.com/docs/reference/features/settings#displayed-attributes) of the [Index] (enable all attributes).
     ///
     /// # Example
     ///
@@ -1366,7 +1366,7 @@ impl Index {
         .await
     }
 
-    /// Reset [faceting](https://docs.meilisearch.com/reference/api/settings.html#faceting) settings of the [Index].
+    /// Reset [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
     ///
     /// # Example
     ///
