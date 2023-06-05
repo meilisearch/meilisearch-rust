@@ -1,3 +1,4 @@
+use crate::task_info::TaskInfo;
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -185,6 +186,13 @@ pub struct DocumentsQuery<'a> {
     /// The fields that should appear in the documents. By default all of the fields are present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
+
+    /// Filters to apply.
+    ///
+    /// Available since v1.2 of Meilisearch
+    /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filter: Option<&'a str>,
 }
 
 impl<'a> DocumentsQuery<'a> {
@@ -194,6 +202,7 @@ impl<'a> DocumentsQuery<'a> {
             offset: None,
             limit: None,
             fields: None,
+            filter: None,
         }
     }
 
@@ -264,6 +273,11 @@ impl<'a> DocumentsQuery<'a> {
         self
     }
 
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentsQuery<'a> {
+        self.filter = Some(filter);
+        self
+    }
+
     /// Execute the get documents query.
     ///
     /// # Example
@@ -301,11 +315,39 @@ impl<'a> DocumentsQuery<'a> {
     }
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct DocumentDeletionQuery<'a> {
+    #[serde(skip_serializing)]
+    pub index: &'a Index,
+
+    /// Filters to apply.
+    ///
+    /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
+    pub filter: Option<&'a str>,
+}
+
+impl<'a> DocumentDeletionQuery<'a> {
+    pub fn new(index: &Index) -> DocumentDeletionQuery {
+        DocumentDeletionQuery {
+            index,
+            filter: None,
+        }
+    }
+
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentDeletionQuery<'a> {
+        self.filter = Some(filter);
+        self
+    }
+
+    pub async fn execute<T: DeserializeOwned + 'static>(&self) -> Result<TaskInfo, Error> {
+        self.index.delete_documents_with(self).await
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{client::*, indexes::*};
-    use ::meilisearch_sdk::documents::IndexConfig;
+    use crate::{client::*, errors::*, indexes::*};
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
 
@@ -371,7 +413,6 @@ mod tests {
     #[meilisearch_test]
     async fn test_get_documents_with_execute(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
-        // let documents = index.get_documents(None, None, None).await.unwrap();
         let documents = DocumentsQuery::new(&index)
             .with_limit(1)
             .with_offset(1)
@@ -383,6 +424,66 @@ mod tests {
         assert_eq!(documents.limit, 1);
         assert_eq!(documents.offset, 1);
         assert_eq!(documents.results.len(), 1);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_documents_with(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        index
+            .set_filterable_attributes(["id"])
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let mut query = DocumentDeletionQuery::new(&index);
+        query.with_filter("id = 1");
+        index
+            .delete_documents_with(&query)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+        let document_result = index.get_document::<MyObject>("1").await;
+
+        match document_result {
+            Ok(_) => panic!("The test was expecting no documents to be returned but got one."),
+            Err(e) => match e {
+                Error::Meilisearch(err) => {
+                    assert_eq!(err.error_code, ErrorCode::DocumentNotFound);
+                }
+                _ => panic!("The error was expected to be a Meilisearch error, but it was not."),
+            },
+        }
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_documents_with_filter_not_filterable(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = DocumentDeletionQuery::new(&index);
+        query.with_filter("id = 1");
+        let error = index
+            .delete_documents_with(&query)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let error = error.unwrap_failure();
+
+        assert!(matches!(
+            error,
+            MeilisearchError {
+                error_code: ErrorCode::InvalidDocumentFilter,
+                error_type: ErrorType::InvalidRequest,
+                ..
+            }
+        ));
 
         Ok(())
     }
@@ -403,6 +504,116 @@ mod tests {
         assert_eq!(documents.limit, 1);
         assert_eq!(documents.offset, 0);
         assert_eq!(documents.results.len(), 1);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_documents_with_filter(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        index
+            .set_filterable_attributes(["id"])
+            .await
+            .unwrap()
+            .wait_for_completion(&client, None, None)
+            .await
+            .unwrap();
+
+        let documents = DocumentsQuery::new(&index)
+            .with_filter("id = 1")
+            .execute::<MyObject>()
+            .await?;
+
+        assert_eq!(documents.results.len(), 1);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_documents_with_error_hint() -> Result<(), Error> {
+        let url = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+        let client = Client::new(format!("{}/hello", url), Some("masterKey"));
+        let index = client.index("test_get_documents_with_filter_wrong_ms_version");
+
+        let documents = DocumentsQuery::new(&index)
+            .with_filter("id = 1")
+            .execute::<MyObject>()
+            .await;
+
+        let error = documents.unwrap_err();
+
+        let message = Some("Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.".to_string());
+        let url = "http://localhost:7700/hello/indexes/test_get_documents_with_filter_wrong_ms_version/documents/fetch".to_string();
+        let status_code = 404;
+        let displayed_error = "MeilisearchCommunicationError: The server responded with a 404. Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.\nurl: http://localhost:7700/hello/indexes/test_get_documents_with_filter_wrong_ms_version/documents/fetch";
+
+        match &error {
+            Error::MeilisearchCommunication(error) => {
+                assert_eq!(error.status_code, status_code);
+                assert_eq!(error.message, message);
+                assert_eq!(error.url, url);
+            }
+            _ => panic!("The error was expected to be a MeilisearchCommunicationError error, but it was not."),
+        };
+        assert_eq!(format!("{}", error), displayed_error);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_documents_with_error_hint_meilisearch_api_error(
+        index: Index,
+        client: Client,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let error = DocumentsQuery::new(&index)
+            .with_filter("id = 1")
+            .execute::<MyObject>()
+            .await
+            .unwrap_err();
+
+        let message = "Attribute `id` is not filterable. This index does not have configured filterable attributes.
+1:3 id = 1
+Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.".to_string();
+        let displayed_error = "Meilisearch invalid_request: invalid_document_filter: Attribute `id` is not filterable. This index does not have configured filterable attributes.
+1:3 id = 1
+Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.. https://docs.meilisearch.com/errors#invalid_document_filter";
+
+        match &error {
+            Error::Meilisearch(error) => {
+                assert_eq!(error.error_message, message);
+            }
+            _ => panic!("The error was expected to be a MeilisearchCommunicationError error, but it was not."),
+        };
+        assert_eq!(format!("{}", error), displayed_error);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_documents_with_invalid_filter(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        // Does not work because `id` is not filterable
+        let error = DocumentsQuery::new(&index)
+            .with_filter("id = 1")
+            .execute::<MyObject>()
+            .await
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            Error::Meilisearch(MeilisearchError {
+                error_code: ErrorCode::InvalidDocumentFilter,
+                error_type: ErrorType::InvalidRequest,
+                ..
+            })
+        ));
 
         Ok(())
     }

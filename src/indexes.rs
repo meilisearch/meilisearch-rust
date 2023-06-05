@@ -1,7 +1,7 @@
 use crate::{
     client::Client,
-    documents::{DocumentQuery, DocumentsQuery, DocumentsResults},
-    errors::Error,
+    documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
+    errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
     request::*,
     search::*,
     task_info::TaskInfo,
@@ -466,6 +466,39 @@ impl Index {
         &self,
         documents_query: &DocumentsQuery<'_>,
     ) -> Result<DocumentsResults<T>, Error> {
+        if documents_query.filter.is_some() {
+            let url = format!("{}/indexes/{}/documents/fetch", self.client.host, self.uid);
+            return request::<(), &DocumentsQuery, DocumentsResults<T>>(
+                &url,
+                self.client.get_api_key(),
+                Method::Post {
+                    body: documents_query,
+                    query: (),
+                },
+                200,
+            )
+            .await
+            .map_err(|err| match err {
+                Error::MeilisearchCommunication(error) => {
+                    Error::MeilisearchCommunication(MeilisearchCommunicationError {
+                        status_code: error.status_code,
+                        url: error.url,
+                        message: Some(format!("{}.", MEILISEARCH_VERSION_HINT)),
+                    })
+                }
+                Error::Meilisearch(error) => Error::Meilisearch(MeilisearchError {
+                    error_code: error.error_code,
+                    error_link: error.error_link,
+                    error_type: error.error_type,
+                    error_message: format!(
+                        "{}\n{}.",
+                        error.error_message, MEILISEARCH_VERSION_HINT
+                    ),
+                }),
+                _ => err,
+            });
+        }
+
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
         request::<&DocumentsQuery, (), DocumentsResults<T>>(
             &url,
@@ -920,6 +953,61 @@ impl Index {
             Method::Post {
                 query: (),
                 body: uids,
+            },
+            202,
+        )
+        .await
+    }
+
+    /// Delete a selection of documents with filters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, documents::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # #[derive(Serialize, Deserialize, Debug)]
+    /// # struct Movie {
+    /// #    name: String,
+    /// #    id: String,
+    /// # }
+    /// #
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// #
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let index = client.index("delete_documents_with");
+    /// #
+    /// # index.set_filterable_attributes(["id"]);
+    /// # // add some documents
+    /// # index.add_or_replace(&[Movie{id:String::from("1"), name: String::from("First movie") }, Movie{id:String::from("1"), name: String::from("First movie") }], Some("id")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let mut query = DocumentDeletionQuery::new(&index);
+    /// query.with_filter("id = 1");
+    /// // delete some documents
+    /// index.delete_documents_with(&query)
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn delete_documents_with(
+        &self,
+        query: &DocumentDeletionQuery<'_>,
+    ) -> Result<TaskInfo, Error> {
+        request::<(), &DocumentDeletionQuery, TaskInfo>(
+            &format!("{}/indexes/{}/documents/delete", self.client.host, self.uid),
+            self.client.get_api_key(),
+            Method::Post {
+                query: (),
+                body: query,
             },
             202,
         )
