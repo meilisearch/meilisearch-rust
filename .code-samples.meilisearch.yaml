@@ -400,7 +400,6 @@ getting_started_typo_tolerance: |-
   }
   let typo_tolerance = TypoToleranceSettings {
     enabled: Some(true),
-    disable_on_attributes: Some(vec![]),
     disable_on_words: Some(vec!["title".to_string()]),
     min_word_size_for_typos: Some(min_word_size_for_typos),
   };
@@ -844,7 +843,6 @@ settings_guide_typo_tolerance_1: |-
   }
   let typo_tolerance = TypoToleranceSettings {
     enabled: Some(true),
-    disable_on_attributes: Some(vec![]),
     disable_on_words: Some(vec!["title".to_string()]),
     min_word_size_for_typos: Some(min_word_size_for_typos),
   };
@@ -860,8 +858,6 @@ settings_guide_typo_tolerance_1: |-
 typo_tolerance_guide_1: |-
   let typo_tolerance = TypoToleranceSettings {
     enabled: Some(false),
-    disable_on_attributes: Some(vec![]),
-    disable_on_words: Some(vec![]),
     min_word_size_for_typos: Some(MinWordSizeForTypos::default()),
   };
 
@@ -878,7 +874,6 @@ typo_tolerance_guide_2: |-
   let typo_tolerance = TypoToleranceSettings {
     enabled: Some(true),
     disable_on_attributes: Some(vec!["title".to_string()]),
-    disable_on_words: Some(vec![]),
     min_word_size_for_typos: Some(min_word_size_for_typos),
   };
 
@@ -894,7 +889,6 @@ typo_tolerance_guide_3: |-
   }
   let typo_tolerance = TypoToleranceSettings {
     enabled: Some(true),
-    disable_on_attributes: Some(vec![]),
     disable_on_words: Some(vec!["shrek".to_string()]),
     min_word_size_for_typos: Some(min_word_size_for_typos),
   };
@@ -911,7 +905,6 @@ typo_tolerance_guide_4: |-
   };
   let typo_tolerance = TypoToleranceSettings {
     enabled: Some(true),
-    disable_on_attributes: Some(vec![]),
     disable_on_words: Some(vec!["title".to_string()]),
     min_word_size_for_typos: Some(min_word_size_for_typos),
   };
