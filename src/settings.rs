@@ -13,23 +13,14 @@ pub struct PaginationSetting {
     pub max_total_hits: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MinWordSizeForTypos {
     pub one_typo: Option<u8>,
     pub two_typos: Option<u8>,
 }
 
-impl Default for MinWordSizeForTypos {
-    fn default() -> Self {
-        MinWordSizeForTypos {
-            one_typo: Some(5),
-            two_typos: Some(9),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 #[serde(default)]
 pub struct TypoToleranceSettings {
@@ -37,17 +28,6 @@ pub struct TypoToleranceSettings {
     pub disable_on_attributes: Option<Vec<String>>,
     pub disable_on_words: Option<Vec<String>>,
     pub min_word_size_for_typos: Option<MinWordSizeForTypos>,
-}
-
-impl Default for TypoToleranceSettings {
-    fn default() -> Self {
-        TypoToleranceSettings {
-            enabled: Some(true),
-            disable_on_attributes: Some(vec![]),
-            disable_on_words: Some(vec![]),
-            min_word_size_for_typos: Some(MinWordSizeForTypos::default()),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
@@ -123,19 +103,7 @@ pub struct Settings {
 impl Settings {
     /// Create undefined settings.
     pub fn new() -> Settings {
-        Settings {
-            synonyms: None,
-            stop_words: None,
-            ranking_rules: None,
-            filterable_attributes: None,
-            sortable_attributes: None,
-            distinct_attribute: None,
-            searchable_attributes: None,
-            displayed_attributes: None,
-            pagination: None,
-            faceting: None,
-            typo_tolerance: None,
-        }
+        Self::default()
     }
 
     pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
@@ -647,7 +615,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_typo_tolerance");
     /// let typotolerance = index.get_typo_tolerance().await.unwrap();
@@ -1133,7 +1101,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_typo_tolerance");
     ///
@@ -1531,7 +1499,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_HOST, MEILISEARCH_API_KEY);
+    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_typo_tolerance");
     ///
@@ -1654,20 +1622,36 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_typo_tolerance(index: Index) {
-        let typo_tolerance = TypoToleranceSettings::default();
+        let expected = TypoToleranceSettings {
+            enabled: Some(true),
+            disable_on_attributes: Some(vec![]),
+            disable_on_words: Some(vec![]),
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
+                one_typo: Some(5),
+                two_typos: Some(9),
+            }),
+        };
 
         let res = index.get_typo_tolerance().await.unwrap();
 
-        assert_eq!(typo_tolerance, res);
+        assert_eq!(expected, res);
     }
 
     #[meilisearch_test]
     async fn test_set_typo_tolerance(client: Client, index: Index) {
-        let typo_tolerance = TypoToleranceSettings {
+        let expected = TypoToleranceSettings {
             enabled: Some(true),
             disable_on_attributes: Some(vec!["title".to_string()]),
             disable_on_words: Some(vec![]),
-            min_word_size_for_typos: Some(MinWordSizeForTypos::default()),
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
+                one_typo: Some(5),
+                two_typos: Some(9),
+            }),
+        };
+
+        let typo_tolerance = TypoToleranceSettings {
+            disable_on_attributes: Some(vec!["title".to_string()]),
+            ..Default::default()
         };
 
         let task_info = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
@@ -1675,16 +1659,24 @@ mod tests {
 
         let res = index.get_typo_tolerance().await.unwrap();
 
-        assert_eq!(typo_tolerance, res);
+        assert_eq!(expected, res);
     }
 
     #[meilisearch_test]
     async fn test_reset_typo_tolerance(index: Index) {
-        let typo_tolerance = TypoToleranceSettings {
+        let expected = TypoToleranceSettings {
             enabled: Some(true),
             disable_on_attributes: Some(vec![]),
-            disable_on_words: Some(vec!["title".to_string()]),
-            min_word_size_for_typos: Some(MinWordSizeForTypos::default()),
+            disable_on_words: Some(vec![]),
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
+                one_typo: Some(5),
+                two_typos: Some(9),
+            }),
+        };
+
+        let typo_tolerance = TypoToleranceSettings {
+            disable_on_attributes: Some(vec!["title".to_string()]),
+            ..Default::default()
         };
 
         let task = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
@@ -1695,6 +1687,6 @@ mod tests {
 
         let default = index.get_typo_tolerance().await.unwrap();
 
-        assert_eq!(TypoToleranceSettings::default(), default);
+        assert_eq!(expected, default);
     }
 }
