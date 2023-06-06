@@ -1,10 +1,10 @@
-use crate::{errors::Error, indexes::Index};
+use crate::{client::Client, errors::Error, indexes::Index};
 use either::Either;
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, Eq, PartialEq)]
+#[derive(Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct MatchRange {
     pub start: usize,
     pub length: usize,
@@ -32,8 +32,9 @@ pub enum MatchingStrategies {
 }
 
 /// A single result.
+///
 /// Contains the complete object, optionally the formatted object, and optionally an object that contains information about the matches.
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct SearchResult<T> {
     /// The full result.
     #[serde(flatten)]
@@ -46,24 +47,42 @@ pub struct SearchResult<T> {
     pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FacetStats {
+    pub min: f64,
+    pub max: f64,
+}
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
 pub struct SearchResults<T> {
-    /// Results of the query
+    /// Results of the query.
     pub hits: Vec<SearchResult<T>>,
-    /// Number of documents skipped
-    pub offset: usize,
-    /// Number of results returned
-    pub limit: usize,
-    /// Total number of matches
-    pub estimated_total_hits: usize,
-    /// Distribution of the given facets
+    /// Number of documents skipped.
+    pub offset: Option<usize>,
+    /// Number of results returned.
+    pub limit: Option<usize>,
+    /// Estimated total number of matches.
+    pub estimated_total_hits: Option<usize>,
+    // Current page number
+    pub page: Option<usize>,
+    // Maximum number of hits in a page.
+    pub hits_per_page: Option<usize>,
+    // Exhaustive number of matches.
+    pub total_hits: Option<usize>,
+    // Exhaustive number of pages.
+    pub total_pages: Option<usize>,
+    /// Distribution of the given facets.
     pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
-    /// Processing time of the query
+    /// facet stats of the numerical facets requested in the `facet` search parameter.
+    pub facet_stats: Option<HashMap<String, FacetStats>>,
+    /// Processing time of the query.
     pub processing_time_ms: usize,
-    /// Query originating the response
+    /// Query originating the response.
     pub query: String,
+    /// Index uid on which the search was made.
+    pub index_uid: Option<String>,
 }
 
 fn serialize_with_wildcard<S: Serializer, T: Serialize>(
@@ -84,16 +103,17 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
     match data {
         Some(Selectors::All) => ["*"].serialize(s),
         Some(Selectors::Some(data)) => {
-            let mut results = Vec::new();
-            for (name, value) in data.iter() {
-                let mut result = String::new();
-                result.push_str(name);
-                if let Some(value) = value {
-                    result.push(':');
-                    result.push_str(value.to_string().as_str());
-                }
-                results.push(result)
-            }
+            let results = data
+                .iter()
+                .map(|(name, value)| {
+                    let mut result = name.to_string();
+                    if let Some(value) = value {
+                        result.push(':');
+                        result.push_str(value.to_string().as_str());
+                    }
+                    result
+                })
+                .collect::<Vec<_>>();
             results.serialize(s)
         }
         None => s.serialize_none(),
@@ -101,25 +121,28 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
 }
 
 /// Some list fields in a `SearchQuery` can be set to a wildcard value.
+///
 /// This structure allows you to choose between the wildcard value and an exhaustive list of selectors.
 #[derive(Debug, Clone)]
 pub enum Selectors<T> {
-    /// A list of selectors
+    /// A list of selectors.
     Some(T),
-    /// The wildcard
+    /// The wildcard.
     All,
 }
 
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
 /// A struct representing a query.
+///
 /// You can add search parameters using the builder syntax.
-/// See [this page](https://docs.meilisearch.com/reference/features/search_parameters.html#query-q) for the official list and description of all parameters.
+///
+/// See [this page](https://www.meilisearch.com/docs/reference/api/search#query-q) for the official list and description of all parameters.
 ///
 /// # Examples
 ///
 /// ```
-/// use serde::{Serialize, Deserialize};
+/// # use serde::{Serialize, Deserialize};
 /// # use meilisearch_sdk::{client::Client, search::SearchQuery, indexes::Index};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
@@ -130,9 +153,8 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///     name: String,
 ///     description: String,
 /// }
-///
 /// # futures::executor::block_on(async move {
-/// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 /// # let index = client
 /// #  .create_index("search_query_builder", None)
 /// #  .await
@@ -150,7 +172,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///     .await
 ///     .unwrap();
 ///
-/// assert_eq!(res.limit, 21);
+/// assert_eq!(res.limit, Some(21));
 /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 /// # });
 /// ```
@@ -161,7 +183,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
-/// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 /// # let index = client.index("search_query_builder_build");
 /// let query = index.search()
 ///     .with_query("space")
@@ -179,6 +201,7 @@ pub struct SearchQuery<'a> {
     #[serde(rename = "q")]
     pub query: Option<&'a str>,
     /// The number of documents to skip.
+    ///
     /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
     /// This is helpful for pagination.
     ///
@@ -186,21 +209,37 @@ pub struct SearchQuery<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<usize>,
     /// The maximum number of documents returned.
+    ///
     /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.
     /// This is helpful for pagination.
     ///
     /// Example: If you don't want to get more than two documents, set limit to `2`.
-    /// Default: `20`
+    ///
+    /// **Default: `20`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
+    /// The page number on which you paginate.
+    ///
+    /// Pagination starts at 1. If page is 0, no results are returned.
+    ///
+    /// **Default: None unless `hits_per_page` is defined, in which case page is `1`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page: Option<usize>,
+    /// The maximum number of results in a page. A page can contain less results than the number of hits_per_page.
+    ///
+    /// **Default: None unless `page` is defined, in which case `20`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hits_per_page: Option<usize>,
     /// Filter applied to documents.
-    /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
+    ///
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/advanced/filtering) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
     /// Facets for which to retrieve the matching count.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    /// Default: all attributes found in the documents.
+    ///
+    /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub facets: Option<Selectors<&'a [&'a str]>>,
@@ -210,11 +249,13 @@ pub struct SearchQuery<'a> {
     /// Attributes to display in the returned documents.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    /// Default: all attributes found in the documents.
+    ///
+    /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
     /// Attributes whose values have to be cropped.
+    ///
     /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -222,15 +263,17 @@ pub struct SearchQuery<'a> {
     #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
     /// Maximum number of words including the matched query term(s) contained in the returned cropped value(s).
+    ///
     /// See [attributes_to_crop](#structfield.attributes_to_crop).
     ///
-    /// Default: `10`
+    /// **Default: `10`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_length: Option<usize>,
     /// Marker at the start and the end of a cropped value.
+    ///
     /// ex: `...middle of a crop...`
     ///
-    /// Default: `...`
+    /// **Default: `...`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crop_marker: Option<&'a str>,
     /// Attributes whose values will contain **highlighted matching terms**.
@@ -240,26 +283,31 @@ pub struct SearchQuery<'a> {
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
     /// Tag in front of a highlighted term.
+    ///
     /// ex: `<mytag>hello world`
     ///
-    /// Default: `<em>`
+    /// **Default: `<em>`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight_pre_tag: Option<&'a str>,
     /// Tag after the a highlighted term.
+    ///
     /// ex: `hello world</ mytag>`
     ///
-    /// Default: `</em>`
+    /// **Default: `</em>`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight_post_tag: Option<&'a str>,
     /// Defines whether an object that contains information about the matches should be returned or not.
     ///
-    /// Default: `false`
+    /// **Default: `false`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_matches_position: Option<bool>,
 
     /// Defines the strategy on how to handle queries containing multiple words.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) index_uid: Option<&'a str>,
 }
 
 #[allow(missing_docs)]
@@ -270,6 +318,8 @@ impl<'a> SearchQuery<'a> {
             query: None,
             offset: None,
             limit: None,
+            page: None,
+            hits_per_page: None,
             filter: None,
             sort: None,
             facets: None,
@@ -282,6 +332,7 @@ impl<'a> SearchQuery<'a> {
             highlight_post_tag: None,
             show_matches_position: None,
             matching_strategy: None,
+            index_uid: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a> {
@@ -295,6 +346,69 @@ impl<'a> SearchQuery<'a> {
     }
     pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut SearchQuery<'a> {
         self.limit = Some(limit);
+        self
+    }
+    /// Add the page number on which to paginate.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # #[derive(Serialize, Deserialize, Debug)]
+    /// # struct Movie {
+    /// #     name: String,
+    /// #     description: String,
+    /// # }
+    /// # client.create_index("search_with_page", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("search_with_page");
+    ///
+    /// let mut query = SearchQuery::new(&index);
+    /// query.with_query("").with_page(2);
+    /// let res = query.execute::<Movie>().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_page<'b>(&'b mut self, page: usize) -> &'b mut SearchQuery<'a> {
+        self.page = Some(page);
+        self
+    }
+
+    /// Add the maximum number of results per page.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # #[derive(Serialize, Deserialize, Debug)]
+    /// # struct Movie {
+    /// #     name: String,
+    /// #     description: String,
+    /// # }
+    /// # client.create_index("search_with_hits_per_page", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("search_with_hits_per_page");
+    ///
+    /// let mut query = SearchQuery::new(&index);
+    /// query.with_query("").with_hits_per_page(2);
+    /// let res = query.execute::<Movie>().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub fn with_hits_per_page<'b>(&'b mut self, hits_per_page: usize) -> &'b mut SearchQuery<'a> {
+        self.hits_per_page = Some(hits_per_page);
         self
     }
     pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a> {
@@ -373,6 +487,10 @@ impl<'a> SearchQuery<'a> {
         self.matching_strategy = Some(matching_strategy);
         self
     }
+    pub fn with_index_uid<'b>(&'b mut self) -> &'b mut SearchQuery<'a> {
+        self.index_uid = Some(&self.index.uid);
+        self
+    }
     pub fn build(&mut self) -> SearchQuery<'a> {
         self.clone()
     }
@@ -384,9 +502,47 @@ impl<'a> SearchQuery<'a> {
     }
 }
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MultiSearchQuery<'a, 'b> {
+    #[serde(skip_serializing)]
+    client: &'a Client,
+    pub queries: Vec<SearchQuery<'b>>,
+}
+
+#[allow(missing_docs)]
+impl<'a, 'b> MultiSearchQuery<'a, 'b> {
+    pub fn new(client: &'a Client) -> MultiSearchQuery<'a, 'b> {
+        MultiSearchQuery {
+            client,
+            queries: Vec::new(),
+        }
+    }
+    pub fn with_search_query(
+        &mut self,
+        mut search_query: SearchQuery<'b>,
+    ) -> &mut MultiSearchQuery<'a, 'b> {
+        search_query.with_index_uid();
+        self.queries.push(search_query);
+        self
+    }
+
+    /// Execute the query and fetch the results.
+    pub async fn execute<T: 'static + DeserializeOwned>(
+        &'a self,
+    ) -> Result<MultiSearchResponse<T>, Error> {
+        self.client.execute_multi_search_query::<T>(self).await
+    }
+}
+#[derive(Debug, Clone, Deserialize)]
+pub struct MultiSearchResponse<T> {
+    pub results: Vec<SearchResults<T>>,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{client::*, search::*};
+    use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{json, Map, Value};
@@ -401,6 +557,7 @@ mod tests {
         id: usize,
         value: String,
         kind: String,
+        number: i32,
         nested: Nested,
     }
 
@@ -414,18 +571,20 @@ mod tests {
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
         let t0 = index.add_documents(&[
-            Document { id: 0, kind: "text".into(), value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string(), nested: Nested { child: "first".to_string() } },
-            Document { id: 1, kind: "text".into(), value: "dolor sit amet, consectetur adipiscing elit".to_string(), nested: Nested { child: "second".to_string() } },
-            Document { id: 2, kind: "title".into(), value: "The Social Network".to_string(), nested: Nested { child: "third".to_string() } },
-            Document { id: 3, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string(), nested: Nested { child: "fourth".to_string() } },
-            Document { id: 4, kind: "title".into(), value: "Harry Potter and the Chamber of Secrets".to_string(), nested: Nested { child: "fift".to_string() } },
-            Document { id: 5, kind: "title".into(), value: "Harry Potter and the Prisoner of Azkaban".to_string(), nested: Nested { child: "sixth".to_string() } },
-            Document { id: 6, kind: "title".into(), value: "Harry Potter and the Goblet of Fire".to_string(), nested: Nested { child: "seventh".to_string() } },
-            Document { id: 7, kind: "title".into(), value: "Harry Potter and the Order of the Phoenix".to_string(), nested: Nested { child: "eighth".to_string() } },
-            Document { id: 8, kind: "title".into(), value: "Harry Potter and the Half-Blood Prince".to_string(), nested: Nested { child: "ninth".to_string() } },
-            Document { id: 9, kind: "title".into(), value: "Harry Potter and the Deathly Hallows".to_string(), nested: Nested { child: "tenth".to_string() } },
+            Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") } },
+            Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") } },
+            Document { id: 2, kind: "title".into(), number: 20, value: S("The Social Network"), nested: Nested { child: S("third") } },
+            Document { id: 3, kind: "title".into(), number: 30, value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") } },
+            Document { id: 4, kind: "title".into(), number: 40, value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") } },
+            Document { id: 5, kind: "title".into(), number: 50, value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") } },
+            Document { id: 6, kind: "title".into(), number: 60, value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") } },
+            Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") } },
+            Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") } },
+            Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") } },
         ], None).await?;
-        let t1 = index.set_filterable_attributes(["kind", "value"]).await?;
+        let t1 = index
+            .set_filterable_attributes(["kind", "value", "number"])
+            .await?;
         let t2 = index.set_sortable_attributes(["title"]).await?;
 
         t2.wait_for_completion(client, None, None).await?;
@@ -436,15 +595,54 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_multi_search(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let search_query_1 = SearchQuery::new(&index)
+            .with_query("Sorcerer's Stone")
+            .build();
+        let search_query_2 = SearchQuery::new(&index)
+            .with_query("Chamber of Secrets")
+            .build();
+
+        let response = client
+            .multi_search()
+            .with_search_query(search_query_1)
+            .with_search_query(search_query_2)
+            .execute::<Document>()
+            .await
+            .unwrap();
+
+        assert_eq!(response.results.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_query_builder(_client: Client, index: Index) -> Result<(), Error> {
         let mut query = SearchQuery::new(&index);
         query.with_query("space").with_offset(42).with_limit(21);
 
         let res = query.execute::<Document>().await.unwrap();
 
-        assert_eq!(res.query, "space".to_string());
-        assert_eq!(res.limit, 21);
-        assert_eq!(res.offset, 42);
+        assert_eq!(res.query, S("space"));
+        assert_eq!(res.limit, Some(21));
+        assert_eq!(res.offset, Some(42));
+        assert_eq!(res.estimated_total_hits, Some(0));
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_numbered_pagination(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("").with_page(2).with_hits_per_page(2);
+
+        let res = query.execute::<Document>().await.unwrap();
+
+        assert_eq!(res.page, Some(2));
+        assert_eq!(res.hits_per_page, Some(2));
+        assert_eq!(res.total_hits, Some(10));
+        assert_eq!(res.total_pages, Some(5));
         Ok(())
     }
 
@@ -467,11 +665,10 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 1,
-                value: "dolor sit amet, consectetur adipiscing elit".to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "second".to_string()
-                }
+                value: S("dolor sit amet, consectetur adipiscing elit"),
+                kind: S("text"),
+                number: 10,
+                nested: Nested { child: S("second") }
             },
             &results.hits[0].result
         );
@@ -485,6 +682,27 @@ mod tests {
 
         let results: SearchResults<Document> = index.search().with_limit(5).execute().await?;
         assert_eq!(results.hits.len(), 5);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_page(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results: SearchResults<Document> = index.search().with_page(2).execute().await?;
+        assert_eq!(results.page, Some(2));
+        assert_eq!(results.hits_per_page, Some(20));
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_hits_per_page(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results: SearchResults<Document> =
+            index.search().with_hits_per_page(2).execute().await?;
+        assert_eq!(results.page, Some(1));
+        assert_eq!(results.hits_per_page, Some(2));
         Ok(())
     }
 
@@ -580,6 +798,22 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_query_facet_stats(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_facets(Selectors::All);
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
+        let facet_stats = results.facet_stats.unwrap();
+
+        assert_eq!(facet_stats.get("number").unwrap().min, 0.0);
+
+        assert_eq!(facet_stats.get("number").unwrap().max, 90.0);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_query_attributes_to_retrieve(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -619,12 +853,10 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do…"
-                    .to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do…"),
+                kind: S("text"),
+                number: 0,
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -636,11 +868,10 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet…".to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("Lorem ipsum dolor sit amet…"),
+                kind: S("text"),
+                number: 0,
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -658,9 +889,10 @@ mod tests {
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert_eq!(&Document {
             id: 0,
-            value: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.".to_string(),
-            kind: "text".to_string(),
-            nested: Nested { child: "first".to_string() }
+            value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
+            kind: S("text"),
+            number: 0,
+            nested: Nested { child: S("first") }
         },
         results.hits[0].formatted_result.as_ref().unwrap());
 
@@ -672,11 +904,10 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: "Lorem ipsum dolor sit amet…".to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("Lorem ipsum dolor sit amet…"),
+                kind: S("text"),
+                number: 0,
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -698,11 +929,10 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: "(ꈍᴗꈍ) sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)".to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("(ꈍᴗꈍ) sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)"),
+                kind: S("text"),
+                number: 0,
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -726,11 +956,10 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 2,
-                value: "The (⊃｡•́‿•̀｡)⊃ Social ⊂(´• ω •`⊂) Network".to_string(),
-                kind: "title".to_string(),
-                nested: Nested {
-                    child: "third".to_string()
-                }
+                value: S("The (⊃｡•́‿•̀｡)⊃ Social ⊂(´• ω •`⊂) Network"),
+                kind: S("title"),
+                number: 20,
+                nested: Nested { child: S("third") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -749,11 +978,10 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 1,
-                value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
-                kind: "<em>text</em>".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("<em>dolor</em> sit amet, consectetur adipiscing elit"),
+                kind: S("<em>text</em>"),
+                number: 10,
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap(),
         );
@@ -765,11 +993,10 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 1,
-                value: "<em>dolor</em> sit amet, consectetur adipiscing elit".to_string(),
-                kind: "text".to_string(),
-                nested: Nested {
-                    child: "first".to_string()
-                }
+                value: S("<em>dolor</em> sit amet, consectetur adipiscing elit"),
+                kind: S("text"),
+                number: 10,
+                nested: Nested { child: S("first") }
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -858,7 +1085,7 @@ mod tests {
             .execute(&client)
             .await
             .unwrap();
-        let allowed_client = Client::new(meilisearch_url, key.key);
+        let allowed_client = Client::new(meilisearch_url, Some(key.key));
 
         let search_rules = vec![
             json!({ "*": {}}),
@@ -873,7 +1100,7 @@ mod tests {
                 .generate_tenant_token(key.uid.clone(), rules, None, None)
                 .expect("Cannot generate tenant token.");
 
-            let new_client = Client::new(meilisearch_url, token.clone());
+            let new_client = Client::new(meilisearch_url, Some(token.clone()));
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())

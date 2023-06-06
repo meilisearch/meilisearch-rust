@@ -1,82 +1,103 @@
-use crate::errors::{Error, MeilisearchError};
+use crate::errors::{Error, MeilisearchCommunicationError, MeilisearchError};
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
 
 #[derive(Debug)]
-pub(crate) enum Method<T: Serialize> {
-    Get(T),
-    Post(T),
-    Patch(T),
-    Put(T),
-    Delete,
+pub(crate) enum Method<Q, B> {
+    Get { query: Q },
+    Post { query: Q, body: B },
+    Patch { query: Q, body: B },
+    Put { query: Q, body: B },
+    Delete { query: Q },
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
+pub fn add_query_parameters<Query: Serialize>(url: &str, query: &Query) -> Result<String, Error> {
+    let query = yaup::to_string(query)?;
+
+    if query.is_empty() {
+        Ok(url.to_string())
+    } else {
+        Ok(format!("{url}?{query}"))
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn request<
+    Query: Serialize,
+    Body: Serialize,
+    Output: DeserializeOwned + 'static,
+>(
     url: &str,
-    apikey: &str,
-    method: Method<Input>,
+    apikey: Option<&str>,
+    method: Method<Query, Body>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
     use isahc::http::header;
+    use isahc::http::method::Method as HttpMethod;
     use isahc::*;
 
-    let auth = format!("Bearer {}", apikey);
-    let user_agent = qualified_version();
+    let builder = Request::builder().header(header::USER_AGENT, qualified_version());
+    let builder = match apikey {
+        Some(apikey) => builder.header(header::AUTHORIZATION, format!("Bearer {apikey}")),
+        None => builder,
+    };
 
     let mut response = match &method {
-        Method::Get(query) => {
-            let query = yaup::to_string(query)?;
+        Method::Get { query } => {
+            let url = add_query_parameters(url, query)?;
 
-            let url = if query.is_empty() {
-                url.to_string()
-            } else {
-                format!("{}?{}", url, query)
-            };
-
-            Request::get(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
+            builder
+                .method(HttpMethod::GET)
+                .uri(url)
                 .body(())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
                 .await?
         }
-        Method::Delete => {
-            Request::delete(url)
-                .header(header::AUTHORIZATION, auth)
-                .header(header::USER_AGENT, user_agent)
+        Method::Delete { query } => {
+            let url = add_query_parameters(url, query)?;
+
+            builder
+                .method(HttpMethod::DELETE)
+                .uri(url)
                 .body(())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
                 .await?
         }
-        Method::Post(body) => {
-            Request::post(url)
-                .header(header::AUTHORIZATION, auth)
+        Method::Post { query, body } => {
+            let url = add_query_parameters(url, query)?;
+
+            builder
+                .method(HttpMethod::POST)
+                .uri(url)
                 .header(header::CONTENT_TYPE, "application/json")
-                .header(header::USER_AGENT, user_agent)
                 .body(to_string(&body).unwrap())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
                 .await?
         }
-        Method::Patch(body) => {
-            Request::patch(url)
-                .header(header::AUTHORIZATION, auth)
+        Method::Patch { query, body } => {
+            let url = add_query_parameters(url, query)?;
+
+            builder
+                .method(HttpMethod::PATCH)
+                .uri(url)
                 .header(header::CONTENT_TYPE, "application/json")
-                .header(header::USER_AGENT, user_agent)
                 .body(to_string(&body).unwrap())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
                 .await?
         }
-        Method::Put(body) => {
-            Request::put(url)
-                .header(header::AUTHORIZATION, auth)
+        Method::Put { query, body } => {
+            let url = add_query_parameters(url, query)?;
+
+            builder
+                .method(HttpMethod::PUT)
+                .uri(url)
                 .header(header::CONTENT_TYPE, "application/json")
-                .header(header::USER_AGENT, user_agent)
                 .body(to_string(&body).unwrap())
                 .map_err(|_| crate::errors::Error::InvalidRequest)?
                 .send_async()
@@ -85,22 +106,139 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     };
 
     let status = response.status().as_u16();
+
     let mut body = response
         .text()
         .await
         .map_err(|e| crate::errors::Error::HttpError(e.into()))?;
+
     if body.is_empty() {
         body = "null".to_string();
     }
 
-    parse_response(status, expected_status_code, body)
+    parse_response(status, expected_status_code, &body, url.to_string())
+    // parse_response(status, expected_status_code, body)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn stream_request<
+    'a,
+    Query: Serialize,
+    Body: futures_io::AsyncRead + Send + Sync + 'static,
+    Output: DeserializeOwned + 'static,
+>(
+    url: &str,
+    apikey: Option<&str>,
+    method: Method<Query, Body>,
+    content_type: &str,
+    expected_status_code: u16,
+) -> Result<Output, Error> {
+    use isahc::http::header;
+    use isahc::http::method::Method as HttpMethod;
+    use isahc::*;
+
+    let builder = Request::builder().header(header::USER_AGENT, qualified_version());
+    let builder = match apikey {
+        Some(apikey) => builder.header(header::AUTHORIZATION, format!("Bearer {apikey}")),
+        None => builder,
+    };
+
+    let mut response = match method {
+        Method::Get { query } => {
+            let url = add_query_parameters(url, &query)?;
+
+            builder
+                .method(HttpMethod::GET)
+                .uri(url)
+                .body(())
+                .map_err(|_| crate::errors::Error::InvalidRequest)?
+                .send_async()
+                .await?
+        }
+        Method::Delete { query } => {
+            let url = add_query_parameters(url, &query)?;
+
+            builder
+                .method(HttpMethod::DELETE)
+                .uri(url)
+                .body(())
+                .map_err(|_| crate::errors::Error::InvalidRequest)?
+                .send_async()
+                .await?
+        }
+        Method::Post { query, body } => {
+            let url = add_query_parameters(url, &query)?;
+
+            builder
+                .method(HttpMethod::POST)
+                .uri(url)
+                .header(header::CONTENT_TYPE, content_type)
+                .body(AsyncBody::from_reader(body))
+                .map_err(|_| crate::errors::Error::InvalidRequest)?
+                .send_async()
+                .await?
+        }
+        Method::Patch { query, body } => {
+            let url = add_query_parameters(url, &query)?;
+
+            builder
+                .method(HttpMethod::PATCH)
+                .uri(url)
+                .header(header::CONTENT_TYPE, content_type)
+                .body(AsyncBody::from_reader(body))
+                .map_err(|_| crate::errors::Error::InvalidRequest)?
+                .send_async()
+                .await?
+        }
+        Method::Put { query, body } => {
+            let url = add_query_parameters(url, &query)?;
+
+            builder
+                .method(HttpMethod::PUT)
+                .uri(url)
+                .header(header::CONTENT_TYPE, content_type)
+                .body(AsyncBody::from_reader(body))
+                .map_err(|_| crate::errors::Error::InvalidRequest)?
+                .send_async()
+                .await?
+        }
+    };
+
+    let status = response.status().as_u16();
+
+    let mut body = response
+        .text()
+        .await
+        .map_err(|e| crate::errors::Error::HttpError(e.into()))?;
+
+    if body.is_empty() {
+        body = "null".to_string();
+    }
+
+    parse_response(status, expected_status_code, &body, url.to_string())
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static>(
+pub fn add_query_parameters<Query: Serialize>(
+    mut url: String,
+    query: &Query,
+) -> Result<String, Error> {
+    let query = yaup::to_string(query)?;
+
+    if !query.is_empty() {
+        url = format!("{}?{}", url, query);
+    };
+    return Ok(url);
+}
+#[cfg(target_arch = "wasm32")]
+pub(crate) async fn request<
+    Query: Serialize,
+    Body: Serialize,
+    Output: DeserializeOwned + 'static,
+>(
     url: &str,
-    apikey: &str,
-    method: Method<Input>,
+    apikey: Option<&str>,
+    method: Method<Query, Body>,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
     use wasm_bindgen::JsValue;
@@ -113,9 +251,11 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     // The 2 following unwraps should not be able to fail
     let mut mut_url = url.clone().to_string();
     let headers = Headers::new().unwrap();
-    headers
-        .append("Authorization", format!("Bearer {}", apikey).as_str())
-        .unwrap();
+    if let Some(apikey) = apikey {
+        headers
+            .append("Authorization", format!("Bearer {}", apikey).as_str())
+            .unwrap();
+    }
     headers
         .append("X-Meilisearch-Client", qualified_version().as_str())
         .unwrap();
@@ -124,29 +264,29 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
     request.headers(&headers);
 
     match &method {
-        Method::Get(query) => {
-            let query = yaup::to_string(query)?;
-
-            if !query.is_empty() {
-                mut_url = format!("{}?{}", mut_url, query);
-            };
+        Method::Get { query } => {
+            mut_url = add_query_parameters(mut_url, &query)?;
 
             request.method("GET");
         }
-        Method::Delete => {
+        Method::Delete { query } => {
+            mut_url = add_query_parameters(mut_url, &query)?;
             request.method("DELETE");
         }
-        Method::Patch(body) => {
+        Method::Patch { query, body } => {
+            mut_url = add_query_parameters(mut_url, &query)?;
             request.method("PATCH");
             headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
-        Method::Post(body) => {
+        Method::Post { query, body } => {
+            mut_url = add_query_parameters(mut_url, &query)?;
             request.method("POST");
             headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
-        Method::Put(body) => {
+        Method::Put { query, body } => {
+            mut_url = add_query_parameters(mut_url, &query)?;
             request.method("PUT");
             headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
@@ -179,9 +319,9 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 
     if let Some(t) = text.as_string() {
         if t.is_empty() {
-            parse_response(status, expected_status_code, String::from("null"))
+            parse_response(status, expected_status_code, "null", url.to_string())
         } else {
-            parse_response(status, expected_status_code, t)
+            parse_response(status, expected_status_code, &t, url.to_string())
         }
     } else {
         error!("Invalid response");
@@ -192,10 +332,11 @@ pub(crate) async fn request<Input: Serialize, Output: DeserializeOwned + 'static
 fn parse_response<Output: DeserializeOwned>(
     status_code: u16,
     expected_status_code: u16,
-    body: String,
+    body: &str,
+    url: String,
 ) -> Result<Output, Error> {
     if status_code == expected_status_code {
-        match from_str::<Output>(&body) {
+        match from_str::<Output>(body) {
             Ok(output) => {
                 trace!("Request succeed");
                 return Ok(output);
@@ -206,13 +347,26 @@ fn parse_response<Output: DeserializeOwned>(
             }
         };
     }
+
     warn!(
         "Expected response code {}, got {}",
         expected_status_code, status_code
     );
-    match from_str::<MeilisearchError>(&body) {
+
+    match from_str::<MeilisearchError>(body) {
         Ok(e) => Err(Error::from(e)),
-        Err(e) => Err(Error::ParseError(e)),
+        Err(e) => {
+            if status_code >= 400 {
+                return Err(Error::MeilisearchCommunication(
+                    MeilisearchCommunicationError {
+                        status_code,
+                        message: None,
+                        url,
+                    },
+                ));
+            }
+            Err(Error::ParseError(e))
+        }
     }
 }
 

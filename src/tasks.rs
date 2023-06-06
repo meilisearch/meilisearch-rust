@@ -4,6 +4,7 @@ use time::OffsetDateTime;
 
 use crate::{
     client::Client, errors::Error, errors::MeilisearchError, indexes::Index, settings::Settings,
+    task_info::TaskInfo, SwapIndexes,
 };
 
 #[derive(Debug, Clone, Deserialize)]
@@ -31,6 +32,18 @@ pub enum TaskType {
     DumpCreation {
         details: Option<DumpCreation>,
     },
+    IndexSwap {
+        details: Option<IndexSwap>,
+    },
+    TaskCancelation {
+        details: Option<TaskCancelation>,
+    },
+    TaskDeletion {
+        details: Option<TaskDeletion>,
+    },
+    SnapshotCreation {
+        details: Option<SnapshotCreation>,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -51,7 +64,9 @@ pub struct DocumentAdditionOrUpdate {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentDeletion {
+    pub provided_ids: Option<usize>,
     pub deleted_documents: Option<usize>,
+    pub original_filter: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -74,8 +89,34 @@ pub struct IndexDeletion {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct SnapshotCreation {}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DumpCreation {
     pub dump_uid: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexSwap {
+    pub swaps: Vec<SwapIndexes>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskCancelation {
+    pub matched_tasks: usize,
+    pub canceled_tasks: usize,
+    pub original_filter: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskDeletion {
+    pub matched_tasks: usize,
+    pub deleted_tasks: usize,
+    pub original_filter: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -97,8 +138,8 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    let iso_duration = iso8601_duration::Duration::parse(&s).map_err(serde::de::Error::custom)?;
-    Ok(iso_duration.to_std())
+    let iso_duration = iso8601::duration(&s).map_err(serde::de::Error::custom)?;
+    Ok(iso_duration.into())
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -112,7 +153,9 @@ pub struct SucceededTask {
     pub started_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
     pub finished_at: OffsetDateTime,
+    pub canceled_by: Option<usize>,
     pub index_uid: Option<String>,
+    pub error: Option<MeilisearchError>,
     #[serde(flatten)]
     pub update_type: TaskType,
     pub uid: u32,
@@ -173,12 +216,13 @@ impl Task {
 
     /// Wait until Meilisearch processes a [Task], and get its status.
     ///
-    /// `interval` = The frequency at which the server should be polled. Default = 50ms
-    /// `timeout` = The maximum time to wait for processing to complete. Default = 5000ms
+    /// `interval` = The frequency at which the server should be polled. **Default = 50ms**
     ///
-    /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
+    /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
-    /// See also [Client::wait_for_task, Index::wait_for_task].
+    /// If the waited time exceeds `timeout` then an [`Error::Timeout`] will be returned.
+    ///
+    /// See also [`Client::wait_for_task`, `Index::wait_for_task`].
     ///
     /// # Example
     ///
@@ -198,18 +242,18 @@ impl Task {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
     /// ], None)
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(matches!(status, Task::Succeeded { .. }));
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -237,9 +281,8 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// // create the client
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    ///
+    /// # // create the client
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client.create_index("try_make_index", None).await.unwrap();
     /// let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
@@ -248,6 +291,7 @@ impl Task {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[allow(clippy::result_large_err)] // Since `self` has been consumed, this is not an issue
     pub fn try_make_index(self, client: &Client) -> Result<Index, Self> {
         match self {
             Self::Succeeded {
@@ -262,9 +306,9 @@ impl Task {
         }
     }
 
-    /// Unwrap the [MeilisearchError] from a [Self::Failed] [Task].
+    /// Unwrap the [`MeilisearchError`] from a [`Self::Failed`] [Task].
     ///
-    /// Will panic if the task was not [Self::Failed].
+    /// Will panic if the task was not [`Self::Failed`].
     ///
     /// # Example
     ///
@@ -275,23 +319,22 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    /// # let task = client.create_index("unwrap_failure", None).await.unwrap();
-    /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
-    ///
-    /// let task = index.set_ranking_rules(["wrong_ranking_rule"])
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let task = client.create_index("unwrap_failure", None).await.unwrap();
+    /// let task = client
+    ///     .create_index("unwrap_failure", None)
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(task.is_failure());
     ///
     /// let failure = task.unwrap_failure();
     ///
-    /// assert_eq!(failure.error_code, ErrorCode::InvalidRankingRule);
-    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// assert_eq!(failure.error_code, ErrorCode::IndexAlreadyExists);
+    /// # client.index("unwrap_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub fn unwrap_failure(self) -> MeilisearchError {
@@ -303,7 +346,7 @@ impl Task {
         }
     }
 
-    /// Returns `true` if the [Task] is [Self::Failed].
+    /// Returns `true` if the [Task] is [`Self::Failed`].
     ///
     /// # Example
     ///
@@ -314,27 +357,26 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    /// # let task = client.create_index("is_failure", None).await.unwrap();
-    /// # let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
-    ///
-    ///
-    /// let task = index.set_ranking_rules(["wrong_ranking_rule"])
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let task = client.create_index("is_failure", None).await.unwrap();
+    /// // create an index with a conflicting uid
+    /// let task = client
+    ///     .create_index("is_failure", None)
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(task.is_failure());
-    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # client.index("is_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub fn is_failure(&self) -> bool {
         matches!(self, Self::Failed { .. })
     }
 
-    /// Returns `true` if the [Task] is [Self::Succeeded].
+    /// Returns `true` if the [Task] is [`Self::Succeeded`].
     ///
     /// # Example
     ///
@@ -345,14 +387,14 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client
-    ///   .create_index("is_success", None)
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    ///     .create_index("is_success", None)
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(task.is_success());
     /// # task.try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -362,7 +404,7 @@ impl Task {
         matches!(self, Self::Succeeded { .. })
     }
 
-    /// Returns `true` if the [Task] is pending ([Self::Enqueued] or [Self::Processing]).
+    /// Returns `true` if the [Task] is pending ([`Self::Enqueued`] or [`Self::Processing`]).
     ///
     /// # Example
     /// ```no_run
@@ -374,12 +416,13 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task_info = client
-    ///   .create_index("is_pending", None)
-    ///   .await
-    ///   .unwrap();
+    ///     .create_index("is_pending", None)
+    ///     .await
+    ///     .unwrap();
     /// let task = client.get_task(task_info).await.unwrap();
+    ///
     /// assert!(task.is_pending());
     /// # task.wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -400,69 +443,250 @@ impl AsRef<u32> for Task {
 }
 
 #[derive(Debug, Serialize, Clone)]
+pub struct TasksPaginationFilters {
+    // Maximum number of tasks to return.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    limit: Option<u32>,
+    // The first task uid that should be returned.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    from: Option<u32>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TasksCancelFilters {}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TasksDeleteFilters {}
+
+pub type TasksSearchQuery<'a> = TasksQuery<'a, TasksPaginationFilters>;
+pub type TasksCancelQuery<'a> = TasksQuery<'a, TasksCancelFilters>;
+pub type TasksDeleteQuery<'a> = TasksQuery<'a, TasksDeleteFilters>;
+
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct TasksQuery<'a> {
+pub struct TasksQuery<'a, T> {
     #[serde(skip_serializing)]
-    pub client: &'a Client,
+    client: &'a Client,
     // Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub index_uid: Option<Vec<&'a str>>,
+    index_uids: Option<Vec<&'a str>>,
     // Statuses array to only retrieve the tasks with these statuses.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<Vec<&'a str>>,
+    statuses: Option<Vec<&'a str>>,
     // Types array to only retrieve the tasks with these [TaskType].
-    #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
-    pub task_type: Option<Vec<&'a str>>,
-    // Maximum number of tasks to return
+    #[serde(skip_serializing_if = "Option::is_none", rename = "types")]
+    task_types: Option<Vec<&'a str>>,
+    // Uids of the tasks to retrieve.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub limit: Option<u32>,
-    // The first task uid that should be returned
+    uids: Option<Vec<&'a u32>>,
+    // Uids of the tasks that canceled other tasks.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub from: Option<u32>,
+    canceled_by: Option<Vec<&'a u32>>,
+    // Date to retrieve all tasks that were enqueued before it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    before_enqueued_at: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were enqueued after it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    after_enqueued_at: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were started before it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    before_started_at: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were started after it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    after_started_at: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were finished before it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    before_finished_at: Option<OffsetDateTime>,
+    // Date to retrieve all tasks that were finished after it.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "time::serde::rfc3339::option::serialize"
+    )]
+    after_finished_at: Option<OffsetDateTime>,
+
+    #[serde(flatten)]
+    pagination: T,
 }
 
 #[allow(missing_docs)]
-impl<'a> TasksQuery<'a> {
-    pub fn new(client: &'a Client) -> TasksQuery<'a> {
+impl<'a, T> TasksQuery<'a, T> {
+    pub fn with_index_uids<'b>(
+        &'b mut self,
+        index_uids: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.index_uids = Some(index_uids.into_iter().collect());
+        self
+    }
+    pub fn with_statuses<'b>(
+        &'b mut self,
+        statuses: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.statuses = Some(statuses.into_iter().collect());
+        self
+    }
+    pub fn with_types<'b>(
+        &'b mut self,
+        task_types: impl IntoIterator<Item = &'a str>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.task_types = Some(task_types.into_iter().collect());
+        self
+    }
+    pub fn with_uids<'b>(
+        &'b mut self,
+        uids: impl IntoIterator<Item = &'a u32>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.uids = Some(uids.into_iter().collect());
+        self
+    }
+    pub fn with_before_enqueued_at<'b>(
+        &'b mut self,
+        before_enqueued_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.before_enqueued_at = Some(*before_enqueued_at);
+        self
+    }
+    pub fn with_after_enqueued_at<'b>(
+        &'b mut self,
+        after_enqueued_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.after_enqueued_at = Some(*after_enqueued_at);
+        self
+    }
+    pub fn with_before_started_at<'b>(
+        &'b mut self,
+        before_started_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.before_started_at = Some(*before_started_at);
+        self
+    }
+    pub fn with_after_started_at<'b>(
+        &'b mut self,
+        after_started_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.after_started_at = Some(*after_started_at);
+        self
+    }
+    pub fn with_before_finished_at<'b>(
+        &'b mut self,
+        before_finished_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.before_finished_at = Some(*before_finished_at);
+        self
+    }
+    pub fn with_after_finished_at<'b>(
+        &'b mut self,
+        after_finished_at: &'a OffsetDateTime,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.after_finished_at = Some(*after_finished_at);
+        self
+    }
+    pub fn with_canceled_by<'b>(
+        &'b mut self,
+        task_uids: impl IntoIterator<Item = &'a u32>,
+    ) -> &'b mut TasksQuery<'a, T> {
+        self.canceled_by = Some(task_uids.into_iter().collect());
+        self
+    }
+}
+
+impl<'a> TasksQuery<'a, TasksCancelFilters> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksCancelFilters> {
         TasksQuery {
             client,
-            index_uid: None,
-            status: None,
-            task_type: None,
-            limit: None,
-            from: None,
+            index_uids: None,
+            statuses: None,
+            task_types: None,
+            uids: None,
+            canceled_by: None,
+            before_enqueued_at: None,
+            after_enqueued_at: None,
+            before_started_at: None,
+            after_started_at: None,
+            before_finished_at: None,
+            after_finished_at: None,
+            pagination: TasksCancelFilters {},
         }
     }
-    pub fn with_index_uid<'b>(
-        &'b mut self,
-        index_uid: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.index_uid = Some(index_uid.into_iter().collect());
-        self
+
+    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
+        self.client.cancel_tasks_with(self).await
     }
-    pub fn with_status<'b>(
-        &'b mut self,
-        status: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.status = Some(status.into_iter().collect());
-        self
-    }
-    pub fn with_type<'b>(
-        &'b mut self,
-        task_type: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a> {
-        self.task_type = Some(task_type.into_iter().collect());
-        self
-    }
-    pub fn with_limit<'b>(&'b mut self, limit: u32) -> &'b mut TasksQuery<'a> {
-        self.limit = Some(limit);
-        self
-    }
-    pub fn with_from<'b>(&'b mut self, from: u32) -> &'b mut TasksQuery<'a> {
-        self.from = Some(from);
-        self
+}
+
+impl<'a> TasksQuery<'a, TasksDeleteFilters> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksDeleteFilters> {
+        TasksQuery {
+            client,
+            index_uids: None,
+            statuses: None,
+            task_types: None,
+            uids: None,
+            canceled_by: None,
+            before_enqueued_at: None,
+            after_enqueued_at: None,
+            before_started_at: None,
+            after_started_at: None,
+            before_finished_at: None,
+            after_finished_at: None,
+            pagination: TasksDeleteFilters {},
+        }
     }
 
+    pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
+        self.client.delete_tasks_with(self).await
+    }
+}
+
+impl<'a> TasksQuery<'a, TasksPaginationFilters> {
+    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksPaginationFilters> {
+        TasksQuery {
+            client,
+            index_uids: None,
+            statuses: None,
+            task_types: None,
+            uids: None,
+            canceled_by: None,
+            before_enqueued_at: None,
+            after_enqueued_at: None,
+            before_started_at: None,
+            after_started_at: None,
+            before_finished_at: None,
+            after_finished_at: None,
+            pagination: TasksPaginationFilters {
+                limit: None,
+                from: None,
+            },
+        }
+    }
+    pub fn with_limit<'b>(
+        &'b mut self,
+        limit: u32,
+    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters> {
+        self.pagination.limit = Some(limit);
+        self
+    }
+    pub fn with_from<'b>(
+        &'b mut self,
+        from: u32,
+    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters> {
+        self.pagination.from = Some(from);
+        self
+    }
     pub async fn execute(&'a self) -> Result<TasksResults, Error> {
         self.client.get_tasks_with(self).await
     }
@@ -475,8 +699,8 @@ mod test {
         client::*,
         errors::{ErrorCode, ErrorType},
     };
+    use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
-    use mockito::mock;
     use serde::{Deserialize, Serialize};
     use std::time::Duration;
 
@@ -588,7 +812,7 @@ mod test {
                     ..
                 }
             }
-            if duration == Duration::from_secs_f32(10.848957061)
+            if duration == Duration::from_millis(10_848)
         ));
     }
 
@@ -600,12 +824,12 @@ mod test {
                     Document {
                         id: 0,
                         kind: "title".into(),
-                        value: "The Social Network".to_string(),
+                        value: S("The Social Network"),
                     },
                     Document {
                         id: 1,
                         kind: "title".into(),
-                        value: "Harry Potter and the Sorcerer's Stone".to_string(),
+                        value: S("Harry Potter and the Sorcerer's Stone"),
                     },
                 ],
                 None,
@@ -624,65 +848,137 @@ mod test {
 
     #[meilisearch_test]
     async fn test_get_tasks_no_params() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path = "/tasks";
 
-        let mock_res = mock("GET", path).with_status(200).create();
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
         let _ = client.get_tasks().await;
-        mock_res.assert();
+        mock_res.assert_async().await;
 
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_get_tasks_with_params() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path =
-            "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion&limit=0&from=1";
+            "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
 
-        let mock_res = mock("GET", path).with_status(200).create();
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
 
-        let mut query = TasksQuery::new(&client);
+        let mut query = TasksSearchQuery::new(&client);
         query
-            .with_index_uid(["movies", "test"])
-            .with_status(["equeued"])
-            .with_type(["documentDeletion"])
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
             .with_from(1)
-            .with_limit(0);
+            .with_limit(0)
+            .with_uids([&1]);
 
         let _ = client.get_tasks_with(&query).await;
 
-        mock_res.assert();
+        mock_res.assert_async().await;
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_tasks_with_date_params() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path = "/tasks?\
+            beforeEnqueuedAt=2022-02-03T13%3A02%3A38.369634Z\
+            &afterEnqueuedAt=2023-02-03T13%3A02%3A38.369634Z\
+            &beforeStartedAt=2024-02-03T13%3A02%3A38.369634Z\
+            &afterStartedAt=2025-02-03T13%3A02%3A38.369634Z\
+            &beforeFinishedAt=2026-02-03T13%3A02%3A38.369634Z\
+            &afterFinishedAt=2027-02-03T13%3A02%3A38.369634Z";
+
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
+
+        let before_enqueued_at = OffsetDateTime::parse(
+            "2022-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+        let after_enqueued_at = OffsetDateTime::parse(
+            "2023-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+        let before_started_at = OffsetDateTime::parse(
+            "2024-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let after_started_at = OffsetDateTime::parse(
+            "2025-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let before_finished_at = OffsetDateTime::parse(
+            "2026-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let after_finished_at = OffsetDateTime::parse(
+            "2027-02-03T13:02:38.369634Z",
+            &::time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        let mut query = TasksSearchQuery::new(&client);
+        query
+            .with_before_enqueued_at(&before_enqueued_at)
+            .with_after_enqueued_at(&after_enqueued_at)
+            .with_before_started_at(&before_started_at)
+            .with_after_started_at(&after_started_at)
+            .with_before_finished_at(&before_finished_at)
+            .with_after_finished_at(&after_finished_at);
+
+        let _ = client.get_tasks_with(&query).await;
+
+        mock_res.assert_async().await;
+
         Ok(())
     }
 
     #[meilisearch_test]
     async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
-        let mock_server_url = &mockito::server_url();
-        let client = Client::new(mock_server_url, "masterKey");
-        let path = "/tasks?indexUid=movies,test&status=equeued&type=documentDeletion";
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path =
+            "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&canceledBy=9";
 
-        let mock_res = mock("GET", path).with_status(200).create();
+        let mock_res = s.mock("GET", path).with_status(200).create_async().await;
 
-        let mut query = TasksQuery::new(&client);
+        let mut query = TasksSearchQuery::new(&client);
         let _ = query
-            .with_index_uid(["movies", "test"])
-            .with_status(["equeued"])
-            .with_type(["documentDeletion"])
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_canceled_by([&9])
             .execute()
             .await;
 
-        // let _ = client.get_tasks(&query).await;
-        mock_res.assert();
+        mock_res.assert_async().await;
+
         Ok(())
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks_with_none_existant_index_uid(client: Client) -> Result<(), Error> {
-        let mut query = TasksQuery::new(&client);
-        query.with_index_uid(["no_name"]);
+    async fn test_get_tasks_with_none_existant_index_uids(client: Client) -> Result<(), Error> {
+        let mut query = TasksSearchQuery::new(&client);
+        query.with_index_uids(["no_name"]);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
         assert_eq!(tasks.results.len(), 0);
@@ -691,8 +987,8 @@ mod test {
 
     #[meilisearch_test]
     async fn test_get_tasks_with_execute(client: Client) -> Result<(), Error> {
-        let tasks = TasksQuery::new(&client)
-            .with_index_uid(["no_name"])
+        let tasks = TasksSearchQuery::new(&client)
+            .with_index_uids(["no_name"])
             .execute()
             .await
             .unwrap();
@@ -702,15 +998,108 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_failing_task(client: Client, movies: Index) -> Result<(), Error> {
-        let task_info = movies.set_ranking_rules(["wrong_ranking_rule"]).await?;
-
+    async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
+        let task_info = client.create_index(index.uid, None).await.unwrap();
         let task = client.get_task(task_info).await?;
         let task = client.wait_for_task(task, None, None).await?;
 
         let error = task.unwrap_failure();
-        assert_eq!(error.error_code, ErrorCode::InvalidRankingRule);
+        assert_eq!(error.error_code, ErrorCode::IndexAlreadyExists);
         assert_eq!(error.error_type, ErrorType::InvalidRequest);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_cancel_tasks_with_params() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path =
+            "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = s.mock("POST", path).with_status(200).create_async().await;
+
+        let mut query = TasksCancelQuery::new(&client);
+        query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1]);
+
+        let _ = client.cancel_tasks_with(&query).await;
+
+        mock_res.assert_async().await;
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_cancel_tasks_with_params_execute() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path =
+            "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = s.mock("POST", path).with_status(200).create_async().await;
+
+        let mut query = TasksCancelQuery::new(&client);
+        let _ = query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1])
+            .execute()
+            .await;
+
+        mock_res.assert_async().await;
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_tasks_with_params() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
+
+        let mut query = TasksDeleteQuery::new(&client);
+        query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1]);
+
+        let _ = client.delete_tasks_with(&query).await;
+
+        mock_res.assert_async().await;
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_delete_tasks_with_params_execute() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey"));
+        let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
+
+        let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
+
+        let mut query = TasksDeleteQuery::new(&client);
+        let _ = query
+            .with_index_uids(["movies", "test"])
+            .with_statuses(["equeued"])
+            .with_types(["documentDeletion"])
+            .with_uids([&1])
+            .execute()
+            .await;
+
+        mock_res.assert_async().await;
+
         Ok(())
     }
 }
