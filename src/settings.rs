@@ -618,7 +618,8 @@ impl Index {
     /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_typo_tolerance");
-    /// let typotolerance = index.get_typo_tolerance().await.unwrap();
+    ///
+    /// let typo_tolerance = index.get_typo_tolerance().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
