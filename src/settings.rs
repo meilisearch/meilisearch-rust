@@ -13,6 +13,23 @@ pub struct PaginationSetting {
     pub max_total_hits: usize,
 }
 
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct MinWordSizeForTypos {
+    pub one_typo: Option<u8>,
+    pub two_typos: Option<u8>,
+}
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+#[serde(default)]
+pub struct TypoToleranceSettings {
+    pub enabled: Option<bool>,
+    pub disable_on_attributes: Option<Vec<String>>,
+    pub disable_on_words: Option<Vec<String>>,
+    pub min_word_size_for_typos: Option<MinWordSizeForTypos>,
+}
+
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetingSettings {
@@ -77,24 +94,16 @@ pub struct Settings {
     /// Faceting settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub faceting: Option<FacetingSettings>,
+    /// TypoTolerance settings
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub typo_tolerance: Option<TypoToleranceSettings>,
 }
 
 #[allow(missing_docs)]
 impl Settings {
     /// Create undefined settings.
     pub fn new() -> Settings {
-        Settings {
-            synonyms: None,
-            stop_words: None,
-            ranking_rules: None,
-            filterable_attributes: None,
-            sortable_attributes: None,
-            distinct_attribute: None,
-            searchable_attributes: None,
-            displayed_attributes: None,
-            pagination: None,
-            faceting: None,
-        }
+        Self::default()
     }
 
     pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
@@ -137,6 +146,13 @@ impl Settings {
     pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Settings {
         Settings {
             pagination: Some(pagination_settings),
+            ..self
+        }
+    }
+
+    pub fn with_typo_tolerance(self, typo_tolerance_settings: TypoToleranceSettings) -> Settings {
+        Settings {
+            typo_tolerance: Some(typo_tolerance_settings),
             ..self
         }
     }
@@ -581,6 +597,36 @@ impl Index {
         request::<(), (), FacetingSettings>(
             &format!(
                 "{}/indexes/{}/settings/faceting",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Get { query: () },
+            200,
+        )
+        .await
+    }
+
+    /// Get [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) of the [Index].
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("get_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_typo_tolerance");
+    ///
+    /// let typo_tolerance = index.get_typo_tolerance().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_typo_tolerance(&self) -> Result<TypoToleranceSettings, Error> {
+        request::<(), (), TypoToleranceSettings>(
+            &format!(
+                "{}/indexes/{}/settings/typo-tolerance",
                 self.client.host, self.uid
             ),
             self.client.get_api_key(),
@@ -1045,6 +1091,51 @@ impl Index {
         .await
     }
 
+    /// Update [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings, settings::{TypoToleranceSettings, MinWordSizeForTypos}};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("set_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_typo_tolerance");
+    ///
+    /// let typo_tolerance = TypoToleranceSettings{
+    ///     enabled: Some(true),
+    ///     disable_on_attributes: Some(vec!["title".to_string()]),
+    ///     disable_on_words: Some(vec![]),
+    ///     min_word_size_for_typos: Some(MinWordSizeForTypos::default()),
+    /// };
+    ///
+    /// let task = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_typo_tolerance(
+        &self,
+        typo_tolerance: &TypoToleranceSettings,
+    ) -> Result<TaskInfo, Error> {
+        request::<(), &TypoToleranceSettings, TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/typo-tolerance",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Patch {
+                query: (),
+                body: typo_tolerance,
+            },
+            202,
+        )
+        .await
+    }
+
     /// Reset [Settings] of the [Index].
     ///
     /// All settings will be reset to their [default value](https://www.meilisearch.com/docs/reference/api/settings#reset-settings).
@@ -1397,6 +1488,38 @@ impl Index {
         )
         .await
     }
+
+    /// Reset [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("reset_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_typo_tolerance");
+    ///
+    /// let task = index.reset_typo_tolerance().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_typo_tolerance(&self) -> Result<TaskInfo, Error> {
+        request::<(), (), TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/typo-tolerance",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Delete { query: () },
+            202,
+        )
+        .await
+    }
 }
 
 #[cfg(test)]
@@ -1496,5 +1619,75 @@ mod tests {
         let res = index.get_pagination().await.unwrap();
 
         assert_eq!(default, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_typo_tolerance(index: Index) {
+        let expected = TypoToleranceSettings {
+            enabled: Some(true),
+            disable_on_attributes: Some(vec![]),
+            disable_on_words: Some(vec![]),
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
+                one_typo: Some(5),
+                two_typos: Some(9),
+            }),
+        };
+
+        let res = index.get_typo_tolerance().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_typo_tolerance(client: Client, index: Index) {
+        let expected = TypoToleranceSettings {
+            enabled: Some(true),
+            disable_on_attributes: Some(vec!["title".to_string()]),
+            disable_on_words: Some(vec![]),
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
+                one_typo: Some(5),
+                two_typos: Some(9),
+            }),
+        };
+
+        let typo_tolerance = TypoToleranceSettings {
+            disable_on_attributes: Some(vec!["title".to_string()]),
+            ..Default::default()
+        };
+
+        let task_info = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_typo_tolerance().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_typo_tolerance(index: Index) {
+        let expected = TypoToleranceSettings {
+            enabled: Some(true),
+            disable_on_attributes: Some(vec![]),
+            disable_on_words: Some(vec![]),
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
+                one_typo: Some(5),
+                two_typos: Some(9),
+            }),
+        };
+
+        let typo_tolerance = TypoToleranceSettings {
+            disable_on_attributes: Some(vec!["title".to_string()]),
+            ..Default::default()
+        };
+
+        let task = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
+        index.wait_for_task(task, None, None).await.unwrap();
+
+        let reset_task = index.reset_typo_tolerance().await.unwrap();
+        index.wait_for_task(reset_task, None, None).await.unwrap();
+
+        let default = index.get_typo_tolerance().await.unwrap();
+
+        assert_eq!(expected, default);
     }
 }
