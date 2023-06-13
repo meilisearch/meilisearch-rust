@@ -10,16 +10,16 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
+use yew::{html::Scope, Html};
 
 mod document;
 use crate::document::{display, Crate};
 
 lazy_static! {
-    static ref CLIENT: Client = Client::new("http://localhost:7700", "masterKey",);
+    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey"));
 }
 
 struct Model {
-    link: Rc<ComponentLink<Self>>,
     index: Rc<Index>,
     results: Vec<Map<String, Value>>,
     processing_time_ms: usize,
@@ -43,13 +43,8 @@ enum Msg {
 impl Component for Model {
     type Message = Msg;
     type Properties = ();
-    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Model {
-        // Load a few popular crates
-        link.send_message(Msg::Input(String::new()));
-
-        Self {
-            link: Rc::new(link),
-
+    fn create(_ctx: &Context<Self>) -> Model {
+        Model {
             // The index method avoids checking the existence of the index.
             // It won't make any HTTP request so the function is not async so it's easier to use.
             // Use only if you are sure that the index exists.
@@ -62,15 +57,14 @@ impl Component for Model {
         }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             // Sent when the value of the text input changed (so we have to make a new request)
             Msg::Input(value) => {
                 let index = Rc::clone(&self.index);
-                let link = Rc::clone(&self.link);
+                let link = ctx.link().clone();
                 self.latest_sent_request_id += 1;
                 let request_id = self.latest_sent_request_id;
-
                 // Spawn a task loading results
                 spawn_local(async move {
                     // Load the results
@@ -117,22 +111,22 @@ impl Component for Model {
         }
     }
 
-    fn change(&mut self, _props: Self::Properties) -> ShouldRender {
+    fn changed(&mut self, _ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
         false
     }
 
-    fn view(&self) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <>
             <header id="serp">
-                {header_content(self.processing_time_ms, Rc::clone(&self.link))}
+                {header_content(self.processing_time_ms, ctx.link())}
             </header>
             <main id="results">
                 <div class="inner-col">
                     <ol id="handlebars-list">
                         {
                             // Display the results
-                            for self.results.iter().map(|r| display(r))
+                            for self.results.iter().map(display)
                         }
                     </ol>
                 </div>
@@ -147,7 +141,7 @@ impl Component for Model {
     }
 }
 
-fn header_content(processing_time_ms: usize, link: Rc<ComponentLink<Model>>) -> Html {
+fn header_content(processing_time_ms: usize, link: &Scope<Model>) -> Html {
     html! {
         <div class="inner-col">
             <h3>{"Meili crates browser 2000"}</h3>
@@ -162,7 +156,10 @@ fn header_content(processing_time_ms: usize, link: Rc<ComponentLink<Model>>) -> 
             </p>
             <form role="search" id="search">
                 // We fire an event each time the value changes so that we can update the results
-                <input placeholder="name, keywords, description" autofocus=true autocapitalize="none" autocorrect="off" autocomplete="off" tabindex="1" type="search" id="textSearch" oninput=link.callback(|e: yew::html::InputData| Msg::Input(e.value))/>
+                <input placeholder="name, keywords, description" autofocus=true autocapitalize="none" autocorrect="off" autocomplete="off" tabindex="1" type="search" id="textSearch" oninput={link.callback(|e: InputEvent| {
+                    let input: web_sys::HtmlInputElement = e.target_unchecked_into();
+                    Msg::Input(input.value())
+                })}/>
                 // We display the processing time here
                 <span id="request-time">{processing_time_ms}{" ms"}</span>
             </form>
@@ -179,5 +176,5 @@ fn header_content(processing_time_ms: usize, link: Rc<ComponentLink<Model>>) -> 
 #[wasm_bindgen(start)]
 pub fn run_app() {
     console_error_panic_hook::set_once();
-    App::<Model>::new().mount_to_body();
+    yew::Renderer::<Model>::new().render();
 }

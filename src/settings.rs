@@ -13,13 +13,31 @@ pub struct PaginationSetting {
     pub max_total_hits: usize,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct MinWordSizeForTypos {
+    pub one_typo: Option<u8>,
+    pub two_typos: Option<u8>,
+}
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+#[serde(default)]
+pub struct TypoToleranceSettings {
+    pub enabled: Option<bool>,
+    pub disable_on_attributes: Option<Vec<String>>,
+    pub disable_on_words: Option<Vec<String>>,
+    pub min_word_size_for_typos: Option<MinWordSizeForTypos>,
+}
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetingSettings {
     pub max_values_per_facet: usize,
 }
 
 /// Struct reprensenting a set of settings.
+///
 /// You can build this struct using the builder syntax.
 ///
 /// # Example
@@ -46,55 +64,48 @@ pub struct FacetingSettings {
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
-    /// List of associated words treated similarly
+    /// List of associated words treated similarly.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub synonyms: Option<HashMap<String, Vec<String>>>,
-    /// List of words ignored by Meilisearch when present in search queries
+    /// List of words ignored by Meilisearch when present in search queries.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_words: Option<Vec<String>>,
-    /// List of [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#order-of-the-rules) sorted by order of importance
+    /// List of [ranking rules](https://www.meilisearch.com/docs/learn/core_concepts/relevancy#order-of-the-rules) sorted by order of importance.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_rules: Option<Vec<String>>,
-    /// Attributes to use for [filtering and faceted search](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html)
+    /// Attributes to use for [filtering](https://www.meilisearch.com/docs/learn/advanced/filtering).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filterable_attributes: Option<Vec<String>>,
-    /// Attributes to sort
+    /// Attributes to sort.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sortable_attributes: Option<Vec<String>>,
-    /// Search returns documents with distinct (different) values of the given field
+    /// Search returns documents with distinct (different) values of the given field.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub distinct_attribute: Option<String>,
-    /// Fields in which to search for matching query words sorted by order of importance
+    /// Fields in which to search for matching query words sorted by order of importance.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub searchable_attributes: Option<Vec<String>>,
-    /// Fields displayed in the returned documents
+    /// Fields displayed in the returned documents.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub displayed_attributes: Option<Vec<String>>,
-    /// Pagination settings
+    /// Pagination settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pagination: Option<PaginationSetting>,
-    /// Faceting settings
+    /// Faceting settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub faceting: Option<FacetingSettings>,
+    /// TypoTolerance settings
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub typo_tolerance: Option<TypoToleranceSettings>,
 }
 
 #[allow(missing_docs)]
 impl Settings {
-    /// Create undefined settings
+    /// Create undefined settings.
     pub fn new() -> Settings {
-        Settings {
-            synonyms: None,
-            stop_words: None,
-            ranking_rules: None,
-            filterable_attributes: None,
-            sortable_attributes: None,
-            distinct_attribute: None,
-            searchable_attributes: None,
-            displayed_attributes: None,
-            pagination: None,
-            faceting: None,
-        }
+        Self::default()
     }
+
     pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
     where
         S: AsRef<str>,
@@ -135,6 +146,13 @@ impl Settings {
     pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Settings {
         Settings {
             pagination: Some(pagination_settings),
+            ..self
+        }
+    }
+
+    pub fn with_typo_tolerance(self, typo_tolerance_settings: TypoToleranceSettings) -> Settings {
+        Settings {
+            typo_tolerance: Some(typo_tolerance_settings),
             ..self
         }
     }
@@ -223,7 +241,7 @@ impl Settings {
 
     pub fn with_faceting(self, faceting: &FacetingSettings) -> Settings {
         Settings {
-            faceting: Some(faceting.clone()),
+            faceting: Some(*faceting),
             ..self
         }
     }
@@ -232,31 +250,7 @@ impl Settings {
 impl Index {
     /// Get [Settings] of the [Index].
     ///
-    /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*};
-    /// #
-    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
-    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-    /// #
-    /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    /// # client.create_index("get_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-    /// let index = client.index("get_settings");
-    /// let settings = index.get_settings().await.unwrap();
-    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-    /// # });
-    /// ```
-    pub async fn get_settings(&self) -> Result<Settings, Error> {
-        request::<(), (), Settings>(
-            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            &self.client.api_key,
-            Method::Get { query: () },
-            200,
-        )
-        .await
-    }
-
-    /// Get [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the [Index].
+    /// # Example
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -265,9 +259,40 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("get_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_settings");
+    ///
+    /// let settings = index.get_settings().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_settings(&self) -> Result<Settings, Error> {
+        request::<(), (), Settings>(
+            &format!("{}/indexes/{}/settings", self.client.host, self.uid),
+            self.client.get_api_key(),
+            Method::Get { query: () },
+            200,
+        )
+        .await
+    }
+
+    /// Get [synonyms](https://www.meilisearch.com/docs/reference/api/settings#get-synonyms) of the [Index].
+    ///
+    /// # Example
+    ///
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_synonyms");
+    ///
     /// let synonyms = index.get_synonyms().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -278,14 +303,17 @@ impl Index {
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
         .await
     }
 
-    /// Get [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    /// Get [pagination](https://www.meilisearch.com/docs/reference/api/settings#pagination) of the [Index].
+    ///
+    /// # Example
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -294,9 +322,10 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_pagination");
+    ///
     /// let pagination = index.get_pagination().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -307,14 +336,16 @@ impl Index {
                 "{}/indexes/{}/settings/pagination",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
         .await
     }
 
-    /// Get [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
+    /// Get [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
+    ///
+    /// # Example
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -323,9 +354,10 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_stop_words");
+    ///
     /// let stop_words = index.get_stop_words().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -336,14 +368,17 @@ impl Index {
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
         .await
     }
 
-    /// Get [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index].
+    /// Get [ranking rules](https://www.meilisearch.com/docs/reference/api/settings#ranking-rules) of the [Index].
+    ///
+    /// # Example
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -352,9 +387,10 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_ranking_rules");
+    ///
     /// let ranking_rules = index.get_ranking_rules().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -365,14 +401,17 @@ impl Index {
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
         .await
     }
 
-    /// Get [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the [Index].
+    /// Get [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
+    ///
+    /// # Example
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -381,9 +420,10 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_filterable_attributes");
+    ///
     /// let filterable_attributes = index.get_filterable_attributes().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -394,14 +434,17 @@ impl Index {
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
         .await
     }
 
-    /// Get [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the [Index].
+    /// Get [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
+    ///
+    /// # Example
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -410,9 +453,10 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_sortable_attributes");
+    ///
     /// let sortable_attributes = index.get_sortable_attributes().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -423,14 +467,17 @@ impl Index {
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
         .await
     }
 
-    /// Get the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the [Index].
+    /// Get the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
+    ///
+    /// # Example
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -439,9 +486,10 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_distinct_attribute");
+    ///
     /// let distinct_attribute = index.get_distinct_attribute().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -452,14 +500,17 @@ impl Index {
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
         .await
     }
 
-    /// Get [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the [Index].
+    /// Get [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings#searchable-attributes) of the [Index].
+    ///
+    /// # Example
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -468,9 +519,10 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_searchable_attributes");
+    ///
     /// let searchable_attributes = index.get_searchable_attributes().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -481,14 +533,17 @@ impl Index {
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
         .await
     }
 
-    /// Get [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the [Index].
+    /// Get [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings#displayed-attributes) of the [Index].
+    ///
+    /// # Example
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -497,9 +552,10 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_displayed_attributes");
+    ///
     /// let displayed_attributes = index.get_displayed_attributes().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -510,14 +566,17 @@ impl Index {
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
         .await
     }
 
-    /// Get [faceting](https://docs.meilisearch.com/reference/api/settings.html#faceting) settings of the [Index].
+    /// Get [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
+    ///
+    /// # Example
+    ///
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -526,9 +585,10 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_faceting", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_faceting");
+    ///
     /// let faceting = index.get_faceting().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -539,14 +599,45 @@ impl Index {
                 "{}/indexes/{}/settings/faceting",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Get { query: () },
             200,
         )
         .await
     }
 
-    /// Update [settings](../settings/struct.Settings.html) of the [Index].
+    /// Get [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) of the [Index].
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("get_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_typo_tolerance");
+    ///
+    /// let typo_tolerance = index.get_typo_tolerance().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_typo_tolerance(&self) -> Result<TypoToleranceSettings, Error> {
+        request::<(), (), TypoToleranceSettings>(
+            &format!(
+                "{}/indexes/{}/settings/typo-tolerance",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Get { query: () },
+            200,
+        )
+        .await
+    }
+
+    /// Update [settings](../settings/struct.Settings) of the [Index].
+    ///
     /// Updates in the settings are partial. This means that any parameters corresponding to a `None` value will be left unchanged.
     ///
     /// # Example
@@ -558,7 +649,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_settings");
     ///
@@ -575,7 +666,7 @@ impl Index {
     pub async fn set_settings(&self, settings: &Settings) -> Result<TaskInfo, Error> {
         request::<(), &Settings, TaskInfo>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Patch {
                 query: (),
                 body: settings,
@@ -585,7 +676,7 @@ impl Index {
         .await
     }
 
-    /// Update [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the [Index].
+    /// Update [synonyms](https://www.meilisearch.com/docs/reference/api/settings#synonyms) of the [Index].
     ///
     /// # Example
     ///
@@ -596,7 +687,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_synonyms");
     ///
@@ -618,7 +709,7 @@ impl Index {
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: synonyms,
@@ -628,7 +719,7 @@ impl Index {
         .await
     }
 
-    /// Update [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    /// Update [pagination](https://www.meilisearch.com/docs/reference/api/settings#pagination) of the [Index].
     ///
     /// # Example
     ///
@@ -639,9 +730,10 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_pagination");
+    ///
     /// let pagination = PaginationSetting {max_total_hits:100};
     /// let task = index.set_pagination(pagination).await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -653,7 +745,7 @@ impl Index {
                 "{}/indexes/{}/settings/pagination",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Patch {
                 query: (),
                 body: &pagination,
@@ -663,7 +755,7 @@ impl Index {
         .await
     }
 
-    /// Update [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
+    /// Update [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
     ///
     /// # Example
     ///
@@ -674,7 +766,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_stop_words");
     ///
@@ -692,7 +784,7 @@ impl Index {
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: stop_words
@@ -705,7 +797,7 @@ impl Index {
         .await
     }
 
-    /// Update [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index].
+    /// Update [ranking rules](https://www.meilisearch.com/docs/reference/api/settings#ranking-rules) of the [Index].
     ///
     /// # Example
     ///
@@ -716,7 +808,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_ranking_rules");
     ///
@@ -743,7 +835,7 @@ impl Index {
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: ranking_rules
@@ -756,7 +848,7 @@ impl Index {
         .await
     }
 
-    /// Update [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the [Index].
+    /// Update [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -767,7 +859,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_filterable_attributes");
     ///
@@ -785,7 +877,7 @@ impl Index {
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: filterable_attributes
@@ -798,7 +890,7 @@ impl Index {
         .await
     }
 
-    /// Update [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the [Index].
+    /// Update [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -809,7 +901,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_sortable_attributes");
     ///
@@ -827,7 +919,7 @@ impl Index {
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: sortable_attributes
@@ -840,7 +932,7 @@ impl Index {
         .await
     }
 
-    /// Update the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the [Index].
+    /// Update the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -851,7 +943,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_distinct_attribute");
     ///
@@ -868,7 +960,7 @@ impl Index {
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: distinct_attribute.as_ref().to_string(),
@@ -878,7 +970,7 @@ impl Index {
         .await
     }
 
-    /// Update [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the [Index].
+    /// Update [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings#searchable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -889,7 +981,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_searchable_attributes");
     ///
@@ -906,7 +998,7 @@ impl Index {
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: searchable_attributes
@@ -919,7 +1011,7 @@ impl Index {
         .await
     }
 
-    /// Update [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the [Index].
+    /// Update [displayed attributes](https://www.meilisearch.com/docs/reference/features/settings#displayed-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -930,7 +1022,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_displayed_attributes");
     ///
@@ -947,7 +1039,7 @@ impl Index {
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Put {
                 query: (),
                 body: displayed_attributes
@@ -960,7 +1052,7 @@ impl Index {
         .await
     }
 
-    /// Update [faceting](https://docs.meilisearch.com/reference/api/settings.html#faceting) settings of the [Index].
+    /// Update [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
     ///
     /// # Example
     ///
@@ -971,7 +1063,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_faceting", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_faceting");
     ///
@@ -989,7 +1081,7 @@ impl Index {
                 "{}/indexes/{}/settings/faceting",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Patch {
                 query: (),
                 body: faceting,
@@ -999,8 +1091,54 @@ impl Index {
         .await
     }
 
+    /// Update [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings, settings::{TypoToleranceSettings, MinWordSizeForTypos}};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("set_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_typo_tolerance");
+    ///
+    /// let typo_tolerance = TypoToleranceSettings{
+    ///     enabled: Some(true),
+    ///     disable_on_attributes: Some(vec!["title".to_string()]),
+    ///     disable_on_words: Some(vec![]),
+    ///     min_word_size_for_typos: Some(MinWordSizeForTypos::default()),
+    /// };
+    ///
+    /// let task = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_typo_tolerance(
+        &self,
+        typo_tolerance: &TypoToleranceSettings,
+    ) -> Result<TaskInfo, Error> {
+        request::<(), &TypoToleranceSettings, TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/typo-tolerance",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Patch {
+                query: (),
+                body: typo_tolerance,
+            },
+            202,
+        )
+        .await
+    }
+
     /// Reset [Settings] of the [Index].
-    /// All settings will be reset to their [default value](https://docs.meilisearch.com/reference/api/settings.html#reset-settings).
+    ///
+    /// All settings will be reset to their [default value](https://www.meilisearch.com/docs/reference/api/settings#reset-settings).
     ///
     /// # Example
     ///
@@ -1011,7 +1149,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_settings", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_settings");
     ///
@@ -1022,14 +1160,14 @@ impl Index {
     pub async fn reset_settings(&self) -> Result<TaskInfo, Error> {
         request::<(), (), TaskInfo>(
             &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
         .await
     }
 
-    /// Reset [synonyms](https://docs.meilisearch.com/reference/features/synonyms.html) of the [Index].
+    /// Reset [synonyms](https://www.meilisearch.com/docs/reference/features/synonyms.html) of the [Index].
     ///
     /// # Example
     ///
@@ -1040,7 +1178,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_synonyms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_synonyms");
     ///
@@ -1054,14 +1192,14 @@ impl Index {
                 "{}/indexes/{}/settings/synonyms",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
         .await
     }
 
-    /// Reset [pagination](https://docs.meilisearch.com/learn/configuration/settings.html#pagination) of the [Index].
+    /// Reset [pagination](https://www.meilisearch.com/docs/learn/configuration/settings#pagination) of the [Index].
     ///
     /// # Example
     ///
@@ -1072,7 +1210,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_pagination", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_pagination");
     ///
@@ -1086,13 +1224,13 @@ impl Index {
                 "{}/indexes/{}/settings/pagination",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
         .await
     }
-    /// Reset [stop-words](https://docs.meilisearch.com/reference/features/stop_words.html) of the [Index].
+    /// Reset [stop-words](https://www.meilisearch.com/docs/reference/features/stop_words.html) of the [Index].
     ///
     /// # Example
     ///
@@ -1103,7 +1241,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_stop_words", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_stop_words");
     ///
@@ -1117,15 +1255,16 @@ impl Index {
                 "{}/indexes/{}/settings/stop-words",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
         .await
     }
 
-    /// Reset [ranking rules](https://docs.meilisearch.com/learn/core_concepts/relevancy.html#ranking-rules) of the [Index] to default value.
-    /// Default value: `["words", "typo", "proximity", "attribute", "sort", "exactness"]`.
+    /// Reset [ranking rules](https://www.meilisearch.com/docs/learn/core_concepts/relevancy#ranking-rules) of the [Index] to default value.
+    ///
+    /// **Default value: `["words", "typo", "proximity", "attribute", "sort", "exactness"]`.**
     ///
     /// # Example
     ///
@@ -1136,7 +1275,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_ranking_rules", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_ranking_rules");
     ///
@@ -1150,14 +1289,14 @@ impl Index {
                 "{}/indexes/{}/settings/ranking-rules",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
         .await
     }
 
-    /// Reset [filterable attributes](https://docs.meilisearch.com/reference/features/filtering_and_faceted_search.html) of the [Index].
+    /// Reset [filterable attributes](https://www.meilisearch.com/docs/reference/features/filtering_and_faceted_search.html) of the [Index].
     ///
     /// # Example
     ///
@@ -1168,7 +1307,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_filterable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_filterable_attributes");
     ///
@@ -1182,14 +1321,14 @@ impl Index {
                 "{}/indexes/{}/settings/filterable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
         .await
     }
 
-    /// Reset [sortable attributes](https://docs.meilisearch.com/reference/features/sorting.html) of the [Index].
+    /// Reset [sortable attributes](https://www.meilisearch.com/docs/reference/features/sorting.html) of the [Index].
     ///
     /// # Example
     ///
@@ -1200,7 +1339,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_sortable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_sortable_attributes");
     ///
@@ -1214,14 +1353,14 @@ impl Index {
                 "{}/indexes/{}/settings/sortable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
         .await
     }
 
-    /// Reset the [distinct attribute](https://docs.meilisearch.com/reference/features/settings.html#distinct-attribute) of the [Index].
+    /// Reset the [distinct attribute](https://www.meilisearch.com/docs/reference/features/settings#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -1232,7 +1371,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_distinct_attribute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_distinct_attribute");
     ///
@@ -1246,14 +1385,15 @@ impl Index {
                 "{}/indexes/{}/settings/distinct-attribute",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
         .await
     }
 
-    /// Reset [searchable attributes](https://docs.meilisearch.com/reference/features/field_properties.html#searchable-fields) of the [Index] (enable all attributes).
+    /// Reset [searchable attributes](https://www.meilisearch.com/docs/reference/features/field_properties.html#searchable-fields) of
+    /// the [Index] (enable all attributes).
     ///
     /// # Example
     ///
@@ -1264,7 +1404,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_searchable_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_searchable_attributes");
     ///
@@ -1278,14 +1418,14 @@ impl Index {
                 "{}/indexes/{}/settings/searchable-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
         .await
     }
 
-    /// Reset [displayed attributes](https://docs.meilisearch.com/reference/features/settings.html#displayed-attributes) of the [Index] (enable all attributes).
+    /// Reset [displayed attributes](https://www.meilisearch.com/docs/reference/features/settings#displayed-attributes) of the [Index] (enable all attributes).
     ///
     /// # Example
     ///
@@ -1296,7 +1436,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_displayed_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_displayed_attributes");
     ///
@@ -1310,14 +1450,14 @@ impl Index {
                 "{}/indexes/{}/settings/displayed-attributes",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
         .await
     }
 
-    /// Reset [faceting](https://docs.meilisearch.com/reference/api/settings.html#faceting) settings of the [Index].
+    /// Reset [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
     ///
     /// # Example
     ///
@@ -1328,7 +1468,7 @@ impl Index {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_faceting", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_faceting");
     ///
@@ -1342,7 +1482,39 @@ impl Index {
                 "{}/indexes/{}/settings/faceting",
                 self.client.host, self.uid
             ),
-            &self.client.api_key,
+            self.client.get_api_key(),
+            Method::Delete { query: () },
+            202,
+        )
+        .await
+    }
+
+    /// Reset [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("reset_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_typo_tolerance");
+    ///
+    /// let task = index.reset_typo_tolerance().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_typo_tolerance(&self) -> Result<TaskInfo, Error> {
+        request::<(), (), TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/typo-tolerance",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
             Method::Delete { query: () },
             202,
         )
@@ -1447,5 +1619,75 @@ mod tests {
         let res = index.get_pagination().await.unwrap();
 
         assert_eq!(default, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_typo_tolerance(index: Index) {
+        let expected = TypoToleranceSettings {
+            enabled: Some(true),
+            disable_on_attributes: Some(vec![]),
+            disable_on_words: Some(vec![]),
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
+                one_typo: Some(5),
+                two_typos: Some(9),
+            }),
+        };
+
+        let res = index.get_typo_tolerance().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_typo_tolerance(client: Client, index: Index) {
+        let expected = TypoToleranceSettings {
+            enabled: Some(true),
+            disable_on_attributes: Some(vec!["title".to_string()]),
+            disable_on_words: Some(vec![]),
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
+                one_typo: Some(5),
+                two_typos: Some(9),
+            }),
+        };
+
+        let typo_tolerance = TypoToleranceSettings {
+            disable_on_attributes: Some(vec!["title".to_string()]),
+            ..Default::default()
+        };
+
+        let task_info = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_typo_tolerance().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_typo_tolerance(index: Index) {
+        let expected = TypoToleranceSettings {
+            enabled: Some(true),
+            disable_on_attributes: Some(vec![]),
+            disable_on_words: Some(vec![]),
+            min_word_size_for_typos: Some(MinWordSizeForTypos {
+                one_typo: Some(5),
+                two_typos: Some(9),
+            }),
+        };
+
+        let typo_tolerance = TypoToleranceSettings {
+            disable_on_attributes: Some(vec!["title".to_string()]),
+            ..Default::default()
+        };
+
+        let task = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
+        index.wait_for_task(task, None, None).await.unwrap();
+
+        let reset_task = index.reset_typo_tolerance().await.unwrap();
+        index.wait_for_task(reset_task, None, None).await.unwrap();
+
+        let default = index.get_typo_tolerance().await.unwrap();
+
+        assert_eq!(expected, default);
     }
 }

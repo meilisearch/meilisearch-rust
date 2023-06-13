@@ -27,14 +27,15 @@ impl TaskInfo {
         self.task_uid
     }
 
-    /// Wait until Meilisearch processes a task provided by [TaskInfo], and get its status.
+    /// Wait until Meilisearch processes a task provided by [`TaskInfo`], and get its status.
     ///
-    /// `interval` = The frequency at which the server should be polled. Default = 50ms
-    /// `timeout` = The maximum time to wait for processing to complete. Default = 5000ms
+    /// `interval` = The frequency at which the server should be polled. **Default = 50ms**
     ///
-    /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
+    /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
-    /// See also [Client::wait_for_task, Index::wait_for_task].
+    /// If the waited time exceeds `timeout` then an [`Error::Timeout`] will be returned.
+    ///
+    /// See also [`Client::wait_for_task`, `Index::wait_for_task`].
     ///
     /// # Example
     ///
@@ -49,20 +50,22 @@ impl TaskInfo {
     /// #    kind: String,
     /// # }
     /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new("http://localhost:7700", "masterKey");
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
     /// ], None)
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(matches!(status, Task::Succeeded { .. }));
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -166,10 +169,7 @@ mod test {
 
     #[meilisearch_test]
     async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
-        let task_info = client
-            .create_index("meilisearch_sdk-task_info-test-test_failing_task", None)
-            .await
-            .unwrap();
+        let task_info = client.create_index(index.uid, None).await.unwrap();
         let task = client.wait_for_task(task_info, None, None).await?;
 
         let error = task.unwrap_failure();

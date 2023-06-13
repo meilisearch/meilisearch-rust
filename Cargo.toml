@@ -1,6 +1,6 @@
 [package]
 name = "meilisearch-sdk"
-version = "0.22.0"
+version = "0.24.1"
 authors = ["Mubelotix <mubelotix@gmail.com>"]
 edition = "2018"
 description = "Rust wrapper for the Meilisearch API. Meilisearch is a powerful, fast, open-source, easy to use and deploy search engine."
@@ -13,7 +13,7 @@ members = ["examples/*"]
 
 [dependencies]
 async-trait = "0.1.51"
-iso8601-duration = "0.1.0"
+iso8601 = "0.6.1"
 log = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -22,7 +22,7 @@ jsonwebtoken = { version = "8", default-features = false }
 yaup = "0.2.0"
 either = { version = "1.8.0", features = ["serde"] }
 thiserror = "1.0.37"
-meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", version = "0.22.0" }
+meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", version = "0.24.1" }
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -40,6 +40,7 @@ wasm-bindgen-futures = "0.4"
 [features]
 default = ["isahc-static-curl"]
 isahc-static-curl = ["isahc/static-curl"]
+isahc-static-ssl = ["isahc/static-ssl"]
 
 [dev-dependencies]
 env_logger = "0.10"

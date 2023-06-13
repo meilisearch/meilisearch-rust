@@ -66,6 +66,7 @@ pub struct DocumentAdditionOrUpdate {
 pub struct DocumentDeletion {
     pub provided_ids: Option<usize>,
     pub deleted_documents: Option<usize>,
+    pub original_filter: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -137,8 +138,8 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    let iso_duration = iso8601_duration::Duration::parse(&s).map_err(serde::de::Error::custom)?;
-    Ok(iso_duration.to_std())
+    let iso_duration = iso8601::duration(&s).map_err(serde::de::Error::custom)?;
+    Ok(iso_duration.into())
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -215,12 +216,13 @@ impl Task {
 
     /// Wait until Meilisearch processes a [Task], and get its status.
     ///
-    /// `interval` = The frequency at which the server should be polled. Default = 50ms
-    /// `timeout` = The maximum time to wait for processing to complete. Default = 5000ms
+    /// `interval` = The frequency at which the server should be polled. **Default = 50ms**
     ///
-    /// If the waited time exceeds `timeout` then an [Error::Timeout] will be returned.
+    /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
-    /// See also [Client::wait_for_task, Index::wait_for_task].
+    /// If the waited time exceeds `timeout` then an [`Error::Timeout`] will be returned.
+    ///
+    /// See also [`Client::wait_for_task`, `Index::wait_for_task`].
     ///
     /// # Example
     ///
@@ -240,18 +242,18 @@ impl Task {
     /// #
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
     /// ], None)
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(matches!(status, Task::Succeeded { .. }));
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -279,9 +281,8 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// // create the client
-    /// let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
-    ///
+    /// # // create the client
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client.create_index("try_make_index", None).await.unwrap();
     /// let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
@@ -305,9 +306,9 @@ impl Task {
         }
     }
 
-    /// Unwrap the [MeilisearchError] from a [Self::Failed] [Task].
+    /// Unwrap the [`MeilisearchError`] from a [`Self::Failed`] [Task].
     ///
-    /// Will panic if the task was not [Self::Failed].
+    /// Will panic if the task was not [`Self::Failed`].
     ///
     /// # Example
     ///
@@ -318,7 +319,7 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client.create_index("unwrap_failure", None).await.unwrap();
     /// let task = client
     ///     .create_index("unwrap_failure", None)
@@ -345,7 +346,7 @@ impl Task {
         }
     }
 
-    /// Returns `true` if the [Task] is [Self::Failed].
+    /// Returns `true` if the [Task] is [`Self::Failed`].
     ///
     /// # Example
     ///
@@ -356,8 +357,9 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client.create_index("is_failure", None).await.unwrap();
+    /// // create an index with a conflicting uid
     /// let task = client
     ///     .create_index("is_failure", None)
     ///     .await
@@ -374,7 +376,7 @@ impl Task {
         matches!(self, Self::Failed { .. })
     }
 
-    /// Returns `true` if the [Task] is [Self::Succeeded].
+    /// Returns `true` if the [Task] is [`Self::Succeeded`].
     ///
     /// # Example
     ///
@@ -385,14 +387,14 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task = client
-    ///   .create_index("is_success", None)
-    ///   .await
-    ///   .unwrap()
-    ///   .wait_for_completion(&client, None, None)
-    ///   .await
-    ///   .unwrap();
+    ///     .create_index("is_success", None)
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// assert!(task.is_success());
     /// # task.try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -402,7 +404,7 @@ impl Task {
         matches!(self, Self::Succeeded { .. })
     }
 
-    /// Returns `true` if the [Task] is pending ([Self::Enqueued] or [Self::Processing]).
+    /// Returns `true` if the [Task] is pending ([`Self::Enqueued`] or [`Self::Processing`]).
     ///
     /// # Example
     /// ```no_run
@@ -414,12 +416,13 @@ impl Task {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let task_info = client
-    ///   .create_index("is_pending", None)
-    ///   .await
-    ///   .unwrap();
+    ///     .create_index("is_pending", None)
+    ///     .await
+    ///     .unwrap();
     /// let task = client.get_task(task_info).await.unwrap();
+    ///
     /// assert!(task.is_pending());
     /// # task.wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
@@ -441,10 +444,10 @@ impl AsRef<u32> for Task {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct TasksPaginationFilters {
-    // Maximum number of tasks to return
+    // Maximum number of tasks to return.
     #[serde(skip_serializing_if = "Option::is_none")]
     limit: Option<u32>,
-    // The first task uid that should be returned
+    // The first task uid that should be returned.
     #[serde(skip_serializing_if = "Option::is_none")]
     from: Option<u32>,
 }
@@ -473,10 +476,10 @@ pub struct TasksQuery<'a, T> {
     // Types array to only retrieve the tasks with these [TaskType].
     #[serde(skip_serializing_if = "Option::is_none", rename = "types")]
     task_types: Option<Vec<&'a str>>,
-    // Uids of the tasks to retrieve
+    // Uids of the tasks to retrieve.
     #[serde(skip_serializing_if = "Option::is_none")]
     uids: Option<Vec<&'a u32>>,
-    // Uids of the tasks that canceled other tasks
+    // Uids of the tasks that canceled other tasks.
     #[serde(skip_serializing_if = "Option::is_none")]
     canceled_by: Option<Vec<&'a u32>>,
     // Date to retrieve all tasks that were enqueued before it.
@@ -809,7 +812,7 @@ mod test {
                     ..
                 }
             }
-            if duration == Duration::from_secs_f32(10.848957061)
+            if duration == Duration::from_millis(10_848)
         ));
     }
 
@@ -847,7 +850,7 @@ mod test {
     async fn test_get_tasks_no_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path = "/tasks";
 
         let mock_res = s.mock("GET", path).with_status(200).create_async().await;
@@ -861,7 +864,7 @@ mod test {
     async fn test_get_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path =
             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
 
@@ -887,7 +890,7 @@ mod test {
     async fn test_get_tasks_with_date_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path = "/tasks?\
             beforeEnqueuedAt=2022-02-03T13%3A02%3A38.369634Z\
             &afterEnqueuedAt=2023-02-03T13%3A02%3A38.369634Z\
@@ -952,7 +955,7 @@ mod test {
     async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path =
             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&canceledBy=9";
 
@@ -996,10 +999,7 @@ mod test {
 
     #[meilisearch_test]
     async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
-        let task_info = client
-            .create_index("meilisearch_sdk-tasks-test-test_failing_task", None)
-            .await
-            .unwrap();
+        let task_info = client.create_index(index.uid, None).await.unwrap();
         let task = client.get_task(task_info).await?;
         let task = client.wait_for_task(task, None, None).await?;
 
@@ -1013,7 +1013,7 @@ mod test {
     async fn test_cancel_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
@@ -1037,7 +1037,7 @@ mod test {
     async fn test_cancel_tasks_with_params_execute() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
@@ -1060,9 +1060,8 @@ mod test {
     #[meilisearch_test]
     async fn test_delete_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
-        //         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
         let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
@@ -1085,7 +1084,7 @@ mod test {
     async fn test_delete_tasks_with_params_execute() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, "masterKey");
+        let client = Client::new(mock_server_url, Some("masterKey"));
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
         let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;

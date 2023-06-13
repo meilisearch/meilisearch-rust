@@ -2,7 +2,7 @@
 //!
 //! ### Add Documents <!-- omit in TOC -->
 //!
-//! ```rust
+//! ```
 //! use meilisearch_sdk::client::*;
 //! use serde::{Serialize, Deserialize};
 //! use futures::executor::block_on;
@@ -19,7 +19,7 @@
 //! #   let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #   let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //!     // Create a client (without sending any request so that can't fail)
-//!     let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+//!     let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 //!
 //! #    let index = client.create_index("movies", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //!     // An index is where the documents are stored.
@@ -38,11 +38,11 @@
 //! })}
 //! ```
 //!
-//! With the `uid`, you can check the status (`enqueued`, `processing`, `succeeded` or `failed`) of your documents addition using the [task](https://docs.meilisearch.com/reference/api/tasks.html#get-task).
+//! With the `uid`, you can check the status (`enqueued`, `processing`, `succeeded` or `failed`) of your documents addition using the [task](https://www.meilisearch.com/docs/reference/api/tasks#get-task).
 //!
 //! ### Basic Search <!-- omit in TOC -->
 //!
-//! ```rust
+//! ```
 //! # use meilisearch_sdk::client::*;
 //! # use serde::{Serialize, Deserialize};
 //! # use futures::executor::block_on;
@@ -55,7 +55,7 @@
 //! # fn main() { block_on(async move {
 //! #    let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #    let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! #    let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 //! #    let movies = client.create_index("movies_2", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! // Meilisearch is typo-tolerant:
 //! println!("{:?}", client.index("movies_2").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
@@ -85,7 +85,7 @@
 //!
 //! ### Custom Search <!-- omit in toc -->
 //!
-//! ```rust
+//! ```
 //! # use meilisearch_sdk::{client::*, search::*};
 //! # use serde::{Serialize, Deserialize};
 //! # use futures::executor::block_on;
@@ -98,7 +98,7 @@
 //! # fn main() { block_on(async move {
 //! #   let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #   let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! #    let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 //! #    let movies = client.create_index("movies_3", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let search_result = client.index("movies_3")
 //!   .search()
@@ -145,7 +145,7 @@
 //! # fn main() { block_on(async move {
 //! #    let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #    let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! #    let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 //! #    let movies = client.create_index("movies_4", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let filterable_attributes = [
 //!     "id",
@@ -158,7 +158,7 @@
 //!
 //! You only need to perform this operation once.
 //!
-//! Note that Meilisearch will rebuild your index whenever you update `filterableAttributes`. Depending on the size of your dataset, this might take time. You can track the process using the [tasks](https://docs.meilisearch.com/reference/api/tasks.html#get-task)).
+//! Note that Meilisearch will rebuild your index whenever you update `filterableAttributes`. Depending on the size of your dataset, this might take time. You can track the process using the [tasks](https://www.meilisearch.com/docs/reference/api/tasks#get-task).
 //!
 //! Then, you can perform the search:
 //!
@@ -175,7 +175,7 @@
 //! # fn main() { block_on(async move {
 //! # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! # let client = Client::new(MEILISEARCH_URL, MEILISEARCH_API_KEY);
+//! # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 //! # let movies = client.create_index("movies_5", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! # let filterable_attributes = [
 //! #     "id",
@@ -223,26 +223,26 @@
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
-/// Module containing the [client::Client] struct.
+/// Module containing the [`client::Client`] struct.
 pub mod client;
 /// Module representing the [documents] structures.
 pub mod documents;
-/// Module containing the [document::Document] trait.
+/// Module containing the [dumps] trait.
 pub mod dumps;
-/// Module containing the [errors::Error] struct.
+/// Module containing the [`errors::Error`] struct.
 pub mod errors;
 /// Module containing the Index struct.
 pub mod indexes;
-/// Module containing the [key::Key] struct.
+/// Module containing the [`key::Key`] struct.
 pub mod key;
 mod request;
 /// Module related to search queries and results.
 pub mod search;
-/// Module containing [settings::Settings].
+/// Module containing [`settings::Settings`].
 pub mod settings;
-/// Module representing the [task_info::TaskInfo]s.
+/// Module representing the [`task_info::TaskInfo`]s.
 pub mod task_info;
-/// Module representing the [tasks::Task]s.
+/// Module representing the [`tasks::Task`]s.
 pub mod tasks;
 /// Module that generates tenant tokens.
 mod tenant_tokens;
@@ -252,7 +252,7 @@ mod utils;
 pub use client::*;
 
 #[cfg(test)]
-/// Support for the `Document` derive proc macro in the crate's tests
+/// Support for the `IndexConfig` derive proc macro in the crate's tests.
 extern crate self as meilisearch_sdk;
 /// Can't assume that the user of proc_macro will have access to `async_trait` crate. So exporting the `async-trait` crate from `meilisearch_sdk` in a hidden module.
 #[doc(hidden)]

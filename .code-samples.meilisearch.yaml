@@ -120,9 +120,18 @@ get_one_document_1: |-
     .await
     .unwrap();
 get_documents_1: |-
-  let index = client
-    .index("movies");
+  let index = client.index("movies");
   let documents: DocumentsResults = DocumentsQuery::new(&index)
+    .with_filter("genres = action")
+    .with_limit(2)
+    .execute::<Movies>()
+    .await
+    .unwrap();
+get_documents_post_1: |-
+  let index = client.index("books");
+  let documents: DocumentsResults = DocumentsQuery::new(&index)
+    .with_filter("(rating > 3 AND (genres = Adventure OR genres = Fiction)) AND language = English")
+    .with_fields(["title", "genres", "rating", "language"])
     .with_limit(2)
     .execute::<Movies>()
     .await
@@ -171,10 +180,17 @@ delete_one_document_1: |-
     .delete_document(25684)
     .await
     .unwrap();
-delete_documents_1: |-
+delete_documents_by_batch_1: |-
   let task: TaskInfo = client
     .index("movies")
     .delete_documents(&[23488, 153738, 437035, 363869])
+    .await
+    .unwrap();
+delete_documents_by_filter_1: |-
+  let index = client.index("movies");
+  let task = DocumentDeletionQuery::new(&index)
+    .with_filter("genres = action OR genres = adventure")
+    .execute()
     .await
     .unwrap();
 search_post_1: |-
@@ -277,6 +293,17 @@ update_settings_1: |-
   synonyms.insert(String::from("wolverine"), vec!["xmen", "logan"]);
   synonyms.insert(String::from("logan"), vec!["wolverine"]);
 
+  let min_word_size_for_typos = MinWordSizeForTypos {
+    one_typo: Some(4),
+    two_typos; Some(12)
+  }
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: Some(vec!["title".to_string()]),
+    disable_on_words: Some(vec![])
+    min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
+
   let settings = Settings::new()
     .with_ranking_rules([
       "words",
@@ -309,7 +336,8 @@ update_settings_1: |-
       "title",
       "release_date"
     ])
-    .with_synonyms(synonyms);
+    .with_synonyms(synonyms)
+    .with_typo_tolerance(typo_tolerance);
 
   let task: TaskInfo = client
     .index("movies")
@@ -363,6 +391,48 @@ reset_pagination_settings_1: |-
   let task: TaskInfo = client
     .index("books")
     .reset_pagination()
+    .await
+    .unwrap();
+getting_started_typo_tolerance: |-
+  let min_word_size_for_typos = MinWordSizeForTypos {
+    one_typo: Some(5),
+    two_typos: Some(4)
+  }
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: Some(vec![]),
+    disable_on_words: Some(vec!["title".to_string()]),
+    min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
+
+  let task: TaskInfo = client
+    .index("movies")
+    .set_typo_tolerance(&typo_tolerance)
+    .await
+    .unwrap();
+get_typo_tolerance_1: |-
+  let typo_tolerance: TypoToleranceSettings = client
+    .index("books")
+    .get_typo_tolerance()
+    .await
+    .unwrap();
+update_typo_tolerance_1: |-
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(false),
+    disable_on_attributes: None,
+    disable_on_words: None,
+    min_word_size_for_typos: None,
+  };
+
+  let task: TaskInfo = client
+    .index("books")
+    .set_typo_tolerance(&typo_tolerance)
+    .await
+    .unwrap();
+reset_typo_tolerance_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .reset_typo_tolerance()
     .await
     .unwrap();
 get_stop_words_1: |-
@@ -605,6 +675,15 @@ filtering_guide_3: |-
     .execute()
     .await
     .unwrap();
+filtering_guide_nested_1: |-
+  let results: SearchResults<MovieRatings> = client
+    .index("movie_rating")
+    .search()
+    .with_query("thriller")
+    .with_filter("rating.users >= 90")
+    .execute()
+    .await
+    .unwrap();
 search_parameter_guide_query_1: |-
   let results: SearchResults<Movie> = client
     .index("movies")
@@ -746,32 +825,6 @@ search_parameter_guide_hitsperpage_1: |-
   client.index("movies").search().with_hits_per_page(15).execute().await?;
 search_parameter_guide_page_1: |-
   client.index("movies").search().with_page(2).execute().await?;
-settings_guide_synonyms_1: |-
-  let mut synonyms = HashMap::new();
-  synonyms.insert(String::from("sweater"), vec![String::from("jumper")]);
-  synonyms.insert(String::from("jumper"), vec![String::from("sweater")]);
-
-  let settings = Settings::new()
-    .with_synonyms(synonyms);
-
-  let task = client
-    .index("tops")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_stop_words_1: |-
-  let settings = Settings::new()
-    .with_stop_words([
-      "the",
-      "a",
-      "an"
-    ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
 settings_guide_filterable_attributes_1: |-
   let settings = Settings::new()
     .with_filterable_attributes([
@@ -784,90 +837,88 @@ settings_guide_filterable_attributes_1: |-
     .set_settings(&settings)
     .await
     .unwrap();
-settings_guide_ranking_rules_1: |-
-  let settings = Settings::new()
-    .with_ranking_rules([
-      "words",
-      "typo",
-      "proximity",
-      "attribute",
-      "sort",
-      "exactness",
-      "release_date:asc",
-      "rank:desc",
-    ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_distinct_1: |-
-  let settings = Settings::new()
-    .with_distinct_attribute("product_id");
-
-  let task: TaskInfo = client
-    .index("jackets")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_searchable_1: |-
-  let settings = Settings::new()
-    .with_searchable_attributes([
-      "title",
-      "overview",
-      "genres"
-    ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_pagination_1: |-
-  let pagination = PaginationSetting {max_total_hits:100};
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_pagination(pagination)
-    .await
-    .unwrap();
-settings_guide_displayed_1: |-
-  let settings = Settings::new()
-    .with_displayed_attributes([
-      "title",
-      "overview",
-      "genres",
-      "release_date"
-    ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_sortable_1: |-
-  let settings = Settings::new()
-    .with_sortable_attributes([
-      "author",
-      "price"
-    ]);
-
-  let task: TaskInfo = client
-    .index("books")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_faceting_1: |-
-  let faceting = FacetingSettings {
-      max_values_per_facet: 5,
+settings_guide_typo_tolerance_1: |-
+  let min_word_size_for_typos = MinWordSizeForTypos {
+    one_typo: Some(5),
+    two_typos: Some(12)
+  }
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: None,
+    disable_on_words: Some(vec!["title".to_string()]),
+    min_word_size_for_typos: Some(min_word_size_for_typos),
   };
+
   let settings = Settings::new()
-    .with_faceting(&faceting);
+    .with_typo_tolerance(&typo_tolerance);
 
   let task: TaskInfo = client
     .index("movies")
     .set_settings(&settings)
+    .await
+    .unwrap();
+typo_tolerance_guide_1: |-
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(false),
+    disable_on_attributes: None,
+    disable_on_words: None,
+    min_word_size_for_typos: None,
+  };
+
+  let task: TaskInfo = client
+    .index("movies")
+    .set_typo_tolerance(&typo_tolerance)
+    .await
+    .unwrap();
+typo_tolerance_guide_2: |-
+  let min_word_size_for_typos = MinWordSizeForTypos {
+    one_typo: Some(5),
+    two_typos: Some(12)
+  }
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: Some(vec!["title".to_string()]),
+    disable_on_words: None,
+    min_word_size_for_typos: None,
+  };
+
+  let task: TaskInfo = client
+    .index("movies")
+    .set_typo_tolerance(&typo_tolerance)
+    .await
+    .unwrap();
+typo_tolerance_guide_3: |-
+  let min_word_size_for_typos = MinWordSizeForTypos {
+    one_typo: Some(5),
+    two_typos: Some(12)
+  }
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: None,
+    disable_on_words: Some(vec!["shrek".to_string()]),
+    min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
+  
+  let task: TaskInfo = client
+    .index("movies")
+    .set_typo_tolerance(&typo_tolerance)
+    .await
+    .unwrap();
+typo_tolerance_guide_4: |-
+  let min_word_size_for_typos = MinWordSizeForTypos {
+    one_typo: Some(4),
+    two_typos: Some(12)
+  };
+  let typo_tolerance = TypoToleranceSettings {
+    enabled: Some(true),
+    disable_on_attributes: Some(vec![]),
+    disable_on_words: Some(vec!["title".to_string()]),
+    min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
+
+  let task: TaskInfo = client
+    .index("movies")
+    .set_typo_tolerance(&typo_tolerance)
     .await
     .unwrap();
 add_movies_json_1: |-
@@ -882,7 +933,7 @@ add_movies_json_1: |-
   use futures::executor::block_on;
 
   fn main() { block_on(async move {
-    let client = Client::new("http://localhost:7700", "masterKey");
+    let client = Client::new("http://localhost:7700", Some("masterKey"));
 
     // reading and parsing the file
     let mut file = File::open("movies.json")
@@ -957,7 +1008,7 @@ primary_field_guide_add_document_primary_key: |-
 getting_started_add_documents_md: |-
   ```toml
     [dependencies]
-    meilisearch-sdk = "0.22.0"
+    meilisearch-sdk = "0.24.1"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
@@ -1006,7 +1057,7 @@ getting_started_add_documents_md: |-
   use futures::executor::block_on;
 
   fn main() { block_on(async move {
-    let client = Client::new("http://localhost:7700", "masterKey");
+    let client = Client::new("http://localhost:7700", Some("masterKey"));
 
     // reading and parsing the file
     let mut file = File::open("movies.json")
@@ -1125,7 +1176,7 @@ getting_started_update_displayed_attributes: |-
     .await
     .unwrap();
 getting_started_communicating_with_a_protected_instance: |-
-  let client = Client::new("http://localhost:7700", "apiKey");
+  let client = Client::new("http://localhost:7700", Some("apiKey"));
   client
     .index("movies")
     .search()
@@ -1222,7 +1273,7 @@ getting_started_filtering: |-
     .execute()
     .await
     .unwrap();
-faceted_search_update_settings_1: |-
+filtering_update_settings_1: |-
   let task: TaskInfo = client
     .index("movies")
     .set_filterable_attributes(["director", "genres"])
@@ -1259,6 +1310,44 @@ faceted_search_walkthrough_filter_1: |-
     .execute()
     .await
     .unwrap();
+faceted_search_update_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .set_filterable_attributes(&["genres", "rating", "language"])
+    .await
+    .unwrap();
+faceted_search_1: |-
+  let books = client.index("books");
+
+  let results: SearchResults<Book> = SearchQuery::new(&books)
+    .with_query("classic")
+    .with_facets(Selectors::Some(&["genres", "rating", "language"]))
+    .execute()
+    .await
+    .unwrap();
+faceted_search_2: |-
+  let books = client.index("books");
+  let search_query_1 = SearchQuery::new(&books)
+      .with_facets(Selectors::Some(&["language", "genres", "author", "format"]))
+      .with_filter("(language = English OR language = French) AND genres = Fiction")
+      .build();
+  let search_query_2 = SearchQuery::new(&books)
+      .with_facets(Selectors::Some(&["language"]))
+      .with_filter("genres = Fiction")
+      .build();
+  let search_query_3 = SearchQuery::new(&books)
+      .with_facets(Selectors::Some(&["genres"]))
+      .with_filter("language = English OR language = French")  
+      .build();
+
+  let books_response = client
+      .multi_search()
+      .with_search_query(search_query_1)
+      .with_search_query(search_query_2)
+      .with_search_query(search_query_3)
+      .execute::<Book>()
+      .await
+      .unwrap();
 post_dump_1: |-
   client
     .create_dump()
@@ -1313,6 +1402,15 @@ sorting_guide_sort_parameter_2: |-
     .search()
     .with_query("butler")
     .with_sort(&["author:desc"])
+    .execute()
+    .await
+    .unwrap();
+sorting_guide_sort_nested_1: |-
+  let results: SearchResults<Books> = client
+    .index("books")
+    .search()
+    .with_query("science fiction")
+    .with_sort(&["rating.users:asc"])
     .execute()
     .await
     .unwrap();
@@ -1392,6 +1490,14 @@ geosearch_guide_sort_usage_2: |-
     .execute()
     .await
     .unwrap();
+geosearch_guide_filter_usage_3: |-
+  let results: SearchResults<Restaurant> = client
+    .index("restaurants")
+    .search()
+    .with_filter("_geoBoundingBox([45.494181, 9.179175], [45.449484, 9.214024])")
+    .execute()
+    .await
+    .unwrap();
 get_one_key_1: |-
   let key = client
     .get_key("6062abda-a5aa-4414-ac91-ecd7944c0f8d")
@@ -1433,20 +1539,20 @@ delete_a_key_1: |-
     .delete_key(&key)
     .await?;
 authorization_header_1:
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
   let keys = client
   .get_keys()
   .await
   .unwrap();
 security_guide_search_key_1: |-
-  let client = Client::new("http://localhost:7700", "apiKey");
+  let client = Client::new("http://localhost:7700", Some("apiKey"));
   let result = client.index("patient_medical_records")
     .search()
     .execute()
     .await
     .unwrap();
 security_guide_update_key_1: |-
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
   let mut key = client
     .get_key("74c9c733-3368-4738-bbe5-1d18a5fecb37")
     .await
@@ -1455,7 +1561,7 @@ security_guide_update_key_1: |-
     .with_description("Default Search API key".to_string())
     .update(&client);
 security_guide_create_key_1: |-
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
   let mut key_options = KeyBuilder::new("Search patient records key");
   key_options
     .with_action(Action::Search)
@@ -1466,13 +1572,13 @@ security_guide_create_key_1: |-
     .await
     .unwrap();
 security_guide_list_keys_1: |-
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
   let keys = client
     .get_keys()
     .await
     .unwrap();
 security_guide_delete_key_1: |-
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
   let key = client
     .get_key("ac5cd97d-5a4b-4226-a868-2d0eb6d197ab")
     .await
@@ -1481,7 +1587,7 @@ security_guide_delete_key_1: |-
     .delete_key(&key)
     .await?;
 landing_getting_started_1: |-
-  let client = Client::new("http://localhost:7700", "masterKey");
+  let client = Client::new("http://localhost:7700", Some("masterKey"));
 
   #[derive(Serialize, Deserialize)]
   struct Movie {
@@ -1510,11 +1616,41 @@ tenant_token_guide_generate_sdk_1: |-
     .generate_tenant_token(api_key_uid, search_rules, api_key, expires_at)
     .unwrap();
 tenant_token_guide_search_sdk_1: |-
-  let front_end_client = Client::new("http://localhost:7700", token);
+  let front_end_client = Client::new("http://localhost:7700", Some(token));
   let results: SearchResults<Patient> = front_end_client
     .index("patient_medical_records")
     .search()
     .with_query("blood test")
     .execute()
+    .await
+    .unwrap();
+multi_search_1: |-
+  let movie = client.index("movie");
+  let search_query_1 = SearchQuery::new(&movie)
+      .with_query("pooh")
+      .with_limit(5)
+      .build();
+  let search_query_2 = SearchQuery::new(&movie)
+      .with_query("nemo")
+      .with_limit(5)      
+      .build();
+
+  let movie_response = client
+      .multi_search()
+      .with_search_query(search_query_1)
+      .with_search_query(search_query_2)
+      .execute::<Movie>()
+      .await
+      .unwrap();
+
+  let movie_ratings = client.index("movie_ratings");
+  let search_query_3 = SearchQuery::new(&movie_ratings)
+      .with_query("us")
+      .build();
+
+  let movie_ratings_response = client
+    .multi_search()
+    .with_search_query(search_query_3)
+    .execute::<MovieRatings>()
     .await
     .unwrap();
