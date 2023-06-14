@@ -898,7 +898,7 @@ typo_tolerance_guide_3: |-
     disable_on_words: Some(vec!["shrek".to_string()]),
     min_word_size_for_typos: Some(min_word_size_for_typos),
   };
-  
+
   let task: TaskInfo = client
     .index("movies")
     .set_typo_tolerance(&typo_tolerance)
@@ -1337,7 +1337,7 @@ faceted_search_2: |-
       .build();
   let search_query_3 = SearchQuery::new(&books)
       .with_facets(Selectors::Some(&["genres"]))
-      .with_filter("language = English OR language = French")  
+      .with_filter("language = English OR language = French")
       .build();
 
   let books_response = client
@@ -1632,7 +1632,7 @@ multi_search_1: |-
       .build();
   let search_query_2 = SearchQuery::new(&movie)
       .with_query("nemo")
-      .with_limit(5)      
+      .with_limit(5)
       .build();
 
   let movie_response = client

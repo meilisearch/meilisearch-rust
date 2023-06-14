@@ -124,6 +124,10 @@ sh scripts/check-readme.sh --diff
 
 If it's not, the CI will fail on your PR.
 
+### Yaml lint
+
+To check if your `yaml` files are correctly formatted, you need to [install yamllint](https://yamllint.readthedocs.io/en/stable/quickstart.html#installing-yamllint) and then run `yamllint .`
+
 ## Git Guidelines
 
 ### Git Branches <!-- omit in toc -->
