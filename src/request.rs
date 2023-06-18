@@ -164,7 +164,8 @@ impl HttpClient for IsahcClient {
             body = "null".to_string();
         }
 
-        parse_response(status, expected_status_code, body)
+        parse_response(status, expected_status_code, &body, url.to_string())
+        // parse_response(status, expected_status_code, body)
     }
 
     async fn stream_request<
@@ -262,7 +263,8 @@ impl HttpClient for IsahcClient {
             body = "null".to_string();
         }
 
-        parse_response(status, expected_status_code, body)
+        parse_response(status, expected_status_code, &body, url.to_string())
+        // parse_response(status, expected_status_code, body)
     }
 }
 
@@ -363,9 +365,9 @@ impl HttpClient for WebSysClient {
 
         if let Some(t) = text.as_string() {
             if t.is_empty() {
-                parse_response(status, expected_status_code, String::from("null"))
+                parse_response(status, expected_status_code, "null", url.to_string())
             } else {
-                parse_response(status, expected_status_code, t)
+                parse_response(status, expected_status_code, &t, url.to_string())
             }
         } else {
             error!("Invalid response");

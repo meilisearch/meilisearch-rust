@@ -483,35 +483,39 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<DocumentsResults<T>, Error> {
         if documents_query.filter.is_some() {
             let url = format!("{}/indexes/{}/documents/fetch", self.client.host, self.uid);
-            return request::<(), &DocumentsQuery, DocumentsResults<T>>(
-                &url,
-                self.client.get_api_key(),
-                Method::Post {
-                    body: documents_query,
-                    query: (),
-                },
-                200,
-            )
-            .await
-            .map_err(|err| match err {
-                Error::MeilisearchCommunication(error) => {
-                    Error::MeilisearchCommunication(MeilisearchCommunicationError {
-                        status_code: error.status_code,
-                        url: error.url,
-                        message: Some(format!("{}.", MEILISEARCH_VERSION_HINT)),
-                    })
-                }
-                Error::Meilisearch(error) => Error::Meilisearch(MeilisearchError {
-                    error_code: error.error_code,
-                    error_link: error.error_link,
-                    error_type: error.error_type,
-                    error_message: format!(
-                        "{}\n{}.",
-                        error.error_message, MEILISEARCH_VERSION_HINT
-                    ),
-                }),
-                _ => err,
-            });
+            return self
+                .client
+                .http_client
+                .clone()
+                .request::<(), &DocumentsQuery<Http>, DocumentsResults<T>>(
+                    &url,
+                    self.client.get_api_key(),
+                    Method::Post {
+                        body: documents_query,
+                        query: (),
+                    },
+                    200,
+                )
+                .await
+                .map_err(|err| match err {
+                    Error::MeilisearchCommunication(error) => {
+                        Error::MeilisearchCommunication(MeilisearchCommunicationError {
+                            status_code: error.status_code,
+                            url: error.url,
+                            message: Some(format!("{}.", MEILISEARCH_VERSION_HINT)),
+                        })
+                    }
+                    Error::Meilisearch(error) => Error::Meilisearch(MeilisearchError {
+                        error_code: error.error_code,
+                        error_link: error.error_link,
+                        error_type: error.error_type,
+                        error_message: format!(
+                            "{}\n{}.",
+                            error.error_message, MEILISEARCH_VERSION_HINT
+                        ),
+                    }),
+                    _ => err,
+                });
         }
 
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
@@ -1036,18 +1040,21 @@ impl<Http: HttpClient> Index<Http> {
     /// ```
     pub async fn delete_documents_with(
         &self,
-        query: &DocumentDeletionQuery<'_>,
+        query: &DocumentDeletionQuery<'_, Http>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), &DocumentDeletionQuery, TaskInfo>(
-            &format!("{}/indexes/{}/documents/delete", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Post {
-                query: (),
-                body: query,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &DocumentDeletionQuery<Http>, TaskInfo>(
+                &format!("{}/indexes/{}/documents/delete", self.client.host, self.uid),
+                self.client.get_api_key(),
+                Method::Post {
+                    query: (),
+                    body: query,
+                },
+                202,
+            )
+            .await
     }
 
     /// Alias for the [`Index::update`] method.
@@ -1571,7 +1578,10 @@ impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn with_primary_key(&mut self, primary_key: impl AsRef<str>) -> &mut IndexUpdater<'a> {
+    pub fn with_primary_key(
+        &mut self,
+        primary_key: impl AsRef<str>,
+    ) -> &mut IndexUpdater<'a, Http> {
         self.primary_key = Some(primary_key.as_ref().to_string());
         self
     }

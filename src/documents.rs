@@ -275,7 +275,7 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
         self
     }
 
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentsQuery<'a> {
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentsQuery<'a, Http> {
         self.filter = Some(filter);
         self
     }
@@ -318,9 +318,9 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct DocumentDeletionQuery<'a> {
+pub struct DocumentDeletionQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub index: &'a Index,
+    pub index: &'a Index<Http>,
 
     /// Filters to apply.
     ///
@@ -328,15 +328,18 @@ pub struct DocumentDeletionQuery<'a> {
     pub filter: Option<&'a str>,
 }
 
-impl<'a> DocumentDeletionQuery<'a> {
-    pub fn new(index: &Index) -> DocumentDeletionQuery {
+impl<'a, Http: HttpClient> DocumentDeletionQuery<'a, Http> {
+    pub fn new(index: &Index<Http>) -> DocumentDeletionQuery<Http> {
         DocumentDeletionQuery {
             index,
             filter: None,
         }
     }
 
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentDeletionQuery<'a> {
+    pub fn with_filter<'b>(
+        &'b mut self,
+        filter: &'a str,
+    ) -> &'b mut DocumentDeletionQuery<'a, Http> {
         self.filter = Some(filter);
         self
     }
@@ -349,9 +352,7 @@ impl<'a> DocumentDeletionQuery<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        client::Client, errors::Client, indexes::*, request::IsahcClient, request::IsahcClient,
-    };
+    use crate::{client::Client, errors::*, indexes::*, request::IsahcClient};
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
 
@@ -445,7 +446,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_delete_documents_with(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_delete_documents_with(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         index
             .set_filterable_attributes(["id"])
@@ -477,8 +481,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_delete_documents_with_filter_not_filterable(
-        client: Client,
-        index: Index,
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -506,8 +510,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_documents_with_only_one_param(
-        client: Client,
-        index: Index,
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         // let documents = index.get_documents(None, None, None).await.unwrap();
@@ -525,7 +529,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_documents_with_filter(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_get_documents_with_filter(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         index
@@ -579,8 +586,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_documents_with_error_hint_meilisearch_api_error(
-        index: Index,
-        client: Client,
+        index: Index<IsahcClient>,
+        client: Client<IsahcClient>,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -610,8 +617,8 @@ Hint: It might not be working because you're not up to date with the Meilisearch
 
     #[meilisearch_test]
     async fn test_get_documents_with_invalid_filter(
-        client: Client,
-        index: Index,
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -635,7 +642,10 @@ Hint: It might not be working because you're not up to date with the Meilisearch
     }
 
     #[meilisearch_test]
-    async fn test_settings_generated_by_macro(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_settings_generated_by_macro(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let movie_settings: Settings = MovieClips::generate_settings();

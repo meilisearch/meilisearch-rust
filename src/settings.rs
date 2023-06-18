@@ -657,16 +657,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_typo_tolerance(&self) -> Result<TypoToleranceSettings, Error> {
-        request::<(), (), TypoToleranceSettings>(
-            &format!(
-                "{}/indexes/{}/settings/typo-tolerance",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TypoToleranceSettings>(
+                &format!(
+                    "{}/indexes/{}/settings/typo-tolerance",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Update [settings](../settings/struct.Settings) of the [Index].
@@ -1187,19 +1190,22 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         typo_tolerance: &TypoToleranceSettings,
     ) -> Result<TaskInfo, Error> {
-        request::<(), &TypoToleranceSettings, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/typo-tolerance",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Patch {
-                query: (),
-                body: typo_tolerance,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &TypoToleranceSettings, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/typo-tolerance",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Patch {
+                    query: (),
+                    body: typo_tolerance,
+                },
+                202,
+            )
+            .await
     }
 
     /// Reset [Settings] of the [Index].
@@ -1608,16 +1614,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_typo_tolerance(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/typo-tolerance",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/typo-tolerance",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 }
 
@@ -1721,7 +1730,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_typo_tolerance(index: Index) {
+    async fn test_get_typo_tolerance(index: Index<IsahcClient>) {
         let expected = TypoToleranceSettings {
             enabled: Some(true),
             disable_on_attributes: Some(vec![]),
@@ -1738,7 +1747,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_typo_tolerance(client: Client, index: Index) {
+    async fn test_set_typo_tolerance(client: Client<IsahcClient>, index: Index<IsahcClient>) {
         let expected = TypoToleranceSettings {
             enabled: Some(true),
             disable_on_attributes: Some(vec!["title".to_string()]),
@@ -1763,7 +1772,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_reset_typo_tolerance(index: Index) {
+    async fn test_reset_typo_tolerance(index: Index<IsahcClient>) {
         let expected = TypoToleranceSettings {
             enabled: Some(true),
             disable_on_attributes: Some(vec![]),
