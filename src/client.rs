@@ -222,6 +222,7 @@ impl<Http: HttpClient> Client<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let indexes: IndexesResults<IsahcClient> = client.list_all_indexes().await.unwrap();
     ///
+    /// let indexes: IndexesResults<IsahcClient> = client.list_all_indexes().await.unwrap();
     /// println!("{:?}", indexes);
     /// # });
     /// ```
