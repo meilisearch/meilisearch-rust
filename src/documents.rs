@@ -349,7 +349,9 @@ impl<'a> DocumentDeletionQuery<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{client::Client, errors::*, indexes::*, request::IsahcClient};
+    use crate::{
+        client::Client, errors::Client, indexes::*, request::IsahcClient, request::IsahcClient,
+    };
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
 

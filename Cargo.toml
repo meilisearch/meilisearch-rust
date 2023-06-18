@@ -38,8 +38,8 @@ wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 
 [features]
-default = ["isahc", "isahc-static-curl"]
-isahc-static-curl = ["isahc", "isahc/static-curl"]
+default = ["isahc", "isahc", "isahc-static-curl"]
+isahc-static-curl = ["isahc", "isahc", "isahc/static-curl"]
 isahc-static-ssl = ["isahc/static-ssl"]
 
 [dev-dependencies]

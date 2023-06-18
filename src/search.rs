@@ -846,7 +846,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_attributes_to_retrieve(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_attributes_to_retrieve(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index
