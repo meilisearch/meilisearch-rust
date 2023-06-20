@@ -190,7 +190,7 @@ pub struct DocumentsQuery<'a> {
     /// Filters to apply.
     ///
     /// Available since v1.2 of Meilisearch
-    /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/fine_tuning_results/filtering#filter-basics) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<&'a str>,
 }
@@ -322,7 +322,7 @@ pub struct DocumentDeletionQuery<'a> {
 
     /// Filters to apply.
     ///
-    /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/fine_tuning_results/filtering#filter-basics) to learn the syntax.
     pub filter: Option<&'a str>,
 }
 
@@ -579,7 +579,7 @@ mod tests {
 Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.".to_string();
         let displayed_error = "Meilisearch invalid_request: invalid_document_filter: Attribute `id` is not filterable. This index does not have configured filterable attributes.
 1:3 id = 1
-Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.. https://docs.meilisearch.com/errors#invalid_document_filter";
+Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.. https://www.meilisearch.com/docs/errors#invalid_document_filter";
 
         match &error {
             Error::Meilisearch(error) => {
