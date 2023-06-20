@@ -14,7 +14,7 @@ use crate::{
     utils::async_sleep,
 };
 
-/// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
+/// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index).
 #[derive(Debug, Clone)]
 pub struct Client {
     pub(crate) host: String,
