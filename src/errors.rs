@@ -14,7 +14,7 @@ pub enum Error {
     #[error(transparent)]
     MeilisearchCommunication(#[from] MeilisearchCommunicationError),
     /// There is no Meilisearch server listening on the [specified host]
-    /// (../client/struct.Client.html#method.new).
+    /// (../client/struct.Client#method.new).
     #[error("The Meilisearch server can't be reached.")]
     UnreachableServer,
     /// The Meilisearch server returned an invalid JSON for a request.
