@@ -237,7 +237,7 @@ pub struct SearchQuery<'a> {
     pub filter: Option<Filter<'a>>,
     /// Facets for which to retrieve the matching count.
     ///
-    /// Can be set to a [wildcard value](enum.Selectors#variant.All) that will select all existing attributes.
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     ///
     /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -248,7 +248,7 @@ pub struct SearchQuery<'a> {
     pub sort: Option<&'a [&'a str]>,
     /// Attributes to display in the returned documents.
     ///
-    /// Can be set to a [wildcard value](enum.Selectors#variant.All) that will select all existing attributes.
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     ///
     /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -258,7 +258,7 @@ pub struct SearchQuery<'a> {
     ///
     /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
     ///
-    /// Can be set to a [wildcard value](enum.Selectors#variant.All) that will select all existing attributes.
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
     pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
@@ -278,7 +278,7 @@ pub struct SearchQuery<'a> {
     pub crop_marker: Option<&'a str>,
     /// Attributes whose values will contain **highlighted matching terms**.
     ///
-    /// Can be set to a [wildcard value](enum.Selectors#variant.All) that will select all existing attributes.
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
