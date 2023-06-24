@@ -2027,7 +2027,7 @@ mod tests {
             } => assert_eq!(index_uid, *index.uid),
             Task::Processing {
                 content:
-                    EnqueuedTask {
+                    ProcessingTask {
                         index_uid: Some(index_uid),
                         ..
                     },

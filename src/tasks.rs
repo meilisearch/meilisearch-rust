@@ -182,6 +182,25 @@ impl AsRef<u32> for EnqueuedTask {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessingTask {
+    #[serde(with = "time::serde::rfc3339")]
+    pub enqueued_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub started_at: OffsetDateTime,
+    pub index_uid: Option<String>,
+    #[serde(flatten)]
+    pub update_type: TaskType,
+    pub uid: u32,
+}
+
+impl AsRef<u32> for ProcessingTask {
+    fn as_ref(&self) -> &u32 {
+        &self.uid
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "status")]
 pub enum Task {
     Enqueued {
@@ -190,7 +209,7 @@ pub enum Task {
     },
     Processing {
         #[serde(flatten)]
-        content: EnqueuedTask,
+        content: ProcessingTask,
     },
     Failed {
         #[serde(flatten)]
@@ -205,7 +224,8 @@ pub enum Task {
 impl Task {
     pub fn get_uid(&self) -> u32 {
         match self {
-            Self::Enqueued { content } | Self::Processing { content } => *content.as_ref(),
+            Self::Enqueued { content } => *content.as_ref(),
+            Self::Processing { content } => *content.as_ref(),
             Self::Failed { content } => *content.as_ref(),
             Self::Succeeded { content } => *content.as_ref(),
         }
@@ -432,7 +452,8 @@ impl Task {
 impl AsRef<u32> for Task {
     fn as_ref(&self) -> &u32 {
         match self {
-            Self::Enqueued { content } | Self::Processing { content } => content.as_ref(),
+            Self::Enqueued { content } => content.as_ref(),
+            Self::Processing { content } => content.as_ref(),
             Self::Succeeded { content } => content.as_ref(),
             Self::Failed { content } => content.as_ref(),
         }
@@ -759,7 +780,8 @@ mod test {
         assert!(matches!(
             task,
             Task::Processing {
-                content: EnqueuedTask {
+                content: ProcessingTask {
+                    started_at,
                     update_type: TaskType::DocumentAdditionOrUpdate {
                         details: Some(DocumentAdditionOrUpdate {
                             received_documents: 19547,
@@ -770,6 +792,10 @@ mod test {
                     ..
                 }
             }
+            if started_at == OffsetDateTime::parse(
+                "2022-02-03T15:17:02.812338Z",
+                &::time::format_description::well_known::Rfc3339
+            ).unwrap()
         ));
 
         let task: Task = serde_json::from_str(
