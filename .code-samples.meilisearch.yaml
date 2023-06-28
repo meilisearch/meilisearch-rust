@@ -1510,8 +1510,9 @@ get_all_keys_1: |-
     .await
     .unwrap();
 create_a_key_1: |-
-  let mut key_options = KeyBuilder::new("Add documents: Products API key");
+  let mut key_options = KeyBuilder::new();
   key_options
+    .with_name("Add documents: Products API key")
     .with_action(Action::DocumentsAdd)
     .with_expires_at(time::macros::datetime!(2042 - 04 - 02 00:42:42 UTC))
     .with_index("products");
@@ -1562,8 +1563,9 @@ security_guide_update_key_1: |-
     .update(&client);
 security_guide_create_key_1: |-
   let client = Client::new("http://localhost:7700", Some("masterKey"));
-  let mut key_options = KeyBuilder::new("Search patient records key");
+  let mut key_options = KeyBuilder::new();
   key_options
+    .with_name("Search patient records key")
     .with_action(Action::Search)
     .with_expires_at(time::macros::datetime!(2023 - 01 - 01 00:00:00 UTC))
     .with_index("patient_medical_records");
