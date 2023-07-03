@@ -1057,7 +1057,7 @@ getting_started_add_documents_md: |-
   use futures::executor::block_on;
 
   fn main() { block_on(async move {
-    let client = Client::new("http://localhost:7700", Some("masterKey"));
+    let client = Client::new("http://localhost:7700", Some("aSampleMasterKey"));
 
     // reading and parsing the file
     let mut file = File::open("movies.json")
