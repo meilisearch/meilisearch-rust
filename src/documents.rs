@@ -24,6 +24,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// use meilisearch_sdk::settings::Settings;
 /// use meilisearch_sdk::indexes::Index;
 /// use meilisearch_sdk::client::Client;
+/// use meilisearch_sdk::request::IsahcClient;
 ///
 /// #[derive(Serialize, Deserialize, IndexConfig)]
 /// struct Movie {
@@ -39,29 +40,30 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 ///     genres: Vec<String>,
 /// }
 ///
-/// async fn usage(client: Client) {
+/// async fn usage(client: Client<IsahcClient>) {
 ///     // Default settings with the distinct, searchable, displayed, filterable, and sortable fields set correctly.
 ///     let settings: Settings = Movie::generate_settings();
 ///     // Index created with the name `movie` and the primary key set to `movie_id`
-///     let index: Index = Movie::generate_index(&client).await.unwrap();
+///     let index: Index<IsahcClient> = Movie::generate_index(&client).await.unwrap();
 /// }
 /// ```
 pub use meilisearch_index_setting_macro::IndexConfig;
 
+use crate::client::Client;
+use crate::request::HttpClient;
 use crate::settings::Settings;
 use crate::tasks::Task;
-use crate::Client;
 use crate::{errors::Error, indexes::Index};
 
-#[async_trait]
-pub trait IndexConfig {
+#[async_trait(?Send)]
+pub trait IndexConfig<Http: HttpClient> {
     const INDEX_STR: &'static str;
 
-    fn index(client: &Client) -> Index {
+    fn index(client: &Client<Http>) -> Index<Http> {
         client.index(Self::INDEX_STR)
     }
     fn generate_settings() -> Settings;
-    async fn generate_index(client: &Client) -> Result<Index, Task>;
+    async fn generate_index(client: &Client<Http>) -> Result<Index<Http>, Task>;
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -73,17 +75,17 @@ pub struct DocumentsResults<T> {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct DocumentQuery<'a> {
+pub struct DocumentQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub index: &'a Index,
+    pub index: &'a Index<Http>,
 
     /// The fields that should appear in the documents. By default all of the fields are present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
 }
 
-impl<'a> DocumentQuery<'a> {
-    pub fn new(index: &Index) -> DocumentQuery {
+impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
+    pub fn new(index: &Index<Http>) -> DocumentQuery<Http> {
         DocumentQuery {
             index,
             fields: None,
@@ -109,7 +111,7 @@ impl<'a> DocumentQuery<'a> {
     pub fn with_fields(
         &mut self,
         fields: impl IntoIterator<Item = &'a str>,
-    ) -> &mut DocumentQuery<'a> {
+    ) -> &mut DocumentQuery<'a, Http> {
         self.fields = Some(fields.into_iter().collect());
         self
     }
@@ -151,7 +153,7 @@ impl<'a> DocumentQuery<'a> {
     /// );
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
-    pub async fn execute<T: DeserializeOwned + 'static>(
+    pub async fn execute<T: DeserializeOwned + 'static + Send + Sync>(
         &self,
         document_id: &str,
     ) -> Result<T, Error> {
@@ -160,9 +162,9 @@ impl<'a> DocumentQuery<'a> {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct DocumentsQuery<'a> {
+pub struct DocumentsQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub index: &'a Index,
+    pub index: &'a Index<Http>,
 
     /// The number of documents to skip.
     ///
@@ -195,8 +197,8 @@ pub struct DocumentsQuery<'a> {
     pub filter: Option<&'a str>,
 }
 
-impl<'a> DocumentsQuery<'a> {
-    pub fn new(index: &Index) -> DocumentsQuery {
+impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
+    pub fn new(index: &Index<Http>) -> DocumentsQuery<Http> {
         DocumentsQuery {
             index,
             offset: None,
@@ -221,7 +223,7 @@ impl<'a> DocumentsQuery<'a> {
     ///
     /// let mut documents_query = DocumentsQuery::new(&index).with_offset(1);
     /// ```
-    pub fn with_offset(&mut self, offset: usize) -> &mut DocumentsQuery<'a> {
+    pub fn with_offset(&mut self, offset: usize) -> &mut DocumentsQuery<'a, Http> {
         self.offset = Some(offset);
         self
     }
@@ -243,7 +245,7 @@ impl<'a> DocumentsQuery<'a> {
     ///
     /// documents_query.with_limit(1);
     /// ```
-    pub fn with_limit(&mut self, limit: usize) -> &mut DocumentsQuery<'a> {
+    pub fn with_limit(&mut self, limit: usize) -> &mut DocumentsQuery<'a, Http> {
         self.limit = Some(limit);
         self
     }
@@ -268,12 +270,12 @@ impl<'a> DocumentsQuery<'a> {
     pub fn with_fields(
         &mut self,
         fields: impl IntoIterator<Item = &'a str>,
-    ) -> &mut DocumentsQuery<'a> {
+    ) -> &mut DocumentsQuery<'a, Http> {
         self.fields = Some(fields.into_iter().collect());
         self
     }
 
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentsQuery<'a> {
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentsQuery<'a, Http> {
         self.filter = Some(filter);
         self
     }
@@ -308,7 +310,7 @@ impl<'a> DocumentsQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute<T: DeserializeOwned + 'static>(
+    pub async fn execute<T: DeserializeOwned + 'static + Send + Sync>(
         &self,
     ) -> Result<DocumentsResults<T>, Error> {
         self.index.get_documents_with::<T>(self).await
@@ -316,9 +318,9 @@ impl<'a> DocumentsQuery<'a> {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct DocumentDeletionQuery<'a> {
+pub struct DocumentDeletionQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub index: &'a Index,
+    pub index: &'a Index<Http>,
 
     /// Filters to apply.
     ///
@@ -326,15 +328,18 @@ pub struct DocumentDeletionQuery<'a> {
     pub filter: Option<&'a str>,
 }
 
-impl<'a> DocumentDeletionQuery<'a> {
-    pub fn new(index: &Index) -> DocumentDeletionQuery {
+impl<'a, Http: HttpClient> DocumentDeletionQuery<'a, Http> {
+    pub fn new(index: &Index<Http>) -> DocumentDeletionQuery<Http> {
         DocumentDeletionQuery {
             index,
             filter: None,
         }
     }
 
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentDeletionQuery<'a> {
+    pub fn with_filter<'b>(
+        &'b mut self,
+        filter: &'a str,
+    ) -> &'b mut DocumentDeletionQuery<'a, Http> {
         self.filter = Some(filter);
         self
     }
@@ -347,7 +352,7 @@ impl<'a> DocumentDeletionQuery<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{client::*, errors::*, indexes::*};
+    use crate::{client::Client, errors::*, indexes::*, request::IsahcClient};
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
 
@@ -359,7 +364,10 @@ mod tests {
 
     #[allow(unused)]
     #[derive(IndexConfig)]
-    struct MovieClips {
+    struct MovieClips
+    where
+        IsahcClient: HttpClient,
+    {
         #[index_config(primary_key)]
         movie_id: u64,
         #[index_config(distinct)]
@@ -376,11 +384,17 @@ mod tests {
 
     #[allow(unused)]
     #[derive(IndexConfig)]
-    struct VideoClips {
+    struct VideoClips
+    where
+        IsahcClient: HttpClient,
+    {
         video_id: u64,
     }
 
-    async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
+    async fn setup_test_index(
+        client: &Client<IsahcClient>,
+        index: &Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let t0 = index
             .add_documents(
                 &[
@@ -411,7 +425,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_documents_with_execute(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_get_documents_with_execute(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         let documents = DocumentsQuery::new(&index)
             .with_limit(1)
@@ -429,7 +446,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_delete_documents_with(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_delete_documents_with(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         index
             .set_filterable_attributes(["id"])
@@ -461,8 +481,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_delete_documents_with_filter_not_filterable(
-        client: Client,
-        index: Index,
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -490,8 +510,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_documents_with_only_one_param(
-        client: Client,
-        index: Index,
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         // let documents = index.get_documents(None, None, None).await.unwrap();
@@ -509,7 +529,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_documents_with_filter(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_get_documents_with_filter(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         index
@@ -563,8 +586,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_documents_with_error_hint_meilisearch_api_error(
-        index: Index,
-        client: Client,
+        index: Index<IsahcClient>,
+        client: Client<IsahcClient>,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -594,8 +617,8 @@ Hint: It might not be working because you're not up to date with the Meilisearch
 
     #[meilisearch_test]
     async fn test_get_documents_with_invalid_filter(
-        client: Client,
-        index: Index,
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -619,7 +642,10 @@ Hint: It might not be working because you're not up to date with the Meilisearch
     }
 
     #[meilisearch_test]
-    async fn test_settings_generated_by_macro(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_settings_generated_by_macro(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let movie_settings: Settings = MovieClips::generate_settings();
@@ -650,8 +676,8 @@ Hint: It might not be working because you're not up to date with the Meilisearch
     }
 
     #[meilisearch_test]
-    async fn test_generate_index(client: Client) -> Result<(), Error> {
-        let index: Index = MovieClips::generate_index(&client).await.unwrap();
+    async fn test_generate_index(client: Client<IsahcClient>) -> Result<(), Error> {
+        let index: Index<IsahcClient> = MovieClips::generate_index(&client).await.unwrap();
 
         assert_eq!(index.uid, "movie_clips");
 

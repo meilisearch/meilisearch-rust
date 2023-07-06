@@ -219,6 +219,12 @@
 //!   "query": "wonder"
 //! }
 //! ```
+//!
+//! ### Using users customized HttpClient <!-- omit in TOC -->
+//!
+//! If you want to change the `HttpClient` you can incorporate using the `Client::new_with_client` method.
+//! To use it, you need to implement the `HttpClient Trait`(`isahc` is used by default).
+//! There are [using-reqwest-example](./examples/cli-app-with-reqwest) of using `reqwest`.
 
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
@@ -235,7 +241,9 @@ pub mod errors;
 pub mod indexes;
 /// Module containing the [`key::Key`] struct.
 pub mod key;
-mod request;
+/// Module that prelude HttpClient traits.
+pub mod prelude;
+pub mod request;
 /// Module related to search queries and results.
 pub mod search;
 /// Module containing [`settings::Settings`].
@@ -248,8 +256,6 @@ pub mod tasks;
 mod tenant_tokens;
 /// Module containing utilies functions.
 mod utils;
-
-pub use client::*;
 
 #[cfg(test)]
 /// Support for the `IndexConfig` derive proc macro in the crate's tests.

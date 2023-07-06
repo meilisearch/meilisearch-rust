@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::time::Duration;
 use time::OffsetDateTime;
 
-use crate::{client::Client, errors::Error, tasks::*};
+use crate::{client::Client, errors::Error, request::HttpClient, tasks::*};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -71,9 +71,9 @@ impl TaskInfo {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn wait_for_completion(
+    pub async fn wait_for_completion<Http: HttpClient>(
         self,
-        client: &Client,
+        client: &Client<Http>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
     ) -> Result<Task, Error> {
@@ -88,6 +88,7 @@ mod test {
         client::*,
         errors::{ErrorCode, ErrorType},
         indexes::Index,
+        request::IsahcClient,
     };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
@@ -134,7 +135,10 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_wait_for_task_with_args(client: Client, movies: Index) -> Result<(), Error> {
+    async fn test_wait_for_task_with_args(
+        client: Client<IsahcClient>,
+        movies: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let task_info = movies
             .add_documents(
                 &[
@@ -168,7 +172,10 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_failing_task(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let task_info = client.create_index(index.uid, None).await.unwrap();
         let task = client.wait_for_task(task_info, None, None).await?;
 

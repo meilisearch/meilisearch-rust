@@ -1,8 +1,7 @@
 #![recursion_limit = "512"]
 use lazy_static::lazy_static;
 use meilisearch_sdk::{
-    client::Client,
-    indexes::Index,
+    prelude::*,
     search::{SearchResults, Selectors::All},
 };
 use serde_json::{Map, Value};

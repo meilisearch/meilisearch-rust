@@ -1,0 +1,74 @@
+[
+    {
+    "id": 1,
+    "seaon": "winter",
+    "article": "sweater",
+    "cost": 63.40,
+    "size":"L",
+    "pattern":"striped"
+  },
+  {
+    "id": 2,
+    "seaon": "spring",
+    "article": "sweat pants",
+    "cost": 18.00,
+    "size":"XXXL",
+    "pattern":"floral"
+  },
+  {
+    "id": 3,
+    "seaon": "fall",
+    "article": "t-shirt",
+    "cost": 1634.90,
+    "size":"M",
+    "pattern":"solid black"
+  },
+  {
+    "id": 4,
+    "seaon": "summer",
+    "article": "tank top",
+    "cost": 3.40,
+    "size":"L",
+    "pattern":"diagonal"
+  },
+  {
+    "id": 5,
+    "seaon": "winter",
+    "article": "jeans",
+    "cost": 4.20,
+    "size":"XL",
+    "pattern":"striped"
+  },
+  {
+    "id": 6,
+    "seaon": "spring",
+    "article": "sun dress",
+    "cost": 12634.56,
+    "size":"L",
+    "pattern":"floral"
+  },
+  {
+    "id": 7,
+    "seaon": "fall",
+    "article": "sweatshirt",
+    "cost": 90.80,
+    "size":"M",
+    "pattern":"checker"
+  },
+  {
+    "id": 8,
+    "seaon": "summer",
+    "article": "shorts",
+    "cost": 16.34,
+    "size":"XS",
+    "pattern":"solid beige"
+  },
+  {
+    "id": 9,
+    "seaon": "winter",
+    "article": "jacket",
+    "cost": 634,
+    "size":"L",
+    "pattern":"camo"
+  }
+]

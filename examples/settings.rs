@@ -1,5 +1,4 @@
-use meilisearch_sdk::client::Client;
-use meilisearch_sdk::indexes::Index;
+use meilisearch_sdk::prelude::*;
 use meilisearch_sdk::settings::Settings;
 
 // we need an async runtime

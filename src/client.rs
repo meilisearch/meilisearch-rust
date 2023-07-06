@@ -16,9 +16,10 @@ use crate::{
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
-pub struct Client {
+pub struct Client<Http: HttpClient> {
     pub(crate) host: String,
     pub(crate) api_key: Option<String>,
+    pub http_client: Http,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +27,9 @@ pub struct SwapIndexes {
     pub indexes: (String, String),
 }
 
-impl Client {
+#[cfg(feature = "isahc")]
+#[cfg(not(target_arch = "wasm32"))]
+impl Client<IsahcClient> {
     /// Create a client using the specified server.
     ///
     /// Don't put a '/' at the end of the host.
@@ -43,14 +46,61 @@ impl Client {
     ///
     /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// ```
-    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
+    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client<IsahcClient> {
         Client {
             host: host.into(),
             api_key: api_key.map(std::convert::Into::into),
+            http_client: IsahcClient::new(),
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl Client<WebSysClient> {
+    /// Create a client using the specified server.
+    /// Don't put a '/' at the end of the host.
+    /// In production mode, see [the documentation about authentication](https://docs.meilisearch.com/reference/features/authentication.html#authentication).
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// // create the client
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// ```
+    pub fn new(
+        host: impl Into<String>,
+        api_key: Option<impl Into<String>>,
+    ) -> Client<WebSysClient> {
+        Client {
+            host: host.into(),
+            api_key: api_key.map(|key| key.into()),
+            http_client: WebSysClient::new(),
+        }
+    }
+}
+
+impl<Http: HttpClient> Client<Http> {
+    // Create a client with a custom http client
+    pub fn new_with_client(
+        host: impl Into<String>,
+        api_key: Option<impl Into<String>>,
+        http_client: Http,
+    ) -> Client<Http> {
+        Client {
+            host: host.into(),
+            api_key: api_key.map(|key| key.into()),
+            http_client,
         }
     }
 
-    fn parse_indexes_results_from_value(&self, value: &Value) -> Result<IndexesResults, Error> {
+    fn parse_indexes_results_from_value(
+        &self,
+        value: &Value,
+    ) -> Result<IndexesResults<Http>, Error> {
         let raw_indexes = value["results"].as_array().unwrap();
 
         let indexes_results = IndexesResults {
@@ -66,17 +116,19 @@ impl Client {
         Ok(indexes_results)
     }
 
-    pub async fn execute_multi_search_query<T: 'static + DeserializeOwned>(
+    pub async fn execute_multi_search_query<T: 'static + DeserializeOwned + Send + Sync>(
         &self,
-        body: &MultiSearchQuery<'_, '_>,
+        body: &MultiSearchQuery<'_, '_, Http>,
     ) -> Result<MultiSearchResponse<T>, Error> {
-        request::<(), &MultiSearchQuery, MultiSearchResponse<T>>(
-            &format!("{}/multi-search", &self.host),
-            self.get_api_key(),
-            Method::Post { body, query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), &MultiSearchQuery<Http>, MultiSearchResponse<T>>(
+                &format!("{}/multi-search", &self.host),
+                self.get_api_key(),
+                Method::Post { body, query: () },
+                200,
+            )
+            .await
     }
 
     /// Make multiple search requests.
@@ -121,7 +173,7 @@ impl Client {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn multi_search(&self) -> MultiSearchQuery {
+    pub fn multi_search(&self) -> MultiSearchQuery<Http> {
         MultiSearchQuery::new(self)
     }
 
@@ -161,18 +213,20 @@ impl Client {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    /// #
+    /// # use meilisearch_sdk::request::IsahcClient;
+    ///
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// let indexes: IndexesResults = client.list_all_indexes().await.unwrap();
+    /// let indexes: IndexesResults<IsahcClient> = client.list_all_indexes().await.unwrap();
     ///
+    /// let indexes: IndexesResults<IsahcClient> = client.list_all_indexes().await.unwrap();
     /// println!("{:?}", indexes);
     /// # });
     /// ```
-    pub async fn list_all_indexes(&self) -> Result<IndexesResults, Error> {
+    pub async fn list_all_indexes(&self) -> Result<IndexesResults<Http>, Error> {
         let value = self.list_all_indexes_raw().await?;
         let indexes_results = self.parse_indexes_results_from_value(&value)?;
         Ok(indexes_results)
@@ -184,6 +238,7 @@ impl Client {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use meilisearch_sdk::request::IsahcClient;
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -193,15 +248,15 @@ impl Client {
     /// let mut query = IndexesQuery::new(&client);
     /// query.with_limit(1);
     ///
-    /// let indexes: IndexesResults = client.list_all_indexes_with(&query).await.unwrap();
+    /// let indexes: IndexesResults<IsahcClient> = client.list_all_indexes_with(&query).await.unwrap();
     ///
     /// assert_eq!(indexes.limit, 1);
     /// # });
     /// ```
     pub async fn list_all_indexes_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
-    ) -> Result<IndexesResults, Error> {
+        indexes_query: &IndexesQuery<'_, Http>,
+    ) -> Result<IndexesResults<Http>, Error> {
         let value = self.list_all_indexes_raw_with(indexes_query).await?;
         let indexes_results = self.parse_indexes_results_from_value(&value)?;
 
@@ -226,13 +281,15 @@ impl Client {
     /// # });
     /// ```
     pub async fn list_all_indexes_raw(&self) -> Result<Value, Error> {
-        let json_indexes = request::<(), (), Value>(
-            &format!("{}/indexes", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await?;
+        let http_client = self.http_client.clone();
+        let json_indexes = http_client
+            .request::<(), (), Value>(
+                &format!("{}/indexes", self.host),
+                self.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
 
         Ok(json_indexes)
     }
@@ -259,17 +316,19 @@ impl Client {
     /// ```
     pub async fn list_all_indexes_raw_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
+        indexes_query: &IndexesQuery<'_, Http>,
     ) -> Result<Value, Error> {
-        let json_indexes = request::<&IndexesQuery, (), Value>(
-            &format!("{}/indexes", self.host),
-            self.get_api_key(),
-            Method::Get {
-                query: indexes_query,
-            },
-            200,
-        )
-        .await?;
+        let http_client = self.http_client.clone();
+        let json_indexes = http_client
+            .request::<&IndexesQuery<Http>, (), Value>(
+                &format!("{}/indexes", self.host),
+                self.get_api_key(),
+                Method::Get {
+                    query: indexes_query,
+                },
+                200,
+            )
+            .await?;
 
         Ok(json_indexes)
     }
@@ -293,7 +352,7 @@ impl Client {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
+    pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index<Http>, Error> {
         let mut idx = self.index(uid.as_ref());
         idx.fetch_info().await?;
         Ok(idx)
@@ -321,17 +380,19 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<Value, Error> {
-        request::<(), (), Value>(
-            &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), (), Value>(
+                &format!("{}/indexes/{}", self.host, uid.as_ref()),
+                self.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Create a corresponding object of an [Index] without any check or doing an HTTP call.
-    pub fn index(&self, uid: impl Into<String>) -> Index {
+    pub fn index(&self, uid: impl Into<String>) -> Index<Http> {
         Index::new(uid, self.clone())
     }
 
@@ -368,44 +429,48 @@ impl Client {
         uid: impl AsRef<str>,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Value, TaskInfo>(
-            &format!("{}/indexes", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: (),
-                body: json!({
-                    "uid": uid.as_ref(),
-                    "primaryKey": primary_key,
-                }),
-            },
-            202,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), Value, TaskInfo>(
+                &format!("{}/indexes", self.host),
+                self.get_api_key(),
+                Method::Post {
+                    query: (),
+                    body: json!({
+                        "uid": uid.as_ref(),
+                        "primaryKey": primary_key,
+                    }),
+                },
+                202,
+            )
+            .await
     }
 
     /// Delete an index from its UID.
     ///
     /// To delete an [Index], use the [`Index::delete`] method.
     pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            self.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!("{}/indexes/{}", self.host, uid.as_ref()),
+                self.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Alias for [`Client::list_all_indexes`].
-    pub async fn get_indexes(&self) -> Result<IndexesResults, Error> {
+    pub async fn get_indexes(&self) -> Result<IndexesResults<Http>, Error> {
         self.list_all_indexes().await
     }
 
     /// Alias for [`Client::list_all_indexes_with`].
     pub async fn get_indexes_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
-    ) -> Result<IndexesResults, Error> {
+        indexes_query: &IndexesQuery<'_, Http>,
+    ) -> Result<IndexesResults<Http>, Error> {
         self.list_all_indexes_with(indexes_query).await
     }
 
@@ -417,7 +482,7 @@ impl Client {
     /// Alias for [`Client::list_all_indexes_raw_with`].
     pub async fn get_indexes_raw_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
+        indexes_query: &IndexesQuery<'_, Http>,
     ) -> Result<Value, Error> {
         self.list_all_indexes_raw_with(indexes_query).await
     }
@@ -450,24 +515,26 @@ impl Client {
     ///     .await
     ///     .unwrap();
     ///
-    /// # client.index("swap_index_1").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-    /// # client.index("swap_index_2").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// client.index("swap_index_1").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// client.index("swap_index_2").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn swap_indexes(
         &self,
         indexes: impl IntoIterator<Item = &SwapIndexes>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Vec<&SwapIndexes>, TaskInfo>(
-            &format!("{}/swap-indexes", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: (),
-                body: indexes.into_iter().collect(),
-            },
-            202,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), Vec<&SwapIndexes>, TaskInfo>(
+                &format!("{}/swap-indexes", self.host),
+                self.get_api_key(),
+                Method::Post {
+                    query: (),
+                    body: indexes.into_iter().collect(),
+                },
+                202,
+            )
+            .await
     }
 
     /// Get stats of all [Indexes](Index).
@@ -486,13 +553,15 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
-        request::<(), (), ClientStats>(
-            &format!("{}/stats", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), (), ClientStats>(
+                &format!("{}/stats", self.host),
+                self.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get health of Meilisearch server.
@@ -513,13 +582,15 @@ impl Client {
     /// # });
     /// ```
     pub async fn health(&self) -> Result<Health, Error> {
-        request::<(), (), Health>(
-            &format!("{}/health", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), (), Health>(
+                &format!("{}/health", self.host),
+                self.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get health of Meilisearch server.
@@ -570,13 +641,15 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_keys_with(&self, keys_query: &KeysQuery) -> Result<KeysResults, Error> {
-        let keys = request::<&KeysQuery, (), KeysResults>(
-            &format!("{}/keys", self.host),
-            self.get_api_key(),
-            Method::Get { query: keys_query },
-            200,
-        )
-        .await?;
+        let http_client = self.http_client.clone();
+        let keys = http_client
+            .request::<&KeysQuery, (), KeysResults>(
+                &format!("{}/keys", self.host),
+                self.get_api_key(),
+                Method::Get { query: keys_query },
+                200,
+            )
+            .await?;
 
         Ok(keys)
     }
@@ -601,13 +674,15 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_keys(&self) -> Result<KeysResults, Error> {
-        let keys = request::<(), (), KeysResults>(
-            &format!("{}/keys", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await?;
+        let http_client = self.http_client.clone();
+        let keys = http_client
+            .request::<(), (), KeysResults>(
+                &format!("{}/keys", self.host),
+                self.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
 
         Ok(keys)
     }
@@ -635,13 +710,15 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
-        request::<(), (), Key>(
-            &format!("{}/keys/{}", self.host, key.as_ref()),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), (), Key>(
+                &format!("{}/keys/{}", self.host, key.as_ref()),
+                self.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Delete an API [Key] from Meilisearch.
@@ -670,13 +747,15 @@ impl Client {
     /// # });
     /// ```
     pub async fn delete_key(&self, key: impl AsRef<str>) -> Result<(), Error> {
-        request::<(), (), ()>(
-            &format!("{}/keys/{}", self.host, key.as_ref()),
-            self.get_api_key(),
-            Method::Delete { query: () },
-            204,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), (), ()>(
+                &format!("{}/keys/{}", self.host, key.as_ref()),
+                self.get_api_key(),
+                Method::Delete { query: () },
+                204,
+            )
+            .await
     }
 
     /// Create an API [Key] in Meilisearch.
@@ -704,16 +783,18 @@ impl Client {
     /// # });
     /// ```
     pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
-        request::<(), &KeyBuilder, Key>(
-            &format!("{}/keys", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: (),
-                body: key.as_ref(),
-            },
-            201,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), &KeyBuilder, Key>(
+                &format!("{}/keys", self.host),
+                self.get_api_key(),
+                Method::Post {
+                    query: (),
+                    body: key.as_ref(),
+                },
+                201,
+            )
+            .await
     }
 
     /// Update an API [Key] in Meilisearch.
@@ -744,16 +825,18 @@ impl Client {
     /// # });
     /// ```
     pub async fn update_key(&self, key: impl AsRef<KeyUpdater>) -> Result<Key, Error> {
-        request::<(), &KeyUpdater, Key>(
-            &format!("{}/keys/{}", self.host, key.as_ref().key),
-            self.get_api_key(),
-            Method::Patch {
-                body: key.as_ref(),
-                query: (),
-            },
-            200,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), &KeyUpdater, Key>(
+                &format!("{}/keys/{}", self.host, key.as_ref().key),
+                self.get_api_key(),
+                Method::Patch {
+                    body: key.as_ref(),
+                    query: (),
+                },
+                200,
+            )
+            .await
     }
 
     /// Get version of the Meilisearch server.
@@ -772,13 +855,15 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_version(&self) -> Result<Version, Error> {
-        request::<(), (), Version>(
-            &format!("{}/version", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), (), Version>(
+                &format!("{}/version", self.host),
+                self.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Wait until Meilisearch processes a [Task], and get its status.
@@ -875,13 +960,15 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_task(&self, task_id: impl AsRef<u32>) -> Result<Task, Error> {
-        request::<(), (), Task>(
-            &format!("{}/tasks/{}", self.host, task_id.as_ref()),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), (), Task>(
+                &format!("{}/tasks/{}", self.host, task_id.as_ref()),
+                self.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get all tasks with query parameters from the server.
@@ -904,15 +991,17 @@ impl Client {
     /// ```
     pub async fn get_tasks_with(
         &self,
-        tasks_query: &TasksSearchQuery<'_>,
+        tasks_query: &TasksSearchQuery<'_, Http>,
     ) -> Result<TasksResults, Error> {
-        let tasks = request::<&TasksSearchQuery, (), TasksResults>(
-            &format!("{}/tasks", self.host),
-            self.get_api_key(),
-            Method::Get { query: tasks_query },
-            200,
-        )
-        .await?;
+        let http_client = self.http_client.clone();
+        let tasks = http_client
+            .request::<&TasksSearchQuery<Http>, (), TasksResults>(
+                &format!("{}/tasks", self.host),
+                self.get_api_key(),
+                Method::Get { query: tasks_query },
+                200,
+            )
+            .await?;
 
         Ok(tasks)
     }
@@ -937,18 +1026,20 @@ impl Client {
     /// ```
     pub async fn cancel_tasks_with(
         &self,
-        filters: &TasksCancelQuery<'_>,
+        filters: &TasksCancelQuery<'_, Http>,
     ) -> Result<TaskInfo, Error> {
-        let tasks = request::<&TasksCancelQuery, (), TaskInfo>(
-            &format!("{}/tasks/cancel", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: filters,
-                body: (),
-            },
-            200,
-        )
-        .await?;
+        let http_client = self.http_client.clone();
+        let tasks = http_client
+            .request::<&TasksCancelQuery<Http>, (), TaskInfo>(
+                &format!("{}/tasks/cancel", self.host),
+                self.get_api_key(),
+                Method::Post {
+                    query: filters,
+                    body: (),
+                },
+                200,
+            )
+            .await?;
 
         Ok(tasks)
     }
@@ -973,15 +1064,17 @@ impl Client {
     /// ```
     pub async fn delete_tasks_with(
         &self,
-        filters: &TasksDeleteQuery<'_>,
+        filters: &TasksDeleteQuery<'_, Http>,
     ) -> Result<TaskInfo, Error> {
-        let tasks = request::<&TasksDeleteQuery, (), TaskInfo>(
-            &format!("{}/tasks", self.host),
-            self.get_api_key(),
-            Method::Delete { query: filters },
-            200,
-        )
-        .await?;
+        let http_client = self.http_client.clone();
+        let tasks = http_client
+            .request::<&TasksDeleteQuery<Http>, (), TaskInfo>(
+                &format!("{}/tasks", self.host),
+                self.get_api_key(),
+                Method::Delete { query: filters },
+                200,
+            )
+            .await?;
 
         Ok(tasks)
     }
@@ -1004,13 +1097,15 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
-        let tasks = request::<(), (), TasksResults>(
-            &format!("{}/tasks", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await?;
+        let http_client = self.http_client.clone();
+        let tasks = http_client
+            .request::<(), (), TasksResults>(
+                &format!("{}/tasks", self.host),
+                self.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
 
         Ok(tasks)
     }
@@ -1117,7 +1212,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_swapping_two_indexes(client: Client) {
+    async fn test_swapping_two_indexes(client: Client<IsahcClient>) {
         let index_1 = client.index("test_swapping_two_indexes_1");
         let index_2 = client.index("test_swapping_two_indexes_2");
 
@@ -1171,6 +1266,7 @@ mod tests {
         let path = "/hello";
         let address = &format!("{}{}", mock_server_url, path);
         let user_agent = &*qualified_version();
+        let client = Client::new(mock_server_url, None::<String>);
 
         let assertions = vec![
             (
@@ -1178,14 +1274,19 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(address, None, Method::Get { query: () }, 200),
+                client.http_client.clone().request::<(), (), ()>(
+                    address,
+                    None,
+                    Method::Get { query: () },
+                    200,
+                ),
             ),
             (
                 s.mock("POST", path)
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(
+                client.http_client.clone().request::<(), (), ()>(
                     address,
                     None,
                     Method::Post {
@@ -1200,14 +1301,19 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(address, None, Method::Delete { query: () }, 200),
+                client.http_client.clone().request::<(), (), ()>(
+                    address,
+                    None,
+                    Method::Delete { query: () },
+                    200,
+                ),
             ),
             (
                 s.mock("PUT", path)
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(
+                client.http_client.clone().request::<(), (), ()>(
                     address,
                     None,
                     Method::Put {
@@ -1222,7 +1328,7 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(
+                client.http_client.clone().request::<(), (), ()>(
                     address,
                     None,
                     Method::Patch {
@@ -1242,13 +1348,13 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks(client: Client) {
+    async fn test_get_tasks(client: Client<IsahcClient>) {
         let tasks = client.get_tasks().await.unwrap();
         assert!(tasks.limit == 20);
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks_with_params(client: Client) {
+    async fn test_get_tasks_with_params(client: Client<IsahcClient>) {
         let query = TasksSearchQuery::new(&client);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
@@ -1256,14 +1362,14 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_keys(client: Client) {
+    async fn test_get_keys(client: Client<IsahcClient>) {
         let keys = client.get_keys().await.unwrap();
 
         assert!(keys.results.len() >= 2);
     }
 
     #[meilisearch_test]
-    async fn test_delete_key(client: Client, name: String) {
+    async fn test_delete_key(client: Client<IsahcClient>, name: String) {
         let mut key = KeyBuilder::new();
         key.with_name(&name);
         let key = client.create_key(key).await.unwrap();
@@ -1279,7 +1385,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_delete_key(mut client: Client, name: String) {
+    async fn test_error_delete_key(mut client: Client<IsahcClient>, name: String) {
         // ==> accessing a key that does not exist
         let error = client.delete_key("invalid_key").await.unwrap_err();
         assert!(matches!(
@@ -1326,7 +1432,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_create_key(client: Client, name: String) {
+    async fn test_create_key(client: Client<IsahcClient>, name: String) {
         let expires_at = OffsetDateTime::now_utc() + time::Duration::HOUR;
         let mut key = KeyBuilder::new();
         key.with_action(Action::DocumentsAdd)
@@ -1349,7 +1455,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_create_key(mut client: Client, name: String) {
+    async fn test_error_create_key(mut client: Client<IsahcClient>, name: String) {
         // ==> Invalid index name
         /* TODO: uncomment once meilisearch fix this bug: https://github.com/meilisearch/meilisearch/issues/2158
         let mut key = KeyBuilder::new();
@@ -1365,7 +1471,6 @@ mod tests {
             }
         ));
         */
-
         // ==> executing the action without enough right
         let mut no_right_key = KeyBuilder::new();
         no_right_key.with_name(&format!("{name}_1"));
@@ -1396,7 +1501,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_update_key(client: Client, description: String) {
+    async fn test_update_key(client: Client<IsahcClient>, description: String) {
         let mut key = KeyBuilder::new();
         key.with_name("test_update_key");
         let mut key = client.create_key(key).await.unwrap();
@@ -1414,7 +1519,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_index(client: Client, index_uid: String) -> Result<(), Error> {
+    async fn test_get_index(client: Client<IsahcClient>, index_uid: String) -> Result<(), Error> {
         let task = client.create_index(&index_uid, None).await?;
         let index = client
             .wait_for_task(task, None, None)
@@ -1432,7 +1537,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_create_index(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_error_create_index(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let error = client
             .create_index("Wrong index name", None)
             .await
@@ -1467,7 +1575,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes(client: Client) {
+    async fn test_list_all_indexes(client: Client<IsahcClient>) {
         let all_indexes = client.list_all_indexes().await.unwrap();
 
         assert_eq!(all_indexes.limit, 20);
@@ -1475,7 +1583,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes_with_params(client: Client) {
+    async fn test_list_all_indexes_with_params(client: Client<IsahcClient>) {
         let mut query = IndexesQuery::new(&client);
         query.with_limit(1);
         let all_indexes = client.list_all_indexes_with(&query).await.unwrap();
@@ -1485,7 +1593,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes_raw(client: Client) {
+    async fn test_list_all_indexes_raw(client: Client<IsahcClient>) {
         let all_indexes_raw = client.list_all_indexes_raw().await.unwrap();
 
         assert_eq!(all_indexes_raw["limit"], json!(20));
@@ -1493,7 +1601,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_list_all_indexes_raw_with_params(client: Client) {
+    async fn test_list_all_indexes_raw_with_params(client: Client<IsahcClient>) {
         let mut query = IndexesQuery::new(&client);
         query.with_limit(1);
         let all_indexes_raw = client.list_all_indexes_raw_with(&query).await.unwrap();
@@ -1503,7 +1611,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_primary_key_is_none(mut index: Index) {
+    async fn test_get_primary_key_is_none(mut index: Index<IsahcClient>) {
         let primary_key = index.get_primary_key().await;
 
         assert!(primary_key.is_ok());
@@ -1511,7 +1619,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_primary_key(client: Client, index_uid: String) -> Result<(), Error> {
+    async fn test_get_primary_key(
+        client: Client<IsahcClient>,
+        index_uid: String,
+    ) -> Result<(), Error> {
         let mut index = client
             .create_index(index_uid, Some("primary_key"))
             .await?
