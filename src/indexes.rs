@@ -1,11 +1,7 @@
 use crate::{
-    client::Client,
-    documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
-    errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
-    request::*,
-    search::*,
-    task_info::TaskInfo,
-    tasks::*,
+    request::*, search::*, tasks::*, Client, DocumentDeletionQuery, DocumentQuery, DocumentsQuery,
+    DocumentsResults, Error, MeilisearchCommunicationError, MeilisearchError, TaskInfo,
+    MEILISEARCH_VERSION_HINT,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
@@ -114,7 +110,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::{Task, SucceededTask}};
+    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, Task, SucceededTask};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");

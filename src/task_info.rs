@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::time::Duration;
 use time::OffsetDateTime;
 
-use crate::{client::Client, errors::Error, tasks::*};
+use crate::{tasks::*, Client, Error};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -40,7 +40,7 @@ impl TaskInfo {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task, task_info::TaskInfo};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Task, TaskInfo};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -84,11 +84,7 @@ impl TaskInfo {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        client::*,
-        errors::{ErrorCode, ErrorType},
-        indexes::Index,
-    };
+    use crate::{client::*, ErrorCode, ErrorType, Index};
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};

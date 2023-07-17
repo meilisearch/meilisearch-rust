@@ -1,4 +1,4 @@
-use crate::task_info::TaskInfo;
+use crate::TaskInfo;
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -20,10 +20,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// ## Sample usage:
 /// ```
 /// use serde::{Serialize, Deserialize};
-/// use meilisearch_sdk::documents::IndexConfig;
-/// use meilisearch_sdk::settings::Settings;
-/// use meilisearch_sdk::indexes::Index;
-/// use meilisearch_sdk::client::Client;
+/// use meilisearch_sdk::{IndexConfig, Settings, Index, Client};
 ///
 /// #[derive(Serialize, Deserialize, IndexConfig)]
 /// struct Movie {
@@ -48,10 +45,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// ```
 pub use meilisearch_index_setting_macro::IndexConfig;
 
-use crate::settings::Settings;
-use crate::tasks::Task;
-use crate::Client;
-use crate::{errors::Error, indexes::Index};
+use crate::{Client, Error, Index, Settings, Task};
 
 #[async_trait]
 pub trait IndexConfig {

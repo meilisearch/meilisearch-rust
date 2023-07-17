@@ -1,8 +1,6 @@
 use crate::{
-    errors::Error,
-    indexes::Index,
     request::{request, Method},
-    task_info::TaskInfo,
+    Error, Index, TaskInfo,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -43,7 +41,7 @@ pub struct FacetingSettings {
 /// # Example
 ///
 /// ```
-/// # use meilisearch_sdk::settings::Settings;
+/// # use meilisearch_sdk::Settings;
 /// let settings = Settings::new()
 ///     .with_stop_words(["a", "the", "of"]);
 ///
@@ -643,7 +641,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings, PaginationSetting}};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Settings, PaginationSetting};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -681,7 +679,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Settings};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -724,7 +722,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings, PaginationSetting}};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Settings, PaginationSetting};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -760,7 +758,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Settings};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");

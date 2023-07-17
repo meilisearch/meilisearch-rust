@@ -1,4 +1,4 @@
-use crate::errors::{Error, MeilisearchCommunicationError, MeilisearchError};
+use crate::{Error, MeilisearchCommunicationError, MeilisearchError};
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{from_str, to_string};
