@@ -526,8 +526,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_documents_with_error_hint() -> Result<(), Error> {
-        let url = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
-        let client = Client::new(format!("{}/hello", url), Some("masterKey"));
+        let meilisearch_url = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+        let client = Client::new(format!("{}/hello", meilisearch_url), Some("masterKey"));
         let index = client.index("test_get_documents_with_filter_wrong_ms_version");
 
         let documents = DocumentsQuery::new(&index)
@@ -538,9 +538,11 @@ mod tests {
         let error = documents.unwrap_err();
 
         let message = Some("Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.".to_string());
-        let url = "http://localhost:7700/hello/indexes/test_get_documents_with_filter_wrong_ms_version/documents/fetch".to_string();
+        let url = format!(
+            "{meilisearch_url}/hello/indexes/test_get_documents_with_filter_wrong_ms_version/documents/fetch"
+        );
         let status_code = 404;
-        let displayed_error = "MeilisearchCommunicationError: The server responded with a 404. Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.\nurl: http://localhost:7700/hello/indexes/test_get_documents_with_filter_wrong_ms_version/documents/fetch";
+        let displayed_error = format!("MeilisearchCommunicationError: The server responded with a 404. Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.\nurl: {meilisearch_url}/hello/indexes/test_get_documents_with_filter_wrong_ms_version/documents/fetch");
 
         match &error {
             Error::MeilisearchCommunication(error) => {
