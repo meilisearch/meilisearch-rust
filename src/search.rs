@@ -929,7 +929,7 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: S("(ꈍᴗꈍ) sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)"),
+                value: S("(ꈍᴗꈍ)sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)"),
                 kind: S("text"),
                 number: 0,
                 nested: Nested { child: S("first") }
