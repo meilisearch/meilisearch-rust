@@ -1,4 +1,4 @@
-use crate::{client::Client, errors::Error, indexes::Index};
+use crate::{Client, Error, Index};
 use either::Either;
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
@@ -143,7 +143,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use serde::{Serialize, Deserialize};
-/// # use meilisearch_sdk::{client::Client, search::SearchQuery, indexes::Index};
+/// # use meilisearch_sdk::{Client, SearchQuery, Index};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -178,7 +178,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 ///
 /// ```
-/// # use meilisearch_sdk::{client::Client, search::SearchQuery, indexes::Index};
+/// # use meilisearch_sdk::{Client, SearchQuery, Index};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -1074,7 +1074,7 @@ mod tests {
         client: Client,
         index: Index,
     ) -> Result<(), Error> {
-        use crate::key::{Action, KeyBuilder};
+        use crate::{Action, KeyBuilder};
 
         setup_test_index(&client, &index).await?;
 

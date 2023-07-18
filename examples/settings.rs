@@ -1,6 +1,4 @@
-use meilisearch_sdk::client::Client;
-use meilisearch_sdk::indexes::Index;
-use meilisearch_sdk::settings::Settings;
+use meilisearch_sdk::{Client, Index, Settings};
 
 // we need an async runtime
 #[tokio::main(flavor = "current_thread")]

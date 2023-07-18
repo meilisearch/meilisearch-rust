@@ -38,7 +38,7 @@
 //! # });
 //! ```
 
-use crate::{client::Client, errors::Error, request::*, task_info::TaskInfo};
+use crate::{request::*, Client, Error, TaskInfo};
 
 /// Dump related methods.
 /// See the [dumps](crate::dumps) module.

@@ -2,10 +2,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::time::Duration;
 use time::OffsetDateTime;
 
-use crate::{
-    client::Client, errors::Error, errors::MeilisearchError, indexes::Index, settings::Settings,
-    task_info::TaskInfo, SwapIndexes,
-};
+use crate::{Client, Error, Index, MeilisearchError, Settings, SwapIndexes, TaskInfo};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -227,7 +224,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
@@ -313,7 +310,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -351,7 +348,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -381,7 +378,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -410,7 +407,7 @@ impl Task {
     /// ```no_run
     /// # // The test is not run because it checks for an enqueued or processed status
     /// # // and the task might already be processed when checking the status after the get_task call
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -695,10 +692,7 @@ impl<'a> TasksQuery<'a, TasksPaginationFilters> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        client::*,
-        errors::{ErrorCode, ErrorType},
-    };
+    use crate::{client::*, ErrorCode, ErrorType};
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};

@@ -250,6 +250,15 @@ mod tenant_tokens;
 mod utils;
 
 pub use client::*;
+pub use documents::*;
+pub use dumps::*;
+pub use errors::*;
+pub use indexes::*;
+pub use key::*;
+pub use search::*;
+pub use settings::*;
+pub use task_info::*;
+pub use tasks::*;
 
 #[cfg(test)]
 /// Support for the `IndexConfig` derive proc macro in the crate's tests.
