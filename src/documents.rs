@@ -579,7 +579,7 @@ mod tests {
 Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.".to_string();
         let displayed_error = "Meilisearch invalid_request: invalid_document_filter: Attribute `id` is not filterable. This index does not have configured filterable attributes.
 1:3 id = 1
-Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.. https://www.meilisearch.com/docs/errors#invalid_document_filter";
+Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.. https://docs.meilisearch.com/errors#invalid_document_filter";
 
         match &error {
             Error::Meilisearch(error) => {
