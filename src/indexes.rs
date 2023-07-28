@@ -697,6 +697,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn update_documents_ndjson<T: futures_io::AsyncRead + Send + Sync + 'static>(
         &self,
         payload: T,
@@ -742,6 +743,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn add_documents_ndjson<T: futures_io::AsyncRead + Send + Sync + 'static>(
         &self,
         payload: T,
