@@ -1964,7 +1964,6 @@ mod tests {
             .await?;
 
         let status = index.get_task(task).await?;
-        // Meilisearch may take some time to execute the request so we are going to wait till it's completed
         let elements = index.get_documents::<serde_json::Value>().await.unwrap();
         assert!(matches!(status, Task::Succeeded { .. }));
         assert!(elements.results.len() == 2);
@@ -1985,6 +1984,7 @@ mod tests {
             .await?;
         let _ = index.get_task(task).await?;
 
+        // Update via njdson document
         let task = index
             .update_documents_ndjson(updated_ndjson, Some("id"))
             .await?
