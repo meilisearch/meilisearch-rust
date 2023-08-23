@@ -753,6 +753,100 @@ impl Index {
             .await
     }
 
+    /// Add a raw csv payload to meilisearch.
+    ///
+    /// It configures the correct content type for csv data.
+    ///
+    /// If you send an already existing document (same id) the **whole existing document** will be overwritten by the new document.
+    /// Fields previously in the document not present in the new document are removed.
+    ///
+    /// For a partial update of the document see [`Index::update_documents_csv`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let movie_index = client.index("add_documents_ndjson");
+    ///
+    /// let task = movie_index.add_documents_csv(
+    ///     r#"1,body
+    ///     1,"doggo"
+    ///     2,"catto""#.as_bytes(),
+    ///     Some("id"),
+    ///   ).await.unwrap();
+    /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
+    /// client.wait_for_task(task, None, None).await.unwrap();
+    ///
+    /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
+    /// assert!(movies.results.len() == 2);
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn add_documents_csv<T: futures_io::AsyncRead + Send + Sync + 'static>(
+        &self,
+        payload: T,
+        primary_key: Option<&str>,
+    ) -> Result<TaskInfo, Error> {
+        self.add_or_replace_unchecked_payload(payload, "text/csv", primary_key)
+            .await
+    }
+
+    /// Add a raw csv payload and update them if they already.
+    ///
+    /// It configures the correct content type for csv data.
+    ///
+    /// If you send an already existing document (same id) the old document will be only partially updated according to the fields of the new document.
+    /// Thus, any fields not present in the new document are kept and remained unchanged.
+    ///
+    /// To completely overwrite a document, check out the [`Index::add_documents_csv`] documents method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let movie_index = client.index("update_documents_ndjson");
+    ///
+    /// let task = movie_index.add_documents_csv(
+    ///     r#"1,body
+    ///     1,"doggo"
+    ///     2,"catto""#.as_bytes(),
+    ///     Some("id"),
+    ///   ).await.unwrap();
+    /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
+    /// client.wait_for_task(task, None, None).await.unwrap();
+    ///
+    /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
+    /// assert!(movies.results.len() == 2);
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn update_documents_csv<T: futures_io::AsyncRead + Send + Sync + 'static>(
+        &self,
+        payload: T,
+        primary_key: Option<&str>,
+    ) -> Result<TaskInfo, Error> {
+        self.add_or_update_unchecked_payload(payload, "text/csv", primary_key)
+            .await
+    }
+
     /// Add a list of documents and update them if they already.
     ///
     /// If you send an already existing document (same id) the old document will be only partially updated according to the fields of the new document.
@@ -1959,6 +2053,68 @@ mod tests {
 
         let task = index
             .add_documents_ndjson(ndjson, Some("id"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        let elements = index.get_documents::<serde_json::Value>().await.unwrap();
+        assert!(matches!(status, Task::Succeeded { .. }));
+        assert!(elements.results.len() == 2);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_update_documents_csv(client: Client, index: Index) -> Result<(), Error> {
+        let old_csv = r#"1,body
+             1,"doggo"
+             2,"catto""#
+            .as_bytes();
+        let updated_csv = r#"1,body
+             1,"new_doggo"
+             2,"new_catto""#
+            .as_bytes();
+        // Add first njdson document
+        let task = index
+            .add_documents_ndjson(old_csv, Some("id"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+        let _ = index.get_task(task).await?;
+
+        // Update via njdson document
+        let task = index
+            .update_documents_ndjson(updated_csv, Some("id"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        let elements = index.get_documents::<serde_json::Value>().await.unwrap();
+
+        assert!(matches!(status, Task::Succeeded { .. }));
+        assert!(elements.results.len() == 2);
+
+        let expected_result = vec![
+            json!( {"body": "doggo", "id": 1, "second_body": "second_doggo"}),
+            json!( {"body": "catto", "id": 2, "second_body": "second_catto"}),
+        ];
+
+        assert_eq!(elements.results, expected_result);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_add_documents_csv(client: Client, index: Index) -> Result<(), Error> {
+        let csv_input = r#"1,body
+             1,"doggo"
+             2,"catto""#
+            .as_bytes();
+
+        let task = index
+            .add_documents_csv(csv_input, Some("id"))
             .await?
             .wait_for_completion(&client, None, None)
             .await?;
