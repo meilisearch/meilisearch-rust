@@ -777,9 +777,7 @@ impl Index {
     /// let movie_index = client.index("add_documents_ndjson");
     ///
     /// let task = movie_index.add_documents_csv(
-    ///     r#"1,body
-    ///     1,"doggo"
-    ///     2,"catto""#.as_bytes(),
+    ///     "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes(),
     ///     Some("id"),
     ///   ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
@@ -824,9 +822,7 @@ impl Index {
     /// let movie_index = client.index("update_documents_ndjson");
     ///
     /// let task = movie_index.update_documents_csv(
-    ///     r#"1,body
-    ///     1,"doggo"
-    ///     2,"catto""#.as_bytes(),
+    ///     "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes(),
     ///     Some("id"),
     ///   ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
