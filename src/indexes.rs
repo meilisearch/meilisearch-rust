@@ -823,7 +823,7 @@ impl Index {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let movie_index = client.index("update_documents_ndjson");
     ///
-    /// let task = movie_index.add_documents_csv(
+    /// let task = movie_index.update_documents_csv(
     ///     r#"1,body
     ///     1,"doggo"
     ///     2,"catto""#.as_bytes(),
@@ -2067,17 +2067,11 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_update_documents_csv(client: Client, index: Index) -> Result<(), Error> {
-        let old_csv = r#"1,body
-             1,"doggo"
-             2,"catto""#
-            .as_bytes();
-        let updated_csv = r#"1,body
-             1,"new_doggo"
-             2,"new_catto""#
-            .as_bytes();
+        let old_csv = "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes();
+        let updated_csv = "id,body\n1,\"new_doggo\"\n2,\"new_catto\"".as_bytes();
         // Add first njdson document
         let task = index
-            .add_documents_ndjson(old_csv, Some("id"))
+            .add_documents_csv(old_csv, Some("id"))
             .await?
             .wait_for_completion(&client, None, None)
             .await?;
@@ -2085,7 +2079,7 @@ mod tests {
 
         // Update via njdson document
         let task = index
-            .update_documents_ndjson(updated_csv, Some("id"))
+            .update_documents_csv(updated_csv, Some("id"))
             .await?
             .wait_for_completion(&client, None, None)
             .await?;
@@ -2097,8 +2091,8 @@ mod tests {
         assert!(elements.results.len() == 2);
 
         let expected_result = vec![
-            json!( {"body": "doggo", "id": 1, "second_body": "second_doggo"}),
-            json!( {"body": "catto", "id": 2, "second_body": "second_catto"}),
+            json!( {"body": "new_doggo", "id": "1"}),
+            json!( {"body": "new_catto", "id": "2"}),
         ];
 
         assert_eq!(elements.results, expected_result);
@@ -2108,10 +2102,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_add_documents_csv(client: Client, index: Index) -> Result<(), Error> {
-        let csv_input = r#"1,body
-             1,"doggo"
-             2,"catto""#
-            .as_bytes();
+        let csv_input = "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes();
 
         let task = index
             .add_documents_csv(csv_input, Some("id"))
