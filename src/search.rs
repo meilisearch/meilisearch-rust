@@ -246,6 +246,13 @@ pub struct SearchQuery<'a> {
     /// Attributes to sort.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sort: Option<&'a [&'a str]>,
+    /// Attributes to perform the search on.
+    ///
+    /// Specify the subset of searchableAttributes for a search without modifying Meilisearch’s index settings.
+    ///
+    /// **Default: all searchable attributes found in the documents.**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes_to_search_on: Option<&'a [&'a str]>,
     /// Attributes to display in the returned documents.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -323,6 +330,7 @@ impl<'a> SearchQuery<'a> {
             filter: None,
             sort: None,
             facets: None,
+            attributes_to_search_on: None,
             attributes_to_retrieve: None,
             attributes_to_crop: None,
             crop_length: None,
@@ -428,6 +436,13 @@ impl<'a> SearchQuery<'a> {
     }
     pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut SearchQuery<'a> {
         self.sort = Some(sort);
+        self
+    }
+    pub fn with_attributes_to_search_on<'b>(
+        &'b mut self,
+        attributes_to_search_on: &'a [&'a str],
+    ) -> &'b mut SearchQuery<'a> {
+        self.attributes_to_search_on = Some(attributes_to_search_on);
         self
     }
     pub fn with_attributes_to_retrieve<'b>(
@@ -827,6 +842,20 @@ mod tests {
         let mut query = SearchQuery::new(&index);
         query.with_attributes_to_retrieve(Selectors::Some(&["kind", "id"])); // omit the "value" field
         assert!(index.execute_query::<Document>(&query).await.is_err()); // error: missing "value" field
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_attributes_to_search_on(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results: SearchResults<Document> = index
+            .search()
+            .with_query("title")
+            .with_attributes_to_search_on(&["kind"])
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 8);
         Ok(())
     }
 

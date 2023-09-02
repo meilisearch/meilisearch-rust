@@ -692,6 +692,15 @@ search_parameter_guide_query_1: |-
     .execute()
     .await
     .unwrap();
+search_parameter_guide_attributes_to_search_on_1: |-
+  let results: SearchResults<Movie> = client
+    .index("movies")
+    .search()
+    .with_query("adventure")
+    .with_attributes_to_search_on(&["overview"])
+    .execute()
+    .await
+    .unwrap();
 search_parameter_guide_offset_1: |-
   let results: SearchResults<Movie> = client
     .index("movies")
