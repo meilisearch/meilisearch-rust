@@ -1656,3 +1656,20 @@ multi_search_1: |-
     .execute::<MovieRatings>()
     .await
     .unwrap();
+facet_search_1: |-
+  let client = client::new("http://localhost:7700", Some("apiKey"));
+  let res = client.index("movies")
+    .facet_search("genres")
+    .with_facet_query("fiction")
+    .with_filter("rating > 3")
+    .execute()
+    .await
+    .unwrap();
+facet_search_2: |-
+  let client = client::new("http://localhost:7700", Some("apiKey"));
+  let res = client.index("movies")
+    .facet_search("genres")
+    .with_facet_query("c")
+    .execute()
+    .await
+    .unwrap();
