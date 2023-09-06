@@ -231,6 +231,8 @@ pub mod documents;
 pub mod dumps;
 /// Module containing the [`errors::Error`] struct.
 pub mod errors;
+/// Module related to runtime and instance features.
+pub mod features;
 /// Module containing the Index struct.
 pub mod indexes;
 /// Module containing the [`key::Key`] struct.
@@ -253,6 +255,7 @@ pub use client::*;
 pub use documents::*;
 pub use dumps::*;
 pub use errors::*;
+pub use features::*;
 pub use indexes::*;
 pub use key::*;
 pub use search::*;

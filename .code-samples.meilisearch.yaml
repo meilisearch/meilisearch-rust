@@ -1656,3 +1656,19 @@ multi_search_1: |-
     .execute::<MovieRatings>()
     .await
     .unwrap();
+get_experimental_features_1: |-
+  let client = Client::new("http://localhost:7700", Some("apiKey"));
+  let features = ExperimentalFeatures::new(&client);
+  let res = features
+    .get()
+    .await
+    .unwrap();
+update_experimental_features_1: |-
+  let client = Client::new("http://localhost:7700", Some("apiKey"));
+  let mut features = ExperimentalFeatures::new(&client);
+  features.set_score_details(true);
+  features.set_vector_store(true);
+  let res = features
+    .update()
+    .await
+    .unwrap();
