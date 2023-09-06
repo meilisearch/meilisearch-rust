@@ -580,8 +580,12 @@ get_faceting_settings_1: |-
     .await
     .unwrap();
 update_faceting_settings_1: |-
+  let mut facet_sort_setting = BTreeMap::new();
+  facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+  facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
   let mut faceting = FacetingSettings {
     max_values_per_facet: 2,
+    sort_facet_values_by: Some(facet_sort_setting),
   };
 
   let task: TaskInfo = client
@@ -1248,8 +1252,11 @@ getting_started_sorting: |-
     .await
     .unwrap();
 getting_started_faceting: |-
+  let mut facet_sort_setting = BTreeMap::new();
+  facet_sort_setting.insert("*".to_string(), FacetSortValue::COUNT);
   let mut faceting = FacetingSettings {
     max_values_per_facet: 2,
+    sort_facet_values_by: Some(facet_sort_setting),
   };
 
   let task: TaskInfo = client
@@ -1654,5 +1661,19 @@ multi_search_1: |-
     .multi_search()
     .with_search_query(search_query_3)
     .execute::<MovieRatings>()
+    .await
+    .unwrap();
+facet_search_2: |-
+  let mut facet_sort_setting = BTreeMap::new();
+  facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+  let faceting = FacetingSettings {
+    max_values_per_facet: 5,
+    sort_facet_values_by: Some(facet_sort_setting),
+  };
+
+  let client = client::new("http://localhost:7700", Some("apiKey"));
+  let res = client.index("books")
+    .set_faceting(&faceting)
+    .execute()
     .await
     .unwrap();
