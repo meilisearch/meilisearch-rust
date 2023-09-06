@@ -45,6 +45,9 @@ pub struct SearchResult<T> {
     /// The object that contains information about the matches.
     #[serde(rename = "_matchesPosition")]
     pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
+    /// The relevancy score of the match.
+    #[serde(rename = "_rankingScore")]
+    pub ranking_score: Option<f64>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -302,6 +305,12 @@ pub struct SearchQuery<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_matches_position: Option<bool>,
 
+    /// Defines whether to show the relevancy score of the match.
+    ///
+    /// **Default: `false`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_ranking_score: Option<bool>,
+
     /// Defines the strategy on how to handle queries containing multiple words.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
@@ -331,6 +340,7 @@ impl<'a> SearchQuery<'a> {
             highlight_pre_tag: None,
             highlight_post_tag: None,
             show_matches_position: None,
+            show_ranking_score: None,
             matching_strategy: None,
             index_uid: None,
         }
@@ -478,6 +488,13 @@ impl<'a> SearchQuery<'a> {
         show_matches_position: bool,
     ) -> &'b mut SearchQuery<'a> {
         self.show_matches_position = Some(show_matches_position);
+        self
+    }
+    pub fn with_show_ranking_score<'b>(
+        &'b mut self,
+        show_ranking_score: bool,
+    ) -> &'b mut SearchQuery<'a> {
+        self.show_ranking_score = Some(show_ranking_score);
         self
     }
     pub fn with_matching_strategy<'b>(
@@ -1024,6 +1041,18 @@ mod tests {
                 length: 5
             }]
         );
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_show_ranking_score(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("dolor text");
+        query.with_show_ranking_score(true);
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
+        assert!(results.hits[0].ranking_score.is_some());
         Ok(())
     }
 

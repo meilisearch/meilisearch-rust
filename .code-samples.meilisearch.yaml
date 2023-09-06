@@ -803,6 +803,15 @@ search_parameter_guide_show_matches_position_1: |-
     .iter()
     .map(|r| r.matches_position.as_ref().unwrap())
     .collect();
+search_parameter_guide_show_ranking_score_1: |-
+  let results: SearchResults<Movie> = client
+    .index("movies")
+    .search()
+    .with_query("dragon")
+    .with_show_ranking_score(true)
+    .execute()
+    .await
+    .unwrap();
 search_parameter_guide_matching_strategy_1: |-
   let results: SearchResults<Movie> = client
   .index("movies")
