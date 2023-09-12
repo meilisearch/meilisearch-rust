@@ -58,7 +58,7 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.24.1"
+meilisearch-sdk = "0.24.2"
 ```
 
 The following optional dependencies may also be useful:
