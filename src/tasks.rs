@@ -46,6 +46,7 @@ pub enum TaskType {
 #[derive(Debug, Clone, Deserialize)]
 pub struct TasksResults {
     pub results: Vec<Task>,
+    pub total: u64,
     pub limit: u32,
     pub from: Option<u32>,
     pub next: Option<u32>,
