@@ -650,7 +650,7 @@ field_properties_guide_displayed_1: |-
     .unwrap();
 filtering_guide_1: |-
   let results: SearchResults<Movie> = client
-    .index("movies")
+    .index("movie_ratings")
     .search()
     .with_query("Avengers")
     .with_filter("release_date > 795484800")
@@ -659,7 +659,7 @@ filtering_guide_1: |-
     .unwrap();
 filtering_guide_2: |-
   let results: SearchResults<Movie> = client
-    .index("movies")
+    .index("movie_ratings")
     .search()
     .with_query("Batman")
     .with_filter(r#"release_date > 795484800 AND (director = "Tim Burton" OR director = "Christopher Nolan")"#)
@@ -668,10 +668,10 @@ filtering_guide_2: |-
     .unwrap();
 filtering_guide_3: |-
   let results: SearchResults<Movie> = client
-    .index("movies")
+    .index("movie_ratings")
     .search()
     .with_query("Planet of the Apes")
-    .with_filter(r#"rating >= 3 AND (NOT director = "Tim Burton")"#)
+    .with_filter(r#"release_date > 1577884550 AND (NOT director = "Tim Burton")"#)
     .execute()
     .await
     .unwrap();
@@ -812,6 +812,15 @@ search_parameter_guide_show_matches_position_1: |-
     .iter()
     .map(|r| r.matches_position.as_ref().unwrap())
     .collect();
+search_parameter_guide_show_ranking_score_1: |-
+  let results: SearchResults<Movie> = client
+    .index("movies")
+    .search()
+    .with_query("dragon")
+    .with_show_ranking_score(true)
+    .execute()
+    .await
+    .unwrap();
 search_parameter_guide_matching_strategy_1: |-
   let results: SearchResults<Movie> = client
   .index("movies")
@@ -1288,15 +1297,6 @@ filtering_update_settings_1: |-
     .set_filterable_attributes(["director", "genres"])
     .await
     .unwrap();
-faceted_search_filter_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("thriller")
-    .with_filter("(genres = Horror AND genres = Mystery) OR director = \"Jordan Peele\"")
-    .execute()
-    .await
-    .unwrap();
 faceted_search_facets_1: |-
   let results: SearchResults<Movie> = client
     .index("movies")
@@ -1321,7 +1321,7 @@ faceted_search_walkthrough_filter_1: |-
     .unwrap();
 faceted_search_update_settings_1: |-
   let task: TaskInfo = client
-    .index("books")
+    .index("movie_ratings")
     .set_filterable_attributes(&["genres", "rating", "language"])
     .await
     .unwrap();
@@ -1503,7 +1503,7 @@ geosearch_guide_filter_usage_3: |-
   let results: SearchResults<Restaurant> = client
     .index("restaurants")
     .search()
-    .with_filter("_geoBoundingBox([45.494181, 9.179175], [45.449484, 9.214024])")
+    .with_filter("_geoBoundingBox([45.494181, 9.214024], [45.449484, 9.179175])")
     .execute()
     .await
     .unwrap();
