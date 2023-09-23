@@ -28,9 +28,13 @@ impl<Q, B> Method<Q, B> {
 fn parse_response<Output: DeserializeOwned>(
     status_code: u16,
     expected_status_code: u16,
-    body: &str,
+    mut body: &str,
     url: String,
 ) -> Result<Output, Error> {
+    if body.is_empty() {
+        body = "null"
+    }
+
     if status_code == expected_status_code {
         match from_str::<Output>(body) {
             Ok(output) => {

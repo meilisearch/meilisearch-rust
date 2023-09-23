@@ -81,10 +81,7 @@ pub(crate) async fn request<
         Error::HttpError("Invalid utf8".to_string())
     })?;
 
-    match text.is_empty() {
-        true => parse_response(status, expected_status_code, "null", url.to_string()),
-        false => parse_response(status, expected_status_code, &text, url.to_string()),
-    }
+    parse_response(status, expected_status_code, &text, url.to_string())
 }
 
 fn invalid_response(e: wasm_bindgen::JsValue) -> Error {

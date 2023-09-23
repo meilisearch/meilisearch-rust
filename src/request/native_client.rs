@@ -93,9 +93,5 @@ where
 
     let status = response.status().as_u16();
     let body = response.text().await.map_err(isahc::Error::from)?;
-
-    match body.is_empty() {
-        true => parse_response(status, expected_status_code, "null", url.to_string()),
-        false => parse_response(status, expected_status_code, &body, url.to_string()),
-    }
+    parse_response(status, expected_status_code, &body, url.to_string())
 }
