@@ -70,20 +70,20 @@ where
     }
 
     let builder = match method {
-        Method::Get { .. } => builder.method(HttpMethod::GET).body(AsyncBody::empty()),
-        Method::Delete { .. } => builder.method(HttpMethod::DELETE).body(AsyncBody::empty()),
-        Method::Post { body, .. } => builder
-            .method(HttpMethod::POST)
-            .header(header::CONTENT_TYPE, content_type)
-            .body(into_async_body(body)),
-        Method::Patch { body, .. } => builder
-            .method(HttpMethod::PATCH)
-            .header(header::CONTENT_TYPE, content_type)
-            .body(into_async_body(body)),
-        Method::Put { body, .. } => builder
-            .method(HttpMethod::PUT)
-            .header(header::CONTENT_TYPE, content_type)
-            .body(into_async_body(body)),
+        Method::Get { .. } => builder.method(HttpMethod::GET),
+        Method::Delete { .. } => builder.method(HttpMethod::DELETE),
+        Method::Post { .. } => builder.method(HttpMethod::POST),
+        Method::Patch { .. } => builder.method(HttpMethod::PATCH),
+        Method::Put { .. } => builder.method(HttpMethod::PUT),
+    };
+
+    let builder = match method {
+        Method::Put { body, .. } | Method::Post { body, .. } | Method::Patch { body, .. } => {
+            builder
+                .header(isahc::http::header::CONTENT_TYPE, content_type)
+                .body(into_async_body(body))
+        }
+        _ => builder.body(AsyncBody::empty()),
     };
 
     let mut response = builder

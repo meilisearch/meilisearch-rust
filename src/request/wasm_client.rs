@@ -24,40 +24,33 @@ pub(crate) async fn request<
 
     // The 2 following unwraps should not be able to fail
     let headers = Headers::new().unwrap();
+    headers
+        .append("X-Meilisearch-Client", qualified_version().as_str())
+        .unwrap();
+
     if let Some(apikey) = apikey {
         headers
             .append("Authorization", format!("Bearer {}", apikey).as_str())
             .unwrap();
     }
-    headers
-        .append("X-Meilisearch-Client", qualified_version().as_str())
-        .unwrap();
 
     let mut request: RequestInit = RequestInit::new();
     request.headers(&headers);
 
     match &method {
-        Method::Get { .. } => {
-            request.method("GET");
-        }
-        Method::Delete { .. } => {
-            request.method("DELETE");
-        }
-        Method::Patch { body, .. } => {
-            request.method("PATCH");
+        Method::Get { .. } => request.method("GET"),
+        Method::Delete { .. } => request.method("DELETE"),
+        Method::Patch { .. } => request.method("PATCH"),
+        Method::Post { .. } => request.method("POST"),
+        Method::Put { .. } => request.method("PUT"),
+    };
+
+    match &method {
+        Method::Patch { body, .. } | Method::Put { body, .. } | Method::Post { body, .. } => {
             headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
-        Method::Post { body, .. } => {
-            request.method("POST");
-            headers.append(CONTENT_TYPE, JSON).unwrap();
-            request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
-        }
-        Method::Put { body, .. } => {
-            request.method("PUT");
-            headers.append(CONTENT_TYPE, JSON).unwrap();
-            request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
-        }
+        _ => (),
     }
 
     let response = JsFuture::from(
