@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::from_str;
@@ -13,6 +11,18 @@ pub(crate) enum Method<Q, B> {
     Patch { query: Q, body: B },
     Put { query: Q, body: B },
     Delete { query: Q },
+}
+
+impl<Q, B> Method<Q, B> {
+    pub fn query(&self) -> &Q {
+        match self {
+            Method::Get { query } => query,
+            Method::Post { query, .. } => query,
+            Method::Patch { query, .. } => query,
+            Method::Put { query, .. } => query,
+            Method::Delete { query } => query,
+        }
+    }
 }
 
 fn parse_response<Output: DeserializeOwned>(
@@ -62,10 +72,7 @@ pub fn qualified_version() -> String {
     format!("Meilisearch Rust (v{})", VERSION.unwrap_or("unknown"))
 }
 
-pub fn add_query_parameters<Query: Serialize, I: Into<String> + Display>(
-    url: I,
-    query: &Query,
-) -> Result<String, Error> {
+pub fn add_query_parameters<Query: Serialize>(url: &str, query: &Query) -> Result<String, Error> {
     let query = yaup::to_string(query)?;
 
     Ok(if query.is_empty() {

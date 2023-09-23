@@ -23,7 +23,6 @@ pub(crate) async fn request<
     const JSON: &str = "application/json";
 
     // The 2 following unwraps should not be able to fail
-    let mut mut_url = url.to_string();
     let headers = Headers::new().unwrap();
     if let Some(apikey) = apikey {
         headers
@@ -38,29 +37,23 @@ pub(crate) async fn request<
     request.headers(&headers);
 
     match &method {
-        Method::Get { query } => {
-            mut_url = add_query_parameters(mut_url, &query)?;
-
+        Method::Get { .. } => {
             request.method("GET");
         }
-        Method::Delete { query } => {
-            mut_url = add_query_parameters(mut_url, &query)?;
+        Method::Delete { .. } => {
             request.method("DELETE");
         }
-        Method::Patch { query, body } => {
-            mut_url = add_query_parameters(mut_url, &query)?;
+        Method::Patch { body, .. } => {
             request.method("PATCH");
             headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
-        Method::Post { query, body } => {
-            mut_url = add_query_parameters(mut_url, &query)?;
+        Method::Post { body, .. } => {
             request.method("POST");
             headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
         }
-        Method::Put { query, body } => {
-            mut_url = add_query_parameters(mut_url, &query)?;
+        Method::Put { body, .. } => {
             request.method("PUT");
             headers.append(CONTENT_TYPE, JSON).unwrap();
             request.body(Some(&JsValue::from_str(&to_string(body).unwrap())));
@@ -68,14 +61,17 @@ pub(crate) async fn request<
     }
 
     let window = web_sys::window().unwrap(); // TODO remove this unwrap
-    let response =
-        match JsFuture::from(window.fetch_with_str_and_init(mut_url.as_str(), &request)).await {
-            Ok(response) => Response::from(response),
-            Err(e) => {
-                error!("Network error: {:?}", e);
-                return Err(Error::UnreachableServer);
-            }
-        };
+    let response = match JsFuture::from(
+        window.fetch_with_str_and_init(&add_query_parameters(url, method.query())?, &request),
+    )
+    .await
+    {
+        Ok(response) => Response::from(response),
+        Err(e) => {
+            error!("Network error: {:?}", e);
+            return Err(Error::UnreachableServer);
+        }
+    };
     let status = response.status() as u16;
     let text = match response.text() {
         Ok(text) => match JsFuture::from(text).await {
