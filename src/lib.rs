@@ -1,3 +1,5 @@
+#![feature(async_fn_in_trait)]
+
 //! # 🚀 Getting started
 //!
 //! ### Add Documents <!-- omit in TOC -->

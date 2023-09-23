@@ -1,3 +1,11 @@
+#[cfg(not(target_arch = "wasm32"))]
+mod native_client;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use native_client::stream_request;
+
+#[cfg(target_arch = "wasm32")]
+mod wasm_client;
+
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::from_str;
@@ -25,47 +33,130 @@ impl<Q, B> Method<Q, B> {
     }
 }
 
-fn parse_response<Output: DeserializeOwned>(
-    status_code: u16,
+pub(crate) async fn request<Q, B, O>(
+    url: &str,
+    apikey: Option<&str>,
+    method: Method<Q, B>,
     expected_status_code: u16,
-    mut body: &str,
-    url: String,
-) -> Result<Output, Error> {
-    if body.is_empty() {
-        body = "null"
+) -> Result<O, Error>
+where
+    Q: Serialize,
+    B: Serialize,
+    O: DeserializeOwned + 'static,
+{
+    const CONTENT_TYPE: &str = "application/json";
+
+    #[cfg(not(target_arch = "wasm32"))]
+    use self::native_client::{NativeRequestClient, SerializeBodyTransform};
+    #[cfg(not(target_arch = "wasm32"))]
+    return NativeRequestClient::<SerializeBodyTransform, _>::request(
+        url,
+        apikey,
+        method,
+        CONTENT_TYPE,
+        expected_status_code,
+    )
+    .await;
+
+    #[cfg(target_arch = "wasm32")]
+    return self::wasm_client::BrowserRequestClient::request(
+        url,
+        apikey,
+        method,
+        CONTENT_TYPE,
+        expected_status_code,
+    )
+    .await;
+}
+
+trait RequestClient<B0>: Sized {
+    type Request;
+    type Response;
+
+    fn new(url: String) -> Self;
+
+    fn with_authorization_header(self, bearer_token_value: &str) -> Self;
+
+    fn with_user_agent_header(self, user_agent_value: &str) -> Self;
+
+    fn select_method<Q>(self, method: &Method<Q, B0>) -> Self;
+
+    fn add_body<Q>(self, method: Method<Q, B0>, content_type: &str) -> Self::Request;
+
+    async fn send_request(request: Self::Request) -> Result<Self::Response, Error>;
+
+    fn extract_status_code(response: &Self::Response) -> u16;
+
+    async fn response_to_text(response: Self::Response) -> Result<String, Error>;
+
+    async fn request<T, Q>(
+        url: &str,
+        apikey: Option<&str>,
+        method: Method<Q, B0>,
+        content_type: &str,
+        expected_status_code: u16,
+    ) -> Result<T, Error>
+    where
+        Q: Serialize,
+        T: DeserializeOwned + 'static,
+    {
+        let mut request_client = Self::new(add_query_parameters(url, method.query())?)
+            .select_method(&method)
+            .with_user_agent_header(&qualified_version());
+
+        if let Some(apikey) = apikey {
+            request_client = request_client.with_authorization_header(&format!("Bearer {apikey}"));
+        }
+
+        let response = Self::send_request(request_client.add_body(method, content_type)).await?;
+        let status = Self::extract_status_code(&response);
+        let text = Self::response_to_text(response).await?;
+
+        Self::parse_response(status, expected_status_code, &text, url.to_string())
     }
 
-    if status_code == expected_status_code {
-        match from_str::<Output>(body) {
-            Ok(output) => {
-                trace!("Request succeed");
-                return Ok(output);
-            }
+    fn parse_response<Output: DeserializeOwned>(
+        status_code: u16,
+        expected_status_code: u16,
+        mut body: &str,
+        url: String,
+    ) -> Result<Output, Error> {
+        if body.is_empty() {
+            body = "null"
+        }
+
+        if status_code == expected_status_code {
+            match from_str::<Output>(body) {
+                Ok(output) => {
+                    trace!("Request succeed");
+                    return Ok(output);
+                }
+                Err(e) => {
+                    error!("Request succeeded but failed to parse response");
+                    return Err(Error::ParseError(e));
+                }
+            };
+        }
+
+        warn!(
+            "Expected response code {}, got {}",
+            expected_status_code, status_code
+        );
+
+        match from_str::<MeilisearchError>(body) {
+            Ok(e) => Err(Error::from(e)),
             Err(e) => {
-                error!("Request succeeded but failed to parse response");
-                return Err(Error::ParseError(e));
+                if status_code >= 400 {
+                    return Err(Error::MeilisearchCommunication(
+                        MeilisearchCommunicationError {
+                            status_code,
+                            message: None,
+                            url,
+                        },
+                    ));
+                }
+                Err(Error::ParseError(e))
             }
-        };
-    }
-
-    warn!(
-        "Expected response code {}, got {}",
-        expected_status_code, status_code
-    );
-
-    match from_str::<MeilisearchError>(body) {
-        Ok(e) => Err(Error::from(e)),
-        Err(e) => {
-            if status_code >= 400 {
-                return Err(Error::MeilisearchCommunication(
-                    MeilisearchCommunicationError {
-                        status_code,
-                        message: None,
-                        url,
-                    },
-                ));
-            }
-            Err(Error::ParseError(e))
         }
     }
 }
@@ -85,13 +176,3 @@ pub fn add_query_parameters<Query: Serialize>(url: &str, query: &Query) -> Resul
         format!("{url}?{query}")
     })
 }
-
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) use native_client::{request, stream_request};
-#[cfg(not(target_arch = "wasm32"))]
-mod native_client;
-
-#[cfg(target_arch = "wasm32")]
-pub(crate) use wasm_client::request;
-#[cfg(target_arch = "wasm32")]
-mod wasm_client;

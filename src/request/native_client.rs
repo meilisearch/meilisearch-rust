@@ -1,26 +1,100 @@
-use isahc::AsyncBody;
-use serde::{de::DeserializeOwned, Serialize};
-use serde_json::to_string;
+use std::marker::PhantomData;
 
-use crate::Error;
+use isahc::{
+    http::{header, method::Method as HttpMethod, request::Builder},
+    AsyncBody, AsyncReadResponseExt, Request, RequestExt, Response,
+};
+
+use self::body_transform::{BodyTransform, ReadBodyTransform};
 
 use super::*;
 
-pub(crate) async fn request<Q: Serialize, B: Serialize, Output: DeserializeOwned + 'static>(
-    url: &str,
-    apikey: Option<&str>,
-    method: Method<Q, B>,
-    expected_status_code: u16,
-) -> Result<Output, Error> {
-    request_impl(
-        url,
-        apikey,
-        method,
-        "application/json",
-        expected_status_code,
-        |body: B| AsyncBody::from_bytes_static(to_string(&body).unwrap()),
-    )
-    .await
+pub(super) use body_transform::SerializeBodyTransform;
+mod body_transform {
+    use isahc::AsyncBody;
+    use serde::Serialize;
+
+    pub trait BodyTransform<B> {
+        fn body_transform(body: B) -> AsyncBody;
+    }
+
+    pub struct SerializeBodyTransform;
+    impl<B: Serialize> BodyTransform<B> for SerializeBodyTransform {
+        fn body_transform(body: B) -> AsyncBody {
+            AsyncBody::from_bytes_static(
+                serde_json::to_string(&body).expect("unable to serialize body"),
+            )
+        }
+    }
+
+    pub struct ReadBodyTransform;
+    impl<B: futures_io::AsyncRead + Send + Sync + 'static> BodyTransform<B> for ReadBodyTransform {
+        fn body_transform(body: B) -> AsyncBody {
+            AsyncBody::from_reader(body)
+        }
+    }
+}
+
+pub struct NativeRequestClient<T: BodyTransform<B>, B>(Builder, PhantomData<T>, PhantomData<B>);
+
+impl<B0, T: BodyTransform<B0>> RequestClient<B0> for NativeRequestClient<T, B0> {
+    type Request = Result<Request<AsyncBody>, isahc::http::Error>;
+    type Response = Response<AsyncBody>;
+
+    fn new(url: String) -> Self {
+        Self(Builder::new().uri(url), PhantomData, PhantomData)
+    }
+
+    fn with_authorization_header(mut self, bearer_token_value: &str) -> Self {
+        self.0 = self.0.header(header::AUTHORIZATION, bearer_token_value);
+        self
+    }
+
+    fn with_user_agent_header(mut self, user_agent_value: &str) -> Self {
+        self.0 = self.0.header(header::USER_AGENT, user_agent_value);
+        self
+    }
+
+    fn select_method<Q>(mut self, method: &Method<Q, B0>) -> Self {
+        self.0 = match method {
+            Method::Get { .. } => self.0.method(HttpMethod::GET),
+            Method::Delete { .. } => self.0.method(HttpMethod::DELETE),
+            Method::Post { .. } => self.0.method(HttpMethod::POST),
+            Method::Patch { .. } => self.0.method(HttpMethod::PATCH),
+            Method::Put { .. } => self.0.method(HttpMethod::PUT),
+        };
+        self
+    }
+
+    fn add_body<Q>(self, method: Method<Q, B0>, content_type: &str) -> Self::Request {
+        match method {
+            Method::Put { body, .. } | Method::Post { body, .. } | Method::Patch { body, .. } => {
+                self.0
+                    .header(header::CONTENT_TYPE, content_type)
+                    .body(T::body_transform(body))
+            }
+            _ => self.0.body(AsyncBody::empty()),
+        }
+    }
+
+    async fn send_request(request: Self::Request) -> Result<Self::Response, Error> {
+        request
+            .map_err(|_| crate::errors::Error::InvalidRequest)?
+            .send_async()
+            .await
+            .map_err(Error::from)
+    }
+
+    fn extract_status_code(response: &Self::Response) -> u16 {
+        response.status().as_u16()
+    }
+
+    async fn response_to_text(mut response: Self::Response) -> Result<String, Error> {
+        response
+            .text()
+            .await
+            .map_err(|e| Error::HttpError(isahc::Error::from(e)))
+    }
 }
 
 pub(crate) async fn stream_request<
@@ -34,64 +108,12 @@ pub(crate) async fn stream_request<
     content_type: &str,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
-    request_impl(
+    NativeRequestClient::<ReadBodyTransform, _>::request(
         url,
         apikey,
         method,
         content_type,
         expected_status_code,
-        |body: B| AsyncBody::from_reader(body),
     )
     .await
-}
-
-async fn request_impl<'a, Query, Body, Output, G>(
-    url: &str,
-    apikey: Option<&str>,
-    method: Method<Query, Body>,
-    content_type: &'a str,
-    expected_status_code: u16,
-    into_async_body: G,
-) -> Result<Output, Error>
-where
-    Query: Serialize,
-    Output: DeserializeOwned + 'static,
-    G: FnOnce(Body) -> AsyncBody,
-{
-    use isahc::http::header;
-    use isahc::http::method::Method as HttpMethod;
-    use isahc::*;
-
-    let mut builder = Request::builder()
-        .header(header::USER_AGENT, qualified_version())
-        .uri(add_query_parameters(url, method.query())?);
-    if let Some(apikey) = apikey {
-        builder = builder.header(header::AUTHORIZATION, format!("Bearer {apikey}"));
-    }
-
-    let builder = match method {
-        Method::Get { .. } => builder.method(HttpMethod::GET),
-        Method::Delete { .. } => builder.method(HttpMethod::DELETE),
-        Method::Post { .. } => builder.method(HttpMethod::POST),
-        Method::Patch { .. } => builder.method(HttpMethod::PATCH),
-        Method::Put { .. } => builder.method(HttpMethod::PUT),
-    };
-
-    let builder = match method {
-        Method::Put { body, .. } | Method::Post { body, .. } | Method::Patch { body, .. } => {
-            builder
-                .header(isahc::http::header::CONTENT_TYPE, content_type)
-                .body(into_async_body(body))
-        }
-        _ => builder.body(AsyncBody::empty()),
-    };
-
-    let mut response = builder
-        .map_err(|_| crate::errors::Error::InvalidRequest)?
-        .send_async()
-        .await?;
-
-    let status = response.status().as_u16();
-    let body = response.text().await.map_err(isahc::Error::from)?;
-    parse_response(status, expected_status_code, &body, url.to_string())
 }
