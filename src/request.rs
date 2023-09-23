@@ -1,7 +1,10 @@
-use crate::{Error, MeilisearchCommunicationError, MeilisearchError};
+use std::fmt::Display;
+
 use log::{error, trace, warn};
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::from_str;
+
+use crate::{Error, MeilisearchCommunicationError, MeilisearchError};
 
 #[derive(Debug)]
 pub(crate) enum Method<Q, B> {
@@ -59,15 +62,24 @@ pub fn qualified_version() -> String {
     format!("Meilisearch Rust (v{})", VERSION.unwrap_or("unknown"))
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub use native_client::add_query_parameters;
+pub fn add_query_parameters<Query: Serialize, I: Into<String> + Display>(
+    url: I,
+    query: &Query,
+) -> Result<String, Error> {
+    let query = yaup::to_string(query)?;
+
+    Ok(if query.is_empty() {
+        url.into()
+    } else {
+        format!("{url}?{query}")
+    })
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use native_client::{request, stream_request};
 #[cfg(not(target_arch = "wasm32"))]
 mod native_client;
 
-#[cfg(target_arch = "wasm32")]
-pub use wasm_client::add_query_parameters;
 #[cfg(target_arch = "wasm32")]
 pub(crate) use wasm_client::request;
 #[cfg(target_arch = "wasm32")]

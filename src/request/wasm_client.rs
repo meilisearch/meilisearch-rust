@@ -5,18 +5,6 @@ use crate::Error;
 
 use super::*;
 
-pub fn add_query_parameters<Query: Serialize>(
-    mut url: String,
-    query: &Query,
-) -> Result<String, Error> {
-    let query = yaup::to_string(query)?;
-
-    if !query.is_empty() {
-        url = format!("{}?{}", url, query);
-    };
-    return Ok(url);
-}
-
 pub(crate) async fn request<
     Query: Serialize,
     Body: Serialize,
