@@ -60,41 +60,34 @@ pub(crate) async fn request<
         }
     }
 
-    let window = web_sys::window().unwrap(); // TODO remove this unwrap
-    let response = match JsFuture::from(
-        window.fetch_with_str_and_init(&add_query_parameters(url, method.query())?, &request),
+    let response = JsFuture::from(
+        web_sys::window()
+            .expect("browser context")
+            .fetch_with_str_and_init(&add_query_parameters(url, method.query())?, &request),
     )
     .await
-    {
-        Ok(response) => Response::from(response),
-        Err(e) => {
-            error!("Network error: {:?}", e);
-            return Err(Error::UnreachableServer);
-        }
-    };
-    let status = response.status() as u16;
-    let text = match response.text() {
-        Ok(text) => match JsFuture::from(text).await {
-            Ok(text) => text,
-            Err(e) => {
-                error!("Invalid response: {:?}", e);
-                return Err(Error::HttpError("Invalid response".to_string()));
-            }
-        },
-        Err(e) => {
-            error!("Invalid response: {:?}", e);
-            return Err(Error::HttpError("Invalid response".to_string()));
-        }
-    };
+    .map(Response::from)
+    .map_err(|e| {
+        error!("Network error: {:?}", e);
+        Error::UnreachableServer
+    })?;
 
-    if let Some(t) = text.as_string() {
-        if t.is_empty() {
-            parse_response(status, expected_status_code, "null", url.to_string())
-        } else {
-            parse_response(status, expected_status_code, &t, url.to_string())
-        }
-    } else {
+    let status = response.status() as u16;
+
+    let text = response.text().map_err(invalid_response)?;
+    let text = JsFuture::from(text).await.map_err(invalid_response)?;
+    let text = text.as_string().ok_or_else(|| {
         error!("Invalid response");
-        Err(Error::HttpError("Invalid utf8".to_string()))
+        Error::HttpError("Invalid utf8".to_string())
+    })?;
+
+    match text.is_empty() {
+        true => parse_response(status, expected_status_code, "null", url.to_string()),
+        false => parse_response(status, expected_status_code, &text, url.to_string()),
     }
+}
+
+fn invalid_response(e: wasm_bindgen::JsValue) -> Error {
+    error!("Invalid response: {:?}", e);
+    Error::HttpError("Invalid response".to_string())
 }

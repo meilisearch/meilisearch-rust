@@ -92,10 +92,10 @@ where
         .await?;
 
     let status = response.status().as_u16();
-    let mut body = response.text().await.map_err(isahc::Error::from)?;
-    if body.is_empty() {
-        body = "null".to_string();
-    }
+    let body = response.text().await.map_err(isahc::Error::from)?;
 
-    parse_response(status, expected_status_code, &body, url.to_string())
+    match body.is_empty() {
+        true => parse_response(status, expected_status_code, "null", url.to_string()),
+        false => parse_response(status, expected_status_code, &body, url.to_string()),
+    }
 }
