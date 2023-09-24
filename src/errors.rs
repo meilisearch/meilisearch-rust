@@ -46,12 +46,26 @@ pub enum Error {
     InvalidTenantToken(#[from] jsonwebtoken::errors::Error),
 
     /// The http client encountered an error.
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(all(
+        not(target_arch = "wasm32"),
+        any(feature = "isahc-static-curl", feature = "isahc-static-ssl")
+    ))]
     #[error("HTTP request failed: {}", .0)]
     HttpError(isahc::Error),
 
     /// The http client encountered an error.
-    #[error("Invalid HTTP header : {}", .0)]
+    #[cfg(all(
+        not(target_arch = "wasm32"),
+        any(feature = "reqwest-native-tls", feature = "reqwest-rustls")
+    ))]
+    #[error("HTTP request failed: {}", .0)]
+    HttpError(reqwest::Error),
+
+    #[error("Invalid URL: {}", .0)]
+    InvalidUrl(url::ParseError),
+
+    /// The http client encountered an error.
+    #[error("Invalid HTTP header: {}", .0)]
     InvalidHttpHeaderValue(http::header::InvalidHeaderValue),
 
     /// The http client encountered an error.
@@ -286,10 +300,27 @@ impl From<http::header::InvalidHeaderValue> for Error {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(
+    not(target_arch = "wasm32"),
+    any(feature = "isahc-static-curl", feature = "isahc-static-ssl")
+))]
 impl From<isahc::Error> for Error {
     fn from(error: isahc::Error) -> Error {
         if error.kind() == isahc::error::ErrorKind::ConnectionFailed {
+            Error::UnreachableServer
+        } else {
+            Error::HttpError(error)
+        }
+    }
+}
+
+#[cfg(all(
+    not(target_arch = "wasm32"),
+    any(feature = "reqwest-native-tls", feature = "reqwest-rustls")
+))]
+impl From<reqwest::Error> for Error {
+    fn from(error: reqwest::Error) -> Error {
+        if error.is_connect() {
             Error::UnreachableServer
         } else {
             Error::HttpError(error)
@@ -303,6 +334,23 @@ mod test {
 
     use jsonwebtoken::errors::ErrorKind::InvalidToken;
     use uuid::Uuid;
+
+    #[tokio::test]
+    async fn error_on_invalid_url() {
+        let error = crate::request::request::<Option<()>, _, ()>(
+            "test_url",
+            None,
+            crate::request::Method::Post {
+                query: None,
+                body: "test_body",
+            },
+            200,
+        )
+        .await
+        .unwrap_err();
+
+        assert!(matches!(error, Error::InvalidUrl(_)))
+    }
 
     #[test]
     fn test_meilisearch_error() {
@@ -417,12 +465,6 @@ mod test {
         assert_eq!(
             error.to_string(),
             "Error parsing response JSON: invalid type: map, expected a string at line 2 column 8"
-        );
-
-        let error = Error::HttpError(isahc::post("test_url", "test_body").unwrap_err());
-        assert_eq!(
-            error.to_string(),
-            "HTTP request failed: failed to resolve host name"
         );
 
         let error = Error::InvalidTenantToken(jsonwebtoken::errors::Error::from(InvalidToken));

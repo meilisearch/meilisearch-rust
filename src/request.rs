@@ -1,13 +1,23 @@
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(
+    not(target_arch = "wasm32"),
+    any(feature = "isahc-static-curl", feature = "isahc-static-ssl")
+))]
 mod isahc_native_client;
-use http::header;
+
+#[cfg(all(
+    not(target_arch = "wasm32"),
+    any(feature = "reqwest-native-tls", feature = "reqwest-rustls")
+))]
+mod reqwest_native_client;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm_client;
 
+use http::header;
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::from_str;
+use url::Url;
 
 use crate::{Error, MeilisearchCommunicationError, MeilisearchError};
 
@@ -58,17 +68,21 @@ where
 {
     const CONTENT_TYPE: &str = "application/json";
 
+    #[cfg(all(
+        not(target_arch = "wasm32"),
+        any(feature = "isahc-static-curl", feature = "isahc-static-ssl")
+    ))]
+    type RequestClient<B> =
+        isahc_native_client::IsahcRequestClient<isahc_native_client::SerializeBodyTransform, B>;
+    #[cfg(all(
+        not(target_arch = "wasm32"),
+        any(feature = "reqwest-native-tls", feature = "reqwest-rustls")
+    ))]
+    type RequestClient<B> =
+        reqwest_native_client::ReqwestClient<reqwest_native_client::SerializeBodyTransform, B>;
+
     #[cfg(not(target_arch = "wasm32"))]
-    use self::isahc_native_client::{IsahcRequestClient, SerializeBodyTransform};
-    #[cfg(not(target_arch = "wasm32"))]
-    return IsahcRequestClient::<SerializeBodyTransform, _>::request(
-        url,
-        apikey,
-        method,
-        CONTENT_TYPE,
-        expected_status_code,
-    )
-    .await;
+    return RequestClient::request(url, apikey, method, CONTENT_TYPE, expected_status_code).await;
 
     #[cfg(target_arch = "wasm32")]
     return self::wasm_client::BrowserRequestClient::request(
@@ -93,22 +107,21 @@ pub(crate) async fn stream_request<
     content_type: &str,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
-    use self::isahc_native_client::{IsahcRequestClient, ReadBodyTransform};
-    IsahcRequestClient::<ReadBodyTransform, _>::request(
-        url,
-        apikey,
-        method,
-        content_type,
-        expected_status_code,
-    )
-    .await
+    #[cfg(any(feature = "isahc-static-curl", feature = "isahc-static-ssl"))]
+    type RequestClient<B> =
+        isahc_native_client::IsahcRequestClient<isahc_native_client::ReadBodyTransform, B>;
+    #[cfg(any(feature = "reqwest-native-tls", feature = "reqwest-rustls"))]
+    type RequestClient<B> =
+        reqwest_native_client::ReqwestClient<reqwest_native_client::ReadBodyTransform, B>;
+
+    RequestClient::request(url, apikey, method, content_type, expected_status_code).await
 }
 
 trait RequestClient<B>: Sized {
     type Request;
     type Response;
 
-    fn new(url: String) -> Self;
+    fn new(url: Url) -> Self;
 
     fn append_header(self, name: http::HeaderName, value: http::HeaderValue) -> Self;
 
@@ -133,9 +146,13 @@ trait RequestClient<B>: Sized {
         Q: Serialize,
         T: DeserializeOwned + 'static,
     {
-        let mut request_client = Self::new(add_query_parameters(url, method.query())?)
-            .with_method(method.http_method())
-            .append_header(header::USER_AGENT, USER_AGENT_HEADER_VALUE.clone());
+        let mut request_client = Self::new(
+            add_query_parameters(url, method.query())?
+                .parse()
+                .map_err(Error::InvalidUrl)?,
+        )
+        .with_method(method.http_method())
+        .append_header(header::USER_AGENT, USER_AGENT_HEADER_VALUE.clone());
 
         if let Some(apikey) = apikey {
             request_client = request_client

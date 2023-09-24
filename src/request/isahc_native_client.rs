@@ -8,40 +8,14 @@ use self::body_transform::BodyTransform;
 
 use super::*;
 
-pub(super) use body_transform::{ReadBodyTransform, SerializeBodyTransform};
-mod body_transform {
-    use isahc::AsyncBody;
-    use serde::Serialize;
-
-    pub trait BodyTransform<B> {
-        fn body_transform(body: B) -> AsyncBody;
-    }
-
-    pub struct SerializeBodyTransform;
-    impl<B: Serialize> BodyTransform<B> for SerializeBodyTransform {
-        fn body_transform(body: B) -> AsyncBody {
-            AsyncBody::from_bytes_static(
-                serde_json::to_string(&body).expect("unable to serialize body"),
-            )
-        }
-    }
-
-    pub struct ReadBodyTransform;
-    impl<B: futures_io::AsyncRead + Send + Sync + 'static> BodyTransform<B> for ReadBodyTransform {
-        fn body_transform(body: B) -> AsyncBody {
-            AsyncBody::from_reader(body)
-        }
-    }
-}
-
 pub struct IsahcRequestClient<T: BodyTransform<B>, B>(Builder, PhantomData<T>, PhantomData<B>);
 
 impl<B, T: BodyTransform<B>> RequestClient<B> for IsahcRequestClient<T, B> {
     type Request = Result<Request<AsyncBody>, isahc::http::Error>;
     type Response = Response<AsyncBody>;
 
-    fn new(url: String) -> Self {
-        Self(Builder::new().uri(url), PhantomData, PhantomData)
+    fn new(url: Url) -> Self {
+        Self(Builder::new().uri(url.as_str()), PhantomData, PhantomData)
     }
 
     fn append_header(mut self, name: http::HeaderName, value: http::HeaderValue) -> Self {
@@ -78,5 +52,31 @@ impl<B, T: BodyTransform<B>> RequestClient<B> for IsahcRequestClient<T, B> {
             .text()
             .await
             .map_err(|e| Error::HttpError(isahc::Error::from(e)))
+    }
+}
+
+pub(super) use body_transform::{ReadBodyTransform, SerializeBodyTransform};
+mod body_transform {
+    use isahc::AsyncBody;
+    use serde::Serialize;
+
+    pub trait BodyTransform<B> {
+        fn body_transform(body: B) -> AsyncBody;
+    }
+
+    pub struct SerializeBodyTransform;
+    impl<B: Serialize> BodyTransform<B> for SerializeBodyTransform {
+        fn body_transform(body: B) -> AsyncBody {
+            AsyncBody::from_bytes_static(
+                serde_json::to_string(&body).expect("unable to serialize body"),
+            )
+        }
+    }
+
+    pub struct ReadBodyTransform;
+    impl<B: futures_io::AsyncRead + Send + Sync + 'static> BodyTransform<B> for ReadBodyTransform {
+        fn body_transform(body: B) -> AsyncBody {
+            AsyncBody::from_reader(body)
+        }
     }
 }

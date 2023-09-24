@@ -16,9 +16,9 @@ impl<B: Serialize> RequestClient<B> for BrowserRequestClient {
     type Request = JsFuture;
     type Response = web_sys::Response;
 
-    fn new(url: String) -> Self {
+    fn new(url: Url) -> Self {
         Self {
-            url,
+            url: url.to_string(),
             headers: Headers::new().expect(BROWSER_CONTEXT),
             request: RequestInit::new(),
         }
