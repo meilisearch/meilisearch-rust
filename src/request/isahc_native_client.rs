@@ -4,11 +4,11 @@ use isahc::{
     http::request::Builder, AsyncBody, AsyncReadResponseExt, Request, RequestExt, Response,
 };
 
-use self::body_transform::{BodyTransform, ReadBodyTransform};
+use self::body_transform::BodyTransform;
 
 use super::*;
 
-pub(super) use body_transform::SerializeBodyTransform;
+pub(super) use body_transform::{ReadBodyTransform, SerializeBodyTransform};
 mod body_transform {
     use isahc::AsyncBody;
     use serde::Serialize;
@@ -34,9 +34,9 @@ mod body_transform {
     }
 }
 
-pub struct NativeRequestClient<T: BodyTransform<B>, B>(Builder, PhantomData<T>, PhantomData<B>);
+pub struct IsahcRequestClient<T: BodyTransform<B>, B>(Builder, PhantomData<T>, PhantomData<B>);
 
-impl<B, T: BodyTransform<B>> RequestClient<B> for NativeRequestClient<T, B> {
+impl<B, T: BodyTransform<B>> RequestClient<B> for IsahcRequestClient<T, B> {
     type Request = Result<Request<AsyncBody>, isahc::http::Error>;
     type Response = Response<AsyncBody>;
 
@@ -79,25 +79,4 @@ impl<B, T: BodyTransform<B>> RequestClient<B> for NativeRequestClient<T, B> {
             .await
             .map_err(|e| Error::HttpError(isahc::Error::from(e)))
     }
-}
-
-pub(crate) async fn stream_request<
-    Q: Serialize,
-    B: futures_io::AsyncRead + Send + Sync + 'static,
-    Output: DeserializeOwned + 'static,
->(
-    url: &str,
-    apikey: Option<&str>,
-    method: Method<Q, B>,
-    content_type: &str,
-    expected_status_code: u16,
-) -> Result<Output, Error> {
-    NativeRequestClient::<ReadBodyTransform, _>::request(
-        url,
-        apikey,
-        method,
-        content_type,
-        expected_status_code,
-    )
-    .await
 }

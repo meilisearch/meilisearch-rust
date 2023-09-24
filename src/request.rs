@@ -1,8 +1,6 @@
 #[cfg(not(target_arch = "wasm32"))]
-mod native_client;
+mod isahc_native_client;
 use http::header;
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) use native_client::stream_request;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm_client;
@@ -61,9 +59,9 @@ where
     const CONTENT_TYPE: &str = "application/json";
 
     #[cfg(not(target_arch = "wasm32"))]
-    use self::native_client::{NativeRequestClient, SerializeBodyTransform};
+    use self::isahc_native_client::{IsahcRequestClient, SerializeBodyTransform};
     #[cfg(not(target_arch = "wasm32"))]
-    return NativeRequestClient::<SerializeBodyTransform, _>::request(
+    return IsahcRequestClient::<SerializeBodyTransform, _>::request(
         url,
         apikey,
         method,
@@ -81,6 +79,29 @@ where
         expected_status_code,
     )
     .await;
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn stream_request<
+    Q: Serialize,
+    B: futures_io::AsyncRead + Send + Sync + 'static,
+    Output: DeserializeOwned + 'static,
+>(
+    url: &str,
+    apikey: Option<&str>,
+    method: Method<Q, B>,
+    content_type: &str,
+    expected_status_code: u16,
+) -> Result<Output, Error> {
+    use self::isahc_native_client::{IsahcRequestClient, ReadBodyTransform};
+    IsahcRequestClient::<ReadBodyTransform, _>::request(
+        url,
+        apikey,
+        method,
+        content_type,
+        expected_status_code,
+    )
+    .await
 }
 
 trait RequestClient<B>: Sized {
