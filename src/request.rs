@@ -12,23 +12,36 @@ use serde_json::from_str;
 
 use crate::{Error, MeilisearchCommunicationError, MeilisearchError};
 
-#[derive(Debug)]
-pub(crate) enum Method<Q, B> {
-    Get { query: Q },
-    Post { query: Q, body: B },
-    Patch { query: Q, body: B },
-    Put { query: Q, body: B },
-    Delete { query: Q },
-}
+pub(crate) use method::Method;
+mod method {
+    #[derive(Debug)]
+    pub enum Method<Q, B> {
+        Get { query: Q },
+        Post { query: Q, body: B },
+        Patch { query: Q, body: B },
+        Put { query: Q, body: B },
+        Delete { query: Q },
+    }
 
-impl<Q, B> Method<Q, B> {
-    pub fn query(&self) -> &Q {
-        match self {
-            Method::Get { query } => query,
-            Method::Post { query, .. } => query,
-            Method::Patch { query, .. } => query,
-            Method::Put { query, .. } => query,
-            Method::Delete { query } => query,
+    impl<Q, B> Method<Q, B> {
+        pub fn query(&self) -> &Q {
+            match self {
+                Method::Get { query } => query,
+                Method::Post { query, .. } => query,
+                Method::Patch { query, .. } => query,
+                Method::Put { query, .. } => query,
+                Method::Delete { query } => query,
+            }
+        }
+
+        pub fn http_method(&self) -> http::Method {
+            match self {
+                Method::Get { .. } => http::Method::GET,
+                Method::Post { .. } => http::Method::POST,
+                Method::Patch { .. } => http::Method::PATCH,
+                Method::Put { .. } => http::Method::PUT,
+                Method::Delete { .. } => http::Method::DELETE,
+            }
         }
     }
 }
@@ -79,7 +92,7 @@ trait RequestClient<B0>: Sized {
 
     fn with_user_agent_header(self, user_agent_value: &str) -> Self;
 
-    fn select_method<Q>(self, method: &Method<Q, B0>) -> Self;
+    fn with_method(self, http_method: http::Method) -> Self;
 
     fn add_body<Q>(self, method: Method<Q, B0>, content_type: &str) -> Self::Request;
 
@@ -101,7 +114,7 @@ trait RequestClient<B0>: Sized {
         T: DeserializeOwned + 'static,
     {
         let mut request_client = Self::new(add_query_parameters(url, method.query())?)
-            .select_method(&method)
+            .with_method(method.http_method())
             .with_user_agent_header(&qualified_version());
 
         if let Some(apikey) = apikey {

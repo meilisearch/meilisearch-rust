@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use isahc::{
-    http::{header, method::Method as HttpMethod, request::Builder},
+    http::{header, request::Builder},
     AsyncBody, AsyncReadResponseExt, Request, RequestExt, Response,
 };
 
@@ -55,14 +55,8 @@ impl<B0, T: BodyTransform<B0>> RequestClient<B0> for NativeRequestClient<T, B0> 
         self
     }
 
-    fn select_method<Q>(mut self, method: &Method<Q, B0>) -> Self {
-        self.0 = match method {
-            Method::Get { .. } => self.0.method(HttpMethod::GET),
-            Method::Delete { .. } => self.0.method(HttpMethod::DELETE),
-            Method::Post { .. } => self.0.method(HttpMethod::POST),
-            Method::Patch { .. } => self.0.method(HttpMethod::PATCH),
-            Method::Put { .. } => self.0.method(HttpMethod::PUT),
-        };
+    fn with_method(mut self, http_method: http::Method) -> Self {
+        self.0 = self.0.method(http_method);
         self
     }
 

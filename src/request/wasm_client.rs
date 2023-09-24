@@ -40,15 +40,8 @@ impl<B0: Serialize> RequestClient<B0> for BrowserRequestClient {
         self
     }
 
-    fn select_method<Q>(mut self, method: &Method<Q, B0>) -> Self {
-        match &method {
-            Method::Get { .. } => self.request.method("GET"),
-            Method::Delete { .. } => self.request.method("DELETE"),
-            Method::Patch { .. } => self.request.method("PATCH"),
-            Method::Post { .. } => self.request.method("POST"),
-            Method::Put { .. } => self.request.method("PUT"),
-        };
-
+    fn with_method(mut self, http_method: http::Method) -> Self {
+        self.request.method(http_method.as_str());
         self
     }
 
