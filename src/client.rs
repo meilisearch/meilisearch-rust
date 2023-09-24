@@ -61,7 +61,7 @@ impl Client {
         Ok(indexes_results)
     }
 
-    pub async fn execute_multi_search_query<T: 'static + DeserializeOwned>(
+    pub async fn execute_multi_search_query<T: DeserializeOwned>(
         &self,
         body: &MultiSearchQuery<'_, '_>,
     ) -> Result<MultiSearchResponse<T>, Error> {

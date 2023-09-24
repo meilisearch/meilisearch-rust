@@ -83,7 +83,7 @@ mod body_transform {
     }
 
     pub struct ReadBodyTransform;
-    impl<B: futures_io::AsyncRead + Send + Sync + 'static> BodyTransform<B> for ReadBodyTransform {
+    impl<B: futures_io::AsyncRead + Send + Sync> BodyTransform<B> for ReadBodyTransform {
         fn body_transform(body: B) -> Body {
             let bytes = futures::executor::block_on(async move {
                 let mut output = Vec::new();

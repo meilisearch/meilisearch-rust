@@ -215,7 +215,7 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute_query<T: 'static + DeserializeOwned>(
+    pub async fn execute_query<T: DeserializeOwned>(
         &self,
         body: &SearchQuery<'_>,
     ) -> Result<SearchResults<T>, Error> {
@@ -302,10 +302,7 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_document<T: 'static + DeserializeOwned>(
-        &self,
-        document_id: &str,
-    ) -> Result<T, Error> {
+    pub async fn get_document<T: DeserializeOwned>(&self, document_id: &str) -> Result<T, Error> {
         let url = format!(
             "{}/indexes/{}/documents/{}",
             self.client.host, self.uid, document_id
@@ -357,7 +354,7 @@ impl Index {
     /// );
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
-    pub async fn get_document_with<T: 'static + DeserializeOwned>(
+    pub async fn get_document_with<T: DeserializeOwned>(
         &self,
         document_id: &str,
         document_query: &DocumentQuery<'_>,
@@ -407,9 +404,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_documents<T: DeserializeOwned + 'static>(
-        &self,
-    ) -> Result<DocumentsResults<T>, Error> {
+    pub async fn get_documents<T: DeserializeOwned>(&self) -> Result<DocumentsResults<T>, Error> {
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
 
         request::<(), (), DocumentsResults<T>>(
@@ -458,7 +453,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_documents_with<T: DeserializeOwned + 'static>(
+    pub async fn get_documents_with<T: DeserializeOwned>(
         &self,
         documents_query: &DocumentsQuery<'_>,
     ) -> Result<DocumentsResults<T>, Error> {

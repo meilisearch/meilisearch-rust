@@ -64,7 +64,7 @@ pub(crate) async fn request<Q, B, O>(
 where
     Q: Serialize,
     B: Serialize,
-    O: DeserializeOwned + 'static,
+    O: DeserializeOwned,
 {
     const CONTENT_TYPE: &str = "application/json";
 
@@ -99,7 +99,7 @@ where
 pub(crate) async fn stream_request<
     Q: Serialize,
     B: futures_io::AsyncRead + Send + Sync + 'static,
-    Output: DeserializeOwned + 'static,
+    Output: DeserializeOwned,
 >(
     url: &str,
     apikey: Option<&str>,
@@ -144,7 +144,7 @@ trait RequestClient<B>: Sized {
     ) -> Result<T, Error>
     where
         Q: Serialize,
-        T: DeserializeOwned + 'static,
+        T: DeserializeOwned,
     {
         let mut request_client = Self::new(
             add_query_parameters(url, method.query())?
@@ -175,18 +175,18 @@ trait RequestClient<B>: Sized {
         Self::parse_response(status, expected_status_code, &text, url.to_string())
     }
 
-    fn parse_response<Output: DeserializeOwned>(
+    fn parse_response<O: DeserializeOwned>(
         status_code: u16,
         expected_status_code: u16,
         mut body: &str,
         url: String,
-    ) -> Result<Output, Error> {
+    ) -> Result<O, Error> {
         if body.is_empty() {
             body = "null"
         }
 
         if status_code == expected_status_code {
-            match from_str::<Output>(body) {
+            match from_str::<O>(body) {
                 Ok(output) => {
                     trace!("Request succeed");
                     return Ok(output);

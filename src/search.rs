@@ -527,9 +527,7 @@ impl<'a> SearchQuery<'a> {
         self.clone()
     }
     /// Execute the query and fetch the results.
-    pub async fn execute<T: 'static + DeserializeOwned>(
-        &'a self,
-    ) -> Result<SearchResults<T>, Error> {
+    pub async fn execute<T: DeserializeOwned>(&'a self) -> Result<SearchResults<T>, Error> {
         self.index.execute_query::<T>(self).await
     }
 }
@@ -560,9 +558,7 @@ impl<'a, 'b> MultiSearchQuery<'a, 'b> {
     }
 
     /// Execute the query and fetch the results.
-    pub async fn execute<T: 'static + DeserializeOwned>(
-        &'a self,
-    ) -> Result<MultiSearchResponse<T>, Error> {
+    pub async fn execute<T: DeserializeOwned>(&'a self) -> Result<MultiSearchResponse<T>, Error> {
         self.client.execute_multi_search_query::<T>(self).await
     }
 }
