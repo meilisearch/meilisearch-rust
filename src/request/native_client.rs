@@ -1,8 +1,7 @@
 use std::marker::PhantomData;
 
 use isahc::{
-    http::{header, request::Builder},
-    AsyncBody, AsyncReadResponseExt, Request, RequestExt, Response,
+    http::request::Builder, AsyncBody, AsyncReadResponseExt, Request, RequestExt, Response,
 };
 
 use self::body_transform::{BodyTransform, ReadBodyTransform};
@@ -37,7 +36,7 @@ mod body_transform {
 
 pub struct NativeRequestClient<T: BodyTransform<B>, B>(Builder, PhantomData<T>, PhantomData<B>);
 
-impl<B0, T: BodyTransform<B0>> RequestClient<B0> for NativeRequestClient<T, B0> {
+impl<B, T: BodyTransform<B>> RequestClient<B> for NativeRequestClient<T, B> {
     type Request = Result<Request<AsyncBody>, isahc::http::Error>;
     type Response = Response<AsyncBody>;
 
@@ -45,13 +44,8 @@ impl<B0, T: BodyTransform<B0>> RequestClient<B0> for NativeRequestClient<T, B0> 
         Self(Builder::new().uri(url), PhantomData, PhantomData)
     }
 
-    fn with_authorization_header(mut self, bearer_token_value: &str) -> Self {
-        self.0 = self.0.header(header::AUTHORIZATION, bearer_token_value);
-        self
-    }
-
-    fn with_user_agent_header(mut self, user_agent_value: &str) -> Self {
-        self.0 = self.0.header(header::USER_AGENT, user_agent_value);
+    fn append_header(mut self, name: http::HeaderName, value: http::HeaderValue) -> Self {
+        self.0 = self.0.header(name, value);
         self
     }
 
@@ -60,14 +54,10 @@ impl<B0, T: BodyTransform<B0>> RequestClient<B0> for NativeRequestClient<T, B0> 
         self
     }
 
-    fn add_body<Q>(self, method: Method<Q, B0>, content_type: &str) -> Self::Request {
-        match method {
-            Method::Put { body, .. } | Method::Post { body, .. } | Method::Patch { body, .. } => {
-                self.0
-                    .header(header::CONTENT_TYPE, content_type)
-                    .body(T::body_transform(body))
-            }
-            _ => self.0.body(AsyncBody::empty()),
+    fn add_body(self, body: Option<B>) -> Self::Request {
+        match body {
+            Some(body) => self.0.body(T::body_transform(body)),
+            None => self.0.body(AsyncBody::empty()),
         }
     }
 

@@ -12,7 +12,7 @@ pub struct BrowserRequestClient {
     request: RequestInit,
 }
 
-impl<B0: Serialize> RequestClient<B0> for BrowserRequestClient {
+impl<B: Serialize> RequestClient<B> for BrowserRequestClient {
     type Request = JsFuture;
     type Response = web_sys::Response;
 
@@ -24,17 +24,12 @@ impl<B0: Serialize> RequestClient<B0> for BrowserRequestClient {
         }
     }
 
-    fn with_authorization_header(mut self, bearer_token_value: &str) -> Self {
+    fn append_header(mut self, name: http::HeaderName, value: http::HeaderValue) -> Self {
         self.headers
-            .append("Authorization", bearer_token_value)
-            .expect(BROWSER_CONTEXT);
-        self.request.headers(&self.headers);
-        self
-    }
-
-    fn with_user_agent_header(mut self, user_agent_value: &str) -> Self {
-        self.headers
-            .append("X-Meilisearch-Client", user_agent_value)
+            .append(
+                name.as_str(),
+                value.to_str().expect("header valued not sanitized"),
+            )
             .expect(BROWSER_CONTEXT);
         self.request.headers(&self.headers);
         self
@@ -45,18 +40,11 @@ impl<B0: Serialize> RequestClient<B0> for BrowserRequestClient {
         self
     }
 
-    fn add_body<Q>(mut self, method: Method<Q, B0>, content_type: &str) -> Self::Request {
-        match &method {
-            Method::Patch { body, .. } | Method::Put { body, .. } | Method::Post { body, .. } => {
-                self.headers
-                    .append("Content-Type", content_type)
-                    .expect(BROWSER_CONTEXT);
-                self.request.headers(&self.headers);
-                self.request.body(Some(&JsValue::from_str(
-                    &serde_json::to_string(&body).expect(BROWSER_CONTEXT),
-                )));
-            }
-            _ => (),
+    fn add_body(mut self, body: Option<B>) -> Self::Request {
+        if let Some(body) = body {
+            self.request.body(Some(&JsValue::from_str(
+                &serde_json::to_string(&body).expect(BROWSER_CONTEXT),
+            )));
         }
 
         JsFuture::from(

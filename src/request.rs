@@ -1,5 +1,6 @@
 #[cfg(not(target_arch = "wasm32"))]
 mod native_client;
+use http::header;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use native_client::stream_request;
 
@@ -82,19 +83,17 @@ where
     .await;
 }
 
-trait RequestClient<B0>: Sized {
+trait RequestClient<B>: Sized {
     type Request;
     type Response;
 
     fn new(url: String) -> Self;
 
-    fn with_authorization_header(self, bearer_token_value: &str) -> Self;
-
-    fn with_user_agent_header(self, user_agent_value: &str) -> Self;
+    fn append_header(self, name: http::HeaderName, value: http::HeaderValue) -> Self;
 
     fn with_method(self, http_method: http::Method) -> Self;
 
-    fn add_body<Q>(self, method: Method<Q, B0>, content_type: &str) -> Self::Request;
+    fn add_body(self, body: Option<B>) -> Self::Request;
 
     async fn send_request(request: Self::Request) -> Result<Self::Response, Error>;
 
@@ -105,7 +104,7 @@ trait RequestClient<B0>: Sized {
     async fn request<T, Q>(
         url: &str,
         apikey: Option<&str>,
-        method: Method<Q, B0>,
+        method: Method<Q, B>,
         content_type: &str,
         expected_status_code: u16,
     ) -> Result<T, Error>
@@ -115,13 +114,25 @@ trait RequestClient<B0>: Sized {
     {
         let mut request_client = Self::new(add_query_parameters(url, method.query())?)
             .with_method(method.http_method())
-            .with_user_agent_header(&qualified_version());
+            .append_header(http::header::USER_AGENT, qualified_version().parse()?);
 
         if let Some(apikey) = apikey {
-            request_client = request_client.with_authorization_header(&format!("Bearer {apikey}"));
+            request_client = request_client.append_header(
+                http::header::AUTHORIZATION,
+                format!("Bearer {apikey}").parse()?,
+            );
         }
 
-        let response = Self::send_request(request_client.add_body(method, content_type)).await?;
+        let body = match method {
+            Method::Put { body, .. } | Method::Post { body, .. } | Method::Patch { body, .. } => {
+                request_client =
+                    request_client.append_header(header::CONTENT_TYPE, content_type.parse()?);
+                Some(body)
+            }
+            _ => None,
+        };
+
+        let response = Self::send_request(request_client.add_body(body)).await?;
         let status = Self::extract_status_code(&response);
         let text = Self::response_to_text(response).await?;
 

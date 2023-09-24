@@ -51,6 +51,10 @@ pub enum Error {
     HttpError(isahc::Error),
 
     /// The http client encountered an error.
+    #[error("Invalid HTTP header : {}", .0)]
+    InvalidHttpHeaderValue(http::header::InvalidHeaderValue),
+
+    /// The http client encountered an error.
     #[cfg(target_arch = "wasm32")]
     #[error("HTTP request failed: {}", .0)]
     HttpError(String),
@@ -273,6 +277,12 @@ impl std::fmt::Display for ErrorCode {
             // this can't fail
             serde_json::to_value(self).unwrap().as_str().unwrap()
         )
+    }
+}
+
+impl From<http::header::InvalidHeaderValue> for Error {
+    fn from(error: http::header::InvalidHeaderValue) -> Error {
+        Error::InvalidHttpHeaderValue(error)
     }
 }
 
