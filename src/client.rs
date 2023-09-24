@@ -1161,7 +1161,7 @@ mod tests {
         let mock_server_url = s.url();
         let path = "/hello";
         let address = &format!("{}{}", mock_server_url, path);
-        let user_agent = &*qualified_version();
+        let user_agent = USER_AGENT_HEADER_VALUE.to_str().unwrap();
 
         let assertions = vec![
             (

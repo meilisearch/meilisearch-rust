@@ -114,13 +114,11 @@ trait RequestClient<B>: Sized {
     {
         let mut request_client = Self::new(add_query_parameters(url, method.query())?)
             .with_method(method.http_method())
-            .append_header(http::header::USER_AGENT, qualified_version().parse()?);
+            .append_header(header::USER_AGENT, USER_AGENT_HEADER_VALUE.clone());
 
         if let Some(apikey) = apikey {
-            request_client = request_client.append_header(
-                http::header::AUTHORIZATION,
-                format!("Bearer {apikey}").parse()?,
-            );
+            request_client = request_client
+                .append_header(header::AUTHORIZATION, format!("Bearer {apikey}").parse()?);
         }
 
         let body = match method {
@@ -185,10 +183,10 @@ trait RequestClient<B>: Sized {
     }
 }
 
-pub fn qualified_version() -> String {
-    const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
-
-    format!("Meilisearch Rust (v{})", VERSION.unwrap_or("unknown"))
+lazy_static::lazy_static! {
+    pub static ref USER_AGENT_HEADER_VALUE: header::HeaderValue = {
+        format!("Meilisearch Rust (v{})", option_env!("CARGO_PKG_VERSION").unwrap_or("unknown")).parse().expect("invalid header value")
+    };
 }
 
 pub fn add_query_parameters<Query: Serialize>(url: &str, query: &Query) -> Result<String, Error> {
