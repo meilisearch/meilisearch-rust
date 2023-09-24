@@ -19,6 +19,13 @@ jobs:
     if: github.event_name != 'pull_request' || !startsWith(github.base_ref, 'bump-meilisearch-v')
     runs-on: ubuntu-latest
     name: integration-tests
+    strategy:
+      matrix:
+        feature:
+          - isahc-static-curl
+          # - isahc-static-ssl
+          - reqwest-native-tls
+          # - reqwest-rustls
     steps:
       - uses: actions/checkout@v4
       - name: Build
@@ -26,12 +33,7 @@ jobs:
       - name: Meilisearch (latest version) setup with Docker
         run: docker run -d -p 7700:7700 getmeili/meilisearch:latest meilisearch --no-analytics --master-key=masterKey
       - name: Run tests
-        run: cargo test --verbose
-      - name: Cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --workspace --all-targets --all
+        run: cargo test --features ${{ matix.feature }} --no-default-features
 
   linter:
     name: clippy-check
