@@ -28,24 +28,14 @@ jobs:
           # - reqwest-rustls
     steps:
       - uses: actions/checkout@v4
-      - name: Build
-        run: cargo build --verbose
+      - name: Install clippy
+        run: rustup component add clippy
+      - name: Run linter (clippy)
+        run: cargo clippy --all-targets --no-default-features --features ${{ matix.feature }} -- -D warnings
       - name: Meilisearch (latest version) setup with Docker
         run: docker run -d -p 7700:7700 getmeili/meilisearch:latest meilisearch --no-analytics --master-key=masterKey
       - name: Run tests
         run: cargo test --features ${{ matix.feature }} --no-default-features
-
-  linter:
-    name: clippy-check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install clippy
-        run: rustup component add clippy
-      - name: Run linter (clippy)
-        # Will fail when encountering warnings
-        run: cargo clippy -- -D warnings
-
   formatter:
     name: rust-format
     runs-on: ubuntu-latest
