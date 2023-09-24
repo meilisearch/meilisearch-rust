@@ -555,7 +555,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_or_replace<T: Serialize>(
+    pub async fn add_or_replace<T: Serialize + Sync>(
         &self,
         documents: &[T],
         primary_key: Option<&str>,
@@ -648,7 +648,7 @@ impl Index {
     }
 
     /// Alias for [`Index::add_or_replace`].
-    pub async fn add_documents<T: Serialize>(
+    pub async fn add_documents<T: Serialize + Sync>(
         &self,
         documents: &[T],
         primary_key: Option<&str>,
@@ -890,7 +890,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_or_update<T: Serialize>(
+    pub async fn add_or_update<T: Serialize + Sync>(
         &self,
         documents: &[T],
         primary_key: Option<impl AsRef<str>>,
@@ -1113,7 +1113,7 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
+    pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug + Sync>(
         &self,
         uids: &[T],
     ) -> Result<TaskInfo, Error> {
@@ -1504,7 +1504,7 @@ impl Index {
     /// # None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_documents_in_batches<T: Serialize>(
+    pub async fn add_documents_in_batches<T: Serialize + Sync>(
         &self,
         documents: &[T],
         batch_size: Option<usize>,
@@ -1592,7 +1592,7 @@ impl Index {
     /// # None).await.unwrap();
     /// # });
     /// ```
-    pub async fn update_documents_in_batches<T: Serialize>(
+    pub async fn update_documents_in_batches<T: Serialize + Sync>(
         &self,
         documents: &[T],
         batch_size: Option<usize>,

@@ -17,7 +17,8 @@ lazy_static::lazy_static! {
 
 pub struct ReqwestClient<T: BodyTransform<B>, B>(Request, PhantomData<T>, PhantomData<B>);
 
-impl<B, T: BodyTransform<B>> RequestClient<B> for ReqwestClient<T, B> {
+#[async_trait::async_trait]
+impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for ReqwestClient<T, B> {
     type Request = Request;
     type Response = Response;
 

@@ -10,7 +10,8 @@ use super::*;
 
 pub struct IsahcRequestClient<T: BodyTransform<B>, B>(Builder, PhantomData<T>, PhantomData<B>);
 
-impl<B, T: BodyTransform<B>> RequestClient<B> for IsahcRequestClient<T, B> {
+#[async_trait::async_trait]
+impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for IsahcRequestClient<T, B> {
     type Request = Result<Request<AsyncBody>, isahc::http::Error>;
     type Response = Response<AsyncBody>;
 

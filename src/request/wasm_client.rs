@@ -12,7 +12,8 @@ pub struct BrowserRequestClient {
     request: RequestInit,
 }
 
-impl<B: Serialize> RequestClient<B> for BrowserRequestClient {
+#[async_trait::async_trait]
+impl<'a, B: Serialize + 'a + Send> RequestClient<'a, B> for BrowserRequestClient {
     type Request = JsFuture;
     type Response = web_sys::Response;
 

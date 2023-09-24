@@ -55,15 +55,15 @@ mod method {
     }
 }
 
-pub(crate) async fn request<Q, B, O>(
-    url: &str,
-    apikey: Option<&str>,
+pub(crate) async fn request<'a, Q: 'a, B: 'a, O>(
+    url: &'a str,
+    apikey: Option<&'a str>,
     method: Method<Q, B>,
     expected_status_code: u16,
 ) -> Result<O, Error>
 where
-    Q: Serialize,
-    B: Serialize,
+    Q: Serialize + Send,
+    B: Serialize + Send,
     O: DeserializeOwned,
 {
     const CONTENT_TYPE: &str = "application/json";
@@ -97,7 +97,7 @@ where
 
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) async fn stream_request<
-    Q: Serialize,
+    Q: Serialize + Send,
     B: futures_io::AsyncRead + Send + Sync + 'static,
     Output: DeserializeOwned,
 >(
@@ -117,9 +117,10 @@ pub(crate) async fn stream_request<
     RequestClient::request(url, apikey, method, content_type, expected_status_code).await
 }
 
-trait RequestClient<B>: Sized {
-    type Request;
-    type Response;
+#[async_trait::async_trait]
+trait RequestClient<'a, B: 'a + Send>: Sized {
+    type Request: Send;
+    type Response: Send;
 
     fn new(url: Url) -> Self;
 
@@ -136,14 +137,14 @@ trait RequestClient<B>: Sized {
     async fn response_to_text(response: Self::Response) -> Result<String, Error>;
 
     async fn request<T, Q>(
-        url: &str,
-        apikey: Option<&str>,
+        url: &'a str,
+        apikey: Option<&'a str>,
         method: Method<Q, B>,
-        content_type: &str,
+        content_type: &'a str,
         expected_status_code: u16,
     ) -> Result<T, Error>
     where
-        Q: Serialize,
+        Q: Serialize + 'a + Send,
         T: DeserializeOwned,
     {
         let mut request_client = Self::new(
