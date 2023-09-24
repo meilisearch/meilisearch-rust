@@ -62,11 +62,11 @@ pub enum Error {
     HttpError(reqwest::Error),
 
     #[error("Invalid URL: {}", .0)]
-    InvalidUrl(url::ParseError),
+    InvalidUrl(#[from] url::ParseError),
 
     /// The http client encountered an error.
     #[error("Invalid HTTP header: {}", .0)]
-    InvalidHttpHeaderValue(http::header::InvalidHeaderValue),
+    InvalidHttpHeaderValue(#[from] http::header::InvalidHeaderValue),
 
     /// The http client encountered an error.
     #[cfg(target_arch = "wasm32")]
@@ -291,12 +291,6 @@ impl std::fmt::Display for ErrorCode {
             // this can't fail
             serde_json::to_value(self).unwrap().as_str().unwrap()
         )
-    }
-}
-
-impl From<http::header::InvalidHeaderValue> for Error {
-    fn from(error: http::header::InvalidHeaderValue) -> Error {
-        Error::InvalidHttpHeaderValue(error)
     }
 }
 

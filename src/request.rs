@@ -147,13 +147,9 @@ trait RequestClient<'a, B: 'a + Send>: Sized {
         Q: Serialize + 'a + Send,
         T: DeserializeOwned,
     {
-        let mut request_client = Self::new(
-            add_query_parameters(url, method.query())?
-                .parse()
-                .map_err(Error::InvalidUrl)?,
-        )
-        .with_method(method.http_method())
-        .append_header(header::USER_AGENT, USER_AGENT_HEADER_VALUE.clone());
+        let mut request_client = Self::new(add_query_parameters(url, method.query())?.parse()?)
+            .with_method(method.http_method())
+            .append_header(header::USER_AGENT, USER_AGENT_HEADER_VALUE.clone());
 
         if let Some(apikey) = apikey {
             request_client = request_client
