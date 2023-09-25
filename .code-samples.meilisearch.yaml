@@ -843,38 +843,6 @@ search_parameter_guide_hitsperpage_1: |-
   client.index("movies").search().with_hits_per_page(15).execute().await?;
 search_parameter_guide_page_1: |-
   client.index("movies").search().with_page(2).execute().await?;
-settings_guide_filterable_attributes_1: |-
-  let settings = Settings::new()
-    .with_filterable_attributes([
-      "director",
-      "genres"
-    ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_typo_tolerance_1: |-
-  let min_word_size_for_typos = MinWordSizeForTypos {
-    one_typo: Some(5),
-    two_typos: Some(12)
-  }
-  let typo_tolerance = TypoToleranceSettings {
-    enabled: Some(true),
-    disable_on_attributes: None,
-    disable_on_words: Some(vec!["title".to_string()]),
-    min_word_size_for_typos: Some(min_word_size_for_typos),
-  };
-
-  let settings = Settings::new()
-    .with_typo_tolerance(&typo_tolerance);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
 typo_tolerance_guide_1: |-
   let typo_tolerance = TypoToleranceSettings {
     enabled: Some(false),
@@ -970,25 +938,6 @@ add_movies_json_1: |-
       .await
       .unwrap();
   })}
-documents_guide_add_movie_1: |-
-  // Define the type of our documents
-  #[derive(Serialize, Deserialize)]
-  struct IncompleteMovie {
-    id: String,
-    title: String
-  }
-
-  // Add a document to our index
-  let task: TaskInfo = client
-    .index("movies")
-    .add_documents(&[
-      IncompleteMovie {
-        id: "123sq178".to_string(),
-        title: "Amélie Poulain".to_string(),
-      }
-    ], None)
-    .await
-    .unwrap();
 primary_field_guide_update_document_primary_key: |-
   let task = IndexUpdater::new("books", &client)
     .with_primary_key("title")
@@ -1193,11 +1142,6 @@ getting_started_update_displayed_attributes: |-
     .set_displayed_attributes(&displayed_attributes)
     .await
     .unwrap();
-getting_started_communicating_with_a_protected_instance: |-
-  let client = Client::new("http://localhost:7700", Some("apiKey"));
-  client
-    .index("movies")
-    .search()
 getting_started_add_meteorites: |-
   use serde::{Serialize, Deserialize};
   use std::fs::File;
@@ -1297,19 +1241,6 @@ filtering_update_settings_1: |-
     .set_filterable_attributes(["director", "genres"])
     .await
     .unwrap();
-faceted_search_facets_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("Batman")
-    .with_facets(Selectors::Some(&["genres"]))
-    .execute()
-    .await
-    .unwrap();
-  let genres: &HashMap<String, usize> = results
-    .facet_distribution.unwrap()
-    .get("genres")
-    .unwrap();
 faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = client
     .index("movies")
@@ -1334,29 +1265,6 @@ faceted_search_1: |-
     .execute()
     .await
     .unwrap();
-faceted_search_2: |-
-  let books = client.index("books");
-  let search_query_1 = SearchQuery::new(&books)
-      .with_facets(Selectors::Some(&["language", "genres", "author", "format"]))
-      .with_filter("(language = English OR language = French) AND genres = Fiction")
-      .build();
-  let search_query_2 = SearchQuery::new(&books)
-      .with_facets(Selectors::Some(&["language"]))
-      .with_filter("genres = Fiction")
-      .build();
-  let search_query_3 = SearchQuery::new(&books)
-      .with_facets(Selectors::Some(&["genres"]))
-      .with_filter("language = English OR language = French")
-      .build();
-
-  let books_response = client
-      .multi_search()
-      .with_search_query(search_query_1)
-      .with_search_query(search_query_2)
-      .with_search_query(search_query_3)
-      .execute::<Book>()
-      .await
-      .unwrap();
 post_dump_1: |-
   client
     .create_dump()
@@ -1679,5 +1587,13 @@ update_experimental_features_1: |-
   features.set_vector_store(true);
   let res = features
     .update()
+    .await
+    .unwrap();
+search_parameter_guide_facet_stats_1: |-
+  let books = client.index("movie_ratings");
+  let results: SearchResults<Book> = SearchQuery::new(&books)
+    .with_query("Batman")
+    .with_facets(Selectors::Some(&["genres", "rating"))
+    .execute()
     .await
     .unwrap();
