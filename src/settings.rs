@@ -604,7 +604,7 @@ impl Index {
         .await
     }
 
-    /// Get [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) of the [Index].
+    /// Get [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -1009,7 +1009,7 @@ impl Index {
         .await
     }
 
-    /// Update [displayed attributes](https://www.meilisearch.com/docs/reference/features/settings#displayed-attributes) of the [Index].
+    /// Update [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings#displayed-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1089,7 +1089,7 @@ impl Index {
         .await
     }
 
-    /// Update [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) settings of the [Index].
+    /// Update [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
     ///
     /// # Example
     ///
@@ -1165,7 +1165,7 @@ impl Index {
         .await
     }
 
-    /// Reset [synonyms](https://www.meilisearch.com/docs/reference/features/synonyms.html) of the [Index].
+    /// Reset [synonyms](https://www.meilisearch.com/docs/reference/api/settings#synonyms) of the [Index].
     ///
     /// # Example
     ///
@@ -1228,7 +1228,7 @@ impl Index {
         )
         .await
     }
-    /// Reset [stop-words](https://www.meilisearch.com/docs/reference/features/stop_words.html) of the [Index].
+    /// Reset [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
     ///
     /// # Example
     ///
@@ -1294,7 +1294,7 @@ impl Index {
         .await
     }
 
-    /// Reset [filterable attributes](https://www.meilisearch.com/docs/reference/features/filtering_and_faceted_search.html) of the [Index].
+    /// Reset [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1326,7 +1326,7 @@ impl Index {
         .await
     }
 
-    /// Reset [sortable attributes](https://www.meilisearch.com/docs/reference/features/sorting.html) of the [Index].
+    /// Reset [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1358,7 +1358,7 @@ impl Index {
         .await
     }
 
-    /// Reset the [distinct attribute](https://www.meilisearch.com/docs/reference/features/settings#distinct-attribute) of the [Index].
+    /// Reset the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -1390,7 +1390,7 @@ impl Index {
         .await
     }
 
-    /// Reset [searchable attributes](https://www.meilisearch.com/docs/reference/features/field_properties.html#searchable-fields) of
+    /// Reset [searchable attributes](https://www.meilisearch.com/docs/learn/configuration/displayed_searchable_attributes#searchable-fields) of
     /// the [Index] (enable all attributes).
     ///
     /// # Example
@@ -1423,7 +1423,7 @@ impl Index {
         .await
     }
 
-    /// Reset [displayed attributes](https://www.meilisearch.com/docs/reference/features/settings#displayed-attributes) of the [Index] (enable all attributes).
+    /// Reset [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings#displayed-attributes) of the [Index] (enable all attributes).
     ///
     /// # Example
     ///
@@ -1487,7 +1487,7 @@ impl Index {
         .await
     }
 
-    /// Reset [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) settings of the [Index].
+    /// Reset [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
     ///
     /// # Example
     ///
