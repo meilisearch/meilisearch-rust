@@ -1545,6 +1545,8 @@ tenant_token_guide_search_sdk_1: |-
     .unwrap();
 multi_search_1: |-
   let movie = client.index("movie");
+  let movie_ratings = client.index("movie_ratings");
+
   let search_query_1 = SearchQuery::new(&movie)
       .with_query("pooh")
       .with_limit(5)
@@ -1553,26 +1555,18 @@ multi_search_1: |-
       .with_query("nemo")
       .with_limit(5)
       .build();
-
-  let movie_response = client
-      .multi_search()
-      .with_search_query(search_query_1)
-      .with_search_query(search_query_2)
-      .execute::<Movie>()
-      .await
-      .unwrap();
-
-  let movie_ratings = client.index("movie_ratings");
   let search_query_3 = SearchQuery::new(&movie_ratings)
       .with_query("us")
       .build();
 
-  let movie_ratings_response = client
-    .multi_search()
-    .with_search_query(search_query_3)
-    .execute::<MovieRatings>()
-    .await
-    .unwrap();
+  let response = client
+      .multi_search()
+      .with_search_query(search_query_1)
+      .with_search_query(search_query_2)
+      .with_search_query(search_query_3)
+      .execute::<Document>()
+      .await
+      .unwrap();
 get_experimental_features_1: |-
   let client = Client::new("http://localhost:7700", Some("apiKey"));
   let features = ExperimentalFeatures::new(&client);
