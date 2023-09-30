@@ -8,7 +8,6 @@ on:
       - trying
       - staging
       - main
-
 env:
   CARGO_TERM_COLOR: always
 
@@ -19,23 +18,16 @@ jobs:
     if: github.event_name != 'pull_request' || !startsWith(github.base_ref, 'bump-meilisearch-v')
     runs-on: ubuntu-latest
     name: integration-tests
-    strategy:
-      matrix:
-        feature:
-          - isahc-static-curl
-          # - isahc-static-ssl
-          - reqwest-native-tls
-          # - reqwest-rustls
     steps:
       - uses: actions/checkout@v4
       - name: Install clippy
         run: rustup component add clippy
       - name: Run linter (clippy)
-        run: cargo clippy --all-targets --no-default-features --features ${{ matix.feature }} -- -D warnings
+        run: cargo clippy --all-targets -- -D warnings
       - name: Meilisearch (latest version) setup with Docker
         run: docker run -d -p 7700:7700 getmeili/meilisearch:latest meilisearch --no-analytics --master-key=masterKey
       - name: Run tests
-        run: cargo test --features ${{ matix.feature }} --no-default-features
+        run: cargo test
   formatter:
     name: rust-format
     runs-on: ubuntu-latest

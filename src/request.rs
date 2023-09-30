@@ -1,17 +1,4 @@
-#[cfg(all(
-    not(target_arch = "wasm32"),
-    any(feature = "isahc-static-curl", feature = "isahc-static-ssl")
-))]
-mod isahc_native_client;
-
-#[cfg(all(
-    not(target_arch = "wasm32"),
-    any(feature = "reqwest-native-tls", feature = "reqwest-rustls")
-))]
-mod reqwest_native_client;
-
-#[cfg(target_arch = "wasm32")]
-mod wasm_client;
+mod request_client_impl;
 
 use http::header;
 use log::{error, trace, warn};
@@ -19,7 +6,10 @@ use serde::{de::DeserializeOwned, Serialize};
 use serde_json::from_str;
 use url::Url;
 
-use crate::{Error, MeilisearchCommunicationError, MeilisearchError};
+use crate::{
+    request::request_client_impl::{body_transform::SerializeBodyTransform, ReqwestClient},
+    Error, MeilisearchCommunicationError, MeilisearchError,
+};
 
 pub(crate) use method::Method;
 mod method {
@@ -68,31 +58,8 @@ where
 {
     const CONTENT_TYPE: &str = "application/json";
 
-    #[cfg(all(
-        not(target_arch = "wasm32"),
-        any(feature = "isahc-static-curl", feature = "isahc-static-ssl")
-    ))]
-    type RequestClient<B> =
-        isahc_native_client::IsahcRequestClient<isahc_native_client::SerializeBodyTransform, B>;
-    #[cfg(all(
-        not(target_arch = "wasm32"),
-        any(feature = "reqwest-native-tls", feature = "reqwest-rustls")
-    ))]
-    type RequestClient<B> =
-        reqwest_native_client::ReqwestClient<reqwest_native_client::SerializeBodyTransform, B>;
-
-    #[cfg(not(target_arch = "wasm32"))]
-    return RequestClient::request(url, apikey, method, CONTENT_TYPE, expected_status_code).await;
-
-    #[cfg(target_arch = "wasm32")]
-    return self::wasm_client::BrowserRequestClient::request(
-        url,
-        apikey,
-        method,
-        CONTENT_TYPE,
-        expected_status_code,
-    )
-    .await;
+    type RequestClient<B> = ReqwestClient<SerializeBodyTransform, B>;
+    RequestClient::request(url, apikey, method, CONTENT_TYPE, expected_status_code).await
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -107,18 +74,13 @@ pub(crate) async fn stream_request<
     content_type: &str,
     expected_status_code: u16,
 ) -> Result<Output, Error> {
-    #[cfg(any(feature = "isahc-static-curl", feature = "isahc-static-ssl"))]
     type RequestClient<B> =
-        isahc_native_client::IsahcRequestClient<isahc_native_client::ReadBodyTransform, B>;
-    #[cfg(any(feature = "reqwest-native-tls", feature = "reqwest-rustls"))]
-    type RequestClient<B> =
-        reqwest_native_client::ReqwestClient<reqwest_native_client::ReadBodyTransform, B>;
-
+        ReqwestClient<request_client_impl::body_transform::ReadBodyTransform, B>;
     RequestClient::request(url, apikey, method, content_type, expected_status_code).await
 }
 
 #[async_trait::async_trait]
-trait RequestClient<'a, B: 'a + Send>: Sized {
+pub trait RequestClient<'a, B: 'a + Send>: Sized {
     type Request: Send;
     type Response: Send;
     type HttpError: Into<crate::Error> + Send;
@@ -148,7 +110,14 @@ trait RequestClient<'a, B: 'a + Send>: Sized {
         Q: Serialize + 'a + Send,
         T: DeserializeOwned,
     {
-        let mut request_client = Self::new(add_query_parameters(url, method.query())?.parse()?)
+        let query = yaup::to_string(method.query())?;
+        let url_string = if !query.is_empty() {
+            format!("{url}?{query}")
+        } else {
+            url.into()
+        };
+
+        let mut request_client = Self::new(url_string.parse()?)
             .with_method(method.http_method())
             .append_header(header::USER_AGENT, USER_AGENT_HEADER_VALUE.clone());
 
@@ -170,7 +139,7 @@ trait RequestClient<'a, B: 'a + Send>: Sized {
         let status = Self::extract_status_code(&response);
         let text = Self::response_to_text(response).await?;
 
-        Self::parse_response(status, expected_status_code, &text, url.to_string())
+        Self::parse_response(status, expected_status_code, &text, url_string)
     }
 
     fn parse_response<O: DeserializeOwned>(
@@ -220,17 +189,7 @@ trait RequestClient<'a, B: 'a + Send>: Sized {
 }
 
 lazy_static::lazy_static! {
-    pub static ref USER_AGENT_HEADER_VALUE: header::HeaderValue = {
+    pub(crate) static ref USER_AGENT_HEADER_VALUE: header::HeaderValue = {
         format!("Meilisearch Rust (v{})", option_env!("CARGO_PKG_VERSION").unwrap_or("unknown")).parse().expect("invalid header value")
     };
-}
-
-pub fn add_query_parameters<Query: Serialize>(url: &str, query: &Query) -> Result<String, Error> {
-    let query = yaup::to_string(query)?;
-
-    Ok(if query.is_empty() {
-        url.into()
-    } else {
-        format!("{url}?{query}")
-    })
 }

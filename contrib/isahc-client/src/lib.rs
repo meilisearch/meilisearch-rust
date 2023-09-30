@@ -1,12 +1,13 @@
 use std::marker::PhantomData;
 
+use derive_more::{Deref, From};
 use isahc::{
     http::request::Builder, AsyncBody, AsyncReadResponseExt, Request, RequestExt, Response,
 };
+use meilisearch_sdk::{Error, RequestClient};
+use url::Url;
 
 use self::body_transform::BodyTransform;
-
-use super::*;
 
 pub struct IsahcRequestClient<T: BodyTransform<B>, B>(Builder, PhantomData<T>, PhantomData<B>);
 
@@ -14,7 +15,7 @@ pub struct IsahcRequestClient<T: BodyTransform<B>, B>(Builder, PhantomData<T>, P
 impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for IsahcRequestClient<T, B> {
     type Request = Result<Request<AsyncBody>, isahc::http::Error>;
     type Response = Response<AsyncBody>;
-    type HttpError = isahc::Error;
+    type HttpError = IsachError;
 
     fn new(url: Url) -> Self {
         Self(Builder::new().uri(url.as_str()), PhantomData, PhantomData)
@@ -39,10 +40,10 @@ impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for IsahcReques
 
     async fn send_request(request: Self::Request) -> Result<Self::Response, Error> {
         request
-            .map_err(|_| crate::errors::Error::InvalidRequest)?
+            .map_err(|_| Error::InvalidRequest)?
             .send_async()
             .await
-            .map_err(Error::from)
+            .map_err(|err| IsachError::from(err).into())
     }
 
     fn extract_status_code(response: &Self::Response) -> u16 {
@@ -53,11 +54,10 @@ impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for IsahcReques
         response
             .text()
             .await
-            .map_err(|e| Error::from(isahc::Error::from(e)))
+            .map_err(|e| IsachError::from(isahc::Error::from(e)).into())
     }
 }
 
-pub(super) use body_transform::{ReadBodyTransform, SerializeBodyTransform};
 mod body_transform {
     use isahc::AsyncBody;
     use serde::Serialize;
@@ -83,12 +83,14 @@ mod body_transform {
     }
 }
 
-impl From<isahc::Error> for Error {
-    fn from(error: isahc::Error) -> Error {
+#[derive(Deref, From)]
+pub struct IsachError(isahc::Error);
+impl From<IsachError> for Error {
+    fn from(error: IsachError) -> Error {
         if error.kind() == isahc::error::ErrorKind::ConnectionFailed {
             Error::UnreachableServer
         } else {
-            Error::HttpError(Box::new(error))
+            Error::HttpError(Box::new(error.0))
         }
     }
 }

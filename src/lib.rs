@@ -249,6 +249,9 @@ pub mod tasks;
 /// Module that generates tenant tokens.
 mod tenant_tokens;
 
+/// Trait needed implementing a custom request client backend.
+pub use request::RequestClient;
+
 pub use client::*;
 pub use documents::*;
 pub use dumps::*;

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use reqwest::{Client, Request, RequestBuilder, Response};
+use reqwest::{Client, Request, Response};
 use url::Url;
 
 use crate::Error;
@@ -50,10 +50,7 @@ impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for ReqwestClie
     }
 
     async fn send_request(request: Self::Request) -> Result<Self::Response, Error> {
-        RequestBuilder::from_parts(CLIENT.clone(), request)
-            .send()
-            .await
-            .map_err(Error::from)
+        CLIENT.execute(request).await.map_err(Error::from)
     }
 
     fn extract_status_code(response: &Self::Response) -> u16 {
@@ -65,11 +62,9 @@ impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for ReqwestClie
     }
 }
 
-pub(super) use body_transform::{ReadBodyTransform, SerializeBodyTransform};
-mod body_transform {
+pub(crate) mod body_transform {
     use std::pin::pin;
 
-    use futures::AsyncReadExt;
     use reqwest::Body;
     use serde::Serialize;
 
@@ -84,13 +79,15 @@ mod body_transform {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub struct ReadBodyTransform;
+    #[cfg(not(target_arch = "wasm32"))]
     impl<B: futures_io::AsyncRead + Send + Sync> BodyTransform<B> for ReadBodyTransform {
         fn body_transform(body: B) -> Body {
             let bytes = futures::executor::block_on(async move {
                 let mut output = Vec::new();
                 let mut body = pin!(body);
-                body.read_to_end(&mut output)
+                futures::AsyncReadExt::read_to_end(&mut body, &mut output)
                     .await
                     .expect("unable to read entrire request body");
                 output
@@ -103,10 +100,10 @@ mod body_transform {
 
 impl From<reqwest::Error> for Error {
     fn from(error: reqwest::Error) -> Error {
+        #[cfg(not(target_arch = "wasm32"))]
         if error.is_connect() {
-            Error::UnreachableServer
-        } else {
-            Error::HttpError(Box::new(error))
+            return Error::UnreachableServer;
         }
+        Error::HttpError(Box::new(error))
     }
 }

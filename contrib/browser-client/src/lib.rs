@@ -1,10 +1,12 @@
+use log::error;
+use meilisearch_sdk::{Error, RequestClient};
+use serde::Serialize;
 use strum::Display;
 use thiserror::Error;
+use url::Url;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Headers, RequestInit};
-
-use super::*;
 
 const BROWSER_CONTEXT: &str = "not in a browser context";
 
@@ -66,7 +68,7 @@ impl<'a, B: Serialize + 'a + Send> RequestClient<'a, B> for BrowserRequestClient
     }
 
     fn extract_status_code(response: &Self::Response) -> u16 {
-        response.status() as u16
+        response.status()
     }
 
     async fn response_to_text(response: Self::Response) -> Result<String, Error> {
