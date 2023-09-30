@@ -14,6 +14,7 @@ pub struct IsahcRequestClient<T: BodyTransform<B>, B>(Builder, PhantomData<T>, P
 impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for IsahcRequestClient<T, B> {
     type Request = Result<Request<AsyncBody>, isahc::http::Error>;
     type Response = Response<AsyncBody>;
+    type HttpError = isahc::Error;
 
     fn new(url: Url) -> Self {
         Self(Builder::new().uri(url.as_str()), PhantomData, PhantomData)
@@ -52,7 +53,7 @@ impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for IsahcReques
         response
             .text()
             .await
-            .map_err(|e| Error::HttpError(isahc::Error::from(e)))
+            .map_err(|e| Error::from(isahc::Error::from(e)))
     }
 }
 
@@ -78,6 +79,16 @@ mod body_transform {
     impl<B: futures_io::AsyncRead + Send + Sync + 'static> BodyTransform<B> for ReadBodyTransform {
         fn body_transform(body: B) -> AsyncBody {
             AsyncBody::from_reader(body)
+        }
+    }
+}
+
+impl From<isahc::Error> for Error {
+    fn from(error: isahc::Error) -> Error {
+        if error.kind() == isahc::error::ErrorKind::ConnectionFailed {
+            Error::UnreachableServer
+        } else {
+            Error::HttpError(Box::new(error))
         }
     }
 }

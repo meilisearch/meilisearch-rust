@@ -27,6 +27,7 @@ http = "0.2"
 url = "2"
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
 futures-timer = "3.0.2"
+strum = { version = "0.25", features = ["derive"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 futures = "0.3"

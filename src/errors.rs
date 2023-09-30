@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
+use strum::Display;
 use thiserror::Error;
 
 /// An enum representing the errors that can occur.
-
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
@@ -46,20 +46,8 @@ pub enum Error {
     InvalidTenantToken(#[from] jsonwebtoken::errors::Error),
 
     /// The http client encountered an error.
-    #[cfg(all(
-        not(target_arch = "wasm32"),
-        any(feature = "isahc-static-curl", feature = "isahc-static-ssl")
-    ))]
     #[error("HTTP request failed: {}", .0)]
-    HttpError(isahc::Error),
-
-    /// The http client encountered an error.
-    #[cfg(all(
-        not(target_arch = "wasm32"),
-        any(feature = "reqwest-native-tls", feature = "reqwest-rustls")
-    ))]
-    #[error("HTTP request failed: {}", .0)]
-    HttpError(reqwest::Error),
+    HttpError(Box<dyn std::error::Error + Send>),
 
     #[error("Invalid URL: {}", .0)]
     InvalidUrl(#[from] url::ParseError),
@@ -67,11 +55,6 @@ pub enum Error {
     /// The http client encountered an error.
     #[error("Invalid HTTP header: {}", .0)]
     InvalidHttpHeaderValue(#[from] http::header::InvalidHeaderValue),
-
-    /// The http client encountered an error.
-    #[cfg(target_arch = "wasm32")]
-    #[error("HTTP request failed: {}", .0)]
-    HttpError(String),
 
     // The library formating the query parameters encountered an error.
     #[error("Internal Error: could not parse the query parameters: {}", .0)]
@@ -129,8 +112,9 @@ pub struct MeilisearchError {
 }
 
 /// The type of error that was encountered.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Display)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 #[non_exhaustive]
 pub enum ErrorType {
     /// The submitted request was invalid.
@@ -146,22 +130,12 @@ pub enum ErrorType {
     Unknown,
 }
 
-impl std::fmt::Display for ErrorType {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        write!(
-            fmt,
-            "{}",
-            // this can't fail
-            serde_json::to_value(self).unwrap().as_str().unwrap()
-        )
-    }
-}
-
 /// The error code.
 ///
 /// Officially documented at <https://www.meilisearch.com/docs/reference/errors/error_codes>.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Display)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 #[non_exhaustive]
 pub enum ErrorCode {
     IndexCreationFailed,
@@ -282,45 +256,6 @@ pub enum ErrorCode {
 }
 
 pub const MEILISEARCH_VERSION_HINT: &str = "Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method";
-
-impl std::fmt::Display for ErrorCode {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        write!(
-            fmt,
-            "{}",
-            // this can't fail
-            serde_json::to_value(self).unwrap().as_str().unwrap()
-        )
-    }
-}
-
-#[cfg(all(
-    not(target_arch = "wasm32"),
-    any(feature = "isahc-static-curl", feature = "isahc-static-ssl")
-))]
-impl From<isahc::Error> for Error {
-    fn from(error: isahc::Error) -> Error {
-        if error.kind() == isahc::error::ErrorKind::ConnectionFailed {
-            Error::UnreachableServer
-        } else {
-            Error::HttpError(error)
-        }
-    }
-}
-
-#[cfg(all(
-    not(target_arch = "wasm32"),
-    any(feature = "reqwest-native-tls", feature = "reqwest-rustls")
-))]
-impl From<reqwest::Error> for Error {
-    fn from(error: reqwest::Error) -> Error {
-        if error.is_connect() {
-            Error::UnreachableServer
-        } else {
-            Error::HttpError(error)
-        }
-    }
-}
 
 #[cfg(test)]
 mod test {

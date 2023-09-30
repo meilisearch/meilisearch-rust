@@ -1,3 +1,5 @@
+use strum::Display;
+use thiserror::Error;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Headers, RequestInit};
@@ -16,6 +18,7 @@ pub struct BrowserRequestClient {
 impl<'a, B: Serialize + 'a + Send> RequestClient<'a, B> for BrowserRequestClient {
     type Request = JsFuture;
     type Response = web_sys::Response;
+    type HttpError = HttpError;
 
     fn new(url: Url) -> Self {
         Self {
@@ -71,12 +74,24 @@ impl<'a, B: Serialize + 'a + Send> RequestClient<'a, B> for BrowserRequestClient
         let text = JsFuture::from(text).await.map_err(invalid_response)?;
         return text.as_string().ok_or_else(|| {
             error!("Invalid response");
-            Error::HttpError("Invalid utf8".to_string())
+            Error::from(HttpError::InvalidUtf8)
         });
 
         fn invalid_response(e: wasm_bindgen::JsValue) -> Error {
             error!("Invalid response: {:?}", e);
-            Error::HttpError("Invalid response".to_string())
+            Error::from(HttpError::InvalidResponse)
         }
+    }
+}
+
+#[derive(Debug, Error, Display)]
+#[strum(serialize_all = "snake_case")]
+pub enum HttpError {
+    InvalidResponse,
+    InvalidUtf8,
+}
+impl From<HttpError> for Error {
+    fn from(error: HttpError) -> Error {
+        Error::HttpError(Box::new(error))
     }
 }

@@ -21,6 +21,7 @@ pub struct ReqwestClient<T: BodyTransform<B>, B>(Request, PhantomData<T>, Phanto
 impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for ReqwestClient<T, B> {
     type Request = Request;
     type Response = Response;
+    type HttpError = reqwest::Error;
 
     fn new(url: Url) -> Self {
         Self(
@@ -96,6 +97,16 @@ mod body_transform {
             });
 
             Body::from(bytes)
+        }
+    }
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(error: reqwest::Error) -> Error {
+        if error.is_connect() {
+            Error::UnreachableServer
+        } else {
+            Error::HttpError(Box::new(error))
         }
     }
 }

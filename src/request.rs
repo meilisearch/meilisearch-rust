@@ -121,6 +121,7 @@ pub(crate) async fn stream_request<
 trait RequestClient<'a, B: 'a + Send>: Sized {
     type Request: Send;
     type Response: Send;
+    type HttpError: Into<crate::Error> + Send;
 
     fn new(url: Url) -> Self;
 
