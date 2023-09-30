@@ -26,6 +26,7 @@ meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", ve
 http = "0.2"
 url = "2"
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
+futures-timer = "3.0.2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 futures = "0.3"

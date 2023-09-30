@@ -248,8 +248,6 @@ pub mod task_info;
 pub mod tasks;
 /// Module that generates tenant tokens.
 mod tenant_tokens;
-/// Module containing utilies functions.
-mod utils;
 
 pub use client::*;
 pub use documents::*;
