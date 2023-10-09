@@ -243,6 +243,7 @@ pub enum ErrorCode {
     InvalidSettingsDistinctAttributes,
     InvalidSettingsTypoTolerance,
     InvalidSettingsFaceting,
+    InvalidSettingsDictionary,
     InvalidSettingsPagination,
     InvalidTaskBeforeEnqueuedAt,
     InvalidTaskAfterEnqueuedAt,
