@@ -1733,13 +1733,12 @@ mod tests {
         assert_eq!(dictionary, res);
     }
 
-
     #[meilisearch_test]
     async fn test_reset_dictionary(client: Client, index: Index) {
         let dictionary: Vec<&str> = vec![];
         let task_info = index.reset_dictionary().await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
-        
+
         let res = index.get_dictionary().await.unwrap();
 
         assert_eq!(dictionary, res);
