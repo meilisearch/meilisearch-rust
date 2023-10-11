@@ -95,6 +95,9 @@ pub struct Settings {
     /// TypoTolerance settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub typo_tolerance: Option<TypoToleranceSettings>,
+    /// Dictionary settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dictionary: Option<Vec<String>>,
 }
 
 #[allow(missing_docs)]
@@ -240,6 +243,21 @@ impl Settings {
     pub fn with_faceting(self, faceting: &FacetingSettings) -> Settings {
         Settings {
             faceting: Some(*faceting),
+            ..self
+        }
+    }
+
+    pub fn with_dictionary(
+        self,
+        dictionary: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Settings {
+        Settings {
+            dictionary: Some(
+                dictionary
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             ..self
         }
     }
@@ -595,6 +613,38 @@ impl Index {
         request::<(), (), FacetingSettings>(
             &format!(
                 "{}/indexes/{}/settings/faceting",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Get { query: () },
+            200,
+        )
+        .await
+    }
+
+    /// Get [dictionary](https://www.meilisearch.com/docs/reference/api/settings#dictionary) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("get_dictionary", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_dictionary");
+    ///
+    /// let dictionary = index.get_dictionary().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_dictionary(&self) -> Result<Vec<String>, Error> {
+        request::<(), (), Vec<String>>(
+            &format!(
+                "{}/indexes/{}/settings/dictionary",
                 self.client.host, self.uid
             ),
             self.client.get_api_key(),
@@ -1089,6 +1139,47 @@ impl Index {
         .await
     }
 
+    /// Update [dictionary](https://www.meilisearch.com/docs/reference/api/settings#dictionary) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("set_dictionary", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_dictionary");
+    ///
+    /// let task = index.set_dictionary(["J. K.", "J. R. R."]).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_dictionary(
+        &self,
+        dictionary: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Result<TaskInfo, Error> {
+        request::<(), Vec<String>, TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/dictionary",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Put {
+                query: (),
+                body: dictionary
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            },
+            202,
+        )
+        .await
+    }
+
     /// Update [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
     ///
     /// # Example
@@ -1487,6 +1578,38 @@ impl Index {
         .await
     }
 
+    /// Reset [dictionary](https://www.meilisearch.com/docs/reference/api/settings#dictionary) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("reset_dictionary", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_dictionary");
+    ///
+    /// let task = index.reset_dictionary().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_dictionary(&self) -> Result<TaskInfo, Error> {
+        request::<(), (), TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/dictionary",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Delete { query: () },
+            202,
+        )
+        .await
+    }
+
     /// Reset [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
     ///
     /// # Example
@@ -1577,6 +1700,48 @@ mod tests {
         let res = index.get_faceting().await.unwrap();
 
         assert_eq!(faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_dicitonary(index: Index) {
+        let dictionary: Vec<String> = vec![];
+
+        let res = index.get_dictionary().await.unwrap();
+
+        assert_eq!(dictionary, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_dicitonary(client: Client, index: Index) {
+        let dictionary: Vec<&str> = vec!["J. K.", "J. R. R."];
+        let task_info = index.set_dictionary(&dictionary).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_dictionary().await.unwrap();
+
+        assert_eq!(dictionary, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_empty_dicitonary(client: Client, index: Index) {
+        let dictionary: Vec<&str> = vec![];
+        let task_info = index.set_dictionary(&dictionary).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_dictionary().await.unwrap();
+
+        assert_eq!(dictionary, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_dictionary(client: Client, index: Index) {
+        let dictionary: Vec<&str> = vec![];
+        let task_info = index.reset_dictionary().await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_dictionary().await.unwrap();
+
+        assert_eq!(dictionary, res);
     }
 
     #[meilisearch_test]

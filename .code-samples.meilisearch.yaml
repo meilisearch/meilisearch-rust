@@ -595,6 +595,24 @@ reset_faceting_settings_1: |-
     .reset_faceting()
     .await
     .unwrap();
+get_dictionary_1: |-
+  let task: TaskInfo = client
+    .index('books')
+    .get_dictionary()
+    .await
+    .unwrap();
+update_dictionary_1: |-
+  let task: TaskInfo = client
+    .index('books')
+    .set_dictionary(['J. R. R.', 'W. E. B.'])
+    .await
+    .unwrap();
+reset_dictionary_1: |-
+  let task: TaskInfo = client
+    .index('books')
+    .reset_dictionary()
+    .await
+    .unwrap();
 get_index_stats_1: |-
   let stats: IndexStats = client
     .index("movies")
