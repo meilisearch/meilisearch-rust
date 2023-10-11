@@ -595,7 +595,6 @@ reset_faceting_settings_1: |-
     .reset_faceting()
     .await
     .unwrap();
-
 get_dictionary_1: |-
   let task: TaskInfo = client
     .index('books')
