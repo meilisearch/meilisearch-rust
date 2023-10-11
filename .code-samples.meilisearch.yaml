@@ -613,7 +613,6 @@ reset_dictionary_1: |-
     .reset_dictionary()
     .await
     .unwrap();
-    
 get_index_stats_1: |-
   let stats: IndexStats = client
     .index("movies")
