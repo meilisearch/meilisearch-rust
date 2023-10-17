@@ -9,12 +9,6 @@ use self::body_transform::BodyTransform;
 
 use super::RequestClient;
 
-lazy_static::lazy_static! {
-    pub static ref CLIENT: Client = {
-        Client::new()
-    };
-}
-
 pub struct ReqwestClient<T: BodyTransform<B>, B>(Request, PhantomData<T>, PhantomData<B>);
 
 #[async_trait::async_trait]
@@ -50,7 +44,7 @@ impl<'a, B: 'a + Send, T: BodyTransform<B>> RequestClient<'a, B> for ReqwestClie
     }
 
     async fn send_request(request: Self::Request) -> Result<Self::Response, Error> {
-        CLIENT.execute(request).await.map_err(Error::from)
+        Client::new().execute(request).await.map_err(Error::from)
     }
 
     fn extract_status_code(response: &Self::Response) -> u16 {
