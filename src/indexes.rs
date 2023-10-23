@@ -11,7 +11,7 @@ use time::OffsetDateTime;
 ///
 /// # Example
 ///
-/// You can create an index remotly and, if that succeed, make an `Index` out of it.
+/// You can create an index remotely and, if that succeed, make an `Index` out of it.
 /// See the [`Client::create_index`] method.
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
