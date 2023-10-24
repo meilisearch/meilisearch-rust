@@ -94,6 +94,6 @@ pub enum HttpError {
 }
 impl From<HttpError> for Error {
     fn from(error: HttpError) -> Error {
-        Error::HttpError(Box::new(error))
+        Error::Http(Box::new(error))
     }
 }

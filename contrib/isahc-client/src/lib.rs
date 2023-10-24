@@ -90,7 +90,7 @@ impl From<IsachError> for Error {
         if error.kind() == isahc::error::ErrorKind::ConnectionFailed {
             Error::UnreachableServer
         } else {
-            Error::HttpError(Box::new(error.0))
+            Error::Http(Box::new(error.0))
         }
     }
 }

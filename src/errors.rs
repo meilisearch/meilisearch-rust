@@ -47,7 +47,7 @@ pub enum Error {
 
     /// The http client encountered an error.
     #[error("HTTP request failed: {}", .0)]
-    HttpError(Box<dyn std::error::Error + Send>),
+    Http(Box<dyn std::error::Error + Send + Sync + 'static>),
 
     #[error("Invalid URL: {}", .0)]
     InvalidUrl(#[from] url::ParseError),

@@ -98,6 +98,6 @@ impl From<reqwest::Error> for Error {
         if error.is_connect() {
             return Error::UnreachableServer;
         }
-        Error::HttpError(Box::new(error))
+        Error::Http(Box::new(error))
     }
 }
