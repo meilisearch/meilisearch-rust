@@ -5,5 +5,6 @@ pub mod search;
 use get_users::GetUsers;
 use search::SearchUsers;
 
+//Combines user queries into one struct
 #[derive(Default, MergedObject)]
 pub struct UsersQuery(pub GetUsers, pub SearchUsers);

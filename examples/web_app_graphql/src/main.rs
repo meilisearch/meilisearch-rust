@@ -5,8 +5,9 @@ use actix_web::{guard, App, HttpServer};
 use diesel::migration::MigrationSource;
 use diesel::{Connection, PgConnection};
 use diesel_migrations::FileBasedMigrations;
-use meilisearch_ex::{build_schema, index, index_graphiql, app_env_vars::AppEnvVars, errors::ApplicationError};
-
+use meilisearch_ex::{
+    app_env_vars::AppEnvVars, build_schema, errors::ApplicationError, index, index_graphiql,
+};
 
 #[actix_web::main]
 async fn main() -> Result<(), ApplicationError> {
@@ -16,6 +17,7 @@ async fn main() -> Result<(), ApplicationError> {
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
+    //Run migrations on app start
     let mut db_connection = PgConnection::establish(&app_env_vars.database_url)?;
     let mut migrations = FileBasedMigrations::from_path(&app_env_vars.migrations_dir_path)?
         .migrations()
@@ -42,6 +44,7 @@ async fn main() -> Result<(), ApplicationError> {
                     .max_age(3600)
                     .supports_credentials(),
             )
+            //Add schema to application `Data` extractor
             .app_data(web::Data::new(schema.clone()))
             .service(web::resource("/").guard(guard::Post()).to(index))
             .service(web::resource("/").guard(guard::Get()).to(index_graphiql))

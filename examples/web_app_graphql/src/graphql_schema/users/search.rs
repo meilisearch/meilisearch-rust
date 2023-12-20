@@ -12,38 +12,40 @@ impl SearchUsers {
     async fn search(&self, ctx: &Context<'_>, query_string: String) -> Result<Vec<User>> {
         use crate::schema::users::dsl::users;
 
-        let app_data = ctx.data::<GraphQlData>().map_err(|e| {
+        let GraphQlData { pool, client } = ctx.data().map_err(|e| {
             log::error!("Failed to get app data: {:?}", e);
             e
         })?;
 
-        let mut connection = app_data.pool.get().await?;
+        let mut connection = pool.get().await?;
 
         let list_users = users.load::<User>(&mut connection).await?;
 
-        match app_data.client.get_index("users").await {
+        match client.get_index("users").await {
+            //If getting the index is successful, we add documents to it
             Ok(index) => {
                 index.add_documents(&list_users, Some("id")).await?;
             }
+
+            //If getting the index fails, we create it and then add documents to the new index
             Err(_) => {
-                let task = app_data.client.create_index("users", Some("id")).await?;
-                let task = task
-                    .wait_for_completion(&app_data.client, None, None)
-                    .await?;
-                let index = task.try_make_index(&app_data.client).unwrap();
+                let task = client.create_index("users", Some("id")).await?;
+                let task = task.wait_for_completion(client, None, None).await?;
+                let index = task.try_make_index(client).unwrap();
 
                 index.add_documents(&list_users, Some("id")).await?;
             }
         }
 
-        let index = app_data.client.get_index("users").await?;
+        let index = client.get_index("users").await?;
 
+        //We build the query
         let query = SearchQuery::new(&index).with_query(&query_string).build();
 
         let results: SearchResults<User> = index.execute_query(&query).await?;
 
-        log::error!("{:#?}", results.hits);
-
+        //Tranform the results into a type that implements OutputType
+        //Required for return types to implement this trait
         let search_results: Vec<User> = results
             .hits
             .into_iter()

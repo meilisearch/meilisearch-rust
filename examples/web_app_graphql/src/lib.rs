@@ -18,6 +18,7 @@ use meilisearch_sdk::Client as SearchClient;
 
 pub type ApplicationSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
+//Represents application data passed to graphql resolvers
 pub struct GraphQlData {
     pub pool: Pool<AsyncPgConnection>,
     pub client: SearchClient,
@@ -35,6 +36,7 @@ pub async fn index(schema: web::Data<ApplicationSchema>, req: GraphQLRequest) ->
     schema.execute(req_inner).await.into()
 }
 
+//We build the graphql schema and any data required to be passed to all resolvers
 pub fn build_schema(app_env_vars: &AppEnvVars) -> Result<ApplicationSchema, ApplicationError> {
     let client = SearchClient::new(
         &app_env_vars.meilisearch_host,
