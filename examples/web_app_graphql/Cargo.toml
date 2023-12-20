@@ -1,0 +1,25 @@
+[package]
+name = "meilisearch-ex"
+version = "0.1.0"
+edition = "2021"
+authors = ["Eugene Korir <korir16071@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-cors = "0.6.5"
+actix-web = "4.4.0"
+async-graphql = "6.0.11"
+async-graphql-actix-web = "6.0.11"
+diesel = { version = "2.1.4", features = ["postgres"] }
+diesel-async = { version = "0.4.1", features = ["postgres", "deadpool"] }
+diesel_migrations = "2.1.0"
+dotenvy = "0.15.7"
+env_logger = "0.10.1"
+envy = "0.4.2"
+futures = "0.3.29"
+log = "0.4.20"
+meilisearch-sdk = "0.24.3"
+serde = { version = "1.0.192", features = ["derive"] }
+serde_json = "1.0.108"
+thiserror = "1.0.51"
