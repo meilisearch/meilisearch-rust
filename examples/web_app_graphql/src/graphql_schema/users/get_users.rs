@@ -8,6 +8,7 @@ pub struct GetUsers;
 
 #[Object]
 impl GetUsers {
+    //Resolver for querying the database for user records
     pub async fn get_users(&self, ctx: &Context<'_>) -> Result<Vec<User>> {
         use crate::schema::users::dsl::users;
 

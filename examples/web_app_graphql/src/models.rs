@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::users;
 
+//Struct that corresponds to our database structure for users table
 #[derive(SimpleObject, Deserialize, Serialize, Queryable, Selectable, Debug)]
 #[diesel(table_name = users)]
 pub struct User {
