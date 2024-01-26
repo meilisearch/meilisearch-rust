@@ -340,7 +340,7 @@ mod test {
         )
         .unwrap();
 
-        assert_eq!(error.to_string(), "Meilisearch internal: index_creation_failed: The cool error message. https://the best link ever");
+        assert_eq!(error.to_string(), "Meilisearch internal: index_creation_failed: The cool error message.. https://the best link ever");
 
         let error: MeilisearchCommunicationError = MeilisearchCommunicationError {
             status_code: 404,
