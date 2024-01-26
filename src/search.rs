@@ -595,7 +595,7 @@ mod tests {
 
     impl PartialEq<Map<String, Value>> for Document {
         fn eq(&self, rhs: &Map<String, Value>) -> bool {
-            self.id.to_string() == rhs["id"]
+            self.id == rhs["id"]
                 && self.value == rhs["value"]
                 && self.kind == rhs["kind"]
         }

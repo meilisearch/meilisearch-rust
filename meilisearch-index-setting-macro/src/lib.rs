@@ -1,10 +1,20 @@
-use std::collections::HashSet;
-
 use convert_case::{Case, Casing};
-use proc_macro2::TokenTree;
+use proc_macro2::Ident;
 use quote::quote;
+use structmeta::Flag;
+use structmeta::StructMeta;
 use syn::parse_macro_input;
 use syn::spanned::Spanned;
+
+#[derive(Clone, StructMeta, Default)]
+struct FieldAttrs {
+    primary_key: Flag,
+    displayed: Flag,
+    searchable: Flag,
+    distinct: Flag,
+    filterable: Flag,
+    sortable: Flag,
+}
 
 #[proc_macro_derive(IndexConfig, attributes(index_config))]
 pub fn generate_index_settings(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -28,63 +38,72 @@ pub fn generate_index_settings(input: proc_macro::TokenStream) -> proc_macro::To
 }
 
 fn get_index_config_implementation(
-    struct_ident: &syn::Ident,
+    struct_ident: &Ident,
     fields: &syn::Fields,
 ) -> proc_macro2::TokenStream {
-    let mut attribute_set: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut primary_key_attribute: String = "".to_string();
     let mut distinct_key_attribute: String = "".to_string();
     let mut displayed_attributes: Vec<String> = vec![];
     let mut searchable_attributes: Vec<String> = vec![];
     let mut filterable_attributes: Vec<String> = vec![];
     let mut sortable_attributes: Vec<String> = vec![];
-    let valid_attribute_names = std::collections::HashSet::from([
-        "displayed",
-        "searchable",
-        "filterable",
-        "sortable",
-        "primary_key",
-        "distinct",
-    ]);
 
     let index_name = struct_ident
         .to_string()
         .from_case(Case::UpperCamel)
         .to_case(Case::Snake);
 
-    for field in fields {
-        let attribute_list_result =
-            extract_all_attr_values(&field.attrs, &mut attribute_set, &valid_attribute_names);
+    let mut primary_key_found = false;
+    let mut distinct_found = false;
 
-        match attribute_list_result {
-            Ok(attribute_list) => {
-                for attribute in attribute_list {
-                    match attribute.as_str() {
-                        "displayed" => {
-                            displayed_attributes.push(field.ident.clone().unwrap().to_string())
-                        }
-                        "searchable" => {
-                            searchable_attributes.push(field.ident.clone().unwrap().to_string())
-                        }
-                        "filterable" => {
-                            filterable_attributes.push(field.ident.clone().unwrap().to_string())
-                        }
-                        "sortable" => {
-                            sortable_attributes.push(field.ident.clone().unwrap().to_string())
-                        }
-                        "primary_key" => {
-                            primary_key_attribute = field.ident.clone().unwrap().to_string()
-                        }
-                        "distinct" => {
-                            distinct_key_attribute = field.ident.clone().unwrap().to_string()
-                        }
-                        _ => {}
-                    }
-                }
+    for field in fields {
+        let attrs = field
+            .attrs
+            .iter()
+            .filter(|attr| attr.path().is_ident("index_config"))
+            .map(|attr| attr.parse_args::<FieldAttrs>().unwrap())
+            .collect::<Vec<_>>()
+            .first()
+            .cloned()
+            .unwrap_or_default();
+
+        // Check if the primary key field is unique
+        if attrs.primary_key.value() {
+            if primary_key_found {
+                return syn::Error::new(
+                    field.span(),
+                    "Only one field can be marked as primary key",
+                )
+                .to_compile_error();
             }
-            Err(e) => {
-                return e;
+            primary_key_attribute = field.ident.clone().unwrap().to_string();
+            primary_key_found = true;
+        }
+
+        // Check if the distinct field is unique
+        if attrs.distinct.value() {
+            if distinct_found {
+                return syn::Error::new(field.span(), "Only one field can be marked as distinct")
+                    .to_compile_error();
             }
+            distinct_key_attribute = field.ident.clone().unwrap().to_string();
+            distinct_found = true;
+        }
+
+        if attrs.displayed.value() {
+            displayed_attributes.push(field.ident.clone().unwrap().to_string());
+        }
+
+        if attrs.searchable.value() {
+            searchable_attributes.push(field.ident.clone().unwrap().to_string());
+        }
+
+        if attrs.filterable.value() {
+            filterable_attributes.push(field.ident.clone().unwrap().to_string());
+        }
+
+        if attrs.sortable.value() {
+            sortable_attributes.push(field.ident.clone().unwrap().to_string());
         }
     }
 
@@ -123,120 +142,15 @@ fn get_index_config_implementation(
             #distinct_attr_token
         }
 
-         async fn generate_index(client: &::meilisearch_sdk::client::Client) -> std::result::Result<::meilisearch_sdk::indexes::Index, ::meilisearch_sdk::tasks::Task> {
+         async fn generate_index(client: &::meilisearch_sdk::client::Client) -> Result<::meilisearch_sdk::indexes::Index, ::meilisearch_sdk::tasks::Task> {
             return client.create_index(#index_name, #primary_key_token)
                 .await.unwrap()
-                .wait_for_completion(&client, ::std::option::Option::None, ::std::option::Option::None)
+                .wait_for_completion(&client, None, None)
                 .await.unwrap()
                 .try_make_index(&client);
             }
         }
     }
-}
-
-fn extract_all_attr_values(
-    attrs: &[syn::Attribute],
-    attribute_set: &mut std::collections::HashSet<String>,
-    valid_attribute_names: &std::collections::HashSet<&str>,
-) -> std::result::Result<Vec<String>, proc_macro2::TokenStream> {
-    let mut attribute_names: Vec<String> = vec![];
-    let mut local_attribute_set: std::collections::HashSet<String> = HashSet::new();
-    for attr in attrs {
-        match attr.parse_meta() {
-            std::result::Result::Ok(syn::Meta::List(list)) => {
-                if !list.path.is_ident("index_config") {
-                    continue;
-                }
-                for token_stream in attr.tokens.clone().into_iter() {
-                    if let TokenTree::Group(group) = token_stream {
-                        for token in group.stream() {
-                            match token {
-                                TokenTree::Punct(punct) => validate_punct(&punct)?,
-                                TokenTree::Ident(ident) => {
-                                    if ident == "primary_key"
-                                        && attribute_set.contains("primary_key")
-                                    {
-                                        return std::result::Result::Err(
-                                            syn::Error::new(
-                                                ident.span(),
-                                                "`primary_key` already exists",
-                                            )
-                                            .to_compile_error(),
-                                        );
-                                    }
-                                    if ident == "distinct" && attribute_set.contains("distinct") {
-                                        return std::result::Result::Err(
-                                            syn::Error::new(
-                                                ident.span(),
-                                                "`distinct` already exists",
-                                            )
-                                            .to_compile_error(),
-                                        );
-                                    }
-
-                                    if local_attribute_set.contains(ident.to_string().as_str()) {
-                                        return std::result::Result::Err(
-                                            syn::Error::new(
-                                                ident.span(),
-                                                format!("`{ident}` already exists for this field"),
-                                            )
-                                            .to_compile_error(),
-                                        );
-                                    }
-
-                                    if !valid_attribute_names.contains(ident.to_string().as_str()) {
-                                        return std::result::Result::Err(
-                                                syn::Error::new(
-                                                    ident.span(),
-                                                    format!(
-                                                        "Property `{ident}` does not exist for type `index_config`"
-                                                    ),
-                                                )
-                                                    .to_compile_error(),
-                                            );
-                                    }
-                                    attribute_names.push(ident.to_string());
-                                    attribute_set.insert(ident.to_string());
-                                    local_attribute_set.insert(ident.to_string());
-                                }
-                                _ => {
-                                    return std::result::Result::Err(
-                                        syn::Error::new(attr.span(), "Invalid parsing".to_string())
-                                            .to_compile_error(),
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            std::result::Result::Err(e) => {
-                for token_stream in attr.tokens.clone().into_iter() {
-                    if let TokenTree::Group(group) = token_stream {
-                        for token in group.stream() {
-                            if let TokenTree::Punct(punct) = token {
-                                validate_punct(&punct)?
-                            }
-                        }
-                    }
-                }
-                return std::result::Result::Err(
-                    syn::Error::new(attr.span(), e.to_string()).to_compile_error(),
-                );
-            }
-            _ => {}
-        }
-    }
-    std::result::Result::Ok(attribute_names)
-}
-
-fn validate_punct(punct: &proc_macro2::Punct) -> std::result::Result<(), proc_macro2::TokenStream> {
-    if punct.as_char() == ',' && punct.spacing() == proc_macro2::Spacing::Alone {
-        return std::result::Result::Ok(());
-    }
-    std::result::Result::Err(
-        syn::Error::new(punct.span(), "`,` expected".to_string()).to_compile_error(),
-    )
 }
 
 fn get_settings_token_for_list(

@@ -249,7 +249,7 @@ pub(crate) async fn request<
     const JSON: &str = "application/json";
 
     // The 2 following unwraps should not be able to fail
-    let mut mut_url = url.clone().to_string();
+    let mut mut_url = url.to_string();
     let headers = Headers::new().unwrap();
     if let Some(apikey) = apikey {
         headers
