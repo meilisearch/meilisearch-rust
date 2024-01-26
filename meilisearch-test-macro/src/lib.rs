@@ -96,7 +96,7 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
         // Now we do the same for the index name
         if use_name {
             let fn_name = &outer_fn.sig.ident;
-            // the name we're going to return is the complete path to the function ie something like that;
+            // the name we're going to return is the complete path to the function i.e., something like that;
             // `indexes::tests::test_fetch_info` but since the `::` are not allowed by meilisearch as an index
             // name we're going to rename that to `indexes-tests-test_fetch_info`.
             outer_block.push(parse_quote!(
@@ -104,7 +104,7 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
             ));
         }
 
-        // And finally if an index was asked we delete it, and we (re)create it and wait until meilisearch confirm its creation.
+        // And finally if an index was asked, we delete it, and we (re)create it and wait until meilisearch confirm its creation.
         if use_index {
             outer_block.push(parse_quote!({
                 let res = client
@@ -160,7 +160,7 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
                     .delete()
                     .await
                     .expect("Network issue while sending the last delete index task");
-                // we early exit the test here and let meilisearch handle the deletion asynchonously
+                // we early exit the test here and let meilisearch handle the deletion asynchronously
             ));
         }
 

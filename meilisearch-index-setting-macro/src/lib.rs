@@ -1,10 +1,8 @@
 use convert_case::{Case, Casing};
 use proc_macro2::Ident;
 use quote::quote;
-use structmeta::Flag;
-use structmeta::StructMeta;
-use syn::parse_macro_input;
-use syn::spanned::Spanned;
+use structmeta::{Flag, StructMeta};
+use syn::{parse_macro_input, spanned::Spanned};
 
 #[derive(Clone, StructMeta, Default)]
 struct FieldAttrs {
@@ -162,7 +160,7 @@ fn get_settings_token_for_list(
             #attr
         }
     });
-    let method_ident = syn::Ident::new(method_name, proc_macro2::Span::call_site());
+    let method_ident = Ident::new(method_name, proc_macro2::Span::call_site());
 
     if !field_name_list.is_empty() {
         quote! {
@@ -179,7 +177,7 @@ fn get_settings_token_for_string(
     field_name: &String,
     method_name: &str,
 ) -> proc_macro2::TokenStream {
-    let method_ident = syn::Ident::new(method_name, proc_macro2::Span::call_site());
+    let method_ident = Ident::new(method_name, proc_macro2::Span::call_site());
 
     if !field_name.is_empty() {
         quote! {

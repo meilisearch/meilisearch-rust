@@ -1703,7 +1703,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_dicitonary(index: Index) {
+    async fn test_get_dictionary(index: Index) {
         let dictionary: Vec<String> = vec![];
 
         let res = index.get_dictionary().await.unwrap();
@@ -1712,7 +1712,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_dicitonary(client: Client, index: Index) {
+    async fn test_set_dictionary(client: Client, index: Index) {
         let dictionary: Vec<&str> = vec!["J. K.", "J. R. R."];
         let task_info = index.set_dictionary(&dictionary).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
@@ -1723,7 +1723,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_empty_dicitonary(client: Client, index: Index) {
+    async fn test_set_empty_dictionary(client: Client, index: Index) {
         let dictionary: Vec<&str> = vec![];
         let task_info = index.set_dictionary(&dictionary).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();

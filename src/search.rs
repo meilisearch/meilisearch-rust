@@ -299,7 +299,7 @@ pub struct SearchQuery<'a> {
     /// **Default: `<em>`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight_pre_tag: Option<&'a str>,
-    /// Tag after the a highlighted term.
+    /// Tag after a highlighted term.
     ///
     /// ex: `hello world</ mytag>`
     ///
@@ -595,9 +595,7 @@ mod tests {
 
     impl PartialEq<Map<String, Value>> for Document {
         fn eq(&self, rhs: &Map<String, Value>) -> bool {
-            self.id == rhs["id"]
-                && self.value == rhs["value"]
-                && self.kind == rhs["kind"]
+            self.id == rhs["id"] && self.value == rhs["value"] && self.kind == rhs["kind"]
         }
     }
 

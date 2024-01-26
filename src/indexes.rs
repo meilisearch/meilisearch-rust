@@ -2056,7 +2056,7 @@ mod tests {
         let status = index.get_task(task).await?;
         let elements = index.get_documents::<serde_json::Value>().await.unwrap();
         assert!(matches!(status, Task::Succeeded { .. }));
-        assert!(elements.results.len() == 2);
+        assert_eq!(elements.results.len(), 2);
 
         Ok(())
     }
@@ -2085,7 +2085,7 @@ mod tests {
         let elements = index.get_documents::<serde_json::Value>().await.unwrap();
 
         assert!(matches!(status, Task::Succeeded { .. }));
-        assert!(elements.results.len() == 2);
+        assert_eq!(elements.results.len(), 2);
 
         let expected_result = vec![
             json!( {"body": "doggo", "id": 1, "second_body": "second_doggo"}),
@@ -2110,7 +2110,7 @@ mod tests {
         let status = index.get_task(task).await?;
         let elements = index.get_documents::<serde_json::Value>().await.unwrap();
         assert!(matches!(status, Task::Succeeded { .. }));
-        assert!(elements.results.len() == 2);
+        assert_eq!(elements.results.len(), 2);
 
         Ok(())
     }
@@ -2138,7 +2138,7 @@ mod tests {
         let elements = index.get_documents::<serde_json::Value>().await.unwrap();
 
         assert!(matches!(status, Task::Succeeded { .. }));
-        assert!(elements.results.len() == 2);
+        assert_eq!(elements.results.len(), 2);
 
         let expected_result = vec![
             json!( {"body": "new_doggo", "id": "1"}),

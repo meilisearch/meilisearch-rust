@@ -588,7 +588,7 @@ impl KeyBuilder {
         self
     }
 
-    /// Add an uid to the [Key].
+    /// Add a uid to the [Key].
     ///
     /// # Example
     ///

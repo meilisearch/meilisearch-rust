@@ -32,8 +32,8 @@ pub enum TaskType {
     IndexSwap {
         details: Option<IndexSwap>,
     },
-    TaskCancelation {
-        details: Option<TaskCancelation>,
+    TaskCancellation {
+        details: Option<TaskCancellation>,
     },
     TaskDeletion {
         details: Option<TaskDeletion>,
@@ -103,7 +103,7 @@ pub struct IndexSwap {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TaskCancelation {
+pub struct TaskCancellation {
     pub matched_tasks: usize,
     pub canceled_tasks: usize,
     pub original_filter: String,
@@ -131,7 +131,7 @@ impl AsRef<u32> for FailedTask {
     }
 }
 
-fn deserialize_duration<'de, D>(deserializer: D) -> Result<std::time::Duration, D::Error>
+fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -288,7 +288,7 @@ impl Task {
 
     /// Extract the [Index] from a successful `IndexCreation` task.
     ///
-    /// If the task failed or was not an `IndexCreation` task it return itself.
+    /// If the task failed or was not an `IndexCreation` task it returns itself.
     ///
     /// # Example
     ///
@@ -731,7 +731,7 @@ mod test {
     fn test_deserialize_task() {
         let datetime = OffsetDateTime::parse(
             "2022-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
@@ -739,7 +739,7 @@ mod test {
             r#"
 {
   "enqueuedAt": "2022-02-03T13:02:38.369634Z",
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "status": "enqueued",
   "type": "documentAdditionOrUpdate",
   "uid": 12
@@ -757,7 +757,7 @@ mod test {
                     uid: 12,
                 }
             }
-        if enqueued_at == datetime && index_uid == "mieli"));
+        if enqueued_at == datetime && index_uid == "meili"));
 
         let task: Task = serde_json::from_str(
             r#"
@@ -769,7 +769,7 @@ mod test {
   "duration": null,
   "enqueuedAt": "2022-02-03T15:17:02.801341Z",
   "finishedAt": null,
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "startedAt": "2022-02-03T15:17:02.812338Z",
   "status": "processing",
   "type": "documentAdditionOrUpdate",
@@ -795,7 +795,7 @@ mod test {
             }
             if started_at == OffsetDateTime::parse(
                 "2022-02-03T15:17:02.812338Z",
-                &::time::format_description::well_known::Rfc3339
+                &time::format_description::well_known::Rfc3339
             ).unwrap()
         ));
 
@@ -809,7 +809,7 @@ mod test {
   "duration": "PT10.848957S",
   "enqueuedAt": "2022-02-03T15:17:02.801341Z",
   "finishedAt": "2022-02-03T15:17:13.661295Z",
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "startedAt": "2022-02-03T15:17:02.812338Z",
   "status": "succeeded",
   "type": "documentAdditionOrUpdate",
@@ -924,35 +924,35 @@ mod test {
 
         let before_enqueued_at = OffsetDateTime::parse(
             "2022-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
         let after_enqueued_at = OffsetDateTime::parse(
             "2023-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
         let before_started_at = OffsetDateTime::parse(
             "2024-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let after_started_at = OffsetDateTime::parse(
             "2025-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let before_finished_at = OffsetDateTime::parse(
             "2026-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let after_finished_at = OffsetDateTime::parse(
             "2027-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 

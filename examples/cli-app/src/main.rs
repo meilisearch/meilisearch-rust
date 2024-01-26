@@ -38,7 +38,7 @@ fn main() {
 }
 
 async fn search(query: &str) {
-    // make the search query, which excutes and serializes hits into the
+    // make the search query, which executes and serializes hits into the
     // ClothesDisplay struct
     let query_results = CLIENT
         .index("clothes")
@@ -74,7 +74,7 @@ async fn build_index() {
     let ranking_rules = ["words", "typo", "attribute", "exactness", "cost:asc"];
 
     // create searchable attributes
-    let searchable_attributes = ["seaon", "article", "size", "pattern"];
+    let searchable_attributes = ["season", "article", "size", "pattern"];
 
     // create the synonyms hashmap
     let mut synonyms = std::collections::HashMap::new();
@@ -128,7 +128,7 @@ async fn build_index() {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Clothes {
     id: usize,
-    seaon: String,
+    season: String,
     article: String,
     cost: f32,
     size: String,
