@@ -38,9 +38,9 @@
 - [⚡ Supercharge your Meilisearch experience](#-supercharge-your-meilisearch-experience)
 - [🔧 Installation](#-installation)
 - [🚀 Getting started](#-getting-started)
-- [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm-)
+- [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
 - [🤖 Compatibility with Meilisearch](#-compatibility-with-meilisearch)
-- [⚙️ Contributing](#-contributing)
+- [⚙️ Contributing](#️-contributing)
 
 ## 📖 Documentation
 
