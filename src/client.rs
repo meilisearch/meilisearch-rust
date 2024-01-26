@@ -116,6 +116,7 @@ impl Client {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn multi_search(&self) -> MultiSearchQuery {
         MultiSearchQuery::new(self)
     }
@@ -131,6 +132,7 @@ impl Client {
     ///
     /// assert_eq!(client.get_host(), "http://doggo.dog");
     /// ```
+    #[must_use]
     pub fn get_host(&self) -> &str {
         &self.host
     }
@@ -146,6 +148,7 @@ impl Client {
     ///
     /// assert_eq!(client.get_api_key(), Some("doggo"));
     /// ```
+    #[must_use]
     pub fn get_api_key(&self) -> Option<&str> {
         self.api_key.as_deref()
     }
@@ -861,7 +864,7 @@ impl Client {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # let index = client.create_index("movies_get_task", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// let task = index.delete_all_documents().await.unwrap();
     ///
@@ -890,8 +893,8 @@ impl Client {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// let mut query = tasks::TasksSearchQuery::new(&client);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let mut query = TasksSearchQuery::new(&client);
     /// query.with_index_uids(["get_tasks_with"]);
     ///
     /// let tasks = client.get_tasks_with(&query).await.unwrap();
@@ -923,8 +926,8 @@ impl Client {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// let mut query = tasks::TasksCancelQuery::new(&client);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let mut query = TasksCancelQuery::new(&client);
     /// query.with_index_uids(["movies"]);
     ///
     /// let res = client.cancel_tasks_with(&query).await.unwrap();
@@ -959,8 +962,8 @@ impl Client {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// let mut query = tasks::TasksDeleteQuery::new(&client);
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let mut query = TasksDeleteQuery::new(&client);
     /// query.with_index_uids(["movies"]);
     ///
     /// let res = client.delete_tasks_with(&query).await.unwrap();
@@ -992,7 +995,7 @@ impl Client {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// let tasks = client.get_tasks().await.unwrap();
     ///
     /// assert!(tasks.results.len() > 0);
@@ -1160,7 +1163,7 @@ mod tests {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
         let path = "/hello";
-        let address = &format!("{}{}", mock_server_url, path);
+        let address = &format!("{mock_server_url}{path}");
         let user_agent = &*qualified_version();
 
         let assertions = vec![

@@ -264,6 +264,7 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn search(&self) -> SearchQuery {
         SearchQuery::new(self)
     }
@@ -454,7 +455,7 @@ impl Index {
     /// // retrieve movies (you have to put some movies in the index before)
     /// let movies = movie_index.get_documents_with::<ReturnedMovie>(&query).await.unwrap();
     ///
-    /// assert!(movies.results.len() == 1);
+    /// assert_eq!(movies.results.len(), 1);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -479,7 +480,7 @@ impl Index {
                     Error::MeilisearchCommunication(MeilisearchCommunicationError {
                         status_code: error.status_code,
                         url: error.url,
-                        message: Some(format!("{}.", MEILISEARCH_VERSION_HINT)),
+                        message: Some(format!("{MEILISEARCH_VERSION_HINT}.")),
                     })
                 }
                 Error::Meilisearch(error) => Error::Meilisearch(MeilisearchError {
@@ -618,7 +619,7 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
     /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
-    /// assert!(movies.results.len() == 2);
+    /// assert_eq!(movies.results.len(), 2);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -693,7 +694,7 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
     /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
-    /// assert!(movies.results.len() == 2);
+    /// assert_eq!(movies.results.len(), 2);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -739,7 +740,7 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
     /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
-    /// assert!(movies.results.len() == 2);
+    /// assert_eq!(movies.results.len(), 2);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -784,7 +785,7 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
     /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
-    /// assert!(movies.results.len() == 2);
+    /// assert_eq!(movies.results.len(), 2);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -829,7 +830,7 @@ impl Index {
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
     /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
-    /// assert!(movies.results.len() == 2);
+    /// assert_eq!(movies.results.len(), 2);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -956,7 +957,7 @@ impl Index {
     ///
     /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
     ///
-    /// assert!(movies.results.len() == 2);
+    /// assert_eq!(movies.results.len(), 2);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -1840,6 +1841,7 @@ pub struct IndexesQuery<'a> {
 }
 
 impl<'a> IndexesQuery<'a> {
+    #[must_use]
     pub fn new(client: &Client) -> IndexesQuery {
         IndexesQuery {
             client,
@@ -2019,7 +2021,7 @@ mod tests {
         }
         let res = index.get_documents::<Object>().await.unwrap();
 
-        assert_eq!(res.limit, 20)
+        assert_eq!(res.limit, 20);
     }
 
     #[meilisearch_test]
@@ -2166,15 +2168,15 @@ mod tests {
                         index_uid: Some(index_uid),
                         ..
                     },
-            } => assert_eq!(index_uid, *index.uid),
-            Task::Processing {
+            }
+            | Task::Processing {
                 content:
                     ProcessingTask {
                         index_uid: Some(index_uid),
                         ..
                     },
-            } => assert_eq!(index_uid, *index.uid),
-            Task::Failed {
+            }
+            | Task::Failed {
                 content:
                     FailedTask {
                         task:
@@ -2184,8 +2186,8 @@ mod tests {
                             },
                         ..
                     },
-            } => assert_eq!(index_uid, *index.uid),
-            Task::Succeeded {
+            }
+            | Task::Succeeded {
                 content:
                     SucceededTask {
                         index_uid: Some(index_uid),

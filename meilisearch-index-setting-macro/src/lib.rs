@@ -39,12 +39,12 @@ fn get_index_config_implementation(
     struct_ident: &Ident,
     fields: &syn::Fields,
 ) -> proc_macro2::TokenStream {
-    let mut primary_key_attribute: String = "".to_string();
-    let mut distinct_key_attribute: String = "".to_string();
-    let mut displayed_attributes: Vec<String> = vec![];
-    let mut searchable_attributes: Vec<String> = vec![];
-    let mut filterable_attributes: Vec<String> = vec![];
-    let mut sortable_attributes: Vec<String> = vec![];
+    let mut primary_key_attribute = String::new();
+    let mut distinct_key_attribute = String::new();
+    let mut displayed_attributes = vec![];
+    let mut searchable_attributes = vec![];
+    let mut filterable_attributes = vec![];
+    let mut sortable_attributes = vec![];
 
     let index_name = struct_ident
         .to_string()
@@ -152,7 +152,7 @@ fn get_index_config_implementation(
 }
 
 fn get_settings_token_for_list(
-    field_name_list: &Vec<String>,
+    field_name_list: &[String],
     method_name: &str,
 ) -> proc_macro2::TokenStream {
     let string_attributes = field_name_list.iter().map(|attr| {
@@ -162,13 +162,13 @@ fn get_settings_token_for_list(
     });
     let method_ident = Ident::new(method_name, proc_macro2::Span::call_site());
 
-    if !field_name_list.is_empty() {
+    if field_name_list.is_empty() {
         quote! {
-            .#method_ident([#(#string_attributes),*])
+            .#method_ident(::std::iter::empty::<&str>())
         }
     } else {
         quote! {
-            .#method_ident(::std::iter::empty::<&str>())
+            .#method_ident([#(#string_attributes),*])
         }
     }
 }
@@ -179,11 +179,11 @@ fn get_settings_token_for_string(
 ) -> proc_macro2::TokenStream {
     let method_ident = Ident::new(method_name, proc_macro2::Span::call_site());
 
-    if !field_name.is_empty() {
+    if field_name.is_empty() {
+        proc_macro2::TokenStream::new()
+    } else {
         quote! {
             .#method_ident(#field_name)
         }
-    } else {
-        proc_macro2::TokenStream::new()
     }
 }

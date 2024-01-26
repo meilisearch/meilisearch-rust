@@ -20,6 +20,13 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
     if let (&mut Item::Fn(ref mut inner_fn), &mut Item::Fn(ref mut outer_fn)) =
         (&mut inner, &mut outer)
     {
+        #[derive(Debug, PartialEq, Eq)]
+        enum Param {
+            Client,
+            Index,
+            String,
+        }
+
         inner_fn.sig.ident = Ident::new(
             &("_inner_meilisearch_test_macro_".to_string() + &inner_fn.sig.ident.to_string()),
             Span::call_site(),
@@ -32,36 +39,29 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
             "#[meilisearch_test] can only be applied to async functions"
         );
 
-        #[derive(Debug, PartialEq, Eq)]
-        enum Param {
-            Client,
-            Index,
-            String,
-        }
-
         let mut params = Vec::new();
 
         let parameters = &inner_fn.sig.inputs;
-        for param in parameters.iter() {
+        for param in parameters {
             match param {
                 FnArg::Typed(PatType { ty, .. }) => match &**ty {
-                    Type::Path(TypePath { path: Path { segments, .. }, .. } ) if segments.last().unwrap().ident.to_string() == "String" => {
+                    Type::Path(TypePath { path: Path { segments, .. }, .. } ) if segments.last().unwrap().ident == "String" => {
                         params.push(Param::String);
                     }
-                    Type::Path(TypePath { path: Path { segments, .. }, .. } ) if segments.last().unwrap().ident.to_string() == "Index" => {
+                    Type::Path(TypePath { path: Path { segments, .. }, .. } ) if segments.last().unwrap().ident == "Index" => {
                         params.push(Param::Index);
                     }
-                    Type::Path(TypePath { path: Path { segments, .. }, .. } ) if segments.last().unwrap().ident.to_string() == "Client" => {
+                    Type::Path(TypePath { path: Path { segments, .. }, .. } ) if segments.last().unwrap().ident == "Client" => {
                         params.push(Param::Client);
                     }
                     // TODO: throw this error while pointing to the specific token
                     ty => panic!(
-                        "#[meilisearch_test] can only receive Client, Index or String as parameters but received {:?}", ty
+                        "#[meilisearch_test] can only receive Client, Index or String as parameters but received {ty:?}"
                     ),
                 },
                 // TODO: throw this error while pointing to the specific token
                 // Used `self` as a parameter
-                _ => panic!(
+                FnArg::Receiver(_) => panic!(
                     "#[meilisearch_test] can only receive Client, Index or String as parameters"
                 ),
             }
@@ -168,7 +168,7 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
         outer_block.push(parse_quote!(return result;));
 
         outer_fn.sig.inputs.clear();
-        outer_fn.sig.asyncness = inner_fn.sig.asyncness.clone();
+        outer_fn.sig.asyncness = inner_fn.sig.asyncness;
         outer_fn.attrs.push(parse_quote!(#[tokio::test]));
         outer_fn.block.stmts = outer_block;
     } else {

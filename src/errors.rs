@@ -84,7 +84,7 @@ impl std::fmt::Display for MeilisearchCommunicationError {
             self.status_code
         )?;
         if let Some(message) = &self.message {
-            write!(f, " {}", message)?;
+            write!(f, " {message}")?;
         }
         write!(f, "\nurl: {}", self.url)?;
         Ok(())
