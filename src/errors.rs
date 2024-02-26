@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
+use strum::Display;
 use thiserror::Error;
 
 /// An enum representing the errors that can occur.
-
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
@@ -46,14 +46,15 @@ pub enum Error {
     InvalidTenantToken(#[from] jsonwebtoken::errors::Error),
 
     /// The http client encountered an error.
-    #[cfg(not(target_arch = "wasm32"))]
     #[error("HTTP request failed: {}", .0)]
-    HttpError(isahc::Error),
+    Http(Box<dyn std::error::Error + Send + Sync + 'static>),
+
+    #[error("Invalid URL: {}", .0)]
+    InvalidUrl(#[from] url::ParseError),
 
     /// The http client encountered an error.
-    #[cfg(target_arch = "wasm32")]
-    #[error("HTTP request failed: {}", .0)]
-    HttpError(String),
+    #[error("Invalid HTTP header: {}", .0)]
+    InvalidHttpHeaderValue(#[from] http::header::InvalidHeaderValue),
 
     // The library formating the query parameters encountered an error.
     #[error("Internal Error: could not parse the query parameters: {}", .0)]
@@ -111,8 +112,9 @@ pub struct MeilisearchError {
 }
 
 /// The type of error that was encountered.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Display)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 #[non_exhaustive]
 pub enum ErrorType {
     /// The submitted request was invalid.
@@ -128,22 +130,12 @@ pub enum ErrorType {
     Unknown,
 }
 
-impl std::fmt::Display for ErrorType {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        write!(
-            fmt,
-            "{}",
-            // this can't fail
-            serde_json::to_value(self).unwrap().as_str().unwrap()
-        )
-    }
-}
-
 /// The error code.
 ///
 /// Officially documented at <https://www.meilisearch.com/docs/reference/errors/error_codes>.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Display)]
 #[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
 #[non_exhaustive]
 pub enum ErrorCode {
     IndexCreationFailed,
@@ -265,34 +257,29 @@ pub enum ErrorCode {
 
 pub const MEILISEARCH_VERSION_HINT: &str = "Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method";
 
-impl std::fmt::Display for ErrorCode {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        write!(
-            fmt,
-            "{}",
-            // this can't fail
-            serde_json::to_value(self).unwrap().as_str().unwrap()
-        )
-    }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-impl From<isahc::Error> for Error {
-    fn from(error: isahc::Error) -> Error {
-        if error.kind() == isahc::error::ErrorKind::ConnectionFailed {
-            Error::UnreachableServer
-        } else {
-            Error::HttpError(error)
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
     use jsonwebtoken::errors::ErrorKind::InvalidToken;
     use uuid::Uuid;
+
+    #[tokio::test]
+    async fn error_on_invalid_url() {
+        let error = crate::request::request::<Option<()>, _, ()>(
+            "test_url",
+            None,
+            crate::request::Method::Post {
+                query: None,
+                body: "test_body",
+            },
+            200,
+        )
+        .await
+        .unwrap_err();
+
+        assert!(matches!(error, Error::InvalidUrl(_)))
+    }
 
     #[test]
     fn test_meilisearch_error() {
@@ -407,12 +394,6 @@ mod test {
         assert_eq!(
             error.to_string(),
             "Error parsing response JSON: invalid type: map, expected a string at line 2 column 8"
-        );
-
-        let error = Error::HttpError(isahc::post("test_url", "test_body").unwrap_err());
-        assert_eq!(
-            error.to_string(),
-            "HTTP request failed: failed to resolve host name"
         );
 
         let error = Error::InvalidTenantToken(jsonwebtoken::errors::Error::from(InvalidToken));

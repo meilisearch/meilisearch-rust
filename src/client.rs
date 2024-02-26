@@ -4,8 +4,8 @@ use std::{collections::HashMap, time::Duration};
 use time::OffsetDateTime;
 
 use crate::{
-    errors::*, indexes::*, request::*, search::*, utils::async_sleep, Key, KeyBuilder, KeyUpdater,
-    KeysQuery, KeysResults, Task, TaskInfo, TasksCancelQuery, TasksDeleteQuery, TasksResults,
+    errors::*, indexes::*, request::*, search::*, Key, KeyBuilder, KeyUpdater, KeysQuery,
+    KeysResults, Task, TaskInfo, TasksCancelQuery, TasksDeleteQuery, TasksResults,
     TasksSearchQuery,
 };
 
@@ -61,7 +61,7 @@ impl Client {
         Ok(indexes_results)
     }
 
-    pub async fn execute_multi_search_query<T: 'static + DeserializeOwned>(
+    pub async fn execute_multi_search_query<T: DeserializeOwned>(
         &self,
         body: &MultiSearchQuery<'_, '_>,
     ) -> Result<MultiSearchResponse<T>, Error> {
@@ -840,7 +840,7 @@ impl Client {
                     }
                     Task::Enqueued { .. } | Task::Processing { .. } => {
                         elapsed_time += interval;
-                        async_sleep(interval).await;
+                        futures_timer::Delay::new(interval).await;
                     }
                 },
                 Err(error) => return Err(error),
@@ -1161,7 +1161,7 @@ mod tests {
         let mock_server_url = s.url();
         let path = "/hello";
         let address = &format!("{}{}", mock_server_url, path);
-        let user_agent = &*qualified_version();
+        let user_agent = USER_AGENT_HEADER_VALUE.to_str().unwrap();
 
         let assertions = vec![
             (

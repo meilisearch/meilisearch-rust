@@ -145,10 +145,7 @@ impl<'a> DocumentQuery<'a> {
     /// );
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
-    pub async fn execute<T: DeserializeOwned + 'static>(
-        &self,
-        document_id: &str,
-    ) -> Result<T, Error> {
+    pub async fn execute<T: DeserializeOwned>(&self, document_id: &str) -> Result<T, Error> {
         self.index.get_document_with::<T>(document_id, self).await
     }
 }
@@ -302,9 +299,7 @@ impl<'a> DocumentsQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute<T: DeserializeOwned + 'static>(
-        &self,
-    ) -> Result<DocumentsResults<T>, Error> {
+    pub async fn execute<T: DeserializeOwned>(&self) -> Result<DocumentsResults<T>, Error> {
         self.index.get_documents_with::<T>(self).await
     }
 }
@@ -333,7 +328,7 @@ impl<'a> DocumentDeletionQuery<'a> {
         self
     }
 
-    pub async fn execute<T: DeserializeOwned + 'static>(&self) -> Result<TaskInfo, Error> {
+    pub async fn execute<T: DeserializeOwned>(&self) -> Result<TaskInfo, Error> {
         self.index.delete_documents_with(self).await
     }
 }

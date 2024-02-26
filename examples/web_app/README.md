@@ -10,7 +10,7 @@ The Rust source files are compiled into WebAssembly and so can be readable by th
 
 If you only want to check if this example compiles, you can run:
 
-```console
+```sh
 cargo build
 ```
 
@@ -18,11 +18,11 @@ cargo build
 
 To build this example, you need [wasm-pack](https://github.com/rustwasm/wasm-pack).\
 You can install `wasm-pack` with this command:
-```console
+```sh
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 ```
 
-```console
+```sh
 wasm-pack build . --target=web --no-typescript
 ```
 
@@ -32,7 +32,7 @@ The compiled files will be stored in the `examples/web_app/pkg` folder.
 
 Theoretically, you could just open the `examples/web_app/pkg/index.html` file but due to browsers' security restrictions, you need a web server. For example:
 
-```console
+```sh
 python3 -m http.server 8080
 ```
 
