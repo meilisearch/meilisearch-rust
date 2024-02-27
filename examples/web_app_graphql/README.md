@@ -41,3 +41,20 @@ query {
   }
 }
 ```
+
+### Errors
+
+Incase you run into the following error:
+
+```bash
+= note: ld: library not found for -lpq
+          clang: error: linker command failed with exit code 1 (use -v to see invocation)
+```
+
+Run:
+
+```bash
+sudo apt install libpq-dev
+```
+
+This should fix the error
