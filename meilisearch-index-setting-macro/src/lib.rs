@@ -240,7 +240,7 @@ fn validate_punct(punct: &proc_macro2::Punct) -> std::result::Result<(), proc_ma
 }
 
 fn get_settings_token_for_list(
-    field_name_list: &Vec<String>,
+    field_name_list: &[String],
     method_name: &str,
 ) -> proc_macro2::TokenStream {
     let string_attributes = field_name_list.iter().map(|attr| {

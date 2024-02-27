@@ -1609,3 +1609,21 @@ search_parameter_guide_facet_stats_1: |-
     .execute()
     .await
     .unwrap();
+get_proximity_precision_settings_1: |-
+  let proximity_precision: String = client
+    .index("books")
+    .get_typo_tolerance()
+    .await
+    .unwrap();
+update_proximity_precision_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .set_proximity_precision("byAttribute".to_string())
+    .await
+    .unwrap();
+reset_proximity_precision_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .reset_proximity_precision()
+    .await
+    .unwrap();
