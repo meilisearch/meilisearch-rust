@@ -140,10 +140,10 @@ fn get_index_config_implementation(
             #distinct_attr_token
         }
 
-         async fn generate_index(client: &::meilisearch_sdk::client::Client) -> Result<::meilisearch_sdk::indexes::Index, ::meilisearch_sdk::tasks::Task> {
+         async fn generate_index(client: &::meilisearch_sdk::client::Client) -> ::std::result::Result<::meilisearch_sdk::indexes::Index, ::meilisearch_sdk::tasks::Task> {
             return client.create_index(#index_name, #primary_key_token)
                 .await.unwrap()
-                .wait_for_completion(&client, None, None)
+                .wait_for_completion(&client, ::std::option::Option::None, ::std::option::Option::None)
                 .await.unwrap()
                 .try_make_index(&client);
             }
