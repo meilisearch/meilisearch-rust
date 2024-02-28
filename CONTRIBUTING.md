@@ -53,7 +53,7 @@ curl -L https://install.meilisearch.com | sh # download Meilisearch
 cargo test
 ```
 
-There is two kind of tests, documentation tests and unit tests.
+There are two kinds of tests, documentation tests and unit tests.
 If you need to write or read the unit tests you should consider reading this
 [readme](meilisearch-test-macro/README.md) about our custom testing macro.
 
@@ -91,13 +91,13 @@ rustup update
 
 Each PR should pass the format test to be accepted.
 
-Run the following to fix the formating errors:
+Run the following to fix the formatting errors:
 
 ```
 cargo fmt
 ```
 
-and the following to test if the formating is correct:
+and the following to test if the formatting is correct:
 ```
 cargo fmt --all -- --check
 ```
@@ -139,7 +139,7 @@ We do not enforce any branch naming style, but please use something descriptive 
 
 As minimal requirements, your commit message should:
 - be capitalized
-- not finish by a dot or any other punctuation character (!,?)
+- not finished by a dot or any other punctuation character (!,?)
 - start with a verb so that we can read your commit message this way: "This commit will ...", where "..." is the commit message.
   e.g.: "Fix the home page button" or "Add more tests for create_index method"
 
@@ -171,7 +171,7 @@ _[Read more about this](https://github.com/meilisearch/integration-guides/blob/m
 
 ### How to Publish the Release <!-- omit in toc -->
 
-⚠️ Before doing anything, make sure you got through the guide about [Releasing an Integration](https://github.com/meilisearch/integration-guides/blob/main/resources/integration-release.md).
+⚠️ Before doing anything, make sure you get through the guide about [Releasing an Integration](https://github.com/meilisearch/integration-guides/blob/main/resources/integration-release.md).
 
 Make a PR modifying the file [`Cargo.toml`](/Cargo.toml):
 
@@ -212,4 +212,4 @@ GitHub Actions will be triggered and push the package to [crates.io](https://cra
 
 <hr>
 
-Thank you again for reading this through. We can not wait to begin to work with you if you make your way through this contributing guide ❤️
+Thank you again for reading this through. We cannot wait to begin to work with you if you make your way through this contributing guide ❤️

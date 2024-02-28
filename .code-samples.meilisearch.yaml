@@ -1,7 +1,7 @@
 # This code-samples file is used by the Meilisearch documentation
 # Every example written here will be automatically fetched by
 # the documentation on build
-# You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
+# You can read more on https://github.com/meilisearch/documentation/tree/main/learn
 ---
 synonyms_guide_1: |-
   let mut synonyms = std::collections::HashMap::new();

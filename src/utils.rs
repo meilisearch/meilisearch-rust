@@ -35,7 +35,7 @@ mod test {
 
     #[meilisearch_test]
     async fn test_async_sleep() {
-        let sleep_duration = std::time::Duration::from_millis(10);
+        let sleep_duration = Duration::from_millis(10);
         let now = time::Instant::now();
 
         async_sleep(sleep_duration).await;

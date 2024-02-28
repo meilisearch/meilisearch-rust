@@ -106,10 +106,12 @@ pub struct Settings {
 #[allow(missing_docs)]
 impl Settings {
     /// Create undefined settings.
+    #[must_use]
     pub fn new() -> Settings {
         Self::default()
     }
 
+    #[must_use]
     pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
     where
         S: AsRef<str>,
@@ -132,6 +134,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_stop_words(
         self,
         stop_words: impl IntoIterator<Item = impl AsRef<str>>,
@@ -147,6 +150,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Settings {
         Settings {
             pagination: Some(pagination_settings),
@@ -154,6 +158,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_typo_tolerance(self, typo_tolerance_settings: TypoToleranceSettings) -> Settings {
         Settings {
             typo_tolerance: Some(typo_tolerance_settings),
@@ -161,6 +166,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_ranking_rules(
         self,
         ranking_rules: impl IntoIterator<Item = impl AsRef<str>>,
@@ -176,6 +182,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_filterable_attributes(
         self,
         filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
@@ -191,6 +198,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_sortable_attributes(
         self,
         sortable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
@@ -206,6 +214,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_distinct_attribute(self, distinct_attribute: impl AsRef<str>) -> Settings {
         Settings {
             distinct_attribute: Some(distinct_attribute.as_ref().to_string()),
@@ -213,6 +222,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_searchable_attributes(
         self,
         searchable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
@@ -228,6 +238,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_displayed_attributes(
         self,
         displayed_attributes: impl IntoIterator<Item = impl AsRef<str>>,
@@ -243,6 +254,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_faceting(self, faceting: &FacetingSettings) -> Settings {
         Settings {
             faceting: Some(*faceting),
@@ -250,6 +262,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_dictionary(
         self,
         dictionary: impl IntoIterator<Item = impl AsRef<str>>,
@@ -1815,7 +1828,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_dicitonary(index: Index) {
+    async fn test_get_dictionary(index: Index) {
         let dictionary: Vec<String> = vec![];
 
         let res = index.get_dictionary().await.unwrap();
@@ -1824,7 +1837,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_dicitonary(client: Client, index: Index) {
+    async fn test_set_dictionary(client: Client, index: Index) {
         let dictionary: Vec<&str> = vec!["J. K.", "J. R. R."];
         let task_info = index.set_dictionary(&dictionary).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
@@ -1835,7 +1848,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_empty_dicitonary(client: Client, index: Index) {
+    async fn test_set_empty_dictionary(client: Client, index: Index) {
         let dictionary: Vec<&str> = vec![];
         let task_info = index.set_dictionary(&dictionary).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
