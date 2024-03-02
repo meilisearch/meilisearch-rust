@@ -55,6 +55,8 @@ pub struct HuggingFaceEmbedderSettings {
     /// the BERT embedding model you want to use from HuggingFace
     /// Example: `bge-base-en-v1.5`
     pub model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub revision: Option<String>,
     /// if present, document_template must be a [Liquid template](https://shopify.github.io/liquid/).
     /// Use `{{ doc.attribute }}` to access document field values.
     /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
