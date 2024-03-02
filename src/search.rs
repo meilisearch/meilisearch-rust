@@ -1297,7 +1297,7 @@ mod tests {
                 number: 0,
                 nested: Nested { child: S("first") }
             },
-            &results.hits[0].result.id
+            &results.hits[0].result
         );
 
         Ok(())
