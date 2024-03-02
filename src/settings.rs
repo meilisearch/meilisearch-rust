@@ -77,6 +77,7 @@ pub struct OpenapiEmbedderSettings {
     /// The openapi model name
     /// Example: `text-embedding-ada-002`
     pub model: String,
+    pub dimensions: usize,
     /// if present, document_template must be a [Liquid template](https://shopify.github.io/liquid/).
     /// Use `{{ doc.attribute }}` to access document field values.
     /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
@@ -90,7 +91,7 @@ pub struct OpenapiEmbedderSettings {
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
 pub struct CustomEmbedderSettings {
     /// dimensions of your custom embedding
-    pub dimensions: u32,
+    pub dimensions: usize,
 }
 
 /// Struct reprensenting a set of settings.
