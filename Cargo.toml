@@ -40,6 +40,7 @@ wasm-bindgen-futures = "0.4"
 default = ["isahc-static-curl"]
 isahc-static-curl = ["isahc/static-curl"]
 isahc-static-ssl = ["isahc/static-ssl"]
+experimental-vector-search = []
 
 [dev-dependencies]
 futures-await-test = "0.3"

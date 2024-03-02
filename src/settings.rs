@@ -34,6 +34,63 @@ pub struct FacetingSettings {
     pub max_values_per_facet: usize,
 }
 
+#[cfg(feature = "experimental-vector-search")]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase", tag = "source")]
+pub enum Embedder {
+    /// Compute embeddings locally.
+    /// This is a resource-intensive operation and might affect indexing performance.
+    HuggingFace(HuggingFaceEmbedderSettings),
+    /// Use OpenAi's API to generate embeddings
+    OpenAi(OpenapiEmbedderSettings),
+    /// Provide custom embeddings.
+    /// In this case, you must manually update your embeddings when adding, updating, and removing documents to your index.
+    UserProvided(CustomEmbedderSettings),
+}
+
+#[cfg(feature = "experimental-vector-search")]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct HuggingFaceEmbedderSettings {
+    /// the BERT embedding model you want to use from HuggingFace
+    /// Example: `bge-base-en-v1.5`
+    pub model: String,
+    /// if present, document_template must be a [Liquid template](https://shopify.github.io/liquid/).
+    /// Use `{{ doc.attribute }}` to access document field values.
+    /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
+    ///
+    /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template: Option<String>,
+}
+
+#[cfg(feature = "experimental-vector-search")]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenapiEmbedderSettings {
+    /// API key used to authorize against OpenAI.
+    /// [Generate an API key](https://platform.openai.com/api-keys) from your OpenAI account.
+    /// Use [tier 2 keys](https://platform.openai.com/docs/guides/rate-limits/usage-tiers?context=tier-two) or above for optimal performance.
+    pub api_key: String,
+    /// The openapi model name
+    /// Example: `text-embedding-ada-002`
+    pub model: String,
+    /// if present, document_template must be a [Liquid template](https://shopify.github.io/liquid/).
+    /// Use `{{ doc.attribute }}` to access document field values.
+    /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
+    ///
+    /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template: Option<String>,
+}
+
+#[cfg(feature = "experimental-vector-search")]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
+pub struct CustomEmbedderSettings {
+    /// dimensions of your custom embedding
+    pub dimensions: u32,
+}
+
 /// Struct reprensenting a set of settings.
 ///
 /// You can build this struct using the builder syntax.
@@ -101,6 +158,10 @@ pub struct Settings {
     /// Proximity precision settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proximity_precision: Option<String>,
+    /// Settings how the embeddings for the experimental vector search feature are generated
+    #[cfg(feature = "experimental-vector-search")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub embedders: Option<HashMap<String, Embedder>>,
 }
 
 #[allow(missing_docs)]
@@ -281,6 +342,23 @@ impl Settings {
     pub fn with_proximity_precision(self, proximity_precision: impl AsRef<str>) -> Settings {
         Settings {
             proximity_precision: Some(proximity_precision.as_ref().to_string()),
+            ..self
+        }
+    }
+
+    #[must_use]
+    #[cfg(feature = "experimental-vector-search")]
+    pub fn with_embedders<S>(self, embedders: HashMap<S, Embedder>) -> Settings
+    where
+        S: AsRef<str>,
+    {
+        Settings {
+            embedders: Some(
+                embedders
+                    .into_iter()
+                    .map(|(key, value)| (key.as_ref().to_string(), value))
+                    .collect(),
+            ),
             ..self
         }
     }
