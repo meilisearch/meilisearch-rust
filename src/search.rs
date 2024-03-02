@@ -1232,7 +1232,7 @@ mod tests {
             .expect("could not enable the vector store");
         assert_eq!(features.vector_store, true);
         let embedder_setting = crate::Embedder::HuggingFace(crate::HuggingFaceEmbedderSettings {
-            model: "BAAI/bge-base-en-v1.5".into(),
+            model: Some("BAAI/bge-base-en-v1.5".into()),
             revision: None,
             document_template: Some("{{ doc.value }}".into()),
         });
