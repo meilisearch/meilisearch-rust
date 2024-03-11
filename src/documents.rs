@@ -51,6 +51,7 @@ use crate::{Client, Error, Index, Settings, Task};
 pub trait IndexConfig {
     const INDEX_STR: &'static str;
 
+    #[must_use]
     fn index(client: &Client) -> Index {
         client.index(Self::INDEX_STR)
     }
@@ -71,12 +72,13 @@ pub struct DocumentQuery<'a> {
     #[serde(skip_serializing)]
     pub index: &'a Index,
 
-    /// The fields that should appear in the documents. By default all of the fields are present.
+    /// The fields that should appear in the documents. By default, all of the fields are present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
 }
 
 impl<'a> DocumentQuery<'a> {
+    #[must_use]
     pub fn new(index: &Index) -> DocumentQuery {
         DocumentQuery {
             index,
@@ -177,7 +179,7 @@ pub struct DocumentsQuery<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
 
-    /// The fields that should appear in the documents. By default all of the fields are present.
+    /// The fields that should appear in the documents. By default, all of the fields are present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
 
@@ -190,6 +192,7 @@ pub struct DocumentsQuery<'a> {
 }
 
 impl<'a> DocumentsQuery<'a> {
+    #[must_use]
     pub fn new(index: &Index) -> DocumentsQuery {
         DocumentsQuery {
             index,
@@ -321,6 +324,7 @@ pub struct DocumentDeletionQuery<'a> {
 }
 
 impl<'a> DocumentDeletionQuery<'a> {
+    #[must_use]
     pub fn new(index: &Index) -> DocumentDeletionQuery {
         DocumentDeletionQuery {
             index,
@@ -527,7 +531,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_get_documents_with_error_hint() -> Result<(), Error> {
         let meilisearch_url = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
-        let client = Client::new(format!("{}/hello", meilisearch_url), Some("masterKey"));
+        let client = Client::new(format!("{meilisearch_url}/hello"), Some("masterKey"));
         let index = client.index("test_get_documents_with_filter_wrong_ms_version");
 
         let documents = DocumentsQuery::new(&index)
@@ -552,7 +556,7 @@ mod tests {
             }
             _ => panic!("The error was expected to be a MeilisearchCommunicationError error, but it was not."),
         };
-        assert_eq!(format!("{}", error), displayed_error);
+        assert_eq!(format!("{error}"), displayed_error);
 
         Ok(())
     }
@@ -583,7 +587,7 @@ Hint: It might not be working because you're not up to date with the Meilisearch
             }
             _ => panic!("The error was expected to be a MeilisearchCommunicationError error, but it was not."),
         };
-        assert_eq!(format!("{}", error), displayed_error);
+        assert_eq!(format!("{error}"), displayed_error);
 
         Ok(())
     }

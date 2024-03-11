@@ -32,7 +32,7 @@ pub enum Error {
     /// Can't call this method without setting an api key in the client.
     #[error("You need to provide an api key to use the `{0}` method.")]
     CantUseWithoutApiKey(String),
-    /// It is not possible to generate a tenant token with a invalid api key.
+    /// It is not possible to generate a tenant token with an invalid api key.
     ///
     /// Empty strings or with less than 8 characters are considered invalid.
     #[error("The provided api_key is invalid.")]
@@ -55,7 +55,7 @@ pub enum Error {
     #[error("HTTP request failed: {}", .0)]
     HttpError(String),
 
-    // The library formating the query parameters encountered an error.
+    // The library formatting the query parameters encountered an error.
     #[error("Internal Error: could not parse the query parameters: {}", .0)]
     Yaup(#[from] yaup::Error),
     // The library validating the format of an uuid.
@@ -84,7 +84,7 @@ impl std::fmt::Display for MeilisearchCommunicationError {
             self.status_code
         )?;
         if let Some(message) = &self.message {
-            write!(f, " {}", message)?;
+            write!(f, " {message}")?;
         }
         write!(f, "\nurl: {}", self.url)?;
         Ok(())
@@ -129,7 +129,7 @@ pub enum ErrorType {
 }
 
 impl std::fmt::Display for ErrorType {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             fmt,
             "{}",
@@ -166,7 +166,7 @@ pub enum ErrorCode {
     MissingAuthorizationHeader,
     TaskNotFound,
     DumpNotFound,
-    MssingMasterKey,
+    MissingMasterKey,
     NoSpaceLeftOnDevice,
     PayloadTooLarge,
     UnretrievableDocument,
@@ -266,7 +266,7 @@ pub enum ErrorCode {
 pub const MEILISEARCH_VERSION_HINT: &str = "Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method";
 
 impl std::fmt::Display for ErrorCode {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             fmt,
             "{}",
@@ -302,7 +302,7 @@ mod test {
   "message": "The cool error message.",
   "code": "index_creation_failed",
   "type": "internal",
-  "link": "https://the best link eveer"
+  "link": "https://the best link ever"
 }"#,
         )
         .unwrap();
@@ -310,7 +310,7 @@ mod test {
         assert_eq!(error.error_message, "The cool error message.");
         assert_eq!(error.error_code, ErrorCode::IndexCreationFailed);
         assert_eq!(error.error_type, ErrorType::Internal);
-        assert_eq!(error.error_link, "https://the best link eveer");
+        assert_eq!(error.error_link, "https://the best link ever");
 
         let error: MeilisearchError = serde_json::from_str(
             r#"
@@ -335,12 +335,12 @@ mod test {
   "message": "The cool error message.",
   "code": "index_creation_failed",
   "type": "internal",
-  "link": "https://the best link eveer"
+  "link": "https://the best link ever"
 }"#,
         )
         .unwrap();
 
-        assert_eq!(error.to_string(), ("Meilisearch internal: index_creation_failed: The cool error message.. https://the best link eveer"));
+        assert_eq!(error.to_string(), "Meilisearch internal: index_creation_failed: The cool error message.. https://the best link ever");
 
         let error: MeilisearchCommunicationError = MeilisearchCommunicationError {
             status_code: 404,
@@ -350,7 +350,7 @@ mod test {
 
         assert_eq!(
             error.to_string(),
-            ("MeilisearchCommunicationError: The server responded with a 404. Hint: something.\nurl: http://localhost:7700/something")
+            "MeilisearchCommunicationError: The server responded with a 404. Hint: something.\nurl: http://localhost:7700/something"
         );
 
         let error: MeilisearchCommunicationError = MeilisearchCommunicationError {
@@ -361,7 +361,7 @@ mod test {
 
         assert_eq!(
             error.to_string(),
-            ("MeilisearchCommunicationError: The server responded with a 404.\nurl: http://localhost:7700/something")
+            "MeilisearchCommunicationError: The server responded with a 404.\nurl: http://localhost:7700/something"
         );
 
         let error = Error::UnreachableServer;

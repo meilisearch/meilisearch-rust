@@ -12,13 +12,13 @@ fi
 cargo install cargo-readme
 
 # Comparing the generated README and the current one
-curent_readme="README.md"
+current_readme="README.md"
 generated_readme="README.md_tmp"
 cargo readme > "$generated_readme"
 
 # Exiting with the right message
 echo ''
-diff "$curent_readme" "$generated_readme" > /dev/null 2>&1
+diff "$current_readme" "$generated_readme" > /dev/null 2>&1
 if [ "$?" = 0 ]; then
     echo "OK"
     rm -f "$generated_readme"
@@ -29,7 +29,7 @@ else
     # Displaying the diff if the --diff flag is activated
     if [ "$1" = '--diff' ]; then
         echo 'Diff found:'
-        diff "$curent_readme" "$generated_readme"
+        diff "$current_readme" "$generated_readme"
     else
         echo 'To see the diff, run:'
         echo '  $ sh scripts/check-readme.sh --diff'

@@ -1,9 +1,7 @@
 #!/bin/sh
 
 # Checking if current tag matches the package version
-current_tag=$(echo $GITHUB_REF | cut -d '/' -f 3 | sed -r 's/^v//')
-major=$(echo $current_tag | cut -d '.' -f1)
-minor=$(echo $current_tag | cut -d '.' -f2)
+current_tag=$(echo "$GITHUB_REF" | cut -d '/' -f 3 | sed -r 's/^v//')
 
 file1='Cargo.toml'
 file2='README.tpl'

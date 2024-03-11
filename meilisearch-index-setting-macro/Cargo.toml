@@ -1,7 +1,7 @@
 [package]
 name = "meilisearch-index-setting-macro"
 version = "0.25.0"
-description = "Helper tool to generate settings of an Meilisearch index"
+description = "Helper tool to generate settings of a Meilisearch index"
 edition = "2021"
 license = "MIT"
 
@@ -11,8 +11,8 @@ license = "MIT"
 proc-macro = true
 
 [dependencies]
-syn = { version = "1.0.102", features = ["extra-traits"] }
+syn = { version = "2.0.48", features = ["extra-traits"] }
 quote = "1.0.21"
 proc-macro2 = "1.0.46"
 convert_case = "0.6.0"
-
+structmeta = "0.3"

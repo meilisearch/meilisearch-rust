@@ -38,6 +38,7 @@ pub struct ExperimentalFeatures<'a> {
 }
 
 impl<'a> ExperimentalFeatures<'a> {
+    #[must_use]
     pub fn new(client: &'a Client) -> Self {
         ExperimentalFeatures {
             client,

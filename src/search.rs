@@ -18,6 +18,7 @@ pub struct Filter<'a> {
 }
 
 impl<'a> Filter<'a> {
+    #[must_use]
     pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter {
         Filter { inner }
     }
@@ -109,7 +110,7 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
             let results = data
                 .iter()
                 .map(|(name, value)| {
-                    let mut result = name.to_string();
+                    let mut result = (*name).to_string();
                     if let Some(value) = value {
                         result.push(':');
                         result.push_str(value.to_string().as_str());
@@ -299,7 +300,7 @@ pub struct SearchQuery<'a> {
     /// **Default: `<em>`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight_pre_tag: Option<&'a str>,
-    /// Tag after the a highlighted term.
+    /// Tag after a highlighted term.
     ///
     /// ex: `hello world</ mytag>`
     ///
@@ -328,6 +329,7 @@ pub struct SearchQuery<'a> {
 
 #[allow(missing_docs)]
 impl<'a> SearchQuery<'a> {
+    #[must_use]
     pub fn new(index: &'a Index) -> SearchQuery<'a> {
         SearchQuery {
             index,
@@ -523,6 +525,7 @@ impl<'a> SearchQuery<'a> {
         self.index_uid = Some(&self.index.uid);
         self
     }
+    #[must_use]
     pub fn build(&mut self) -> SearchQuery<'a> {
         self.clone()
     }
@@ -544,6 +547,7 @@ pub struct MultiSearchQuery<'a, 'b> {
 
 #[allow(missing_docs)]
 impl<'a, 'b> MultiSearchQuery<'a, 'b> {
+    #[must_use]
     pub fn new(client: &'a Client) -> MultiSearchQuery<'a, 'b> {
         MultiSearchQuery {
             client,

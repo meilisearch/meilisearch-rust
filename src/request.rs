@@ -249,7 +249,7 @@ pub(crate) async fn request<
     const JSON: &str = "application/json";
 
     // The 2 following unwraps should not be able to fail
-    let mut mut_url = url.clone().to_string();
+    let mut mut_url = url.to_string();
     let headers = Headers::new().unwrap();
     if let Some(apikey) = apikey {
         headers
@@ -336,14 +336,14 @@ fn parse_response<Output: DeserializeOwned>(
     url: String,
 ) -> Result<Output, Error> {
     if status_code == expected_status_code {
-        match from_str::<Output>(body) {
+        return match from_str::<Output>(body) {
             Ok(output) => {
                 trace!("Request succeed");
-                return Ok(output);
+                Ok(output)
             }
             Err(e) => {
                 error!("Request succeeded but failed to parse response");
-                return Err(Error::ParseError(e));
+                Err(Error::ParseError(e))
             }
         };
     }

@@ -131,7 +131,7 @@ impl AsRef<u32> for FailedTask {
     }
 }
 
-fn deserialize_duration<'de, D>(deserializer: D) -> Result<std::time::Duration, D::Error>
+fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -223,6 +223,7 @@ pub enum Task {
 }
 
 impl Task {
+    #[must_use]
     pub fn get_uid(&self) -> u32 {
         match self {
             Self::Enqueued { content } => *content.as_ref(),
@@ -288,7 +289,7 @@ impl Task {
 
     /// Extract the [Index] from a successful `IndexCreation` task.
     ///
-    /// If the task failed or was not an `IndexCreation` task it return itself.
+    /// If the task failed or was not an `IndexCreation` task it returns itself.
     ///
     /// # Example
     ///
@@ -355,6 +356,7 @@ impl Task {
     /// # client.index("unwrap_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn unwrap_failure(self) -> MeilisearchError {
         match self {
             Self::Failed {
@@ -390,6 +392,7 @@ impl Task {
     /// # client.index("is_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn is_failure(&self) -> bool {
         matches!(self, Self::Failed { .. })
     }
@@ -418,6 +421,7 @@ impl Task {
     /// # task.try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn is_success(&self) -> bool {
         matches!(self, Self::Succeeded { .. })
     }
@@ -445,6 +449,7 @@ impl Task {
     /// # task.wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn is_pending(&self) -> bool {
         matches!(self, Self::Enqueued { .. } | Self::Processing { .. })
     }
@@ -624,6 +629,7 @@ impl<'a, T> TasksQuery<'a, T> {
 }
 
 impl<'a> TasksQuery<'a, TasksCancelFilters> {
+    #[must_use]
     pub fn new(client: &'a Client) -> TasksQuery<'a, TasksCancelFilters> {
         TasksQuery {
             client,
@@ -648,6 +654,7 @@ impl<'a> TasksQuery<'a, TasksCancelFilters> {
 }
 
 impl<'a> TasksQuery<'a, TasksDeleteFilters> {
+    #[must_use]
     pub fn new(client: &'a Client) -> TasksQuery<'a, TasksDeleteFilters> {
         TasksQuery {
             client,
@@ -672,6 +679,7 @@ impl<'a> TasksQuery<'a, TasksDeleteFilters> {
 }
 
 impl<'a> TasksQuery<'a, TasksPaginationFilters> {
+    #[must_use]
     pub fn new(client: &'a Client) -> TasksQuery<'a, TasksPaginationFilters> {
         TasksQuery {
             client,
@@ -731,7 +739,7 @@ mod test {
     fn test_deserialize_task() {
         let datetime = OffsetDateTime::parse(
             "2022-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
@@ -739,7 +747,7 @@ mod test {
             r#"
 {
   "enqueuedAt": "2022-02-03T13:02:38.369634Z",
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "status": "enqueued",
   "type": "documentAdditionOrUpdate",
   "uid": 12
@@ -757,7 +765,7 @@ mod test {
                     uid: 12,
                 }
             }
-        if enqueued_at == datetime && index_uid == "mieli"));
+        if enqueued_at == datetime && index_uid == "meili"));
 
         let task: Task = serde_json::from_str(
             r#"
@@ -769,7 +777,7 @@ mod test {
   "duration": null,
   "enqueuedAt": "2022-02-03T15:17:02.801341Z",
   "finishedAt": null,
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "startedAt": "2022-02-03T15:17:02.812338Z",
   "status": "processing",
   "type": "documentAdditionOrUpdate",
@@ -795,7 +803,7 @@ mod test {
             }
             if started_at == OffsetDateTime::parse(
                 "2022-02-03T15:17:02.812338Z",
-                &::time::format_description::well_known::Rfc3339
+                &time::format_description::well_known::Rfc3339
             ).unwrap()
         ));
 
@@ -809,7 +817,7 @@ mod test {
   "duration": "PT10.848957S",
   "enqueuedAt": "2022-02-03T15:17:02.801341Z",
   "finishedAt": "2022-02-03T15:17:13.661295Z",
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "startedAt": "2022-02-03T15:17:02.812338Z",
   "status": "succeeded",
   "type": "documentAdditionOrUpdate",
@@ -924,35 +932,35 @@ mod test {
 
         let before_enqueued_at = OffsetDateTime::parse(
             "2022-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
         let after_enqueued_at = OffsetDateTime::parse(
             "2023-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
         let before_started_at = OffsetDateTime::parse(
             "2024-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let after_started_at = OffsetDateTime::parse(
             "2025-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let before_finished_at = OffsetDateTime::parse(
             "2026-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let after_finished_at = OffsetDateTime::parse(
             "2027-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 

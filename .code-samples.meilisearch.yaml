@@ -1,7 +1,7 @@
 # This code-samples file is used by the Meilisearch documentation
 # Every example written here will be automatically fetched by
 # the documentation on build
-# You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
+# You can read more on https://github.com/meilisearch/documentation/tree/main/learn
 ---
 synonyms_guide_1: |-
   let mut synonyms = std::collections::HashMap::new();
@@ -1607,5 +1607,23 @@ search_parameter_guide_facet_stats_1: |-
     .with_query("Batman")
     .with_facets(Selectors::Some(&["genres", "rating"))
     .execute()
+    .await
+    .unwrap();
+get_proximity_precision_settings_1: |-
+  let proximity_precision: String = client
+    .index("books")
+    .get_typo_tolerance()
+    .await
+    .unwrap();
+update_proximity_precision_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .set_proximity_precision("byAttribute".to_string())
+    .await
+    .unwrap();
+reset_proximity_precision_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .reset_proximity_precision()
     .await
     .unwrap();
