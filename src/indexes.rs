@@ -899,14 +899,12 @@ impl Index {
     pub async fn add_or_update<T: Serialize>(
         &self,
         documents: &[T],
-        primary_key: Option<impl AsRef<str>>,
+        primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host,
-                self.uid,
-                primary_key.as_ref()
+                self.client.host, self.uid, primary_key
             )
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
