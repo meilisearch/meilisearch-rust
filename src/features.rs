@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExperimentalFeaturesResult {
-    pub score_details: bool,
     pub vector_store: bool,
 }
 
@@ -24,15 +23,13 @@ pub struct ExperimentalFeaturesResult {
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 /// let mut features = ExperimentalFeatures::new(&client);
-/// features.set_score_details(true);
+/// features.set_vector_store(true);
 /// ```
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExperimentalFeatures<'a> {
     #[serde(skip_serializing)]
     client: &'a Client,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub score_details: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vector_store: Option<bool>,
 }
@@ -42,14 +39,8 @@ impl<'a> ExperimentalFeatures<'a> {
     pub fn new(client: &'a Client) -> Self {
         ExperimentalFeatures {
             client,
-            score_details: None,
             vector_store: None,
         }
-    }
-
-    pub fn set_score_details(&mut self, score_details: bool) -> &mut Self {
-        self.score_details = Some(score_details);
-        self
     }
 
     pub fn set_vector_store(&mut self, vector_store: bool) -> &mut Self {
@@ -92,7 +83,7 @@ impl<'a> ExperimentalFeatures<'a> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// futures::executor::block_on(async move {
     ///     let mut features = ExperimentalFeatures::new(&client);
-    ///     features.set_score_details(true);
+    ///     features.set_vector_store(true);
     ///     features.update().await.unwrap();
     /// });
     /// ```
@@ -118,24 +109,12 @@ mod tests {
     #[meilisearch_test]
     async fn test_experimental_features_get(client: Client) {
         let mut features = ExperimentalFeatures::new(&client);
-        features.set_score_details(false);
         features.set_vector_store(false);
         let _ = features.update().await.unwrap();
 
         let res = features.get().await.unwrap();
 
-        assert!(!res.score_details);
         assert!(!res.vector_store);
-    }
-
-    #[meilisearch_test]
-    async fn test_experimental_features_enable_score_details(client: Client) {
-        let mut features = ExperimentalFeatures::new(&client);
-        features.set_score_details(true);
-
-        let res = features.update().await.unwrap();
-
-        assert!(res.score_details);
     }
 
     #[meilisearch_test]
