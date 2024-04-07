@@ -2044,6 +2044,40 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_update_document_json(client: Client, index: Index) -> Result<(), Error> {
+        let old_json = r#"{ "id": 1, "body": "doggo" }{ "id": 2, "body": "catto" }"#.as_bytes();
+        let updated_json = r#"{ "id": 1, "second_body": "second_doggo" }{ "id": 2, "second_body": "second_catto" }"#.as_bytes();
+
+        let task = index
+            .add_documents(old_json, Some("id"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+        let _ = index.get_task(task).await?;
+
+        let task = index
+            .add_or_update(updated_json, None)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        let elements = index.get_documents::<serde_json::Value>().await.unwrap();
+
+        assert!(matches!(status, Task::Succeeded { .. }));
+        assert_eq!(elements.results.len(), 2);
+
+        let expected_result = vec![
+            json!( {"body": "doggo", "id": 1, "second_body": "second_doggo"}),
+            json!( {"body": "catto", "id": 2, "second_body": "second_catto"}),
+        ];
+
+        assert_eq!(elements.results, expected_result);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_add_documents_ndjson(client: Client, index: Index) -> Result<(), Error> {
         let ndjson = r#"{ "id": 1, "body": "doggo" }{ "id": 2, "body": "catto" }"#.as_bytes();
 
