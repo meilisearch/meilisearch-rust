@@ -1,5 +1,4 @@
-use crate::errors::{Error, MeilisearchCommunicationError, MeilisearchError};
-use async_trait::async_trait;
+
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::from_str;
@@ -407,14 +406,14 @@ pub fn parse_response<Output: DeserializeOwned>(
     url: String,
 ) -> Result<Output, Error> {
     if status_code == expected_status_code {
-        match from_str::<Output>(body) {
+        return match from_str::<Output>(body) {
             Ok(output) => {
                 trace!("Request succeed");
-                return Ok(output);
+                Ok(output)
             }
             Err(e) => {
                 error!("Request succeeded but failed to parse response");
-                return Err(Error::ParseError(e));
+                Err(Error::ParseError(e))
             }
         };
     }

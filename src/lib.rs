@@ -38,7 +38,7 @@
 //! })}
 //! ```
 //!
-//! With the `uid`, you can check the status (`enqueued`, `processing`, `succeeded` or `failed`) of your documents addition using the [task](https://www.meilisearch.com/docs/reference/api/tasks#get-task).
+//! With the `uid`, you can check the status (`enqueued`, `canceled`, `processing`, `succeeded` or `failed`) of your documents addition using the [task](https://www.meilisearch.com/docs/reference/api/tasks#get-task).
 //!
 //! ### Basic Search <!-- omit in TOC -->
 //!
@@ -229,7 +229,7 @@
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
-/// Module containing the [`client::Client`] struct.
+/// Module containing the [`Client`] struct.
 pub mod client;
 /// Module representing the [documents] structures.
 pub mod documents;
@@ -237,25 +237,28 @@ pub mod documents;
 pub mod dumps;
 /// Module containing the [`errors::Error`] struct.
 pub mod errors;
+/// Module related to runtime and instance features.
+pub mod features;
 /// Module containing the Index struct.
 pub mod indexes;
-/// Module containing the [`key::Key`] struct.
+/// Module containing the [`Key`] struct.
 pub mod key;
 /// Module that prelude HttpClient traits.
 pub mod prelude;
 pub mod request;
 /// Module related to search queries and results.
 pub mod search;
-/// Module containing [`settings::Settings`].
+/// Module containing [`Settings`].
 pub mod settings;
-/// Module representing the [`task_info::TaskInfo`]s.
+/// Module representing the [`TaskInfo`]s.
 pub mod task_info;
-/// Module representing the [`tasks::Task`]s.
+/// Module representing the [`Task`]s.
 pub mod tasks;
 /// Module that generates tenant tokens.
 mod tenant_tokens;
-/// Module containing utilies functions.
+/// Module containing utilizes functions.
 mod utils;
+
 
 #[cfg(test)]
 /// Support for the `IndexConfig` derive proc macro in the crate's tests.

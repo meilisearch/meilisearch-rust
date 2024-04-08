@@ -18,6 +18,7 @@ pub struct Filter<'a> {
 }
 
 impl<'a> Filter<'a> {
+    #[must_use]
     pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter {
         Filter { inner }
     }
@@ -45,6 +46,9 @@ pub struct SearchResult<T> {
     /// The object that contains information about the matches.
     #[serde(rename = "_matchesPosition")]
     pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
+    /// The relevancy score of the match.
+    #[serde(rename = "_rankingScore")]
+    pub ranking_score: Option<f64>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -106,7 +110,7 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
             let results = data
                 .iter()
                 .map(|(name, value)| {
-                    let mut result = name.to_string();
+                    let mut result = (*name).to_string();
                     if let Some(value) = value {
                         result.push(':');
                         result.push_str(value.to_string().as_str());
@@ -143,7 +147,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use serde::{Serialize, Deserialize};
-/// # use meilisearch_sdk::{client::Client, search::SearchQuery, indexes::Index};
+/// # use meilisearch_sdk::{Client, SearchQuery, Index};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -178,7 +182,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 ///
 /// ```
-/// # use meilisearch_sdk::{client::Client, search::SearchQuery, indexes::Index};
+/// # use meilisearch_sdk::{Client, SearchQuery, Index};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -246,6 +250,13 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     /// Attributes to sort.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sort: Option<&'a [&'a str]>,
+    /// Attributes to perform the search on.
+    ///
+    /// Specify the subset of searchableAttributes for a search without modifying Meilisearch’s index settings.
+    ///
+    /// **Default: all searchable attributes found in the documents.**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes_to_search_on: Option<&'a [&'a str]>,
     /// Attributes to display in the returned documents.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -289,7 +300,7 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     /// **Default: `<em>`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight_pre_tag: Option<&'a str>,
-    /// Tag after the a highlighted term.
+    /// Tag after a highlighted term.
     ///
     /// ex: `hello world</ mytag>`
     ///
@@ -302,6 +313,12 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_matches_position: Option<bool>,
 
+    /// Defines whether to show the relevancy score of the match.
+    ///
+    /// **Default: `false`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_ranking_score: Option<bool>,
+
     /// Defines the strategy on how to handle queries containing multiple words.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
@@ -312,6 +329,7 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 
 #[allow(missing_docs)]
 impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
+    #[must_use]
     pub fn new(index: &'a Index<Http>) -> SearchQuery<'a, Http> {
         SearchQuery {
             index,
@@ -323,6 +341,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             filter: None,
             sort: None,
             facets: None,
+            attributes_to_search_on: None,
             attributes_to_retrieve: None,
             attributes_to_crop: None,
             crop_length: None,
@@ -331,6 +350,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             highlight_pre_tag: None,
             highlight_post_tag: None,
             show_matches_position: None,
+            show_ranking_score: None,
             matching_strategy: None,
             index_uid: None,
         }
@@ -436,6 +456,13 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.sort = Some(sort);
         self
     }
+    pub fn with_attributes_to_search_on<'b>(
+        &'b mut self,
+        attributes_to_search_on: &'a [&'a str],
+    ) -> &'b mut SearchQuery<'a> {
+        self.attributes_to_search_on = Some(attributes_to_search_on);
+        self
+    }
     pub fn with_attributes_to_retrieve<'b>(
         &'b mut self,
         attributes_to_retrieve: Selectors<&'a [&'a str]>,
@@ -489,6 +516,13 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.show_matches_position = Some(show_matches_position);
         self
     }
+    pub fn with_show_ranking_score<'b>(
+        &'b mut self,
+        show_ranking_score: bool,
+    ) -> &'b mut SearchQuery<'a> {
+        self.show_ranking_score = Some(show_ranking_score);
+        self
+    }
     pub fn with_matching_strategy<'b>(
         &'b mut self,
         matching_strategy: MatchingStrategies,
@@ -521,6 +555,7 @@ pub struct MultiSearchQuery<'a, 'b, Http: HttpClient> {
 
 #[allow(missing_docs)]
 impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
+    #[must_use]
     pub fn new(client: &'a Client<Http>) -> MultiSearchQuery<'a, 'b, Http> {
         MultiSearchQuery {
             client,
@@ -976,7 +1011,7 @@ mod tests {
         assert_eq!(
             &Document {
                 id: 0,
-                value: S("(ꈍᴗꈍ) sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)"),
+                value: S("(ꈍᴗꈍ)sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)"),
                 kind: S("text"),
                 number: 0,
                 nested: Nested { child: S("first") }
@@ -1081,6 +1116,18 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_query_show_ranking_score(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("dolor text");
+        query.with_show_ranking_score(true);
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
+        assert!(results.hits[0].ranking_score.is_some());
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_phrase_search(
         client: Client<IsahcClient>,
         index: Index<IsahcClient>,
@@ -1136,7 +1183,7 @@ mod tests {
         client: Client<IsahcClient>,
         index: Index<IsahcClient>,
     ) -> Result<(), Error> {
-        use crate::key::{Action, KeyBuilder};
+        use crate::{Action, KeyBuilder};
 
         setup_test_index(&client, &index).await?;
 

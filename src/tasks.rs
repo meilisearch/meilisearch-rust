@@ -49,6 +49,7 @@ pub enum TaskType {
 #[derive(Debug, Clone, Deserialize)]
 pub struct TasksResults {
     pub results: Vec<Task>,
+    pub total: u64,
     pub limit: u32,
     pub from: Option<u32>,
     pub next: Option<u32>,
@@ -133,7 +134,7 @@ impl AsRef<u32> for FailedTask {
     }
 }
 
-fn deserialize_duration<'de, D>(deserializer: D) -> Result<std::time::Duration, D::Error>
+fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -185,6 +186,25 @@ impl AsRef<u32> for EnqueuedTask {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessingTask {
+    #[serde(with = "time::serde::rfc3339")]
+    pub enqueued_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub started_at: OffsetDateTime,
+    pub index_uid: Option<String>,
+    #[serde(flatten)]
+    pub update_type: TaskType,
+    pub uid: u32,
+}
+
+impl AsRef<u32> for ProcessingTask {
+    fn as_ref(&self) -> &u32 {
+        &self.uid
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "status")]
 pub enum Task {
     Enqueued {
@@ -193,7 +213,7 @@ pub enum Task {
     },
     Processing {
         #[serde(flatten)]
-        content: EnqueuedTask,
+        content: ProcessingTask,
     },
     Failed {
         #[serde(flatten)]
@@ -206,9 +226,11 @@ pub enum Task {
 }
 
 impl Task {
+    #[must_use]
     pub fn get_uid(&self) -> u32 {
         match self {
-            Self::Enqueued { content } | Self::Processing { content } => *content.as_ref(),
+            Self::Enqueued { content } => *content.as_ref(),
+            Self::Processing { content } => *content.as_ref(),
             Self::Failed { content } => *content.as_ref(),
             Self::Succeeded { content } => *content.as_ref(),
         }
@@ -227,7 +249,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
@@ -270,7 +292,7 @@ impl Task {
 
     /// Extract the [Index] from a successful `IndexCreation` task.
     ///
-    /// If the task failed or was not an `IndexCreation` task it return itself.
+    /// If the task failed or was not an `IndexCreation` task it returns itself.
     ///
     /// # Example
     ///
@@ -316,7 +338,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -340,6 +362,7 @@ impl Task {
     /// # client.index("unwrap_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn unwrap_failure(self) -> MeilisearchError {
         match self {
             Self::Failed {
@@ -354,7 +377,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -375,6 +398,7 @@ impl Task {
     /// # client.index("is_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn is_failure(&self) -> bool {
         matches!(self, Self::Failed { .. })
     }
@@ -384,7 +408,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -403,6 +427,7 @@ impl Task {
     /// # task.try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn is_success(&self) -> bool {
         matches!(self, Self::Succeeded { .. })
     }
@@ -413,7 +438,7 @@ impl Task {
     /// ```no_run
     /// # // The test is not run because it checks for an enqueued or processed status
     /// # // and the task might already be processed when checking the status after the get_task call
-    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -430,6 +455,7 @@ impl Task {
     /// # task.wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn is_pending(&self) -> bool {
         matches!(self, Self::Enqueued { .. } | Self::Processing { .. })
     }
@@ -438,7 +464,8 @@ impl Task {
 impl AsRef<u32> for Task {
     fn as_ref(&self) -> &u32 {
         match self {
-            Self::Enqueued { content } | Self::Processing { content } => content.as_ref(),
+            Self::Enqueued { content } => content.as_ref(),
+            Self::Processing { content } => content.as_ref(),
             Self::Succeeded { content } => content.as_ref(),
             Self::Failed { content } => content.as_ref(),
         }
@@ -608,6 +635,7 @@ impl<'a, T, Http: HttpClient> TasksQuery<'a, T, Http> {
 }
 
 impl<'a, Http: HttpClient> TasksQuery<'a, TasksCancelFilters, Http> {
+    #[must_use]
     pub fn new(client: &'a Client<Http>) -> TasksQuery<'a, TasksCancelFilters, Http> {
         TasksQuery {
             client,
@@ -632,6 +660,7 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksCancelFilters, Http> {
 }
 
 impl<'a, Http: HttpClient> TasksQuery<'a, TasksDeleteFilters, Http> {
+    #[must_use]
     pub fn new(client: &'a Client<Http>) -> TasksQuery<'a, TasksDeleteFilters, Http> {
         TasksQuery {
             client,
@@ -656,6 +685,7 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksDeleteFilters, Http> {
 }
 
 impl<'a, Http: HttpClient> TasksQuery<'a, TasksPaginationFilters, Http> {
+    #[must_use]
     pub fn new(client: &'a Client<Http>) -> TasksQuery<'a, TasksPaginationFilters, Http> {
         TasksQuery {
             client,
@@ -719,7 +749,7 @@ mod test {
     fn test_deserialize_task() {
         let datetime = OffsetDateTime::parse(
             "2022-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
@@ -727,7 +757,7 @@ mod test {
             r#"
 {
   "enqueuedAt": "2022-02-03T13:02:38.369634Z",
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "status": "enqueued",
   "type": "documentAdditionOrUpdate",
   "uid": 12
@@ -745,7 +775,7 @@ mod test {
                     uid: 12,
                 }
             }
-        if enqueued_at == datetime && index_uid == "mieli"));
+        if enqueued_at == datetime && index_uid == "meili"));
 
         let task: Task = serde_json::from_str(
             r#"
@@ -757,7 +787,7 @@ mod test {
   "duration": null,
   "enqueuedAt": "2022-02-03T15:17:02.801341Z",
   "finishedAt": null,
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "startedAt": "2022-02-03T15:17:02.812338Z",
   "status": "processing",
   "type": "documentAdditionOrUpdate",
@@ -769,7 +799,8 @@ mod test {
         assert!(matches!(
             task,
             Task::Processing {
-                content: EnqueuedTask {
+                content: ProcessingTask {
+                    started_at,
                     update_type: TaskType::DocumentAdditionOrUpdate {
                         details: Some(DocumentAdditionOrUpdate {
                             received_documents: 19547,
@@ -780,6 +811,10 @@ mod test {
                     ..
                 }
             }
+            if started_at == OffsetDateTime::parse(
+                "2022-02-03T15:17:02.812338Z",
+                &time::format_description::well_known::Rfc3339
+            ).unwrap()
         ));
 
         let task: Task = serde_json::from_str(
@@ -792,7 +827,7 @@ mod test {
   "duration": "PT10.848957S",
   "enqueuedAt": "2022-02-03T15:17:02.801341Z",
   "finishedAt": "2022-02-03T15:17:13.661295Z",
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "startedAt": "2022-02-03T15:17:02.812338Z",
   "status": "succeeded",
   "type": "documentAdditionOrUpdate",
@@ -910,35 +945,35 @@ mod test {
 
         let before_enqueued_at = OffsetDateTime::parse(
             "2022-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
         let after_enqueued_at = OffsetDateTime::parse(
             "2023-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
         let before_started_at = OffsetDateTime::parse(
             "2024-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let after_started_at = OffsetDateTime::parse(
             "2025-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let before_finished_at = OffsetDateTime::parse(
             "2026-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let after_finished_at = OffsetDateTime::parse(
             "2027-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 

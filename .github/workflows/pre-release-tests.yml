@@ -16,7 +16,7 @@ jobs:
     name: integration-tests-against-rc
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build
         run: cargo build --verbose
       - name: Get the latest Meilisearch RC

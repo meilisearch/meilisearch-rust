@@ -43,7 +43,7 @@ pub struct FacetingSettings {
 /// # Example
 ///
 /// ```
-/// # use meilisearch_sdk::settings::Settings;
+/// # use meilisearch_sdk::Settings;
 /// let settings = Settings::new()
 ///     .with_stop_words(["a", "the", "of"]);
 ///
@@ -97,15 +97,23 @@ pub struct Settings {
     /// TypoTolerance settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub typo_tolerance: Option<TypoToleranceSettings>,
+    /// Dictionary settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dictionary: Option<Vec<String>>,
+    /// Proximity precision settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub proximity_precision: Option<String>,
 }
 
 #[allow(missing_docs)]
 impl Settings {
     /// Create undefined settings.
+    #[must_use]
     pub fn new() -> Settings {
         Self::default()
     }
 
+    #[must_use]
     pub fn with_synonyms<S, U, V>(self, synonyms: HashMap<S, U>) -> Settings
     where
         S: AsRef<str>,
@@ -128,6 +136,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_stop_words(
         self,
         stop_words: impl IntoIterator<Item = impl AsRef<str>>,
@@ -143,6 +152,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_pagination(self, pagination_settings: PaginationSetting) -> Settings {
         Settings {
             pagination: Some(pagination_settings),
@@ -150,6 +160,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_typo_tolerance(self, typo_tolerance_settings: TypoToleranceSettings) -> Settings {
         Settings {
             typo_tolerance: Some(typo_tolerance_settings),
@@ -157,6 +168,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_ranking_rules(
         self,
         ranking_rules: impl IntoIterator<Item = impl AsRef<str>>,
@@ -172,6 +184,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_filterable_attributes(
         self,
         filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
@@ -187,6 +200,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_sortable_attributes(
         self,
         sortable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
@@ -202,6 +216,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_distinct_attribute(self, distinct_attribute: impl AsRef<str>) -> Settings {
         Settings {
             distinct_attribute: Some(distinct_attribute.as_ref().to_string()),
@@ -209,6 +224,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_searchable_attributes(
         self,
         searchable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
@@ -224,6 +240,7 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_displayed_attributes(
         self,
         displayed_attributes: impl IntoIterator<Item = impl AsRef<str>>,
@@ -239,9 +256,33 @@ impl Settings {
         }
     }
 
+    #[must_use]
     pub fn with_faceting(self, faceting: &FacetingSettings) -> Settings {
         Settings {
             faceting: Some(*faceting),
+            ..self
+        }
+    }
+
+    #[must_use]
+    pub fn with_dictionary(
+        self,
+        dictionary: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Settings {
+        Settings {
+            dictionary: Some(
+                dictionary
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
+            ..self
+        }
+    }
+
+    pub fn with_proximity_precision(self, proximity_precision: impl AsRef<str>) -> Settings {
+        Settings {
+            proximity_precision: Some(proximity_precision.as_ref().to_string()),
             ..self
         }
     }
@@ -639,16 +680,80 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) of the [Index].
+    /// Get [dictionary](https://www.meilisearch.com/docs/reference/api/settings#dictionary) of the [Index].
+    ///
+    /// # Example
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
     /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("get_dictionary", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_dictionary");
+    ///
+    /// let dictionary = index.get_dictionary().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_dictionary(&self) -> Result<Vec<String>, Error> {
+        request::<(), (), Vec<String>>(
+            &format!(
+                "{}/indexes/{}/settings/dictionary",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Get { query: () },
+            200,
+        )
+        .await
+    }
+
+    /// Get [proximity_precision](https://www.meilisearch.com/docs/reference/api/settings#proximity-precision) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("get_proximity_precision", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_proximity_precision");
+    ///
+    /// let proximity_precision = index.get_proximity_precision().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_proximity_precision(&self) -> Result<String, Error> {
+        request::<(), (), String>(
+            &format!(
+                "{}/indexes/{}/settings/proximity-precision",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Get { query: () },
+            200,
+        )
+        .await
+    }
+
+    /// Get [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) of the [Index].
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("get_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_typo_tolerance");
     ///
@@ -679,7 +784,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings, PaginationSetting}};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Settings, PaginationSetting};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -720,7 +825,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Settings};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -766,7 +871,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings, PaginationSetting}};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Settings, PaginationSetting};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -805,7 +910,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Settings};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -1074,7 +1179,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [displayed attributes](https://www.meilisearch.com/docs/reference/features/settings#displayed-attributes) of the [Index].
+    /// Update [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings#displayed-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1160,18 +1265,59 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) settings of the [Index].
+    /// Update [dictionary](https://www.meilisearch.com/docs/reference/api/settings#dictionary) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("set_dictionary", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_dictionary");
+    ///
+    /// let task = index.set_dictionary(["J. K.", "J. R. R."]).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_dictionary(
+        &self,
+        dictionary: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Result<TaskInfo, Error> {
+        request::<(), Vec<String>, TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/dictionary",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Put {
+                query: (),
+                body: dictionary
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            },
+            202,
+        )
+        .await
+    }
+
+    /// Update [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
     ///
     /// # Example
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings, settings::{TypoToleranceSettings, MinWordSizeForTypos}};
     /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("set_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_typo_tolerance");
     ///
@@ -1208,6 +1354,44 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
+    /// Update [proximity-precision](https://www.meilisearch.com/docs/learn/configuration/proximity-precision) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("set_proximity_precision", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_proximity_precision");
+    ///
+    /// let task = index.set_proximity_precision("byWord".to_string()).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_proximity_precision(
+        &self,
+        proximity_precision: String,
+    ) -> Result<TaskInfo, Error> {
+        request::<(), String, TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/proximity-precision",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Put {
+                query: (),
+                body: proximity_precision,
+            },
+            202,
+        )
+        .await
+    }
+
     /// Reset [Settings] of the [Index].
     ///
     /// All settings will be reset to their [default value](https://www.meilisearch.com/docs/reference/api/settings#reset-settings).
@@ -1242,7 +1426,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [synonyms](https://www.meilisearch.com/docs/reference/features/synonyms.html) of the [Index].
+    /// Reset [synonyms](https://www.meilisearch.com/docs/reference/api/settings#synonyms) of the [Index].
     ///
     /// # Example
     ///
@@ -1311,7 +1495,7 @@ impl<Http: HttpClient> Index<Http> {
             )
             .await
     }
-    /// Reset [stop-words](https://www.meilisearch.com/docs/reference/features/stop_words.html) of the [Index].
+    /// Reset [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
     ///
     /// # Example
     ///
@@ -1383,7 +1567,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [filterable attributes](https://www.meilisearch.com/docs/reference/features/filtering_and_faceted_search.html) of the [Index].
+    /// Reset [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1418,7 +1602,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [sortable attributes](https://www.meilisearch.com/docs/reference/features/sorting.html) of the [Index].
+    /// Reset [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1453,7 +1637,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset the [distinct attribute](https://www.meilisearch.com/docs/reference/features/settings#distinct-attribute) of the [Index].
+    /// Reset the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -1488,7 +1672,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [searchable attributes](https://www.meilisearch.com/docs/reference/features/field_properties.html#searchable-fields) of
+    /// Reset [searchable attributes](https://www.meilisearch.com/docs/learn/configuration/displayed_searchable_attributes#searchable-fields) of
     /// the [Index] (enable all attributes).
     ///
     /// # Example
@@ -1524,7 +1708,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [displayed attributes](https://www.meilisearch.com/docs/reference/features/settings#displayed-attributes) of the [Index] (enable all attributes).
+    /// Reset [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings#displayed-attributes) of the [Index] (enable all attributes).
     ///
     /// # Example
     ///
@@ -1594,18 +1778,50 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [typo tolerance](https://docs.meilisearch.com/learn/configuration/typo_tolerance.html#typo-tolerance) settings of the [Index].
+    /// Reset [dictionary](https://www.meilisearch.com/docs/reference/api/settings#dictionary) of the [Index].
     ///
     /// # Example
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// #
-    /// # let MEILISEARCH_HOST = option_env!("MEILISEARCH_HOST").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # futures::executor::block_on(async move {
-    /// let client = Client::new(MEILISEARCH_HOST, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("reset_dictionary", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_dictionary");
+    ///
+    /// let task = index.reset_dictionary().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_dictionary(&self) -> Result<TaskInfo, Error> {
+        request::<(), (), TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/dictionary",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Delete { query: () },
+            202,
+        )
+        .await
+    }
+
+    /// Reset [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # client.create_index("reset_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_typo_tolerance");
     ///
@@ -1627,6 +1843,38 @@ impl<Http: HttpClient> Index<Http> {
                 202,
             )
             .await
+    }
+
+    /// Reset [proximity precision](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # futures::executor::block_on(async move {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # client.create_index("reset_proximity_precision", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_proximity_precision");
+    ///
+    /// let task = index.reset_proximity_precision().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_proximity_precision(&self) -> Result<TaskInfo, Error> {
+        request::<(), (), TaskInfo>(
+            &format!(
+                "{}/indexes/{}/settings/proximity-precision",
+                self.client.host, self.uid
+            ),
+            self.client.get_api_key(),
+            Method::Delete { query: () },
+            202,
+        )
+        .await
     }
 }
 
@@ -1690,7 +1938,49 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_pagination(index: Index<IsahcClient>) {
+    async fn test_get_dictionary(index: Index) {
+        let dictionary: Vec<String> = vec![];
+
+        let res = index.get_dictionary().await.unwrap();
+
+        assert_eq!(dictionary, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_dictionary(client: Client, index: Index) {
+        let dictionary: Vec<&str> = vec!["J. K.", "J. R. R."];
+        let task_info = index.set_dictionary(&dictionary).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_dictionary().await.unwrap();
+
+        assert_eq!(dictionary, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_empty_dictionary(client: Client, index: Index) {
+        let dictionary: Vec<&str> = vec![];
+        let task_info = index.set_dictionary(&dictionary).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_dictionary().await.unwrap();
+
+        assert_eq!(dictionary, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_dictionary(client: Client, index: Index) {
+        let dictionary: Vec<&str> = vec![];
+        let task_info = index.reset_dictionary().await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_dictionary().await.unwrap();
+
+        assert_eq!(dictionary, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_pagination(index: Index) {
         let pagination = PaginationSetting {
             max_total_hits: 1000,
         };
@@ -1795,6 +2085,48 @@ mod tests {
         index.wait_for_task(reset_task, None, None).await.unwrap();
 
         let default = index.get_typo_tolerance().await.unwrap();
+
+        assert_eq!(expected, default);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_proximity_precision(index: Index) {
+        let expected = "byWord".to_string();
+
+        let res = index.get_proximity_precision().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_proximity_precision(client: Client, index: Index) {
+        let expected = "byAttribute".to_string();
+
+        let task_info = index
+            .set_proximity_precision("byAttribute".to_string())
+            .await
+            .unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_proximity_precision().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_proximity_precision(index: Index) {
+        let expected = "byWord".to_string();
+
+        let task = index
+            .set_proximity_precision("byAttribute".to_string())
+            .await
+            .unwrap();
+        index.wait_for_task(task, None, None).await.unwrap();
+
+        let reset_task = index.reset_proximity_precision().await.unwrap();
+        index.wait_for_task(reset_task, None, None).await.unwrap();
+
+        let default = index.get_proximity_precision().await.unwrap();
 
         assert_eq!(expected, default);
     }

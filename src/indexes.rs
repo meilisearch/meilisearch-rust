@@ -1,11 +1,7 @@
 use crate::{
-    client::Client,
-    documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
-    errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
-    request::*,
-    search::*,
-    task_info::TaskInfo,
-    tasks::*,
+    request::*, search::*, tasks::*, Client, DocumentDeletionQuery, DocumentQuery, DocumentsQuery,
+    DocumentsResults, Error, MeilisearchCommunicationError, MeilisearchError, TaskInfo,
+    MEILISEARCH_VERSION_HINT,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
@@ -15,7 +11,7 @@ use time::OffsetDateTime;
 ///
 /// # Example
 ///
-/// You can create an index remotly and, if that succeed, make an `Index` out of it.
+/// You can create an index remotely and, if that succeed, make an `Index` out of it.
 /// See the [`Client::create_index`] method.
 /// ```
 /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -117,7 +113,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::{Task, SucceededTask}};
+    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, Task, SucceededTask};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -277,6 +273,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn search(&self) -> SearchQuery<Http> {
         SearchQuery::new(self)
     }
@@ -473,7 +470,7 @@ impl<Http: HttpClient> Index<Http> {
     /// // retrieve movies (you have to put some movies in the index before)
     /// let movies = movie_index.get_documents_with::<ReturnedMovie>(&query).await.unwrap();
     ///
-    /// assert!(movies.results.len() == 1);
+    /// assert_eq!(movies.results.len(), 1);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -647,7 +644,7 @@ impl<Http: HttpClient> Index<Http> {
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
     /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
-    /// assert!(movies.results.len() == 2);
+    /// assert_eq!(movies.results.len(), 2);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -690,6 +687,188 @@ impl<Http: HttpClient> Index<Http> {
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
         self.add_or_replace(documents, primary_key).await
+    }
+
+    /// Add a raw ndjson payload and update them if they already.
+    ///
+    /// It configures the correct content type for ndjson data.
+    ///
+    /// If you send an already existing document (same id) the old document will be only partially updated according to the fields of the new document.
+    /// Thus, any fields not present in the new document are kept and remained unchanged.
+    ///
+    /// To completely overwrite a document, check out the [`Index::add_documents_ndjson`] documents method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let movie_index = client.index("update_documents_ndjson");
+    ///
+    /// let task = movie_index.update_documents_ndjson(
+    ///     r#"{ "id": 1, "body": "doggo" }
+    ///     { "id": 2, "body": "catto" }"#.as_bytes(),
+    ///     Some("id"),
+    ///   ).await.unwrap();
+    /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
+    /// client.wait_for_task(task, None, None).await.unwrap();
+    ///
+    /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
+    /// assert_eq!(movies.results.len(), 2);
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn update_documents_ndjson<T: futures_io::AsyncRead + Send + Sync + 'static>(
+        &self,
+        payload: T,
+        primary_key: Option<&str>,
+    ) -> Result<TaskInfo, Error> {
+        self.add_or_update_unchecked_payload(payload, "application/x-ndjson", primary_key)
+            .await
+    }
+
+    /// Add a raw ndjson payload to meilisearch.
+    ///
+    /// It configures the correct content type for ndjson data.
+    ///
+    /// If you send an already existing document (same id) the **whole existing document** will be overwritten by the new document.
+    /// Fields previously in the document not present in the new document are removed.
+    ///
+    /// For a partial update of the document see [`Index::update_documents_ndjson`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let movie_index = client.index("add_documents_ndjson");
+    ///
+    /// let task = movie_index.add_documents_ndjson(
+    ///     r#"{ "id": 1, "body": "doggo" }
+    ///     { "id": 2, "body": "catto" }"#.as_bytes(),
+    ///     Some("id"),
+    ///   ).await.unwrap();
+    /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
+    /// client.wait_for_task(task, None, None).await.unwrap();
+    ///
+    /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
+    /// assert_eq!(movies.results.len(), 2);
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn add_documents_ndjson<T: futures_io::AsyncRead + Send + Sync + 'static>(
+        &self,
+        payload: T,
+        primary_key: Option<&str>,
+    ) -> Result<TaskInfo, Error> {
+        self.add_or_replace_unchecked_payload(payload, "application/x-ndjson", primary_key)
+            .await
+    }
+
+    /// Add a raw csv payload and update them if they already.
+    ///
+    /// It configures the correct content type for csv data.
+    ///
+    /// If you send an already existing document (same id) the old document will be only partially updated according to the fields of the new document.
+    /// Thus, any fields not present in the new document are kept and remained unchanged.
+    ///
+    /// To completely overwrite a document, check out the [`Index::add_documents_csv`] documents method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let movie_index = client.index("update_documents_csv");
+    ///
+    /// let task = movie_index.update_documents_csv(
+    ///     "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes(),
+    ///     Some("id"),
+    ///   ).await.unwrap();
+    /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
+    /// client.wait_for_task(task, None, None).await.unwrap();
+    ///
+    /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
+    /// assert_eq!(movies.results.len(), 2);
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn update_documents_csv<T: futures_io::AsyncRead + Send + Sync + 'static>(
+        &self,
+        payload: T,
+        primary_key: Option<&str>,
+    ) -> Result<TaskInfo, Error> {
+        self.add_or_update_unchecked_payload(payload, "text/csv", primary_key)
+            .await
+    }
+
+    /// Add a raw csv payload to meilisearch.
+    ///
+    /// It configures the correct content type for csv data.
+    ///
+    /// If you send an already existing document (same id) the **whole existing document** will be overwritten by the new document.
+    /// Fields previously in the document not present in the new document are removed.
+    ///
+    /// For a partial update of the document see [`Index::update_documents_csv`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// # use std::thread::sleep;
+    /// # use std::time::Duration;
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let movie_index = client.index("add_documents_csv");
+    ///
+    /// let task = movie_index.add_documents_csv(
+    ///     "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes(),
+    ///     Some("id"),
+    ///   ).await.unwrap();
+    /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
+    /// client.wait_for_task(task, None, None).await.unwrap();
+    ///
+    /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
+    /// assert_eq!(movies.results.len(), 2);
+    /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn add_documents_csv<T: futures_io::AsyncRead + Send + Sync + 'static>(
+        &self,
+        payload: T,
+        primary_key: Option<&str>,
+    ) -> Result<TaskInfo, Error> {
+        self.add_or_replace_unchecked_payload(payload, "text/csv", primary_key)
+            .await
     }
 
     /// Add a list of documents and update them if they already.
@@ -807,7 +986,7 @@ impl<Http: HttpClient> Index<Http> {
     ///
     /// let movies = movie_index.get_documents::<serde_json::Value>().await.unwrap();
     ///
-    /// assert!(movies.results.len() == 2);
+    /// assert_eq!(movies.results.len(), 2);
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
@@ -1717,6 +1896,7 @@ pub struct IndexesQuery<'a, Http: HttpClient> {
 }
 
 impl<'a, Http: HttpClient> IndexesQuery<'a, Http> {
+    #[must_use]
     pub fn new(client: &Client<Http>) -> IndexesQuery<Http> {
         IndexesQuery {
             client,
@@ -1898,7 +2078,7 @@ mod tests {
         }
         let res = index.get_documents::<Object>().await.unwrap();
 
-        assert_eq!(res.limit, 20)
+        assert_eq!(res.limit, 20);
     }
 
     #[meilisearch_test]
@@ -1927,6 +2107,114 @@ mod tests {
         client: Client<IsahcClient>,
         index: Index<IsahcClient>,
     ) -> Result<(), Error> {
+    async fn test_add_documents_ndjson(client: Client, index: Index) -> Result<(), Error> {
+        let ndjson = r#"{ "id": 1, "body": "doggo" }{ "id": 2, "body": "catto" }"#.as_bytes();
+
+        let task = index
+            .add_documents_ndjson(ndjson, Some("id"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        let elements = index.get_documents::<serde_json::Value>().await.unwrap();
+        assert!(matches!(status, Task::Succeeded { .. }));
+        assert_eq!(elements.results.len(), 2);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_update_documents_ndjson(client: Client, index: Index) -> Result<(), Error> {
+        let old_ndjson = r#"{ "id": 1, "body": "doggo" }{ "id": 2, "body": "catto" }"#.as_bytes();
+        let updated_ndjson =
+            r#"{ "id": 1, "second_body": "second_doggo" }{ "id": 2, "second_body": "second_catto" }"#.as_bytes();
+        // Add first njdson document
+        let task = index
+            .add_documents_ndjson(old_ndjson, Some("id"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+        let _ = index.get_task(task).await?;
+
+        // Update via njdson document
+        let task = index
+            .update_documents_ndjson(updated_ndjson, Some("id"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        let elements = index.get_documents::<serde_json::Value>().await.unwrap();
+
+        assert!(matches!(status, Task::Succeeded { .. }));
+        assert_eq!(elements.results.len(), 2);
+
+        let expected_result = vec![
+            json!( {"body": "doggo", "id": 1, "second_body": "second_doggo"}),
+            json!( {"body": "catto", "id": 2, "second_body": "second_catto"}),
+        ];
+
+        assert_eq!(elements.results, expected_result);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_add_documents_csv(client: Client, index: Index) -> Result<(), Error> {
+        let csv_input = "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes();
+
+        let task = index
+            .add_documents_csv(csv_input, Some("id"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        let elements = index.get_documents::<serde_json::Value>().await.unwrap();
+        assert!(matches!(status, Task::Succeeded { .. }));
+        assert_eq!(elements.results.len(), 2);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_update_documents_csv(client: Client, index: Index) -> Result<(), Error> {
+        let old_csv = "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes();
+        let updated_csv = "id,body\n1,\"new_doggo\"\n2,\"new_catto\"".as_bytes();
+        // Add first njdson document
+        let task = index
+            .add_documents_csv(old_csv, Some("id"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+        let _ = index.get_task(task).await?;
+
+        // Update via njdson document
+        let task = index
+            .update_documents_csv(updated_csv, Some("id"))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        let elements = index.get_documents::<serde_json::Value>().await.unwrap();
+
+        assert!(matches!(status, Task::Succeeded { .. }));
+        assert_eq!(elements.results.len(), 2);
+
+        let expected_result = vec![
+            json!( {"body": "new_doggo", "id": "1"}),
+            json!( {"body": "new_catto", "id": "2"}),
+        ];
+
+        assert_eq!(elements.results, expected_result);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_one_task(client: Client, index: Index) -> Result<(), Error> {
         let task = index
             .delete_all_documents()
             .await?
@@ -1942,15 +2230,15 @@ mod tests {
                         index_uid: Some(index_uid),
                         ..
                     },
-            } => assert_eq!(index_uid, *index.uid),
-            Task::Processing {
+            }
+            | Task::Processing {
                 content:
-                    EnqueuedTask {
+                    ProcessingTask {
                         index_uid: Some(index_uid),
                         ..
                     },
-            } => assert_eq!(index_uid, *index.uid),
-            Task::Failed {
+            }
+            | Task::Failed {
                 content:
                     FailedTask {
                         task:
@@ -1960,8 +2248,8 @@ mod tests {
                             },
                         ..
                     },
-            } => assert_eq!(index_uid, *index.uid),
-            Task::Succeeded {
+            }
+            | Task::Succeeded {
                 content:
                     SucceededTask {
                         index_uid: Some(index_uid),

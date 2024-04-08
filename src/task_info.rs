@@ -23,6 +23,7 @@ impl AsRef<u32> for TaskInfo {
 }
 
 impl TaskInfo {
+    #[must_use]
     pub fn get_task_uid(&self) -> u32 {
         self.task_uid
     }
@@ -40,7 +41,7 @@ impl TaskInfo {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task, task_info::TaskInfo};
+    /// # use meilisearch_sdk::{client::*, indexes::*, Task, TaskInfo};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -106,7 +107,7 @@ mod test {
     fn test_deserialize_task_info() {
         let datetime = OffsetDateTime::parse(
             "2022-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
@@ -114,7 +115,7 @@ mod test {
             r#"
 {
   "enqueuedAt": "2022-02-03T13:02:38.369634Z",
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "status": "enqueued",
   "type": "documentAdditionOrUpdate",
   "taskUid": 12
@@ -131,7 +132,7 @@ mod test {
                 update_type: TaskType::DocumentAdditionOrUpdate { details: None },
                 status,
             }
-        if enqueued_at == datetime && index_uid == "mieli" && status == "enqueued"));
+        if enqueued_at == datetime && index_uid == "meili" && status == "enqueued"));
     }
 
     #[meilisearch_test]
