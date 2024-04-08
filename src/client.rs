@@ -4,14 +4,19 @@ use std::{collections::HashMap, time::Duration};
 use time::OffsetDateTime;
 
 use crate::{
-    errors::*, indexes::*, request::*, search::*, utils::async_sleep, Key, KeyBuilder, KeyUpdater,
-    KeysQuery, KeysResults, Task, TaskInfo, TasksCancelQuery, TasksDeleteQuery, TasksResults,
-    TasksSearchQuery,
+    errors::*,
+    indexes::*,
+    key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
+    request::*,
+    search::*,
+    task_info::TaskInfo,
+    tasks::{Task, TasksCancelQuery, TasksDeleteQuery, TasksResults, TasksSearchQuery},
+    utils::async_sleep,
 };
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
-pub struct Client<Http: HttpClient> {
+pub struct Client<Http: HttpClient = IsahcClient> {
     pub(crate) host: String,
     pub(crate) api_key: Option<String>,
     pub http_client: Http,
@@ -44,7 +49,8 @@ impl Client<IsahcClient> {
     pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client<IsahcClient> {
         Client {
             host: host.into(),
-
+            api_key: api_key.map(|api_key| api_key.into()),
+            http_client: IsahcClient,
         }
     }
 }
@@ -1197,7 +1203,7 @@ mod tests {
 
     use meilisearch_test_macro::meilisearch_test;
 
-    use crate::{client::*, Action, KeyBuilder, TasksSearchQuery};
+    use crate::{client::*, key::Action};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {

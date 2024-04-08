@@ -1,7 +1,11 @@
 use crate::{
-    request::*, search::*, tasks::*, Client, DocumentDeletionQuery, DocumentQuery, DocumentsQuery,
-    DocumentsResults, Error, MeilisearchCommunicationError, MeilisearchError, TaskInfo,
-    MEILISEARCH_VERSION_HINT,
+    client::Client,
+    documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
+    errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
+    request::*,
+    search::*,
+    task_info::TaskInfo,
+    tasks::*,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
@@ -60,7 +64,7 @@ use time::OffsetDateTime;
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Index<Http: HttpClient> {
+pub struct Index<Http: HttpClient = IsahcClient> {
     #[serde(skip_serializing)]
     pub client: Client<Http>,
     pub uid: String,
@@ -2102,11 +2106,6 @@ mod tests {
         assert_eq!(res.offset, 2);
     }
 
-    #[meilisearch_test]
-    async fn test_get_one_task(
-        client: Client<IsahcClient>,
-        index: Index<IsahcClient>,
-    ) -> Result<(), Error> {
     async fn test_add_documents_ndjson(client: Client, index: Index) -> Result<(), Error> {
         let ndjson = r#"{ "id": 1, "body": "doggo" }{ "id": 2, "body": "catto" }"#.as_bytes();
 
@@ -2212,9 +2211,12 @@ mod tests {
 
         Ok(())
     }
-
     #[meilisearch_test]
-    async fn test_get_one_task(client: Client, index: Index) -> Result<(), Error> {
+
+    async fn test_get_one_task(
+        client: Client<IsahcClient>,
+        index: Index<IsahcClient>,
+    ) -> Result<(), Error> {
         let task = index
             .delete_all_documents()
             .await?

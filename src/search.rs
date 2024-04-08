@@ -456,10 +456,11 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.sort = Some(sort);
         self
     }
+
     pub fn with_attributes_to_search_on<'b>(
         &'b mut self,
         attributes_to_search_on: &'a [&'a str],
-    ) -> &'b mut SearchQuery<'a> {
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.attributes_to_search_on = Some(attributes_to_search_on);
         self
     }
@@ -516,10 +517,11 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.show_matches_position = Some(show_matches_position);
         self
     }
+
     pub fn with_show_ranking_score<'b>(
         &'b mut self,
         show_ranking_score: bool,
-    ) -> &'b mut SearchQuery<'a> {
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.show_ranking_score = Some(show_ranking_score);
         self
     }
@@ -585,7 +587,12 @@ pub struct MultiSearchResponse<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*, request::IsahcClient, search::*};
+    use crate::{
+        client::*,
+        key::{Action, KeyBuilder},
+        request::IsahcClient,
+        search::*,
+    };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
@@ -1183,8 +1190,6 @@ mod tests {
         client: Client<IsahcClient>,
         index: Index<IsahcClient>,
     ) -> Result<(), Error> {
-        use crate::{Action, KeyBuilder};
-
         setup_test_index(&client, &index).await?;
 
         let meilisearch_url = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");

@@ -1,4 +1,3 @@
-use crate::TaskInfo;
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -52,6 +51,7 @@ pub use meilisearch_index_setting_macro::IndexConfig;
 use crate::client::Client;
 use crate::request::HttpClient;
 use crate::settings::Settings;
+use crate::task_info::TaskInfo;
 use crate::tasks::Task;
 use crate::{errors::Error, indexes::Index};
 

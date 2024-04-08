@@ -700,16 +700,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_dictionary(&self) -> Result<Vec<String>, Error> {
-        request::<(), (), Vec<String>>(
-            &format!(
-                "{}/indexes/{}/settings/dictionary",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), Vec<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/dictionary",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [proximity_precision](https://www.meilisearch.com/docs/reference/api/settings#proximity-precision) of the [Index].
@@ -732,16 +735,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_proximity_precision(&self) -> Result<String, Error> {
-        request::<(), (), String>(
-            &format!(
-                "{}/indexes/{}/settings/proximity-precision",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), String>(
+                &format!(
+                    "{}/indexes/{}/settings/proximity-precision",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) of the [Index].
@@ -1288,22 +1294,25 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         dictionary: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Vec<String>, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/dictionary",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: dictionary
-                    .into_iter()
-                    .map(|v| v.as_ref().to_string())
-                    .collect(),
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), Vec<String>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/dictionary",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: dictionary
+                        .into_iter()
+                        .map(|v| v.as_ref().to_string())
+                        .collect(),
+                },
+                202,
+            )
+            .await
     }
 
     /// Update [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
@@ -1377,19 +1386,22 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         proximity_precision: String,
     ) -> Result<TaskInfo, Error> {
-        request::<(), String, TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/proximity-precision",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: proximity_precision,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), String, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/proximity-precision",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: proximity_precision,
+                },
+                202,
+            )
+            .await
     }
 
     /// Reset [Settings] of the [Index].
@@ -1798,16 +1810,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_dictionary(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/dictionary",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/dictionary",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Reset [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
@@ -1865,16 +1880,19 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn reset_proximity_precision(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/settings/proximity-precision",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/proximity-precision",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 }
 

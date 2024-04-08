@@ -1,7 +1,9 @@
-
+use async_trait::async_trait;
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::from_str;
+
+use crate::errors::{Error, MeilisearchCommunicationError, MeilisearchError};
 
 #[derive(Debug)]
 pub enum Method<Q, B> {
