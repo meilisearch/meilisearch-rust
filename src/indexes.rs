@@ -117,7 +117,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, Task, SucceededTask};
+    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -2014,7 +2014,7 @@ impl<'a, Http: HttpClient> IndexesQuery<'a, Http> {
 }
 
 #[derive(Debug, Clone)]
-pub struct IndexesResults<Http: HttpClient> {
+pub struct IndexesResults<Http: HttpClient = IsahcClient> {
     pub results: Vec<Index<Http>>,
     pub limit: u32,
     pub offset: u32,

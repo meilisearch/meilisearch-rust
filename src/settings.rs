@@ -43,7 +43,7 @@ pub struct FacetingSettings {
 /// # Example
 ///
 /// ```
-/// # use meilisearch_sdk::Settings;
+/// # use meilisearch_sdk::settings::Settings;
 /// let settings = Settings::new()
 ///     .with_stop_words(["a", "the", "of"]);
 ///
@@ -790,7 +790,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, Settings, PaginationSetting};
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -831,7 +831,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -877,7 +877,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, Settings, PaginationSetting};
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -916,7 +916,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");

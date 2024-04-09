@@ -249,7 +249,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, Task};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
@@ -338,7 +338,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -377,7 +377,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -408,7 +408,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -438,7 +438,7 @@ impl Task {
     /// ```no_run
     /// # // The test is not run because it checks for an enqueued or processed status
     /// # // and the task might already be processed when checking the status after the get_task call
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");

@@ -19,7 +19,7 @@ pub struct ExperimentalFeaturesResult {
 /// # Example
 ///
 /// ```
-/// # use meilisearch_sdk::{Client, ExperimentalFeatures};
+/// # use meilisearch_sdk::{client::Client, features::ExperimentalFeatures};
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
@@ -54,7 +54,7 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{Client, ExperimentalFeatures};
+    /// # use meilisearch_sdk::{client::Client, features::ExperimentalFeatures};
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
@@ -81,7 +81,7 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{Client, ExperimentalFeatures};
+    /// # use meilisearch_sdk::{client::Client, features::ExperimentalFeatures};
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));

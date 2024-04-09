@@ -33,7 +33,7 @@ impl Key {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -61,7 +61,7 @@ impl Key {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -92,7 +92,7 @@ impl Key {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Client};
+    /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -132,7 +132,7 @@ impl Key {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Client};
+    /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -185,7 +185,7 @@ impl KeyUpdater {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client, KeyUpdater};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -218,7 +218,7 @@ impl KeyUpdater {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client, KeyUpdater};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -251,7 +251,7 @@ impl KeyUpdater {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, KeyUpdater, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -328,7 +328,7 @@ impl KeysQuery {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeysQuery, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -352,7 +352,7 @@ impl KeysQuery {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeysQuery, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -376,7 +376,7 @@ impl KeysQuery {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeysQuery, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -405,7 +405,7 @@ impl KeysQuery {
 /// # Example
 ///
 /// ```
-/// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+/// # use meilisearch_sdk::{key::*, client::Client};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -442,7 +442,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::KeyBuilder;
+    /// # use meilisearch_sdk::key::KeyBuilder;
     /// let builder = KeyBuilder::new();
     /// ```
     #[must_use]
@@ -455,7 +455,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action};
+    /// # use meilisearch_sdk::key::*;
     /// let mut builder = KeyBuilder::new();
     /// builder.with_actions(vec![Action::Search, Action::DocumentsAdd]);
     /// ```
@@ -469,7 +469,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action};
+    /// # use meilisearch_sdk::key::*;
     /// let mut builder = KeyBuilder::new();
     /// builder.with_action(Action::DocumentsAdd);
     /// ```
@@ -483,7 +483,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::KeyBuilder;
+    /// # use meilisearch_sdk::key::KeyBuilder;
     /// # use time::{OffsetDateTime, Duration};
     /// let mut builder = KeyBuilder::new();
     /// // create a key that expires in two weeks from now
@@ -499,7 +499,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Client};
+    /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -532,7 +532,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::KeyBuilder;
+    /// # use meilisearch_sdk::key::KeyBuilder;
     /// let mut builder = KeyBuilder::new();
     /// builder.with_index("test");
     /// ```
@@ -546,7 +546,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -572,7 +572,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -598,7 +598,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -624,7 +624,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Client};
+    /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");

@@ -41,7 +41,7 @@ impl TaskInfo {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, Task, TaskInfo};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::*};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
