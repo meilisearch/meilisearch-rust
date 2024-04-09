@@ -101,7 +101,7 @@ mod tests {
     use std::time::Duration;
 
     #[meilisearch_test]
-    async fn test_dumps_success_creation(client: Client<IsahcClient>) -> Result<(), Error> {
+    async fn test_dumps_success_creation(client: Client) -> Result<(), Error> {
         let task = client
             .create_dump()
             .await?
@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_dumps_correct_update_type(client: Client<IsahcClient>) -> Result<(), Error> {
+    async fn test_dumps_correct_update_type(client: Client) -> Result<(), Error> {
         let task_info = client.create_dump().await.unwrap();
 
         assert!(matches!(

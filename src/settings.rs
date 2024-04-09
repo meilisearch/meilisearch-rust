@@ -1900,11 +1900,11 @@ impl<Http: HttpClient> Index<Http> {
 mod tests {
     use super::*;
 
-    use crate::{client::*, request::IsahcClient};
+    use crate::client::*;
     use meilisearch_test_macro::meilisearch_test;
 
     #[meilisearch_test]
-    async fn test_set_faceting_settings(client: Client<IsahcClient>, index: Index<IsahcClient>) {
+    async fn test_set_faceting_settings(client: Client, index: Index) {
         let faceting = FacetingSettings {
             max_values_per_facet: 5,
         };
@@ -1919,7 +1919,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_faceting(index: Index<IsahcClient>) {
+    async fn test_get_faceting(index: Index) {
         let faceting = FacetingSettings {
             max_values_per_facet: 100,
         };
@@ -1930,7 +1930,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_faceting(client: Client<IsahcClient>, index: Index<IsahcClient>) {
+    async fn test_set_faceting(client: Client, index: Index) {
         let faceting = FacetingSettings {
             max_values_per_facet: 5,
         };
@@ -1943,7 +1943,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_reset_faceting(client: Client<IsahcClient>, index: Index<IsahcClient>) {
+    async fn test_reset_faceting(client: Client, index: Index) {
         let task_info = index.reset_faceting().await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
         let faceting = FacetingSettings {
@@ -2009,7 +2009,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_pagination(index: Index<IsahcClient>) {
+    async fn test_set_pagination(index: Index) {
         let pagination = PaginationSetting { max_total_hits: 11 };
         let task = index.set_pagination(pagination).await.unwrap();
         index.wait_for_task(task, None, None).await.unwrap();
@@ -2020,7 +2020,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_reset_pagination(index: Index<IsahcClient>) {
+    async fn test_reset_pagination(index: Index) {
         let pagination = PaginationSetting { max_total_hits: 10 };
         let default = PaginationSetting {
             max_total_hits: 1000,
@@ -2038,7 +2038,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_typo_tolerance(index: Index<IsahcClient>) {
+    async fn test_get_typo_tolerance(index: Index) {
         let expected = TypoToleranceSettings {
             enabled: Some(true),
             disable_on_attributes: Some(vec![]),
@@ -2055,7 +2055,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_typo_tolerance(client: Client<IsahcClient>, index: Index<IsahcClient>) {
+    async fn test_set_typo_tolerance(client: Client, index: Index) {
         let expected = TypoToleranceSettings {
             enabled: Some(true),
             disable_on_attributes: Some(vec!["title".to_string()]),
@@ -2080,7 +2080,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_reset_typo_tolerance(index: Index<IsahcClient>) {
+    async fn test_reset_typo_tolerance(index: Index) {
         let expected = TypoToleranceSettings {
             enabled: Some(true),
             disable_on_attributes: Some(vec![]),

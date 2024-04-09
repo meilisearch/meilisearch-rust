@@ -731,7 +731,6 @@ mod test {
     use crate::{
         client::*,
         errors::{ErrorCode, ErrorType},
-        request::IsahcClient,
     };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
@@ -856,10 +855,7 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_wait_for_task_with_args(
-        client: Client<IsahcClient>,
-        movies: Index<IsahcClient>,
-    ) -> Result<(), Error> {
+    async fn test_wait_for_task_with_args(client: Client, movies: Index) -> Result<(), Error> {
         let task = movies
             .add_documents(
                 &[
@@ -1018,9 +1014,7 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks_with_none_existant_index_uids(
-        client: Client<IsahcClient>,
-    ) -> Result<(), Error> {
+    async fn test_get_tasks_with_none_existant_index_uids(client: Client) -> Result<(), Error> {
         let mut query = TasksSearchQuery::new(&client);
         query.with_index_uids(["no_name"]);
         let tasks = client.get_tasks_with(&query).await.unwrap();
@@ -1030,7 +1024,7 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_get_tasks_with_execute(client: Client<IsahcClient>) -> Result<(), Error> {
+    async fn test_get_tasks_with_execute(client: Client) -> Result<(), Error> {
         let tasks = TasksSearchQuery::new(&client)
             .with_index_uids(["no_name"])
             .execute()
@@ -1042,10 +1036,7 @@ mod test {
     }
 
     #[meilisearch_test]
-    async fn test_failing_task(
-        client: Client<IsahcClient>,
-        index: Index<IsahcClient>,
-    ) -> Result<(), Error> {
+    async fn test_failing_task(client: Client, index: Index) -> Result<(), Error> {
         let task_info = client.create_index(index.uid, None).await.unwrap();
         let task = client.get_task(task_info).await?;
         let task = client.wait_for_task(task, None, None).await?;

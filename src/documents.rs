@@ -39,11 +39,11 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 ///     genres: Vec<String>,
 /// }
 ///
-/// async fn usage(client: Client<IsahcClient>) {
+/// async fn usage(client: Client) {
 ///     // Default settings with the distinct, searchable, displayed, filterable, and sortable fields set correctly.
 ///     let settings: Settings = Movie::generate_settings();
 ///     // Index created with the name `movie` and the primary key set to `movie_id`
-///     let index: Index<IsahcClient> = Movie::generate_index(&client).await.unwrap();
+///     let index: Index = Movie::generate_index(&client).await.unwrap();
 /// }
 /// ```
 pub use meilisearch_index_setting_macro::IndexConfig;
@@ -396,8 +396,8 @@ mod tests {
     }
 
     async fn setup_test_index(
-        client: &Client<IsahcClient>,
-        index: &Index<IsahcClient>,
+        client: &Client,
+        index: &Index,
     ) -> Result<(), Error> {
         let t0 = index
             .add_documents(
@@ -430,8 +430,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_documents_with_execute(
-        client: Client<IsahcClient>,
-        index: Index<IsahcClient>,
+        client: Client,
+        index: Index,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         let documents = DocumentsQuery::new(&index)
@@ -451,8 +451,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_delete_documents_with(
-        client: Client<IsahcClient>,
-        index: Index<IsahcClient>,
+        client: Client,
+        index: Index,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         index
@@ -485,8 +485,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_delete_documents_with_filter_not_filterable(
-        client: Client<IsahcClient>,
-        index: Index<IsahcClient>,
+        client: Client,
+        index: Index,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -514,8 +514,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_documents_with_only_one_param(
-        client: Client<IsahcClient>,
-        index: Index<IsahcClient>,
+        client: Client,
+        index: Index,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         // let documents = index.get_documents(None, None, None).await.unwrap();
@@ -534,8 +534,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_documents_with_filter(
-        client: Client<IsahcClient>,
-        index: Index<IsahcClient>,
+        client: Client,
+        index: Index,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -592,8 +592,8 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_documents_with_error_hint_meilisearch_api_error(
-        index: Index<IsahcClient>,
-        client: Client<IsahcClient>,
+        index: Index,
+        client: Client,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -623,8 +623,8 @@ Hint: It might not be working because you're not up to date with the Meilisearch
 
     #[meilisearch_test]
     async fn test_get_documents_with_invalid_filter(
-        client: Client<IsahcClient>,
-        index: Index<IsahcClient>,
+        client: Client,
+        index: Index,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -649,8 +649,8 @@ Hint: It might not be working because you're not up to date with the Meilisearch
 
     #[meilisearch_test]
     async fn test_settings_generated_by_macro(
-        client: Client<IsahcClient>,
-        index: Index<IsahcClient>,
+        client: Client,
+        index: Index,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -682,8 +682,8 @@ Hint: It might not be working because you're not up to date with the Meilisearch
     }
 
     #[meilisearch_test]
-    async fn test_generate_index(client: Client<IsahcClient>) -> Result<(), Error> {
-        let index: Index<IsahcClient> = MovieClips::generate_index(&client).await.unwrap();
+    async fn test_generate_index(client: Client) -> Result<(), Error> {
+        let index: Index = MovieClips::generate_index(&client).await.unwrap();
 
         assert_eq!(index.uid, "movie_clips");
 

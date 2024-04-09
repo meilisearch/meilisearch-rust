@@ -12,21 +12,12 @@ use std::fmt;
 use std::io::stdin;
 
 lazy_static! {
-    static ref CLIENT: Client<ReqwestClient> = Client::new_with_client(
-        "http://localhost:7700",
-        Some("masterKey"),
-        ReqwestClient::new()
-    );
+    static ref CLIENT: Client<ReqwestClient> =
+        Client::new_with_client("http://localhost:7700", Some("masterKey"), ReqwestClient);
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ReqwestClient;
-
-impl ReqwestClient {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
 
 #[async_trait(?Send)]
 impl HttpClient for ReqwestClient {

@@ -9,3 +9,5 @@ pub type Index = crate::indexes::Index<crate::request::IsahcClient>;
 pub type Client = crate::client::Client<crate::request::WebSysClient>;
 #[cfg(target_arch = "wasm32")]
 pub type Index = crate::indexes::Index<crate::request::WebSysClient>;
+
+pub type Settings = crate::settings::Settings;
