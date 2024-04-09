@@ -612,6 +612,7 @@ mod tests {
     }
 
     impl PartialEq<Map<String, Value>> for Document {
+        #[allow(clippy::cmp_owned)]
         fn eq(&self, rhs: &Map<String, Value>) -> bool {
             self.id.to_string() == rhs["id"]
                 && self.value == rhs["value"]
