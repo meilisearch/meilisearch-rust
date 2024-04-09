@@ -1,6 +1,7 @@
 use futures::executor::block_on;
 use lazy_static::lazy_static;
-use meilisearch_sdk::prelude::*;
+use meilisearch_sdk::client::Client;
+use meilisearch_sdk::settings::Settings;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::io::stdin;

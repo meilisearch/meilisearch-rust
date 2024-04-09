@@ -243,8 +243,6 @@ pub mod features;
 pub mod indexes;
 /// Module containing the [`Key`] struct.
 pub mod key;
-/// Module that prelude HttpClient traits.
-pub mod prelude;
 pub mod request;
 /// Module related to search queries and results.
 pub mod search;
