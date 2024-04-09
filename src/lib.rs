@@ -259,7 +259,6 @@ mod tenant_tokens;
 /// Module containing utilizes functions.
 mod utils;
 
-
 #[cfg(test)]
 /// Support for the `IndexConfig` derive proc macro in the crate's tests.
 extern crate self as meilisearch_sdk;

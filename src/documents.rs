@@ -395,10 +395,7 @@ mod tests {
         video_id: u64,
     }
 
-    async fn setup_test_index(
-        client: &Client,
-        index: &Index,
-    ) -> Result<(), Error> {
+    async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
         let t0 = index
             .add_documents(
                 &[
@@ -429,10 +426,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_documents_with_execute(
-        client: Client,
-        index: Index,
-    ) -> Result<(), Error> {
+    async fn test_get_documents_with_execute(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         let documents = DocumentsQuery::new(&index)
             .with_limit(1)
@@ -450,10 +444,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_delete_documents_with(
-        client: Client,
-        index: Index,
-    ) -> Result<(), Error> {
+    async fn test_delete_documents_with(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         index
             .set_filterable_attributes(["id"])
@@ -533,10 +524,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_documents_with_filter(
-        client: Client,
-        index: Index,
-    ) -> Result<(), Error> {
+    async fn test_get_documents_with_filter(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         index
@@ -648,10 +636,7 @@ Hint: It might not be working because you're not up to date with the Meilisearch
     }
 
     #[meilisearch_test]
-    async fn test_settings_generated_by_macro(
-        client: Client,
-        index: Index,
-    ) -> Result<(), Error> {
+    async fn test_settings_generated_by_macro(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let movie_settings: Settings = MovieClips::generate_settings();
