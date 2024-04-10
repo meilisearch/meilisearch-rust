@@ -217,7 +217,7 @@ impl<Http: HttpClient> Client<Http> {
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
-    ///
+    /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
