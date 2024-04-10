@@ -229,8 +229,6 @@
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
-use request::IsahcClient;
-
 /// Module containing the [`Client`] struct.
 pub mod client;
 /// Module representing the [documents] structures.
@@ -260,7 +258,7 @@ mod tenant_tokens;
 mod utils;
 
 #[cfg(feature = "isahc")]
-pub type DefaultHttpClient = IsahcClient;
+pub type DefaultHttpClient = request::IsahcClient;
 #[cfg(not(feature = "isahc"))]
 pub type DefaultHttpClient = std::convert::Infallible;
 
