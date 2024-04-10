@@ -258,7 +258,11 @@ mod tenant_tokens;
 mod utils;
 
 #[cfg(feature = "isahc")]
+#[cfg(not(target_arch = "wasm32"))]
 pub type DefaultHttpClient = request::IsahcClient;
+#[cfg(target_arch = "wasm32")]
+pub type DefaultHttpClient = request::WebSysClient;
+
 #[cfg(not(feature = "isahc"))]
 pub type DefaultHttpClient = std::convert::Infallible;
 
