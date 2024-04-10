@@ -105,7 +105,6 @@ impl HttpClient for ReqwestClient {
         }
 
         parse_response(status, expected_status_code, &body, url.to_string())
-        // parse_response(status, expected_status_code, body)
     }
 
     async fn stream_request<
