@@ -38,11 +38,11 @@
 //! # });
 //! ```
 
-use crate::{request::*, Client, Error, TaskInfo};
+use crate::{client::Client, errors::Error, request::*, task_info::TaskInfo};
 
 /// Dump related methods.
 /// See the [dumps](crate::dumps) module.
-impl Client {
+impl<Http: HttpClient> Client<Http> {
     /// Triggers a dump creation process.
     ///
     /// Once the process is complete, a dump is created in the [dumps directory](https://www.meilisearch.com/docs/learn/configuration/instance_options#dump-directory).
@@ -73,21 +73,23 @@ impl Client {
     /// # });
     /// ```
     pub async fn create_dump(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!("{}/dumps", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: (),
-                body: (),
-            },
-            202,
-        )
-        .await
+        self.http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!("{}/dumps", self.host),
+                self.get_api_key(),
+                Method::Post {
+                    query: (),
+                    body: (),
+                },
+                202,
+            )
+            .await
     }
 }
 
 /// Alias for [`create_dump`](Client::create_dump).
-pub async fn create_dump(client: &Client) -> Result<TaskInfo, Error> {
+pub async fn create_dump<Http: HttpClient>(client: &Client<Http>) -> Result<TaskInfo, Error> {
     client.create_dump().await
 }
 

@@ -1,7 +1,12 @@
 use crate::{
-    request::*, search::*, tasks::*, Client, DocumentDeletionQuery, DocumentQuery, DocumentsQuery,
-    DocumentsResults, Error, MeilisearchCommunicationError, MeilisearchError, TaskInfo,
-    MEILISEARCH_VERSION_HINT,
+    client::Client,
+    documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
+    errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
+    request::*,
+    search::*,
+    task_info::TaskInfo,
+    tasks::*,
+    DefaultHttpClient,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
@@ -60,9 +65,9 @@ use time::OffsetDateTime;
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Index {
+pub struct Index<Http: HttpClient = DefaultHttpClient> {
     #[serde(skip_serializing)]
-    pub client: Client,
+    pub client: Client<Http>,
     pub uid: String,
     #[serde(with = "time::serde::rfc3339::option")]
     pub updated_at: Option<OffsetDateTime>,
@@ -71,8 +76,8 @@ pub struct Index {
     pub primary_key: Option<String>,
 }
 
-impl Index {
-    pub fn new(uid: impl Into<String>, client: Client) -> Index {
+impl<Http: HttpClient> Index<Http> {
+    pub fn new(uid: impl Into<String>, client: Client<Http>) -> Index<Http> {
         Index {
             uid: uid.into(),
             client,
@@ -82,7 +87,10 @@ impl Index {
         }
     }
     /// Internal Function to create an [Index] from `serde_json::Value` and [Client].
-    pub(crate) fn from_value(raw_index: serde_json::Value, client: Client) -> Result<Index, Error> {
+    pub(crate) fn from_value(
+        raw_index: serde_json::Value,
+        client: Client<Http>,
+    ) -> Result<Index<Http>, Error> {
         #[derive(Deserialize, Debug)]
         #[allow(non_snake_case)]
         struct IndexFromSerde {
@@ -110,7 +118,7 @@ impl Index {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, Task, SucceededTask};
+    /// # use meilisearch_sdk::{client::*, indexes::*, task_info::*, tasks::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -174,13 +182,16 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete(self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!("{}/indexes/{}", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!("{}/indexes/{}", self.client.host, self.uid),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Search for documents matching a specific query in the index.
@@ -215,17 +226,20 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute_query<T: 'static + DeserializeOwned>(
+    pub async fn execute_query<T: 'static + DeserializeOwned + Send + Sync>(
         &self,
-        body: &SearchQuery<'_>,
+        body: &SearchQuery<'_, Http>,
     ) -> Result<SearchResults<T>, Error> {
-        request::<(), &SearchQuery, SearchResults<T>>(
-            &format!("{}/indexes/{}/search", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Post { body, query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &SearchQuery<Http>, SearchResults<T>>(
+                &format!("{}/indexes/{}/search", self.client.host, self.uid),
+                self.client.get_api_key(),
+                Method::Post { body, query: () },
+                200,
+            )
+            .await
     }
 
     /// Search for documents matching a specific query in the index.
@@ -265,7 +279,7 @@ impl Index {
     /// # });
     /// ```
     #[must_use]
-    pub fn search(&self) -> SearchQuery {
+    pub fn search(&self) -> SearchQuery<Http> {
         SearchQuery::new(self)
     }
 
@@ -303,7 +317,7 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_document<T: 'static + DeserializeOwned>(
+    pub async fn get_document<T: 'static + DeserializeOwned + Send + Sync>(
         &self,
         document_id: &str,
     ) -> Result<T, Error> {
@@ -311,14 +325,16 @@ impl Index {
             "{}/indexes/{}/documents/{}",
             self.client.host, self.uid, document_id
         );
-
-        request::<(), (), T>(
-            &url,
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), T>(
+                &url,
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get one document with parameters.
@@ -358,25 +374,27 @@ impl Index {
     /// );
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
-    pub async fn get_document_with<T: 'static + DeserializeOwned>(
+    pub async fn get_document_with<T: 'static + DeserializeOwned + Send + Sync>(
         &self,
         document_id: &str,
-        document_query: &DocumentQuery<'_>,
+        document_query: &DocumentQuery<'_, Http>,
     ) -> Result<T, Error> {
         let url = format!(
             "{}/indexes/{}/documents/{}",
             self.client.host, self.uid, document_id
         );
-
-        request::<&DocumentQuery, (), T>(
-            &url,
-            self.client.get_api_key(),
-            Method::Get {
-                query: document_query,
-            },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<&DocumentQuery<Http>, (), T>(
+                &url,
+                self.client.get_api_key(),
+                Method::Get {
+                    query: document_query,
+                },
+                200,
+            )
+            .await
     }
 
     /// Get documents by batch.
@@ -408,18 +426,20 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_documents<T: DeserializeOwned + 'static>(
+    pub async fn get_documents<T: DeserializeOwned + 'static + Send + Sync>(
         &self,
     ) -> Result<DocumentsResults<T>, Error> {
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
-
-        request::<(), (), DocumentsResults<T>>(
-            &url,
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), DocumentsResults<T>>(
+                &url,
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get documents by batch with parameters.
@@ -459,53 +479,60 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_documents_with<T: DeserializeOwned + 'static>(
+    pub async fn get_documents_with<T: DeserializeOwned + 'static + Send + Sync>(
         &self,
-        documents_query: &DocumentsQuery<'_>,
+        documents_query: &DocumentsQuery<'_, Http>,
     ) -> Result<DocumentsResults<T>, Error> {
         if documents_query.filter.is_some() {
             let url = format!("{}/indexes/{}/documents/fetch", self.client.host, self.uid);
-            return request::<(), &DocumentsQuery, DocumentsResults<T>>(
+            return self
+                .client
+                .http_client
+                .clone()
+                .request::<(), &DocumentsQuery<Http>, DocumentsResults<T>>(
+                    &url,
+                    self.client.get_api_key(),
+                    Method::Post {
+                        body: documents_query,
+                        query: (),
+                    },
+                    200,
+                )
+                .await
+                .map_err(|err| match err {
+                    Error::MeilisearchCommunication(error) => {
+                        Error::MeilisearchCommunication(MeilisearchCommunicationError {
+                            status_code: error.status_code,
+                            url: error.url,
+                            message: Some(format!("{}.", MEILISEARCH_VERSION_HINT)),
+                        })
+                    }
+                    Error::Meilisearch(error) => Error::Meilisearch(MeilisearchError {
+                        error_code: error.error_code,
+                        error_link: error.error_link,
+                        error_type: error.error_type,
+                        error_message: format!(
+                            "{}\n{}.",
+                            error.error_message, MEILISEARCH_VERSION_HINT
+                        ),
+                    }),
+                    _ => err,
+                });
+        }
+
+        let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
+        self.client
+            .http_client
+            .clone()
+            .request::<&DocumentsQuery<Http>, (), DocumentsResults<T>>(
                 &url,
                 self.client.get_api_key(),
-                Method::Post {
-                    body: documents_query,
-                    query: (),
+                Method::Get {
+                    query: documents_query,
                 },
                 200,
             )
             .await
-            .map_err(|err| match err {
-                Error::MeilisearchCommunication(error) => {
-                    Error::MeilisearchCommunication(MeilisearchCommunicationError {
-                        status_code: error.status_code,
-                        url: error.url,
-                        message: Some(format!("{MEILISEARCH_VERSION_HINT}.")),
-                    })
-                }
-                Error::Meilisearch(error) => Error::Meilisearch(MeilisearchError {
-                    error_code: error.error_code,
-                    error_link: error.error_link,
-                    error_type: error.error_type,
-                    error_message: format!(
-                        "{}\n{}.",
-                        error.error_message, MEILISEARCH_VERSION_HINT
-                    ),
-                }),
-                _ => err,
-            });
-        }
-
-        let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
-        request::<&DocumentsQuery, (), DocumentsResults<T>>(
-            &url,
-            self.client.get_api_key(),
-            Method::Get {
-                query: documents_query,
-            },
-            200,
-        )
-        .await
     }
 
     /// Add a list of documents or replace them if they already exist.
@@ -561,7 +588,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_or_replace<T: Serialize>(
+    pub async fn add_or_replace<T: Serialize + Send + Sync>(
         &self,
         documents: &[T],
         primary_key: Option<&str>,
@@ -574,16 +601,19 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<(), &[T], TaskInfo>(
-            &url,
-            self.client.get_api_key(),
-            Method::Post {
-                query: (),
-                body: documents,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &[T], TaskInfo>(
+                &url,
+                self.client.get_api_key(),
+                Method::Post {
+                    query: (),
+                    body: documents,
+                },
+                202,
+            )
+            .await
     }
 
     /// Add a raw and unchecked payload to meilisearch.
@@ -640,21 +670,23 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        stream_request::<(), T, TaskInfo>(
-            &url,
-            self.client.get_api_key(),
-            Method::Post {
-                query: (),
-                body: payload,
-            },
-            content_type,
-            202,
-        )
-        .await
+        let http_clint = self.client.http_client.clone();
+        http_clint
+            .stream_request::<(), T, TaskInfo>(
+                &url,
+                self.client.get_api_key(),
+                Method::Post {
+                    query: (),
+                    body: payload,
+                },
+                content_type,
+                202,
+            )
+            .await
     }
 
     /// Alias for [`Index::add_or_replace`].
-    pub async fn add_documents<T: Serialize>(
+    pub async fn add_documents<T: Serialize + Send + Sync>(
         &self,
         documents: &[T],
         primary_key: Option<&str>,
@@ -896,7 +928,7 @@ impl Index {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_or_update<T: Serialize>(
+    pub async fn add_or_update<T: Serialize + Send + Sync>(
         &self,
         documents: &[T],
         primary_key: Option<impl AsRef<str>>,
@@ -911,16 +943,18 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        request::<(), &[T], TaskInfo>(
-            &url,
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: documents,
-            },
-            202,
-        )
-        .await
+        let client = self.client.http_client.clone();
+        client
+            .request::<(), &[T], TaskInfo>(
+                &url,
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: documents,
+                },
+                202,
+            )
+            .await
     }
 
     /// Add a raw and unchecked payload to meilisearch.
@@ -978,17 +1012,19 @@ impl Index {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        stream_request::<(), T, TaskInfo>(
-            &url,
-            self.client.get_api_key(),
-            Method::Put {
-                query: (),
-                body: payload,
-            },
-            content_type,
-            202,
-        )
-        .await
+        let http_client = self.client.http_client.clone();
+        http_client
+            .stream_request::<(), T, TaskInfo>(
+                &url,
+                self.client.get_api_key(),
+                Method::Put {
+                    query: (),
+                    body: payload,
+                },
+                content_type,
+                202,
+            )
+            .await
     }
 
     /// Delete all documents in the [Index].
@@ -1028,13 +1064,16 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete_all_documents(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!("{}/indexes/{}/documents", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!("{}/indexes/{}/documents", self.client.host, self.uid),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Delete one document based on its unique id.
@@ -1071,16 +1110,19 @@ impl Index {
     /// # });
     /// ```
     pub async fn delete_document<T: Display>(&self, uid: T) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!(
-                "{}/indexes/{}/documents/{}",
-                self.client.host, self.uid, uid
-            ),
-            self.client.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/documents/{}",
+                    self.client.host, self.uid, uid
+                ),
+                self.client.get_api_key(),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Delete a selection of documents based on array of document id's.
@@ -1119,23 +1161,26 @@ impl Index {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug>(
+    pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug + Send + Sync>(
         &self,
         uids: &[T],
     ) -> Result<TaskInfo, Error> {
-        request::<(), &[T], TaskInfo>(
-            &format!(
-                "{}/indexes/{}/documents/delete-batch",
-                self.client.host, self.uid
-            ),
-            self.client.get_api_key(),
-            Method::Post {
-                query: (),
-                body: uids,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &[T], TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/documents/delete-batch",
+                    self.client.host, self.uid
+                ),
+                self.client.get_api_key(),
+                Method::Post {
+                    query: (),
+                    body: uids,
+                },
+                202,
+            )
+            .await
     }
 
     /// Delete a selection of documents with filters.
@@ -1179,18 +1224,21 @@ impl Index {
     /// ```
     pub async fn delete_documents_with(
         &self,
-        query: &DocumentDeletionQuery<'_>,
+        query: &DocumentDeletionQuery<'_, Http>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), &DocumentDeletionQuery, TaskInfo>(
-            &format!("{}/indexes/{}/documents/delete", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Post {
-                query: (),
-                body: query,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &DocumentDeletionQuery<Http>, TaskInfo>(
+                &format!("{}/indexes/{}/documents/delete", self.client.host, self.uid),
+                self.client.get_api_key(),
+                Method::Post {
+                    query: (),
+                    body: query,
+                },
+                202,
+            )
+            .await
     }
 
     /// Alias for the [`Index::update`] method.
@@ -1308,13 +1356,16 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_task(&self, uid: impl AsRef<u32>) -> Result<Task, Error> {
-        request::<(), (), Task>(
-            &format!("{}/tasks/{}", self.client.host, uid.as_ref()),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), Task>(
+                &format!("{}/tasks/{}", self.client.host, uid.as_ref()),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get the status of all tasks in a given index.
@@ -1369,7 +1420,7 @@ impl Index {
     /// ```
     pub async fn get_tasks_with(
         &self,
-        tasks_query: &TasksQuery<'_, TasksPaginationFilters>,
+        tasks_query: &TasksQuery<'_, TasksPaginationFilters, Http>,
     ) -> Result<TasksResults, Error> {
         let mut query = tasks_query.clone();
         query.with_index_uids([self.uid.as_str()]);
@@ -1397,13 +1448,16 @@ impl Index {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<IndexStats, Error> {
-        request::<(), (), IndexStats>(
-            &format!("{}/indexes/{}/stats", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), IndexStats>(
+                &format!("{}/indexes/{}/stats", self.client.host, self.uid),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Wait until Meilisearch processes a [Task], and get its status.
@@ -1510,7 +1564,7 @@ impl Index {
     /// # None).await.unwrap();
     /// # });
     /// ```
-    pub async fn add_documents_in_batches<T: Serialize>(
+    pub async fn add_documents_in_batches<T: Serialize + Send + Sync>(
         &self,
         documents: &[T],
         batch_size: Option<usize>,
@@ -1598,7 +1652,7 @@ impl Index {
     /// # None).await.unwrap();
     /// # });
     /// ```
-    pub async fn update_documents_in_batches<T: Serialize>(
+    pub async fn update_documents_in_batches<T: Serialize + Send + Sync>(
         &self,
         documents: &[T],
         batch_size: Option<usize>,
@@ -1612,7 +1666,7 @@ impl Index {
     }
 }
 
-impl AsRef<str> for Index {
+impl<Http: HttpClient> AsRef<str> for Index<Http> {
     fn as_ref(&self) -> &str {
         &self.uid
     }
@@ -1655,16 +1709,16 @@ impl AsRef<str> for Index {
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct IndexUpdater<'a> {
+pub struct IndexUpdater<'a, Http: HttpClient> {
     #[serde(skip)]
-    pub client: &'a Client,
+    pub client: &'a Client<Http>,
     #[serde(skip_serializing)]
     pub uid: String,
     pub primary_key: Option<String>,
 }
 
-impl<'a> IndexUpdater<'a> {
-    pub fn new(uid: impl AsRef<str>, client: &Client) -> IndexUpdater {
+impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
+    pub fn new(uid: impl AsRef<str>, client: &Client<Http>) -> IndexUpdater<Http> {
         IndexUpdater {
             client,
             primary_key: None,
@@ -1708,7 +1762,10 @@ impl<'a> IndexUpdater<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn with_primary_key(&mut self, primary_key: impl AsRef<str>) -> &mut IndexUpdater<'a> {
+    pub fn with_primary_key(
+        &mut self,
+        primary_key: impl AsRef<str>,
+    ) -> &mut IndexUpdater<'a, Http> {
         self.primary_key = Some(primary_key.as_ref().to_string());
         self
     }
@@ -1751,27 +1808,30 @@ impl<'a> IndexUpdater<'a> {
     /// # });
     /// ```
     pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
-        request::<(), &IndexUpdater, TaskInfo>(
-            &format!("{}/indexes/{}", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Patch {
-                query: (),
-                body: self,
-            },
-            202,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &IndexUpdater<Http>, TaskInfo>(
+                &format!("{}/indexes/{}", self.client.host, self.uid),
+                self.client.get_api_key(),
+                Method::Patch {
+                    query: (),
+                    body: self,
+                },
+                202,
+            )
+            .await
     }
 }
 
-impl AsRef<str> for IndexUpdater<'_> {
+impl<Http: HttpClient> AsRef<str> for IndexUpdater<'_, Http> {
     fn as_ref(&self) -> &str {
         &self.uid
     }
 }
 
-impl<'a> AsRef<IndexUpdater<'a>> for IndexUpdater<'a> {
-    fn as_ref(&self) -> &IndexUpdater<'a> {
+impl<'a, Http: HttpClient> AsRef<IndexUpdater<'a, Http>> for IndexUpdater<'a, Http> {
+    fn as_ref(&self) -> &IndexUpdater<'a, Http> {
         self
     }
 }
@@ -1816,9 +1876,9 @@ pub struct IndexStats {
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct IndexesQuery<'a> {
+pub struct IndexesQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub client: &'a Client,
+    pub client: &'a Client<Http>,
     /// The number of [Indexes](Index) to skip.
     ///
     /// If the value of the parameter `offset` is `n`, the `n` first indexes will not be returned.
@@ -1840,9 +1900,9 @@ pub struct IndexesQuery<'a> {
     pub limit: Option<usize>,
 }
 
-impl<'a> IndexesQuery<'a> {
+impl<'a, Http: HttpClient> IndexesQuery<'a, Http> {
     #[must_use]
-    pub fn new(client: &Client) -> IndexesQuery {
+    pub fn new(client: &Client<Http>) -> IndexesQuery<Http> {
         IndexesQuery {
             client,
             offset: None,
@@ -1880,7 +1940,7 @@ impl<'a> IndexesQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn with_offset(&mut self, offset: usize) -> &mut IndexesQuery<'a> {
+    pub fn with_offset(&mut self, offset: usize) -> &mut IndexesQuery<'a, Http> {
         self.offset = Some(offset);
         self
     }
@@ -1915,7 +1975,7 @@ impl<'a> IndexesQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn with_limit(&mut self, limit: usize) -> &mut IndexesQuery<'a> {
+    pub fn with_limit(&mut self, limit: usize) -> &mut IndexesQuery<'a, Http> {
         self.limit = Some(limit);
         self
     }
@@ -1949,14 +2009,14 @@ impl<'a> IndexesQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute(&self) -> Result<IndexesResults, Error> {
+    pub async fn execute(&self) -> Result<IndexesResults<Http>, Error> {
         self.client.list_all_indexes_with(self).await
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct IndexesResults {
-    pub results: Vec<Index>,
+pub struct IndexesResults<Http: HttpClient = DefaultHttpClient> {
+    pub results: Vec<Index<Http>>,
     pub limit: u32,
     pub offset: u32,
     pub total: u32,
@@ -2152,6 +2212,7 @@ mod tests {
         Ok(())
     }
     #[meilisearch_test]
+
     async fn test_get_one_task(client: Client, index: Index) -> Result<(), Error> {
         let task = index
             .delete_all_documents()

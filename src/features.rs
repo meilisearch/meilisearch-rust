@@ -1,6 +1,7 @@
 use crate::{
-    request::{request, Method},
-    Client, Error,
+    client::Client,
+    errors::Error,
+    request::{HttpClient, Method},
 };
 use serde::{Deserialize, Serialize};
 
@@ -18,7 +19,7 @@ pub struct ExperimentalFeaturesResult {
 /// # Example
 ///
 /// ```
-/// # use meilisearch_sdk::{Client, ExperimentalFeatures};
+/// # use meilisearch_sdk::{client::Client, features::ExperimentalFeatures};
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
@@ -27,16 +28,16 @@ pub struct ExperimentalFeaturesResult {
 /// ```
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ExperimentalFeatures<'a> {
+pub struct ExperimentalFeatures<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    client: &'a Client,
+    client: &'a Client<Http>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vector_store: Option<bool>,
 }
 
-impl<'a> ExperimentalFeatures<'a> {
+impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     #[must_use]
-    pub fn new(client: &'a Client) -> Self {
+    pub fn new(client: &'a Client<Http>) -> Self {
         ExperimentalFeatures {
             client,
             vector_store: None,
@@ -53,7 +54,7 @@ impl<'a> ExperimentalFeatures<'a> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{Client, ExperimentalFeatures};
+    /// # use meilisearch_sdk::{client::Client, features::ExperimentalFeatures};
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
@@ -63,13 +64,16 @@ impl<'a> ExperimentalFeatures<'a> {
     /// });
     /// ```
     pub async fn get(&self) -> Result<ExperimentalFeaturesResult, Error> {
-        request::<(), (), ExperimentalFeaturesResult>(
-            &format!("{}/experimental-features", self.client.host),
-            self.client.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), (), ExperimentalFeaturesResult>(
+                &format!("{}/experimental-features", self.client.host),
+                self.client.get_api_key(),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Update the experimental features
@@ -77,7 +81,7 @@ impl<'a> ExperimentalFeatures<'a> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{Client, ExperimentalFeatures};
+    /// # use meilisearch_sdk::{client::Client, features::ExperimentalFeatures};
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
@@ -88,16 +92,19 @@ impl<'a> ExperimentalFeatures<'a> {
     /// });
     /// ```
     pub async fn update(&self) -> Result<ExperimentalFeaturesResult, Error> {
-        request::<(), &Self, ExperimentalFeaturesResult>(
-            &format!("{}/experimental-features", self.client.host),
-            self.client.get_api_key(),
-            Method::Patch {
-                query: (),
-                body: self,
-            },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .clone()
+            .request::<(), &Self, ExperimentalFeaturesResult>(
+                &format!("{}/experimental-features", self.client.host),
+                self.client.get_api_key(),
+                Method::Patch {
+                    query: (),
+                    body: self,
+                },
+                200,
+            )
+            .await
     }
 }
 

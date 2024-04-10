@@ -2,7 +2,10 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::time::Duration;
 use time::OffsetDateTime;
 
-use crate::{Client, Error, Index, MeilisearchError, Settings, SwapIndexes, TaskInfo};
+use crate::{
+    client::Client, client::SwapIndexes, errors::Error, errors::MeilisearchError, indexes::Index,
+    request::HttpClient, settings::Settings, task_info::TaskInfo,
+};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -246,7 +249,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, Task};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
@@ -278,9 +281,9 @@ impl Task {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn wait_for_completion(
+    pub async fn wait_for_completion<Http: HttpClient>(
         self,
-        client: &Client,
+        client: &Client<Http>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
     ) -> Result<Self, Error> {
@@ -311,7 +314,10 @@ impl Task {
     /// # });
     /// ```
     #[allow(clippy::result_large_err)] // Since `self` has been consumed, this is not an issue
-    pub fn try_make_index(self, client: &Client) -> Result<Index, Self> {
+    pub fn try_make_index<Http: HttpClient>(
+        self,
+        client: &Client<Http>,
+    ) -> Result<Index<Http>, Self> {
         match self {
             Self::Succeeded {
                 content:
@@ -332,7 +338,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -371,7 +377,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -402,7 +408,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -432,7 +438,7 @@ impl Task {
     /// ```no_run
     /// # // The test is not run because it checks for an enqueued or processed status
     /// # // and the task might already be processed when checking the status after the get_task call
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -482,15 +488,15 @@ pub struct TasksCancelFilters {}
 #[derive(Debug, Serialize, Clone)]
 pub struct TasksDeleteFilters {}
 
-pub type TasksSearchQuery<'a> = TasksQuery<'a, TasksPaginationFilters>;
-pub type TasksCancelQuery<'a> = TasksQuery<'a, TasksCancelFilters>;
-pub type TasksDeleteQuery<'a> = TasksQuery<'a, TasksDeleteFilters>;
+pub type TasksSearchQuery<'a, Http> = TasksQuery<'a, TasksPaginationFilters, Http>;
+pub type TasksCancelQuery<'a, Http> = TasksQuery<'a, TasksCancelFilters, Http>;
+pub type TasksDeleteQuery<'a, Http> = TasksQuery<'a, TasksDeleteFilters, Http>;
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct TasksQuery<'a, T> {
+pub struct TasksQuery<'a, T, Http: HttpClient> {
     #[serde(skip_serializing)]
-    client: &'a Client,
+    client: &'a Client<Http>,
     // Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
     index_uids: Option<Vec<&'a str>>,
@@ -548,89 +554,89 @@ pub struct TasksQuery<'a, T> {
 }
 
 #[allow(missing_docs)]
-impl<'a, T> TasksQuery<'a, T> {
+impl<'a, T, Http: HttpClient> TasksQuery<'a, T, Http> {
     pub fn with_index_uids<'b>(
         &'b mut self,
         index_uids: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.index_uids = Some(index_uids.into_iter().collect());
         self
     }
     pub fn with_statuses<'b>(
         &'b mut self,
         statuses: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.statuses = Some(statuses.into_iter().collect());
         self
     }
     pub fn with_types<'b>(
         &'b mut self,
         task_types: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.task_types = Some(task_types.into_iter().collect());
         self
     }
     pub fn with_uids<'b>(
         &'b mut self,
         uids: impl IntoIterator<Item = &'a u32>,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.uids = Some(uids.into_iter().collect());
         self
     }
     pub fn with_before_enqueued_at<'b>(
         &'b mut self,
         before_enqueued_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.before_enqueued_at = Some(*before_enqueued_at);
         self
     }
     pub fn with_after_enqueued_at<'b>(
         &'b mut self,
         after_enqueued_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.after_enqueued_at = Some(*after_enqueued_at);
         self
     }
     pub fn with_before_started_at<'b>(
         &'b mut self,
         before_started_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.before_started_at = Some(*before_started_at);
         self
     }
     pub fn with_after_started_at<'b>(
         &'b mut self,
         after_started_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.after_started_at = Some(*after_started_at);
         self
     }
     pub fn with_before_finished_at<'b>(
         &'b mut self,
         before_finished_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.before_finished_at = Some(*before_finished_at);
         self
     }
     pub fn with_after_finished_at<'b>(
         &'b mut self,
         after_finished_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.after_finished_at = Some(*after_finished_at);
         self
     }
     pub fn with_canceled_by<'b>(
         &'b mut self,
         task_uids: impl IntoIterator<Item = &'a u32>,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.canceled_by = Some(task_uids.into_iter().collect());
         self
     }
 }
 
-impl<'a> TasksQuery<'a, TasksCancelFilters> {
+impl<'a, Http: HttpClient> TasksQuery<'a, TasksCancelFilters, Http> {
     #[must_use]
-    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksCancelFilters> {
+    pub fn new(client: &'a Client<Http>) -> TasksQuery<'a, TasksCancelFilters, Http> {
         TasksQuery {
             client,
             index_uids: None,
@@ -653,9 +659,9 @@ impl<'a> TasksQuery<'a, TasksCancelFilters> {
     }
 }
 
-impl<'a> TasksQuery<'a, TasksDeleteFilters> {
+impl<'a, Http: HttpClient> TasksQuery<'a, TasksDeleteFilters, Http> {
     #[must_use]
-    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksDeleteFilters> {
+    pub fn new(client: &'a Client<Http>) -> TasksQuery<'a, TasksDeleteFilters, Http> {
         TasksQuery {
             client,
             index_uids: None,
@@ -678,9 +684,9 @@ impl<'a> TasksQuery<'a, TasksDeleteFilters> {
     }
 }
 
-impl<'a> TasksQuery<'a, TasksPaginationFilters> {
+impl<'a, Http: HttpClient> TasksQuery<'a, TasksPaginationFilters, Http> {
     #[must_use]
-    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksPaginationFilters> {
+    pub fn new(client: &'a Client<Http>) -> TasksQuery<'a, TasksPaginationFilters, Http> {
         TasksQuery {
             client,
             index_uids: None,
@@ -703,14 +709,14 @@ impl<'a> TasksQuery<'a, TasksPaginationFilters> {
     pub fn with_limit<'b>(
         &'b mut self,
         limit: u32,
-    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters> {
+    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters, Http> {
         self.pagination.limit = Some(limit);
         self
     }
     pub fn with_from<'b>(
         &'b mut self,
         from: u32,
-    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters> {
+    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters, Http> {
         self.pagination.from = Some(from);
         self
     }
@@ -722,7 +728,10 @@ impl<'a> TasksQuery<'a, TasksPaginationFilters> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{client::*, ErrorCode, ErrorType};
+    use crate::{
+        client::*,
+        errors::{ErrorCode, ErrorType},
+    };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};

@@ -46,6 +46,7 @@ pub enum Error {
     InvalidTenantToken(#[from] jsonwebtoken::errors::Error),
 
     /// The http client encountered an error.
+    #[cfg(feature = "isahc")]
     #[cfg(not(target_arch = "wasm32"))]
     #[error("HTTP request failed: {}", .0)]
     HttpError(isahc::Error),
@@ -276,6 +277,7 @@ impl std::fmt::Display for ErrorCode {
     }
 }
 
+#[cfg(feature = "isahc")]
 #[cfg(not(target_arch = "wasm32"))]
 impl From<isahc::Error> for Error {
     fn from(error: isahc::Error) -> Error {

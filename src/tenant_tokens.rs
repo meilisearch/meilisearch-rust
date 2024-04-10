@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::errors::Error;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

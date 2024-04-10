@@ -1,4 +1,3 @@
-#![warn(clippy::pedantic)]
 #![recursion_limit = "4096"]
 
 extern crate proc_macro;
@@ -6,7 +5,10 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::*;
+use syn::{
+    parse_macro_input, parse_quote, Expr, FnArg, Ident, Item, PatType, Path, Stmt, Type, TypePath,
+    Visibility,
+};
 
 #[proc_macro_attribute]
 pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream {
@@ -83,13 +85,13 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
         // First we need to check if a client will be used and create it if it’s the case
         if use_client {
             outer_block.push(parse_quote!(
-                let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+                let meilisearch_url = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
             ));
             outer_block.push(parse_quote!(
-                let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+                let meilisearch_api_key = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
             ));
             outer_block.push(parse_quote!(
-                let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+                let client = Client::new(meilisearch_url, Some(meilisearch_api_key));
             ));
         }
 
