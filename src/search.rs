@@ -550,9 +550,10 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
 }
 
-#[derive(Debug, Clone)]
+// TODO: Make it works with the serde derive macro
 // #[derive(Debug, Serialize, Clone)]
 // #[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct MultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
     // #[serde(skip_serializing)]
     client: &'a Client<Http>,
