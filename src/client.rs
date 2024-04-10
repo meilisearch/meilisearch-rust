@@ -12,11 +12,12 @@ use crate::{
     task_info::TaskInfo,
     tasks::{Task, TasksCancelQuery, TasksDeleteQuery, TasksResults, TasksSearchQuery},
     utils::async_sleep,
+    DefaultHttpClient,
 };
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
-pub struct Client<Http: HttpClient = IsahcClient> {
+pub struct Client<Http: HttpClient = DefaultHttpClient> {
     pub(crate) host: String,
     pub(crate) api_key: Option<String>,
     pub http_client: Http,

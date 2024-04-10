@@ -6,6 +6,7 @@ use crate::{
     search::*,
     task_info::TaskInfo,
     tasks::*,
+    DefaultHttpClient,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
@@ -64,7 +65,7 @@ use time::OffsetDateTime;
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Index<Http: HttpClient = IsahcClient> {
+pub struct Index<Http: HttpClient = DefaultHttpClient> {
     #[serde(skip_serializing)]
     pub client: Client<Http>,
     pub uid: String,
@@ -2014,7 +2015,7 @@ impl<'a, Http: HttpClient> IndexesQuery<'a, Http> {
 }
 
 #[derive(Debug, Clone)]
-pub struct IndexesResults<Http: HttpClient = IsahcClient> {
+pub struct IndexesResults<Http: HttpClient = DefaultHttpClient> {
     pub results: Vec<Index<Http>>,
     pub limit: u32,
     pub offset: u32,

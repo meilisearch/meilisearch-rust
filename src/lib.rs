@@ -229,6 +229,8 @@
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
+use request::IsahcClient;
+
 /// Module containing the [`Client`] struct.
 pub mod client;
 /// Module representing the [documents] structures.
@@ -256,6 +258,11 @@ pub mod tasks;
 mod tenant_tokens;
 /// Module containing utilizes functions.
 mod utils;
+
+#[cfg(feature = "isahc")]
+pub type DefaultHttpClient = IsahcClient;
+#[cfg(not(feature = "isahc"))]
+pub type DefaultHttpClient = std::convert::Infallible;
 
 #[cfg(test)]
 /// Support for the `IndexConfig` derive proc macro in the crate's tests.

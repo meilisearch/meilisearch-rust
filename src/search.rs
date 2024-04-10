@@ -1,6 +1,8 @@
-use crate::{client::Client, errors::Error, indexes::Index, request::HttpClient};
+use crate::{
+    client::Client, errors::Error, indexes::Index, request::HttpClient, DefaultHttpClient,
+};
 use either::Either;
-use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
+use serde::{de::DeserializeOwned, ser::SerializeStruct, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
@@ -57,6 +59,7 @@ pub struct FacetStats {
     pub min: f64,
     pub max: f64,
 }
+
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
@@ -547,12 +550,24 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct MultiSearchQuery<'a, 'b, Http: HttpClient> {
-    #[serde(skip_serializing)]
+#[derive(Debug, Clone)]
+// #[derive(Debug, Serialize, Clone)]
+// #[serde(rename_all = "camelCase")]
+pub struct MultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
+    // #[serde(skip_serializing)]
     client: &'a Client<Http>,
     pub queries: Vec<SearchQuery<'b, Http>>,
+}
+
+impl<'a, 'b, Http: HttpClient> Serialize for MultiSearchQuery<'a, 'b, Http> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut strukt = serializer.serialize_struct("MultiSearchQuery", 1)?;
+        strukt.serialize_field("queries", &self.queries)?;
+        strukt.end()
+    }
 }
 
 #[allow(missing_docs)]

@@ -23,7 +23,6 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// use meilisearch_sdk::settings::Settings;
 /// use meilisearch_sdk::indexes::Index;
 /// use meilisearch_sdk::client::Client;
-/// use meilisearch_sdk::request::IsahcClient;
 ///
 /// #[derive(Serialize, Deserialize, IndexConfig)]
 /// struct Movie {

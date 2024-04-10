@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use async_trait::async_trait;
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
@@ -15,7 +17,7 @@ pub enum Method<Q, B> {
 }
 
 #[async_trait(?Send)]
-pub trait HttpClient: Clone + Serialize + Send + Sync {
+pub trait HttpClient: Clone + Send + Sync {
     async fn request<Query, Body, Output>(
         self,
         url: &str,
@@ -446,4 +448,39 @@ pub fn qualified_version() -> String {
     const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
 
     format!("Meilisearch Rust (v{})", VERSION.unwrap_or("unknown"))
+}
+
+#[async_trait(?Send)]
+impl HttpClient for Infallible {
+    async fn request<Query, Body, Output>(
+        self,
+        _url: &str,
+        _apikey: Option<&str>,
+        _method: Method<Query, Body>,
+        _expected_status_code: u16,
+    ) -> Result<Output, Error>
+    where
+        Query: Serialize + Send + Sync,
+        Body: Serialize + Send + Sync,
+        Output: DeserializeOwned + 'static + Send,
+    {
+        unreachable!()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    async fn stream_request<
+        'a,
+        Query: Serialize + Send + Sync,
+        Body: futures_io::AsyncRead + Send + Sync + 'static,
+        Output: DeserializeOwned + 'static,
+    >(
+        self,
+        _url: &str,
+        _apikey: Option<&str>,
+        _method: Method<Query, Body>,
+        _content_type: &str,
+        _expected_status_code: u16,
+    ) -> Result<Output, Error> {
+        unreachable!()
+    }
 }
