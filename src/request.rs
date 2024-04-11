@@ -3,7 +3,7 @@ use std::convert::Infallible;
 use async_trait::async_trait;
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::from_str;
+use serde_json::{from_str, to_vec};
 
 use crate::errors::{Error, MeilisearchCommunicationError, MeilisearchError};
 
@@ -17,6 +17,25 @@ pub enum Method<Q, B> {
 }
 
 impl<Q, B> Method<Q, B> {
+    pub fn map_body<B2>(self, f: impl Fn(B) -> B2) -> Method<Q, B2> {
+        match self {
+            Method::Get { query } => Method::Get { query },
+            Method::Delete { query } => Method::Delete { query },
+            Method::Post { query, body } => Method::Post {
+                query,
+                body: f(body),
+            },
+            Method::Patch { query, body } => Method::Patch {
+                query,
+                body: f(body),
+            },
+            Method::Put { query, body } => Method::Put {
+                query,
+                body: f(body),
+            },
+        }
+    }
+
     pub fn query(&self) -> &Q {
         match self {
             Method::Get { query } => query,
@@ -24,6 +43,15 @@ impl<Q, B> Method<Q, B> {
             Method::Post { query, .. } => query,
             Method::Put { query, .. } => query,
             Method::Patch { query, .. } => query,
+        }
+    }
+
+    pub fn body(&self) -> Option<&B> {
+        match self {
+            Method::Get { query: _ } | Method::Delete { query: _ } => None,
+            Method::Post { body, query: _ } => Some(body),
+            Method::Put { body, query: _ } => Some(body),
+            Method::Patch { body, query: _ } => Some(body),
         }
     }
 
@@ -59,7 +87,17 @@ pub trait HttpClient: Clone + Send + Sync {
     where
         Query: Serialize + Send + Sync,
         Body: Serialize + Send + Sync,
-        Output: DeserializeOwned + 'static + Send;
+        Output: DeserializeOwned + 'static + Send,
+    {
+        use futures::io::Cursor;
+        self.stream_request(
+            url,
+            method.map_body(|body| Cursor::new(to_vec(&body).unwrap())),
+            "application/json",
+            expected_status_code,
+        )
+        .await
+    }
 
     async fn stream_request<
         'a,
@@ -110,41 +148,6 @@ impl ReqwestClient {
 #[cfg(feature = "reqwest")]
 #[async_trait(?Send)]
 impl HttpClient for ReqwestClient {
-    async fn request<Query, Body, Output>(
-        &self,
-        url: &str,
-        method: Method<Query, Body>,
-        expected_status_code: u16,
-    ) -> Result<Output, Error>
-    where
-        Query: Serialize + Send + Sync,
-        Body: Serialize + Send + Sync,
-        Output: DeserializeOwned + 'static + Send,
-    {
-        use reqwest::header;
-        use serde_json::to_string;
-
-        let url = add_query_parameters(url, method.query())?;
-
-        let mut request = self.client.request(method.verb(), &url);
-
-        if let Some(body) = method.into_body() {
-            request = request
-                .header(header::CONTENT_TYPE, "application/json")
-                .body(to_string(&body).unwrap());
-        }
-
-        let response = self.client.execute(request.build()?).await?;
-        let status = response.status().as_u16();
-        let mut body = response.text().await?;
-
-        if body.is_empty() {
-            body = "null".to_string();
-        }
-
-        parse_response(status, expected_status_code, &body, url.to_string())
-    }
-
     async fn stream_request<
         'a,
         Query: Serialize + Send + Sync,
