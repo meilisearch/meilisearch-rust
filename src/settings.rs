@@ -313,7 +313,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), (), Settings>(
                 &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -348,7 +347,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/synonyms",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -383,7 +381,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/pagination",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -417,7 +414,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/stop-words",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -452,7 +448,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/ranking-rules",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -487,7 +482,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/filterable-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -522,7 +516,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/sortable-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -557,7 +550,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/distinct-attribute",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -592,7 +584,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/searchable-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -627,7 +618,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/displayed-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -662,7 +652,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/faceting",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -696,7 +685,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/dictionary",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -730,7 +718,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/proximity-precision",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -762,7 +749,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/typo-tolerance",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -801,7 +787,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), &Settings, TaskInfo>(
                 &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-                self.client.get_api_key(),
                 Method::Patch {
                     query: (),
                     body: settings,
@@ -846,7 +831,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/synonyms",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: synonyms,
@@ -884,7 +868,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/pagination",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Patch {
                     query: (),
                     body: &pagination,
@@ -925,7 +908,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/stop-words",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: stop_words
@@ -978,7 +960,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/ranking-rules",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: ranking_rules
@@ -1022,7 +1003,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/filterable-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: filterable_attributes
@@ -1066,7 +1046,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/sortable-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: sortable_attributes
@@ -1109,7 +1088,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/distinct-attribute",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: distinct_attribute.as_ref().to_string(),
@@ -1149,7 +1127,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/searchable-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: searchable_attributes
@@ -1192,7 +1169,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/displayed-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: displayed_attributes
@@ -1236,7 +1212,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/faceting",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Patch {
                     query: (),
                     body: faceting,
@@ -1276,7 +1251,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/dictionary",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: dictionary
@@ -1326,7 +1300,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/typo-tolerance",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Patch {
                     query: (),
                     body: typo_tolerance,
@@ -1366,7 +1339,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/proximity-precision",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: proximity_precision,
@@ -1402,7 +1374,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), (), TaskInfo>(
                 &format!("{}/indexes/{}/settings", self.client.host, self.uid),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1436,7 +1407,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/synonyms",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1470,7 +1440,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/pagination",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1503,7 +1472,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/stop-words",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1539,7 +1507,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/ranking-rules",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1573,7 +1540,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/filterable-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1607,7 +1573,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/sortable-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1641,7 +1606,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/distinct-attribute",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1676,7 +1640,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/searchable-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1710,7 +1673,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/displayed-attributes",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1744,7 +1706,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/faceting",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1778,7 +1739,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/dictionary",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1812,7 +1772,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/typo-tolerance",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1846,7 +1805,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/settings/proximity-precision",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )

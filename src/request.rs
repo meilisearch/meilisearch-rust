@@ -53,7 +53,6 @@ pub trait HttpClient: Clone + Send + Sync {
     async fn request<Query, Body, Output>(
         &self,
         url: &str,
-        apikey: Option<&str>,
         method: Method<Query, Body>,
         expected_status_code: u16,
     ) -> Result<Output, Error>
@@ -70,7 +69,6 @@ pub trait HttpClient: Clone + Send + Sync {
     >(
         &self,
         url: &str,
-        apikey: Option<&str>,
         method: Method<Query, Body>,
         content_type: &str,
         expected_status_code: u16,
@@ -115,7 +113,6 @@ impl HttpClient for ReqwestClient {
     async fn request<Query, Body, Output>(
         &self,
         url: &str,
-        api_key: Option<&str>,
         method: Method<Query, Body>,
         expected_status_code: u16,
     ) -> Result<Output, Error>
@@ -130,9 +127,6 @@ impl HttpClient for ReqwestClient {
         let url = add_query_parameters(url, method.query())?;
 
         let mut request = self.client.request(method.verb(), &url);
-        if let Some(api_key) = api_key {
-            request = request.bearer_auth(api_key);
-        }
 
         if let Some(body) = method.into_body() {
             request = request
@@ -159,7 +153,6 @@ impl HttpClient for ReqwestClient {
     >(
         &self,
         url: &str,
-        apikey: Option<&str>,
         method: Method<Query, Body>,
         content_type: &str,
         expected_status_code: u16,
@@ -169,9 +162,6 @@ impl HttpClient for ReqwestClient {
         let url = add_query_parameters(url, method.query())?;
 
         let mut request = self.client.request(method.verb(), &url);
-        if let Some(api_key) = apikey {
-            request = request.bearer_auth(api_key);
-        }
 
         if let Some(body) = method.into_body() {
             let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
@@ -257,7 +247,6 @@ impl HttpClient for Infallible {
     async fn request<Query, Body, Output>(
         &self,
         _url: &str,
-        _apikey: Option<&str>,
         _method: Method<Query, Body>,
         _expected_status_code: u16,
     ) -> Result<Output, Error>
@@ -277,7 +266,6 @@ impl HttpClient for Infallible {
     >(
         &self,
         _url: &str,
-        _apikey: Option<&str>,
         _method: Method<Query, Body>,
         _content_type: &str,
         _expected_status_code: u16,

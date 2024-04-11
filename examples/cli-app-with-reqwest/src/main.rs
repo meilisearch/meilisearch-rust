@@ -24,7 +24,6 @@ impl HttpClient for ReqwestClient {
     async fn request<Query, Body, Output>(
         &self,
         url: &str,
-        apikey: Option<&str>,
         method: Method<Query, Body>,
         expected_status_code: u16,
     ) -> Result<Output, Error>
@@ -39,10 +38,6 @@ impl HttpClient for ReqwestClient {
                 let client = reqwest::Client::new();
                 let mut builder = client.request(reqwest::Method::GET, url.as_str());
                 builder = builder.header(reqwest::header::USER_AGENT, qualified_version());
-                if let Some(apikey) = apikey {
-                    builder =
-                        builder.header(reqwest::header::AUTHORIZATION, format!("Bearer {apikey}"));
-                }
                 let req = builder.build().unwrap();
                 client.execute(req).await.unwrap()
             }
@@ -50,10 +45,6 @@ impl HttpClient for ReqwestClient {
                 let url = add_query_parameters(url, query)?;
                 let client = reqwest::Client::new();
                 let mut builder = client.request(reqwest::Method::POST, url.as_str());
-                if let Some(apikey) = apikey {
-                    builder =
-                        builder.header(reqwest::header::AUTHORIZATION, format!("Bearer {apikey}"));
-                }
                 builder = builder.header(reqwest::header::CONTENT_TYPE, "application/json");
                 let req = builder.body(to_string(body).unwrap()).build().unwrap();
                 client.execute(req).await.unwrap()
@@ -62,10 +53,6 @@ impl HttpClient for ReqwestClient {
                 let url = add_query_parameters(url, query)?;
                 let client = reqwest::Client::new();
                 let mut builder = client.request(reqwest::Method::PATCH, url.as_str());
-                if let Some(apikey) = apikey {
-                    builder =
-                        builder.header(reqwest::header::AUTHORIZATION, format!("Bearer {apikey}"));
-                }
                 builder = builder.header(reqwest::header::CONTENT_TYPE, "application/json");
                 let req = builder.body(to_string(body).unwrap()).build().unwrap();
                 client.execute(req).await.unwrap()
@@ -74,10 +61,6 @@ impl HttpClient for ReqwestClient {
                 let url = add_query_parameters(url, query)?;
                 let client = reqwest::Client::new();
                 let mut builder = client.request(reqwest::Method::PUT, url.as_str());
-                if let Some(apikey) = apikey {
-                    builder =
-                        builder.header(reqwest::header::AUTHORIZATION, format!("Bearer {apikey}"));
-                }
                 builder = builder.header(reqwest::header::CONTENT_TYPE, "application/json");
                 let req = builder.body(to_string(body).unwrap()).build().unwrap();
                 client.execute(req).await.unwrap()
@@ -86,10 +69,6 @@ impl HttpClient for ReqwestClient {
                 let url = add_query_parameters(url, query)?;
                 let client = reqwest::Client::new();
                 let mut builder = client.request(reqwest::Method::DELETE, url.as_str());
-                if let Some(apikey) = apikey {
-                    builder =
-                        builder.header(reqwest::header::AUTHORIZATION, format!("Bearer {apikey}"));
-                }
                 builder = builder.header(reqwest::header::CONTENT_TYPE, "application/json");
                 let req = builder.build().unwrap();
                 client.execute(req).await.unwrap()
@@ -115,7 +94,6 @@ impl HttpClient for ReqwestClient {
     >(
         &self,
         _url: &str,
-        _apikey: Option<&str>,
         _method: Method<Query, Body>,
         _content_type: &str,
         _expected_status_code: u16,

@@ -20,7 +20,7 @@ use crate::{
 pub struct Client<Http: HttpClient = DefaultHttpClient> {
     pub(crate) host: String,
     pub(crate) api_key: Option<String>,
-    pub http_client: Http,
+    pub(crate) http_client: Http,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -98,7 +98,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), &MultiSearchQuery<Http>, MultiSearchResponse<T>>(
                 &format!("{}/multi-search", &self.host),
-                self.get_api_key(),
                 Method::Post { body, query: () },
                 200,
             )
@@ -260,7 +259,6 @@ impl<Http: HttpClient> Client<Http> {
             .http_client
             .request::<(), (), Value>(
                 &format!("{}/indexes", self.host),
-                self.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -297,7 +295,6 @@ impl<Http: HttpClient> Client<Http> {
             .http_client
             .request::<&IndexesQuery<Http>, (), Value>(
                 &format!("{}/indexes", self.host),
-                self.get_api_key(),
                 Method::Get {
                     query: indexes_query,
                 },
@@ -358,7 +355,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), (), Value>(
                 &format!("{}/indexes/{}", self.host, uid.as_ref()),
-                self.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -406,7 +402,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), Value, TaskInfo>(
                 &format!("{}/indexes", self.host),
-                self.get_api_key(),
                 Method::Post {
                     query: (),
                     body: json!({
@@ -426,7 +421,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), (), TaskInfo>(
                 &format!("{}/indexes/{}", self.host, uid.as_ref()),
-                self.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -498,7 +492,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), Vec<&SwapIndexes>, TaskInfo>(
                 &format!("{}/swap-indexes", self.host),
-                self.get_api_key(),
                 Method::Post {
                     query: (),
                     body: indexes.into_iter().collect(),
@@ -527,7 +520,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), (), ClientStats>(
                 &format!("{}/stats", self.host),
-                self.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -555,7 +547,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), (), Health>(
                 &format!("{}/health", self.host),
-                self.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -614,7 +605,6 @@ impl<Http: HttpClient> Client<Http> {
             .http_client
             .request::<&KeysQuery, (), KeysResults>(
                 &format!("{}/keys", self.host),
-                self.get_api_key(),
                 Method::Get { query: keys_query },
                 200,
             )
@@ -647,7 +637,6 @@ impl<Http: HttpClient> Client<Http> {
             .http_client
             .request::<(), (), KeysResults>(
                 &format!("{}/keys", self.host),
-                self.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -682,7 +671,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), (), Key>(
                 &format!("{}/keys/{}", self.host, key.as_ref()),
-                self.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -718,7 +706,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), (), ()>(
                 &format!("{}/keys/{}", self.host, key.as_ref()),
-                self.get_api_key(),
                 Method::Delete { query: () },
                 204,
             )
@@ -753,7 +740,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), &KeyBuilder, Key>(
                 &format!("{}/keys", self.host),
-                self.get_api_key(),
                 Method::Post {
                     query: (),
                     body: key.as_ref(),
@@ -794,7 +780,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), &KeyUpdater, Key>(
                 &format!("{}/keys/{}", self.host, key.as_ref().key),
-                self.get_api_key(),
                 Method::Patch {
                     body: key.as_ref(),
                     query: (),
@@ -823,7 +808,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), (), Version>(
                 &format!("{}/version", self.host),
-                self.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -927,7 +911,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), (), Task>(
                 &format!("{}/tasks/{}", self.host, task_id.as_ref()),
-                self.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -960,7 +943,6 @@ impl<Http: HttpClient> Client<Http> {
             .http_client
             .request::<&TasksSearchQuery<Http>, (), TasksResults>(
                 &format!("{}/tasks", self.host),
-                self.get_api_key(),
                 Method::Get { query: tasks_query },
                 200,
             )
@@ -995,7 +977,6 @@ impl<Http: HttpClient> Client<Http> {
             .http_client
             .request::<&TasksCancelQuery<Http>, (), TaskInfo>(
                 &format!("{}/tasks/cancel", self.host),
-                self.get_api_key(),
                 Method::Post {
                     query: filters,
                     body: (),
@@ -1033,7 +1014,6 @@ impl<Http: HttpClient> Client<Http> {
             .http_client
             .request::<&TasksDeleteQuery<Http>, (), TaskInfo>(
                 &format!("{}/tasks", self.host),
-                self.get_api_key(),
                 Method::Delete { query: filters },
                 200,
             )
@@ -1064,7 +1044,6 @@ impl<Http: HttpClient> Client<Http> {
             .http_client
             .request::<(), (), TasksResults>(
                 &format!("{}/tasks", self.host),
-                self.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -1233,12 +1212,9 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                client.http_client.request::<(), (), ()>(
-                    address,
-                    None,
-                    Method::Get { query: () },
-                    200,
-                ),
+                client
+                    .http_client
+                    .request::<(), (), ()>(address, Method::Get { query: () }, 200),
             ),
             (
                 s.mock("POST", path)
@@ -1247,7 +1223,6 @@ mod tests {
                     .await,
                 client.http_client.request::<(), (), ()>(
                     address,
-                    None,
                     Method::Post {
                         query: (),
                         body: {},
@@ -1262,7 +1237,6 @@ mod tests {
                     .await,
                 client.http_client.request::<(), (), ()>(
                     address,
-                    None,
                     Method::Delete { query: () },
                     200,
                 ),
@@ -1274,7 +1248,6 @@ mod tests {
                     .await,
                 client.http_client.request::<(), (), ()>(
                     address,
-                    None,
                     Method::Put {
                         query: (),
                         body: (),
@@ -1289,7 +1262,6 @@ mod tests {
                     .await,
                 client.http_client.request::<(), (), ()>(
                     address,
-                    None,
                     Method::Patch {
                         query: (),
                         body: (),
@@ -1344,7 +1316,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_delete_key(mut client: Client, name: String) {
+    async fn test_error_delete_key(client: Client, name: String) {
         // ==> accessing a key that does not exist
         let error = client.delete_key("invalid_key").await.unwrap_err();
         insta::assert_snapshot!(error, @"Meilisearch invalid_request: api_key_not_found: API key `invalid_key` not found.. https://docs.meilisearch.com/errors#api_key_not_found");
@@ -1355,8 +1327,9 @@ mod tests {
         key.with_name(&name);
         let key = client.create_key(key).await.unwrap();
         let master_key = client.api_key.clone();
-        // this key has no right
-        client.api_key = Some(key.key.clone());
+
+        // create a new client with no right
+        let client = Client::new(client.host, Some(key.key.clone()));
         // with a wrong key
         let error = client.delete_key("invalid_key").await.unwrap_err();
         insta::assert_snapshot!(error, @"Meilisearch auth: invalid_api_key: The provided API key is invalid.. https://docs.meilisearch.com/errors#invalid_api_key");
@@ -1381,7 +1354,7 @@ mod tests {
         ));
 
         // cleanup
-        client.api_key = master_key;
+        let client = Client::new(client.host, master_key);
         client.delete_key(key).await.unwrap();
     }
 
@@ -1409,7 +1382,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_create_key(mut client: Client, name: String) {
+    async fn test_error_create_key(client: Client, name: String) {
         // ==> Invalid index name
         /* TODO: uncomment once meilisearch fix this bug: https://github.com/meilisearch/meilisearch/issues/2158
         let mut key = KeyBuilder::new();
@@ -1432,7 +1405,7 @@ mod tests {
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
-        client.api_key = Some(no_right_key.key.clone());
+        let client = Client::new(&master_client.host, Some(no_right_key.key.clone()));
 
         let mut key = KeyBuilder::new();
         key.with_name(format!("{name}_2"));

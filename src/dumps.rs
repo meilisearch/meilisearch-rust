@@ -76,7 +76,6 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), (), TaskInfo>(
                 &format!("{}/dumps", self.host),
-                self.get_api_key(),
                 Method::Post {
                     query: (),
                     body: (),

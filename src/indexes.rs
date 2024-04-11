@@ -186,7 +186,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), (), TaskInfo>(
                 &format!("{}/indexes/{}", self.client.host, self.uid),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -233,7 +232,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), &SearchQuery<Http>, SearchResults<T>>(
                 &format!("{}/indexes/{}/search", self.client.host, self.uid),
-                self.client.get_api_key(),
                 Method::Post { body, query: () },
                 200,
             )
@@ -325,12 +323,7 @@ impl<Http: HttpClient> Index<Http> {
         );
         self.client
             .http_client
-            .request::<(), (), T>(
-                &url,
-                self.client.get_api_key(),
-                Method::Get { query: () },
-                200,
-            )
+            .request::<(), (), T>(&url, Method::Get { query: () }, 200)
             .await
     }
 
@@ -384,7 +377,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<&DocumentQuery<Http>, (), T>(
                 &url,
-                self.client.get_api_key(),
                 Method::Get {
                     query: document_query,
                 },
@@ -428,12 +420,7 @@ impl<Http: HttpClient> Index<Http> {
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
         self.client
             .http_client
-            .request::<(), (), DocumentsResults<T>>(
-                &url,
-                self.client.get_api_key(),
-                Method::Get { query: () },
-                200,
-            )
+            .request::<(), (), DocumentsResults<T>>(&url, Method::Get { query: () }, 200)
             .await
     }
 
@@ -485,7 +472,6 @@ impl<Http: HttpClient> Index<Http> {
                 .http_client
                 .request::<(), &DocumentsQuery<Http>, DocumentsResults<T>>(
                     &url,
-                    self.client.get_api_key(),
                     Method::Post {
                         body: documents_query,
                         query: (),
@@ -519,7 +505,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<&DocumentsQuery<Http>, (), DocumentsResults<T>>(
                 &url,
-                self.client.get_api_key(),
                 Method::Get {
                     query: documents_query,
                 },
@@ -598,7 +583,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), &[T], TaskInfo>(
                 &url,
-                self.client.get_api_key(),
                 Method::Post {
                     query: (),
                     body: documents,
@@ -665,7 +649,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .stream_request::<(), T, TaskInfo>(
                 &url,
-                self.client.get_api_key(),
                 Method::Post {
                     query: (),
                     body: payload,
@@ -938,7 +921,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), &[T], TaskInfo>(
                 &url,
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: documents,
@@ -1007,7 +989,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .stream_request::<(), T, TaskInfo>(
                 &url,
-                self.client.get_api_key(),
                 Method::Put {
                     query: (),
                     body: payload,
@@ -1059,7 +1040,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), (), TaskInfo>(
                 &format!("{}/indexes/{}/documents", self.client.host, self.uid),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1107,7 +1087,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/documents/{}",
                     self.client.host, self.uid, uid
                 ),
-                self.client.get_api_key(),
                 Method::Delete { query: () },
                 202,
             )
@@ -1161,7 +1140,6 @@ impl<Http: HttpClient> Index<Http> {
                     "{}/indexes/{}/documents/delete-batch",
                     self.client.host, self.uid
                 ),
-                self.client.get_api_key(),
                 Method::Post {
                     query: (),
                     body: uids,
@@ -1218,7 +1196,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), &DocumentDeletionQuery<Http>, TaskInfo>(
                 &format!("{}/indexes/{}/documents/delete", self.client.host, self.uid),
-                self.client.get_api_key(),
                 Method::Post {
                     query: (),
                     body: query,
@@ -1347,7 +1324,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), (), Task>(
                 &format!("{}/tasks/{}", self.client.host, uid.as_ref()),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -1438,7 +1414,6 @@ impl<Http: HttpClient> Index<Http> {
             .http_client
             .request::<(), (), IndexStats>(
                 &format!("{}/indexes/{}/stats", self.client.host, self.uid),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -1797,7 +1772,6 @@ impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
             .http_client
             .request::<(), &IndexUpdater<Http>, TaskInfo>(
                 &format!("{}/indexes/{}", self.client.host, self.uid),
-                self.client.get_api_key(),
                 Method::Patch {
                     query: (),
                     body: self,

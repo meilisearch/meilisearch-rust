@@ -68,7 +68,6 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
             .http_client
             .request::<(), (), ExperimentalFeaturesResult>(
                 &format!("{}/experimental-features", self.client.host),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -95,7 +94,6 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
             .http_client
             .request::<(), &Self, ExperimentalFeaturesResult>(
                 &format!("{}/experimental-features", self.client.host),
-                self.client.get_api_key(),
                 Method::Patch {
                     query: (),
                     body: self,
