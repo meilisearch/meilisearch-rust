@@ -74,7 +74,6 @@ impl<Http: HttpClient> Client<Http> {
     /// ```
     pub async fn create_dump(&self) -> Result<TaskInfo, Error> {
         self.http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!("{}/dumps", self.host),
                 self.get_api_key(),

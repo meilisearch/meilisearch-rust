@@ -47,11 +47,13 @@ impl Client {
     /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// ```
     pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
-        // TODO: actually create a reqwest client
+        let api_key = api_key.map(|key| key.into());
+        let http_client = ReqwestClient::new(api_key.as_deref());
+
         Client {
             host: host.into(),
-            api_key: api_key.map(|api_key| api_key.into()),
-            http_client: ReqwestClient,
+            api_key,
+            http_client,
         }
     }
 }
@@ -94,7 +96,6 @@ impl<Http: HttpClient> Client<Http> {
         body: &MultiSearchQuery<'_, '_, Http>,
     ) -> Result<MultiSearchResponse<T>, Error> {
         self.http_client
-            .clone()
             .request::<(), &MultiSearchQuery<Http>, MultiSearchResponse<T>>(
                 &format!("{}/multi-search", &self.host),
                 self.get_api_key(),
@@ -255,8 +256,8 @@ impl<Http: HttpClient> Client<Http> {
     /// # });
     /// ```
     pub async fn list_all_indexes_raw(&self) -> Result<Value, Error> {
-        let http_client = self.http_client.clone();
-        let json_indexes = http_client
+        let json_indexes = self
+            .http_client
             .request::<(), (), Value>(
                 &format!("{}/indexes", self.host),
                 self.get_api_key(),
@@ -292,8 +293,8 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         indexes_query: &IndexesQuery<'_, Http>,
     ) -> Result<Value, Error> {
-        let http_client = self.http_client.clone();
-        let json_indexes = http_client
+        let json_indexes = self
+            .http_client
             .request::<&IndexesQuery<Http>, (), Value>(
                 &format!("{}/indexes", self.host),
                 self.get_api_key(),
@@ -355,7 +356,6 @@ impl<Http: HttpClient> Client<Http> {
     /// ```
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<Value, Error> {
         self.http_client
-            .clone()
             .request::<(), (), Value>(
                 &format!("{}/indexes/{}", self.host, uid.as_ref()),
                 self.get_api_key(),
@@ -404,7 +404,6 @@ impl<Http: HttpClient> Client<Http> {
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
         self.http_client
-            .clone()
             .request::<(), Value, TaskInfo>(
                 &format!("{}/indexes", self.host),
                 self.get_api_key(),
@@ -425,7 +424,6 @@ impl<Http: HttpClient> Client<Http> {
     /// To delete an [Index], use the [`Index::delete`] method.
     pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo, Error> {
         self.http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!("{}/indexes/{}", self.host, uid.as_ref()),
                 self.get_api_key(),
@@ -498,7 +496,6 @@ impl<Http: HttpClient> Client<Http> {
         indexes: impl IntoIterator<Item = &SwapIndexes>,
     ) -> Result<TaskInfo, Error> {
         self.http_client
-            .clone()
             .request::<(), Vec<&SwapIndexes>, TaskInfo>(
                 &format!("{}/swap-indexes", self.host),
                 self.get_api_key(),
@@ -528,7 +525,6 @@ impl<Http: HttpClient> Client<Http> {
     /// ```
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
         self.http_client
-            .clone()
             .request::<(), (), ClientStats>(
                 &format!("{}/stats", self.host),
                 self.get_api_key(),
@@ -557,7 +553,6 @@ impl<Http: HttpClient> Client<Http> {
     /// ```
     pub async fn health(&self) -> Result<Health, Error> {
         self.http_client
-            .clone()
             .request::<(), (), Health>(
                 &format!("{}/health", self.host),
                 self.get_api_key(),
@@ -615,8 +610,8 @@ impl<Http: HttpClient> Client<Http> {
     /// # });
     /// ```
     pub async fn get_keys_with(&self, keys_query: &KeysQuery) -> Result<KeysResults, Error> {
-        let http_client = self.http_client.clone();
-        let keys = http_client
+        let keys = self
+            .http_client
             .request::<&KeysQuery, (), KeysResults>(
                 &format!("{}/keys", self.host),
                 self.get_api_key(),
@@ -648,8 +643,8 @@ impl<Http: HttpClient> Client<Http> {
     /// # });
     /// ```
     pub async fn get_keys(&self) -> Result<KeysResults, Error> {
-        let http_client = self.http_client.clone();
-        let keys = http_client
+        let keys = self
+            .http_client
             .request::<(), (), KeysResults>(
                 &format!("{}/keys", self.host),
                 self.get_api_key(),
@@ -677,15 +672,14 @@ impl<Http: HttpClient> Client<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # let key = client.get_keys().await.unwrap().results.into_iter()
     /// #    .find(|k| k.name.as_ref().map_or(false, |name| name.starts_with("Default Search API Key")))
-    /// #    .unwrap();
-    /// let key = client.get_key(key).await.unwrap();
+    /// #    .expect("No default search key");
+    /// let key = client.get_key(key).await.expect("Invalid key");
     ///
     /// assert_eq!(key.name, Some("Default Search API Key".to_string()));
     /// # });
     /// ```
     pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
         self.http_client
-            .clone()
             .request::<(), (), Key>(
                 &format!("{}/keys/{}", self.host, key.as_ref()),
                 self.get_api_key(),
@@ -722,7 +716,6 @@ impl<Http: HttpClient> Client<Http> {
     /// ```
     pub async fn delete_key(&self, key: impl AsRef<str>) -> Result<(), Error> {
         self.http_client
-            .clone()
             .request::<(), (), ()>(
                 &format!("{}/keys/{}", self.host, key.as_ref()),
                 self.get_api_key(),
@@ -758,7 +751,6 @@ impl<Http: HttpClient> Client<Http> {
     /// ```
     pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
         self.http_client
-            .clone()
             .request::<(), &KeyBuilder, Key>(
                 &format!("{}/keys", self.host),
                 self.get_api_key(),
@@ -800,7 +792,6 @@ impl<Http: HttpClient> Client<Http> {
     /// ```
     pub async fn update_key(&self, key: impl AsRef<KeyUpdater>) -> Result<Key, Error> {
         self.http_client
-            .clone()
             .request::<(), &KeyUpdater, Key>(
                 &format!("{}/keys/{}", self.host, key.as_ref().key),
                 self.get_api_key(),
@@ -830,7 +821,6 @@ impl<Http: HttpClient> Client<Http> {
     /// ```
     pub async fn get_version(&self) -> Result<Version, Error> {
         self.http_client
-            .clone()
             .request::<(), (), Version>(
                 &format!("{}/version", self.host),
                 self.get_api_key(),
@@ -935,7 +925,6 @@ impl<Http: HttpClient> Client<Http> {
     /// ```
     pub async fn get_task(&self, task_id: impl AsRef<u32>) -> Result<Task, Error> {
         self.http_client
-            .clone()
             .request::<(), (), Task>(
                 &format!("{}/tasks/{}", self.host, task_id.as_ref()),
                 self.get_api_key(),
@@ -967,8 +956,8 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         tasks_query: &TasksSearchQuery<'_, Http>,
     ) -> Result<TasksResults, Error> {
-        let http_client = self.http_client.clone();
-        let tasks = http_client
+        let tasks = self
+            .http_client
             .request::<&TasksSearchQuery<Http>, (), TasksResults>(
                 &format!("{}/tasks", self.host),
                 self.get_api_key(),
@@ -1002,8 +991,8 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         filters: &TasksCancelQuery<'_, Http>,
     ) -> Result<TaskInfo, Error> {
-        let http_client = self.http_client.clone();
-        let tasks = http_client
+        let tasks = self
+            .http_client
             .request::<&TasksCancelQuery<Http>, (), TaskInfo>(
                 &format!("{}/tasks/cancel", self.host),
                 self.get_api_key(),
@@ -1040,8 +1029,8 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         filters: &TasksDeleteQuery<'_, Http>,
     ) -> Result<TaskInfo, Error> {
-        let http_client = self.http_client.clone();
-        let tasks = http_client
+        let tasks = self
+            .http_client
             .request::<&TasksDeleteQuery<Http>, (), TaskInfo>(
                 &format!("{}/tasks", self.host),
                 self.get_api_key(),
@@ -1071,8 +1060,8 @@ impl<Http: HttpClient> Client<Http> {
     /// # });
     /// ```
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
-        let http_client = self.http_client.clone();
-        let tasks = http_client
+        let tasks = self
+            .http_client
             .request::<(), (), TasksResults>(
                 &format!("{}/tasks", self.host),
                 self.get_api_key(),
@@ -1358,14 +1347,7 @@ mod tests {
     async fn test_error_delete_key(mut client: Client, name: String) {
         // ==> accessing a key that does not exist
         let error = client.delete_key("invalid_key").await.unwrap_err();
-        assert!(matches!(
-            error,
-            Error::Meilisearch(MeilisearchError {
-                error_code: ErrorCode::ApiKeyNotFound,
-                error_type: ErrorType::InvalidRequest,
-                ..
-            })
-        ));
+        insta::assert_snapshot!(error, @"Meilisearch invalid_request: api_key_not_found: API key `invalid_key` not found.. https://docs.meilisearch.com/errors#api_key_not_found");
 
         // ==> executing the action without enough right
         let mut key = KeyBuilder::new();
@@ -1377,6 +1359,7 @@ mod tests {
         client.api_key = Some(key.key.clone());
         // with a wrong key
         let error = client.delete_key("invalid_key").await.unwrap_err();
+        insta::assert_snapshot!(error, @"Meilisearch auth: invalid_api_key: The provided API key is invalid.. https://docs.meilisearch.com/errors#invalid_api_key");
         assert!(matches!(
             error,
             Error::Meilisearch(MeilisearchError {
@@ -1387,6 +1370,7 @@ mod tests {
         ));
         // with a good key
         let error = client.delete_key(&key.key).await.unwrap_err();
+        insta::assert_snapshot!(error, @"Meilisearch auth: invalid_api_key: The provided API key is invalid.. https://docs.meilisearch.com/errors#invalid_api_key");
         assert!(matches!(
             error,
             Error::Meilisearch(MeilisearchError {

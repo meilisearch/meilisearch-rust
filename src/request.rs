@@ -16,10 +16,42 @@ pub enum Method<Q, B> {
     Delete { query: Q },
 }
 
+impl<Q, B> Method<Q, B> {
+    pub fn query(&self) -> &Q {
+        match self {
+            Method::Get { query } => query,
+            Method::Delete { query } => query,
+            Method::Post { query, .. } => query,
+            Method::Put { query, .. } => query,
+            Method::Patch { query, .. } => query,
+        }
+    }
+
+    pub fn into_body(self) -> Option<B> {
+        match self {
+            Method::Get { query: _ } | Method::Delete { query: _ } => None,
+            Method::Post { body, query: _ } => Some(body),
+            Method::Put { body, query: _ } => Some(body),
+            Method::Patch { body, query: _ } => Some(body),
+        }
+    }
+
+    #[cfg(feature = "reqwest")]
+    pub fn verb(&self) -> reqwest::Method {
+        match self {
+            Method::Get { .. } => reqwest::Method::GET,
+            Method::Delete { .. } => reqwest::Method::DELETE,
+            Method::Post { .. } => reqwest::Method::POST,
+            Method::Put { .. } => reqwest::Method::PUT,
+            Method::Patch { .. } => reqwest::Method::PATCH,
+        }
+    }
+}
+
 #[async_trait(?Send)]
 pub trait HttpClient: Clone + Send + Sync {
     async fn request<Query, Body, Output>(
-        self,
+        &self,
         url: &str,
         apikey: Option<&str>,
         method: Method<Query, Body>,
@@ -36,7 +68,7 @@ pub trait HttpClient: Clone + Send + Sync {
         Body: futures_io::AsyncRead + Send + Sync + 'static,
         Output: DeserializeOwned + 'static,
     >(
-        self,
+        &self,
         url: &str,
         apikey: Option<&str>,
         method: Method<Query, Body>,
@@ -46,33 +78,15 @@ pub trait HttpClient: Clone + Send + Sync {
 }
 
 #[cfg(feature = "reqwest")]
-#[derive(Debug, Clone, Copy, Default)]
-pub struct ReqwestClient;
-
-#[cfg(feature = "reqwest")]
-impl ReqwestClient {
-    pub fn new() -> Self {
-        ReqwestClient
-    }
+#[derive(Debug, Clone, Default)]
+pub struct ReqwestClient {
+    client: reqwest::Client,
 }
 
 #[cfg(feature = "reqwest")]
-#[async_trait(?Send)]
-impl HttpClient for ReqwestClient {
-    async fn request<Query, Body, Output>(
-        self,
-        url: &str,
-        apikey: Option<&str>,
-        method: Method<Query, Body>,
-        expected_status_code: u16,
-    ) -> Result<Output, Error>
-    where
-        Query: Serialize + Send + Sync,
-        Body: Serialize + Send + Sync,
-        Output: DeserializeOwned + 'static + Send,
-    {
+impl ReqwestClient {
+    pub fn new(api_key: Option<&str>) -> Self {
         use reqwest::{header, ClientBuilder};
-        use serde_json::to_string;
 
         let builder = ClientBuilder::new();
         let mut headers = header::HeaderMap::new();
@@ -81,62 +95,53 @@ impl HttpClient for ReqwestClient {
             header::HeaderValue::from_str(&qualified_version()).unwrap(),
         );
 
-        if let Some(apikey) = apikey {
+        if let Some(api_key) = api_key {
             headers.insert(
                 header::AUTHORIZATION,
-                header::HeaderValue::from_str(&format!("Bearer {apikey}")).unwrap(),
+                header::HeaderValue::from_str(&format!("Bearer {api_key}")).unwrap(),
             );
         }
 
         let builder = builder.default_headers(headers);
         let client = builder.build().unwrap();
 
-        let request = match &method {
-            Method::Get { query } => {
-                let url = add_query_parameters(url, query)?;
+        ReqwestClient { client }
+    }
+}
 
-                client.request(reqwest::Method::GET, url.as_str()).build()?
-            }
-            Method::Delete { query } => {
-                let url = add_query_parameters(url, query)?;
+#[cfg(feature = "reqwest")]
+#[async_trait(?Send)]
+impl HttpClient for ReqwestClient {
+    async fn request<Query, Body, Output>(
+        &self,
+        url: &str,
+        api_key: Option<&str>,
+        method: Method<Query, Body>,
+        expected_status_code: u16,
+    ) -> Result<Output, Error>
+    where
+        Query: Serialize + Send + Sync,
+        Body: Serialize + Send + Sync,
+        Output: DeserializeOwned + 'static + Send,
+    {
+        use reqwest::header;
+        use serde_json::to_string;
 
-                client
-                    .request(reqwest::Method::DELETE, url.as_str())
-                    .build()?
-            }
-            Method::Post { query, body } => {
-                let url = add_query_parameters(url, query)?;
+        let url = add_query_parameters(url, method.query())?;
 
-                client
-                    .request(reqwest::Method::POST, url.as_str())
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .body(to_string(&body).unwrap())
-                    .build()?
-            }
-            Method::Patch { query, body } => {
-                let url = add_query_parameters(url, query)?;
+        let mut request = self.client.request(method.verb(), &url);
+        if let Some(api_key) = api_key {
+            request = request.bearer_auth(api_key);
+        }
 
-                client
-                    .request(reqwest::Method::PATCH, url.as_str())
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .body(to_string(&body).unwrap())
-                    .build()?
-            }
-            Method::Put { query, body } => {
-                let url = add_query_parameters(url, query)?;
+        if let Some(body) = method.into_body() {
+            request = request
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(to_string(&body).unwrap());
+        }
 
-                client
-                    .request(reqwest::Method::PUT, url.as_str())
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .body(to_string(&body).unwrap())
-                    .build()?
-            }
-        };
-
-        let response = client.execute(request).await.unwrap();
-
+        let response = self.client.execute(request.build()?).await?;
         let status = response.status().as_u16();
-
         let mut body = response.text().await?;
 
         if body.is_empty() {
@@ -152,90 +157,34 @@ impl HttpClient for ReqwestClient {
         Body: futures_io::AsyncRead + Send + Sync + 'static,
         Output: DeserializeOwned + 'static,
     >(
-        self,
+        &self,
         url: &str,
         apikey: Option<&str>,
         method: Method<Query, Body>,
         content_type: &str,
         expected_status_code: u16,
     ) -> Result<Output, Error> {
-        use reqwest::{header, ClientBuilder};
+        use reqwest::header;
 
-        let builder = ClientBuilder::new();
-        let mut headers = header::HeaderMap::new();
-        headers.insert(
-            header::USER_AGENT,
-            header::HeaderValue::from_str(&qualified_version()).unwrap(),
-        );
+        let url = add_query_parameters(url, method.query())?;
 
-        if let Some(apikey) = apikey {
-            headers.insert(
-                header::AUTHORIZATION,
-                header::HeaderValue::from_str(&format!("Bearer {apikey}")).unwrap(),
-            );
+        let mut request = self.client.request(method.verb(), &url);
+        if let Some(api_key) = apikey {
+            request = request.bearer_auth(api_key);
         }
 
-        let builder = builder.default_headers(headers);
-        let client = builder.build().unwrap();
+        if let Some(body) = method.into_body() {
+            let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
+            let stream = tokio_util::io::ReaderStream::new(reader);
+            let body = reqwest::Body::wrap_stream(stream);
 
-        let request = match method {
-            Method::Get { query } => {
-                let url = add_query_parameters(url, &query)?;
+            request = request
+                .header(header::CONTENT_TYPE, content_type)
+                .body(body);
+        }
 
-                client.request(reqwest::Method::GET, url.as_str()).build()?
-            }
-            Method::Delete { query } => {
-                let url = add_query_parameters(url, &query)?;
-
-                client
-                    .request(reqwest::Method::DELETE, url.as_str())
-                    .build()?
-            }
-            Method::Post { query, body } => {
-                let url = add_query_parameters(url, &query)?;
-
-                let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
-                let stream = tokio_util::io::ReaderStream::new(reader);
-                let body = reqwest::Body::wrap_stream(stream);
-
-                client
-                    .request(reqwest::Method::POST, url.as_str())
-                    .header(header::CONTENT_TYPE, content_type)
-                    .body(body)
-                    .build()?
-            }
-            Method::Patch { query, body } => {
-                let url = add_query_parameters(url, &query)?;
-
-                let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
-                let stream = tokio_util::io::ReaderStream::new(reader);
-                let body = reqwest::Body::wrap_stream(stream);
-
-                client
-                    .request(reqwest::Method::PATCH, url.as_str())
-                    .header(header::CONTENT_TYPE, content_type)
-                    .body(body)
-                    .build()?
-            }
-            Method::Put { query, body } => {
-                let url = add_query_parameters(url, &query)?;
-
-                let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
-                let stream = tokio_util::io::ReaderStream::new(reader);
-                let body = reqwest::Body::wrap_stream(stream);
-
-                client
-                    .request(reqwest::Method::PUT, url.as_str())
-                    .header(header::CONTENT_TYPE, content_type)
-                    .body(body)
-                    .build()?
-            }
-        };
-
-        let response = client.execute(request).await.unwrap();
-
+        let response = self.client.execute(request.build()?).await?;
         let status = response.status().as_u16();
-
         let mut body = response.text().await?;
 
         if body.is_empty() {
@@ -306,7 +255,7 @@ pub fn qualified_version() -> String {
 #[async_trait(?Send)]
 impl HttpClient for Infallible {
     async fn request<Query, Body, Output>(
-        self,
+        &self,
         _url: &str,
         _apikey: Option<&str>,
         _method: Method<Query, Body>,
@@ -326,7 +275,7 @@ impl HttpClient for Infallible {
         Body: futures_io::AsyncRead + Send + Sync + 'static,
         Output: DeserializeOwned + 'static,
     >(
-        self,
+        &self,
         _url: &str,
         _apikey: Option<&str>,
         _method: Method<Query, Body>,

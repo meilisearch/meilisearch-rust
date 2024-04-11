@@ -66,7 +66,6 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     pub async fn get(&self) -> Result<ExperimentalFeaturesResult, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), ExperimentalFeaturesResult>(
                 &format!("{}/experimental-features", self.client.host),
                 self.client.get_api_key(),
@@ -94,7 +93,6 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     pub async fn update(&self) -> Result<ExperimentalFeaturesResult, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &Self, ExperimentalFeaturesResult>(
                 &format!("{}/experimental-features", self.client.host),
                 self.client.get_api_key(),

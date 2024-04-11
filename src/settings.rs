@@ -311,7 +311,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_settings(&self) -> Result<Settings, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), Settings>(
                 &format!("{}/indexes/{}/settings", self.client.host, self.uid),
                 self.client.get_api_key(),
@@ -344,7 +343,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_synonyms(&self) -> Result<HashMap<String, Vec<String>>, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), HashMap<String, Vec<String>>>(
                 &format!(
                     "{}/indexes/{}/settings/synonyms",
@@ -380,7 +378,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_pagination(&self) -> Result<PaginationSetting, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), PaginationSetting>(
                 &format!(
                     "{}/indexes/{}/settings/pagination",
@@ -415,7 +412,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_stop_words(&self) -> Result<Vec<String>, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), Vec<String>>(
                 &format!(
                     "{}/indexes/{}/settings/stop-words",
@@ -451,7 +447,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_ranking_rules(&self) -> Result<Vec<String>, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), Vec<String>>(
                 &format!(
                     "{}/indexes/{}/settings/ranking-rules",
@@ -487,7 +482,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_filterable_attributes(&self) -> Result<Vec<String>, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), Vec<String>>(
                 &format!(
                     "{}/indexes/{}/settings/filterable-attributes",
@@ -523,7 +517,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_sortable_attributes(&self) -> Result<Vec<String>, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), Vec<String>>(
                 &format!(
                     "{}/indexes/{}/settings/sortable-attributes",
@@ -559,7 +552,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_distinct_attribute(&self) -> Result<Option<String>, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), Option<String>>(
                 &format!(
                     "{}/indexes/{}/settings/distinct-attribute",
@@ -595,7 +587,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_searchable_attributes(&self) -> Result<Vec<String>, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), Vec<String>>(
                 &format!(
                     "{}/indexes/{}/settings/searchable-attributes",
@@ -631,7 +622,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_displayed_attributes(&self) -> Result<Vec<String>, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), Vec<String>>(
                 &format!(
                     "{}/indexes/{}/settings/displayed-attributes",
@@ -667,7 +657,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_faceting(&self) -> Result<FacetingSettings, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), FacetingSettings>(
                 &format!(
                     "{}/indexes/{}/settings/faceting",
@@ -702,7 +691,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_dictionary(&self) -> Result<Vec<String>, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), Vec<String>>(
                 &format!(
                     "{}/indexes/{}/settings/dictionary",
@@ -737,7 +725,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_proximity_precision(&self) -> Result<String, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), String>(
                 &format!(
                     "{}/indexes/{}/settings/proximity-precision",
@@ -770,7 +757,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_typo_tolerance(&self) -> Result<TypoToleranceSettings, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TypoToleranceSettings>(
                 &format!(
                     "{}/indexes/{}/settings/typo-tolerance",
@@ -813,7 +799,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn set_settings(&self, settings: &Settings) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &Settings, TaskInfo>(
                 &format!("{}/indexes/{}/settings", self.client.host, self.uid),
                 self.client.get_api_key(),
@@ -856,7 +841,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &HashMap<String, Vec<String>>, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/synonyms",
@@ -895,7 +879,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn set_pagination(&self, pagination: PaginationSetting) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &PaginationSetting, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/pagination",
@@ -937,7 +920,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), Vec<String>, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/stop-words",
@@ -991,7 +973,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), Vec<String>, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/ranking-rules",
@@ -1036,7 +1017,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), Vec<String>, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/filterable-attributes",
@@ -1081,7 +1061,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), Vec<String>, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/sortable-attributes",
@@ -1125,7 +1104,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), String, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/distinct-attribute",
@@ -1166,7 +1144,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), Vec<String>, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/searchable-attributes",
@@ -1210,7 +1187,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), Vec<String>, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/displayed-attributes",
@@ -1255,7 +1231,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn set_faceting(&self, faceting: &FacetingSettings) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &FacetingSettings, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/faceting",
@@ -1296,7 +1271,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), Vec<String>, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/dictionary",
@@ -1347,7 +1321,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &TypoToleranceSettings, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/typo-tolerance",
@@ -1388,7 +1361,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), String, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/proximity-precision",
@@ -1428,7 +1400,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_settings(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!("{}/indexes/{}/settings", self.client.host, self.uid),
                 self.client.get_api_key(),
@@ -1460,7 +1431,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_synonyms(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/synonyms",
@@ -1495,7 +1465,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_pagination(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/pagination",
@@ -1529,7 +1498,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_stop_words(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/stop-words",
@@ -1566,7 +1534,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_ranking_rules(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/ranking-rules",
@@ -1601,7 +1568,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_filterable_attributes(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/filterable-attributes",
@@ -1636,7 +1602,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_sortable_attributes(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/sortable-attributes",
@@ -1671,7 +1636,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_distinct_attribute(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/distinct-attribute",
@@ -1707,7 +1671,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_searchable_attributes(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/searchable-attributes",
@@ -1742,7 +1705,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_displayed_attributes(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/displayed-attributes",
@@ -1777,7 +1739,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_faceting(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/faceting",
@@ -1812,7 +1773,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_dictionary(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/dictionary",
@@ -1847,7 +1807,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_typo_tolerance(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/typo-tolerance",
@@ -1882,7 +1841,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn reset_proximity_precision(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/proximity-precision",

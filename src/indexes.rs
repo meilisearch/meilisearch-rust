@@ -184,7 +184,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn delete(self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!("{}/indexes/{}", self.client.host, self.uid),
                 self.client.get_api_key(),
@@ -232,7 +231,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<SearchResults<T>, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &SearchQuery<Http>, SearchResults<T>>(
                 &format!("{}/indexes/{}/search", self.client.host, self.uid),
                 self.client.get_api_key(),
@@ -327,7 +325,6 @@ impl<Http: HttpClient> Index<Http> {
         );
         self.client
             .http_client
-            .clone()
             .request::<(), (), T>(
                 &url,
                 self.client.get_api_key(),
@@ -385,7 +382,6 @@ impl<Http: HttpClient> Index<Http> {
         );
         self.client
             .http_client
-            .clone()
             .request::<&DocumentQuery<Http>, (), T>(
                 &url,
                 self.client.get_api_key(),
@@ -432,7 +428,6 @@ impl<Http: HttpClient> Index<Http> {
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
         self.client
             .http_client
-            .clone()
             .request::<(), (), DocumentsResults<T>>(
                 &url,
                 self.client.get_api_key(),
@@ -488,7 +483,6 @@ impl<Http: HttpClient> Index<Http> {
             return self
                 .client
                 .http_client
-                .clone()
                 .request::<(), &DocumentsQuery<Http>, DocumentsResults<T>>(
                     &url,
                     self.client.get_api_key(),
@@ -523,7 +517,6 @@ impl<Http: HttpClient> Index<Http> {
         let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
         self.client
             .http_client
-            .clone()
             .request::<&DocumentsQuery<Http>, (), DocumentsResults<T>>(
                 &url,
                 self.client.get_api_key(),
@@ -603,7 +596,6 @@ impl<Http: HttpClient> Index<Http> {
         };
         self.client
             .http_client
-            .clone()
             .request::<(), &[T], TaskInfo>(
                 &url,
                 self.client.get_api_key(),
@@ -653,7 +645,6 @@ impl<Http: HttpClient> Index<Http> {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    #[cfg(not(target_arch = "wasm32"))]
     pub async fn add_or_replace_unchecked_payload<
         T: futures_io::AsyncRead + Send + Sync + 'static,
     >(
@@ -670,8 +661,8 @@ impl<Http: HttpClient> Index<Http> {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        let http_clint = self.client.http_client.clone();
-        http_clint
+        self.client
+            .http_client
             .stream_request::<(), T, TaskInfo>(
                 &url,
                 self.client.get_api_key(),
@@ -943,8 +934,8 @@ impl<Http: HttpClient> Index<Http> {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        let client = self.client.http_client.clone();
-        client
+        self.client
+            .http_client
             .request::<(), &[T], TaskInfo>(
                 &url,
                 self.client.get_api_key(),
@@ -1012,8 +1003,8 @@ impl<Http: HttpClient> Index<Http> {
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
         };
-        let http_client = self.client.http_client.clone();
-        http_client
+        self.client
+            .http_client
             .stream_request::<(), T, TaskInfo>(
                 &url,
                 self.client.get_api_key(),
@@ -1066,7 +1057,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn delete_all_documents(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!("{}/indexes/{}/documents", self.client.host, self.uid),
                 self.client.get_api_key(),
@@ -1112,7 +1102,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn delete_document<T: Display>(&self, uid: T) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/documents/{}",
@@ -1167,7 +1156,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &[T], TaskInfo>(
                 &format!(
                     "{}/indexes/{}/documents/delete-batch",
@@ -1228,7 +1216,6 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &DocumentDeletionQuery<Http>, TaskInfo>(
                 &format!("{}/indexes/{}/documents/delete", self.client.host, self.uid),
                 self.client.get_api_key(),
@@ -1358,7 +1345,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_task(&self, uid: impl AsRef<u32>) -> Result<Task, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), Task>(
                 &format!("{}/tasks/{}", self.client.host, uid.as_ref()),
                 self.client.get_api_key(),
@@ -1450,7 +1436,6 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_stats(&self) -> Result<IndexStats, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), IndexStats>(
                 &format!("{}/indexes/{}/stats", self.client.host, self.uid),
                 self.client.get_api_key(),
@@ -1810,7 +1795,6 @@ impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
     pub async fn execute(&'a self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &IndexUpdater<Http>, TaskInfo>(
                 &format!("{}/indexes/{}", self.client.host, self.uid),
                 self.client.get_api_key(),

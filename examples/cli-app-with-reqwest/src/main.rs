@@ -22,7 +22,7 @@ pub struct ReqwestClient;
 #[async_trait(?Send)]
 impl HttpClient for ReqwestClient {
     async fn request<Query, Body, Output>(
-        self,
+        &self,
         url: &str,
         apikey: Option<&str>,
         method: Method<Query, Body>,
@@ -113,7 +113,7 @@ impl HttpClient for ReqwestClient {
         Body: futures::AsyncRead + Send + Sync + 'static,
         Output: DeserializeOwned + 'static,
     >(
-        self,
+        &self,
         _url: &str,
         _apikey: Option<&str>,
         _method: Method<Query, Body>,
