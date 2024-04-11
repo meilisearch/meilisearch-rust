@@ -13,10 +13,6 @@ pub enum Error {
     Meilisearch(#[from] MeilisearchError),
     #[error(transparent)]
     MeilisearchCommunication(#[from] MeilisearchCommunicationError),
-    /// There is no Meilisearch server listening on the [specified host]
-    /// (../client/struct.Client.html#method.new).
-    #[error("The Meilisearch server can't be reached.")]
-    UnreachableServer,
     /// The Meilisearch server returned an invalid JSON for a request.
     #[error("Error parsing response JSON: {}", .0)]
     ParseError(#[from] serde_json::Error),
@@ -46,15 +42,9 @@ pub enum Error {
     InvalidTenantToken(#[from] jsonwebtoken::errors::Error),
 
     /// The http client encountered an error.
-    #[cfg(feature = "isahc")]
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(feature = "reqwest")]
     #[error("HTTP request failed: {}", .0)]
-    HttpError(isahc::Error),
-
-    /// The http client encountered an error.
-    #[cfg(target_arch = "wasm32")]
-    #[error("HTTP request failed: {}", .0)]
-    HttpError(String),
+    HttpError(#[from] reqwest::Error),
 
     // The library formatting the query parameters encountered an error.
     #[error("Internal Error: could not parse the query parameters: {}", .0)]
@@ -277,27 +267,16 @@ impl std::fmt::Display for ErrorCode {
     }
 }
 
-#[cfg(feature = "isahc")]
-#[cfg(not(target_arch = "wasm32"))]
-impl From<isahc::Error> for Error {
-    fn from(error: isahc::Error) -> Error {
-        if error.kind() == isahc::error::ErrorKind::ConnectionFailed {
-            Error::UnreachableServer
-        } else {
-            Error::HttpError(error)
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
     use jsonwebtoken::errors::ErrorKind::InvalidToken;
+    use meilisearch_test_macro::meilisearch_test;
     use uuid::Uuid;
 
-    #[test]
-    fn test_meilisearch_error() {
+    #[meilisearch_test]
+    async fn test_meilisearch_error() {
         let error: MeilisearchError = serde_json::from_str(
             r#"
 {
@@ -329,8 +308,8 @@ mod test {
         assert_eq!(error.error_type, ErrorType::Unknown);
     }
 
-    #[test]
-    fn test_error_message_parsing() {
+    #[meilisearch_test]
+    async fn test_error_message_parsing() {
         let error: MeilisearchError = serde_json::from_str(
             r#"
 {
@@ -364,12 +343,6 @@ mod test {
         assert_eq!(
             error.to_string(),
             "MeilisearchCommunicationError: The server responded with a 404.\nurl: http://localhost:7700/something"
-        );
-
-        let error = Error::UnreachableServer;
-        assert_eq!(
-            error.to_string(),
-            "The Meilisearch server can't be reached."
         );
 
         let error = Error::Timeout;
@@ -411,10 +384,19 @@ mod test {
             "Error parsing response JSON: invalid type: map, expected a string at line 2 column 8"
         );
 
-        let error = Error::HttpError(isahc::post("test_url", "test_body").unwrap_err());
+        let error = Error::HttpError(
+            reqwest::Client::new()
+                .execute(reqwest::Request::new(
+                    reqwest::Method::POST,
+                    // there will never be a `meilisearch.gouv.fr` addr since these domain name are controlled by the state of france
+                    reqwest::Url::parse("https://meilisearch.gouv.fr").unwrap(),
+                ))
+                .await
+                .unwrap_err(),
+        );
         assert_eq!(
             error.to_string(),
-            "HTTP request failed: failed to resolve host name"
+            "HTTP request failed: error sending request for url (https://meilisearch.gouv.fr/)"
         );
 
         let error = Error::InvalidTenantToken(jsonwebtoken::errors::Error::from(InvalidToken));

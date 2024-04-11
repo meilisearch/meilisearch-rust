@@ -23,23 +23,18 @@ yaup = "0.2.0"
 either = { version = "1.8.0", features = ["serde"] }
 thiserror = "1.0.37"
 meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", version = "0.25.0" }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-futures = "0.3"
-futures-io = "0.3.26"
-isahc = { version = "1.0", features = ["http2", "text-decoding"], optional = true, default_features = false }
+tokio-util = { version = "0.7.10", default-features = false, features = ["io", "compat"] }
+reqwest = { version = "0.12.3", optional = true, default-features = false, features = ["rustls-tls", "http2", "stream"] }
 uuid = { version = "1.1.2", features = ["v4"] }
+futures-io = "0.3.30"
+futures = "0.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-js-sys = "0.3.47"
-web-sys = { version = "0.3", features = ["RequestInit", "Headers", "Window", "Response", "console"] }
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
+uuid = { version = "1.8.0", default-features = false, features = ["v4", "js"] }
 
 [features]
-default = ["isahc", "isahc", "isahc-static-curl"]
-isahc-static-curl = ["isahc", "isahc", "isahc/static-curl"]
-isahc-static-ssl = ["isahc/static-ssl"]
+default = ["reqwest"]
+reqwest = ["dep:reqwest"]
 
 [dev-dependencies]
 futures-await-test = "0.3"

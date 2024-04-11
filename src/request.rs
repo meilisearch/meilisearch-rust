@@ -46,32 +46,20 @@ pub trait HttpClient: Clone + Send + Sync {
     ) -> Result<Output, Error>;
 }
 
-#[cfg(feature = "isahc")]
-#[derive(Debug, Clone, Copy, Default, Serialize)]
-pub struct IsahcClient;
+#[cfg(feature = "reqwest")]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ReqwestClient;
 
-#[cfg(feature = "isahc")]
-impl IsahcClient {
+#[cfg(feature = "reqwest")]
+impl ReqwestClient {
     pub fn new() -> Self {
-        IsahcClient
+        ReqwestClient
     }
 }
 
-#[cfg(target_arch = "wasm32")]
-#[derive(Debug, Clone, Copy, Default, Serialize)]
-pub struct WebSysClient;
-
-#[cfg(target_arch = "wasm32")]
-impl WebSysClient {
-    pub fn new() -> Self {
-        WebSysClient
-    }
-}
-
-#[cfg(feature = "isahc")]
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "reqwest")]
 #[async_trait(?Send)]
-impl HttpClient for IsahcClient {
+impl HttpClient for ReqwestClient {
     async fn request<Query, Body, Output>(
         self,
         url: &str,
@@ -84,91 +72,79 @@ impl HttpClient for IsahcClient {
         Body: Serialize + Send + Sync,
         Output: DeserializeOwned + 'static + Send,
     {
-        use isahc::http::header;
-        use isahc::http::method::Method as HttpMethod;
-        use isahc::*;
+        use reqwest::{header, ClientBuilder};
         use serde_json::to_string;
 
-        let builder = Request::builder().header(header::USER_AGENT, qualified_version());
-        let builder = match apikey {
-            Some(apikey) => builder.header(header::AUTHORIZATION, format!("Bearer {apikey}")),
-            None => builder,
-        };
+        let builder = ClientBuilder::new();
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+            header::USER_AGENT,
+            header::HeaderValue::from_str(&qualified_version()).unwrap(),
+        );
 
-        let mut response = match &method {
+        if let Some(apikey) = apikey {
+            headers.insert(
+                header::AUTHORIZATION,
+                header::HeaderValue::from_str(&format!("Bearer {apikey}")).unwrap(),
+            );
+        }
+
+        let builder = builder.default_headers(headers);
+        let client = builder.build().unwrap();
+
+        let request = match &method {
             Method::Get { query } => {
                 let url = add_query_parameters(url, query)?;
 
-                builder
-                    .method(HttpMethod::GET)
-                    .uri(url)
-                    .body(())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                client.request(reqwest::Method::GET, url.as_str()).build()?
             }
             Method::Delete { query } => {
                 let url = add_query_parameters(url, query)?;
 
-                builder
-                    .method(HttpMethod::DELETE)
-                    .uri(url)
-                    .body(())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                client
+                    .request(reqwest::Method::DELETE, url.as_str())
+                    .build()?
             }
             Method::Post { query, body } => {
                 let url = add_query_parameters(url, query)?;
 
-                builder
-                    .method(HttpMethod::POST)
-                    .uri(url)
+                client
+                    .request(reqwest::Method::POST, url.as_str())
                     .header(header::CONTENT_TYPE, "application/json")
                     .body(to_string(&body).unwrap())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                    .build()?
             }
             Method::Patch { query, body } => {
                 let url = add_query_parameters(url, query)?;
 
-                builder
-                    .method(HttpMethod::PATCH)
-                    .uri(url)
+                client
+                    .request(reqwest::Method::PATCH, url.as_str())
                     .header(header::CONTENT_TYPE, "application/json")
                     .body(to_string(&body).unwrap())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                    .build()?
             }
             Method::Put { query, body } => {
                 let url = add_query_parameters(url, query)?;
 
-                builder
-                    .method(HttpMethod::PUT)
-                    .uri(url)
+                client
+                    .request(reqwest::Method::PUT, url.as_str())
                     .header(header::CONTENT_TYPE, "application/json")
                     .body(to_string(&body).unwrap())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                    .build()?
             }
         };
 
+        let response = client.execute(request).await.unwrap();
+
         let status = response.status().as_u16();
 
-        let mut body = response
-            .text()
-            .await
-            .map_err(|e| crate::errors::Error::HttpError(e.into()))?;
+        let mut body = response.text().await?;
 
         if body.is_empty() {
             body = "null".to_string();
         }
 
         parse_response(status, expected_status_code, &body, url.to_string())
-        // parse_response(status, expected_status_code, body)
     }
 
     async fn stream_request<
@@ -184,90 +160,90 @@ impl HttpClient for IsahcClient {
         content_type: &str,
         expected_status_code: u16,
     ) -> Result<Output, Error> {
-        use isahc::http::header;
-        use isahc::http::method::Method as HttpMethod;
-        use isahc::*;
+        use reqwest::{header, ClientBuilder};
 
-        let builder = Request::builder().header(header::USER_AGENT, qualified_version());
-        let builder = match apikey {
-            Some(apikey) => builder.header(header::AUTHORIZATION, format!("Bearer {apikey}")),
-            None => builder,
-        };
+        let builder = ClientBuilder::new();
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+            header::USER_AGENT,
+            header::HeaderValue::from_str(&qualified_version()).unwrap(),
+        );
 
-        let mut response = match method {
+        if let Some(apikey) = apikey {
+            headers.insert(
+                header::AUTHORIZATION,
+                header::HeaderValue::from_str(&format!("Bearer {apikey}")).unwrap(),
+            );
+        }
+
+        let builder = builder.default_headers(headers);
+        let client = builder.build().unwrap();
+
+        let request = match method {
             Method::Get { query } => {
                 let url = add_query_parameters(url, &query)?;
 
-                builder
-                    .method(HttpMethod::GET)
-                    .uri(url)
-                    .body(())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                client.request(reqwest::Method::GET, url.as_str()).build()?
             }
             Method::Delete { query } => {
                 let url = add_query_parameters(url, &query)?;
 
-                builder
-                    .method(HttpMethod::DELETE)
-                    .uri(url)
-                    .body(())
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                client
+                    .request(reqwest::Method::DELETE, url.as_str())
+                    .build()?
             }
             Method::Post { query, body } => {
                 let url = add_query_parameters(url, &query)?;
 
-                builder
-                    .method(HttpMethod::POST)
-                    .uri(url)
+                let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
+                let stream = tokio_util::io::ReaderStream::new(reader);
+                let body = reqwest::Body::wrap_stream(stream);
+
+                client
+                    .request(reqwest::Method::POST, url.as_str())
                     .header(header::CONTENT_TYPE, content_type)
-                    .body(AsyncBody::from_reader(body))
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                    .body(body)
+                    .build()?
             }
             Method::Patch { query, body } => {
                 let url = add_query_parameters(url, &query)?;
 
-                builder
-                    .method(HttpMethod::PATCH)
-                    .uri(url)
+                let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
+                let stream = tokio_util::io::ReaderStream::new(reader);
+                let body = reqwest::Body::wrap_stream(stream);
+
+                client
+                    .request(reqwest::Method::PATCH, url.as_str())
                     .header(header::CONTENT_TYPE, content_type)
-                    .body(AsyncBody::from_reader(body))
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                    .body(body)
+                    .build()?
             }
             Method::Put { query, body } => {
                 let url = add_query_parameters(url, &query)?;
 
-                builder
-                    .method(HttpMethod::PUT)
-                    .uri(url)
+                let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
+                let stream = tokio_util::io::ReaderStream::new(reader);
+                let body = reqwest::Body::wrap_stream(stream);
+
+                client
+                    .request(reqwest::Method::PUT, url.as_str())
                     .header(header::CONTENT_TYPE, content_type)
-                    .body(AsyncBody::from_reader(body))
-                    .map_err(|_| crate::errors::Error::InvalidRequest)?
-                    .send_async()
-                    .await?
+                    .body(body)
+                    .build()?
             }
         };
 
+        let response = client.execute(request).await.unwrap();
+
         let status = response.status().as_u16();
 
-        let mut body = response
-            .text()
-            .await
-            .map_err(|e| crate::errors::Error::HttpError(e.into()))?;
+        let mut body = response.text().await?;
 
         if body.is_empty() {
             body = "null".to_string();
         }
 
         parse_response(status, expected_status_code, &body, url.to_string())
-        // parse_response(status, expected_status_code, body)
     }
 }
 

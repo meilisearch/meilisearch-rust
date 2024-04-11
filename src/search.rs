@@ -160,7 +160,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///     name: String,
 ///     description: String,
 /// }
-/// # futures::executor::block_on(async move {
+/// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
 /// # let index = client
 /// #  .create_index("search_query_builder", None)
@@ -382,7 +382,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
@@ -414,7 +414,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {

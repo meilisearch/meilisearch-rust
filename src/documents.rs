@@ -129,7 +129,7 @@ impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// # futures::executor::block_on(async move {
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// struct MyObject {
     ///     id: String,
@@ -294,7 +294,7 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// # futures::executor::block_on(async move {
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let index = client.create_index("documents_query_execute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// struct MyObject {
@@ -355,7 +355,7 @@ impl<'a, Http: HttpClient> DocumentDeletionQuery<'a, Http> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{client::Client, errors::*, indexes::*, request::IsahcClient};
+    use crate::{client::Client, errors::*, indexes::*};
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
 
@@ -367,10 +367,7 @@ mod tests {
 
     #[allow(unused)]
     #[derive(IndexConfig)]
-    struct MovieClips
-    where
-        IsahcClient: HttpClient,
-    {
+    struct MovieClips {
         #[index_config(primary_key)]
         movie_id: u64,
         #[index_config(distinct)]
@@ -387,10 +384,7 @@ mod tests {
 
     #[allow(unused)]
     #[derive(IndexConfig)]
-    struct VideoClips
-    where
-        IsahcClient: HttpClient,
-    {
+    struct VideoClips {
         video_id: u64,
     }
 

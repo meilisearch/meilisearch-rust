@@ -15,7 +15,8 @@
 //! }
 //!
 //!
-//! fn main() { block_on(async move {
+//! #[tokio::main(flavor = "current_thread")]
+//! async fn main() {
 //! #   let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #   let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //!     // Create a client (without sending any request so that can't fail)
@@ -35,7 +36,7 @@
 //!         Movie { id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()] },
 //!     ], Some("id")).await.unwrap();
 //! #   index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-//! })}
+//! }
 //! ```
 //!
 //! With the `uid`, you can check the status (`enqueued`, `canceled`, `processing`, `succeeded` or `failed`) of your documents addition using the [task](https://www.meilisearch.com/docs/reference/api/tasks#get-task).
@@ -45,14 +46,13 @@
 //! ```
 //! # use meilisearch_sdk::client::*;
 //! # use serde::{Serialize, Deserialize};
-//! # use futures::executor::block_on;
 //! # #[derive(Serialize, Deserialize, Debug)]
 //! # struct Movie {
 //! #    id: usize,
 //! #    title: String,
 //! #    genres: Vec<String>,
 //! # }
-//! # fn main() { block_on(async move {
+//! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! #    let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #    let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
@@ -88,14 +88,13 @@
 //! ```
 //! # use meilisearch_sdk::{client::*, search::*};
 //! # use serde::{Serialize, Deserialize};
-//! # use futures::executor::block_on;
 //! # #[derive(Serialize, Deserialize, Debug)]
 //! # struct Movie {
 //! #    id: usize,
 //! #    title: String,
 //! #    genres: Vec<String>,
 //! # }
-//! # fn main() { block_on(async move {
+//! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! #   let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #   let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
@@ -141,8 +140,7 @@
 //! ```
 //! # use meilisearch_sdk::{client::*};
 //! # use serde::{Serialize, Deserialize};
-//! # use futures::executor::block_on;
-//! # fn main() { block_on(async move {
+//! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! #    let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #    let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
@@ -165,14 +163,13 @@
 //! ```
 //! # use meilisearch_sdk::{client::*, search::*};
 //! # use serde::{Serialize, Deserialize};
-//! # use futures::executor::block_on;
 //! # #[derive(Serialize, Deserialize, Debug)]
 //! # struct Movie {
 //! #    id: usize,
 //! #    title: String,
 //! #    genres: Vec<String>,
 //! # }
-//! # fn main() { block_on(async move {
+//! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //! # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
@@ -257,13 +254,10 @@ mod tenant_tokens;
 /// Module containing utilizes functions.
 mod utils;
 
-#[cfg(feature = "isahc")]
-#[cfg(not(target_arch = "wasm32"))]
-pub type DefaultHttpClient = request::IsahcClient;
-#[cfg(target_arch = "wasm32")]
-pub type DefaultHttpClient = request::WebSysClient;
+#[cfg(feature = "reqwest")]
+pub type DefaultHttpClient = request::ReqwestClient;
 
-#[cfg(not(feature = "isahc"))]
+#[cfg(not(feature = "reqwest"))]
 pub type DefaultHttpClient = std::convert::Infallible;
 
 #[cfg(test)]
