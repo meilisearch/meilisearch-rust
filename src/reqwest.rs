@@ -52,7 +52,14 @@ impl HttpClient for ReqwestClient {
     ) -> Result<Output, Error> {
         use reqwest::header;
 
-        let url = add_query_parameters(url, method.query())?;
+        let query = method.query();
+        let query = yaup::to_string(query)?;
+
+        let url = if query.is_empty() {
+            url.to_string()
+        } else {
+            format!("{url}?{query}")
+        };
 
         let mut request = self.client.request(verb(&method), &url);
 
@@ -85,16 +92,6 @@ fn verb<Q, B>(method: &Method<Q, B>) -> reqwest::Method {
         Method::Post { .. } => reqwest::Method::POST,
         Method::Put { .. } => reqwest::Method::PUT,
         Method::Patch { .. } => reqwest::Method::PATCH,
-    }
-}
-
-pub fn add_query_parameters<Query: Serialize>(url: &str, query: &Query) -> Result<String, Error> {
-    let query = yaup::to_string(query)?;
-
-    if query.is_empty() {
-        Ok(url.to_string())
-    } else {
-        Ok(format!("{url}?{query}"))
     }
 }
 
