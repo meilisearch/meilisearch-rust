@@ -65,7 +65,7 @@ impl<Q, B> Method<Q, B> {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait HttpClient: Clone + Send + Sync {
     async fn request<Query, Body, Output>(
         &self,
@@ -90,7 +90,6 @@ pub trait HttpClient: Clone + Send + Sync {
     }
 
     async fn stream_request<
-        'a,
         Query: Serialize + Send + Sync,
         Body: futures_io::AsyncRead + Send + Sync + 'static,
         Output: DeserializeOwned + 'static,
@@ -144,7 +143,7 @@ pub fn parse_response<Output: DeserializeOwned>(
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl HttpClient for Infallible {
     async fn request<Query, Body, Output>(
         &self,
@@ -161,7 +160,6 @@ impl HttpClient for Infallible {
     }
 
     async fn stream_request<
-        'a,
         Query: Serialize + Send + Sync,
         Body: futures_io::AsyncRead + Send + Sync + 'static,
         Output: DeserializeOwned + 'static,

@@ -44,10 +44,9 @@ impl ReqwestClient {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl HttpClient for ReqwestClient {
     async fn stream_request<
-        'a,
         Query: Serialize + Send + Sync,
         Body: futures_io::AsyncRead + Send + Sync + 'static,
         Output: DeserializeOwned + 'static,
@@ -72,12 +71,25 @@ impl HttpClient for ReqwestClient {
         let mut request = self.client.request(verb(&method), &url);
 
         if let Some(body) = method.into_body() {
-            let stream = ReaderStream::new(body);
-            let body = reqwest::Body::wrap_stream(stream);
+            // TODO: Currently reqwest doesn't support streaming data in wasm so we need to collect everything in RAM
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let stream = ReaderStream::new(body);
+                let body = reqwest::Body::wrap_stream(stream);
 
-            request = request
-                .header(header::CONTENT_TYPE, content_type)
-                .body(body);
+                request = request
+                    .header(header::CONTENT_TYPE, content_type)
+                    .body(body);
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                use futures::{pin_mut, AsyncReadExt};
+
+                let mut buf = Vec::new();
+                pin_mut!(body);
+                body.read_to_end(&mut buf).await.unwrap();
+                request = request.header(header::CONTENT_TYPE, content_type).body(buf);
+            }
         }
 
         let response = self.client.execute(request.build()?).await?;

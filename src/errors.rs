@@ -38,6 +38,7 @@ pub enum Error {
     TenantTokensExpiredSignature,
 
     /// When jsonwebtoken cannot generate the token successfully.
+    #[cfg(not(target_arch = "wasm32"))]
     #[error("Impossible to generate the token, jsonwebtoken encountered an error: {}", .0)]
     InvalidTenantToken(#[from] jsonwebtoken::errors::Error),
 

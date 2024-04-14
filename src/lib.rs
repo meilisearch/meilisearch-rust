@@ -250,6 +250,7 @@ pub mod task_info;
 /// Module representing the [`Task`]s.
 pub mod tasks;
 /// Module that generates tenant tokens.
+#[cfg(not(target_arch = "wasm32"))]
 mod tenant_tokens;
 /// Module containing utilizes functions.
 mod utils;

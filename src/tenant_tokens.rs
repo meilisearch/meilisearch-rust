@@ -7,7 +7,6 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
-#[cfg(not(target_arch = "wasm32"))]
 #[serde(rename_all = "camelCase")]
 struct TenantTokenClaim {
     api_key_uid: String,
@@ -16,7 +15,6 @@ struct TenantTokenClaim {
     exp: Option<OffsetDateTime>,
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 pub fn generate_tenant_token(
     api_key_uid: String,
     search_rules: Value,

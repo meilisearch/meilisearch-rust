@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use meilisearch_sdk::errors::Error;
-use meilisearch_sdk::request::{parse_response, qualified_version, HttpClient, Method};
+use meilisearch_sdk::request::{parse_response, HttpClient, Method};
 use meilisearch_sdk::{client::*, settings::Settings};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -17,7 +17,7 @@ lazy_static! {
 #[derive(Debug, Clone, Serialize)]
 pub struct ReqwestClient;
 
-#[async_trait]
+#[async_trait(?Send)]
 impl HttpClient for ReqwestClient {
     async fn request<Query, Body, Output>(
         &self,
@@ -34,8 +34,7 @@ impl HttpClient for ReqwestClient {
             Method::Get { query } => {
                 let url = add_query_parameters(url, query)?;
                 let client = reqwest::Client::new();
-                let mut builder = client.request(reqwest::Method::GET, url.as_str());
-                builder = builder.header(reqwest::header::USER_AGENT, qualified_version());
+                let builder = client.request(reqwest::Method::GET, url.as_str());
                 let req = builder.build().unwrap();
                 client.execute(req).await.unwrap()
             }
@@ -85,7 +84,6 @@ impl HttpClient for ReqwestClient {
     }
 
     async fn stream_request<
-        'a,
         Query: Serialize + Send + Sync,
         Body: futures::AsyncRead + Send + Sync + 'static,
         Output: DeserializeOwned + 'static,
