@@ -217,12 +217,11 @@
 //! }
 //! ```
 //!
-//! ### Using users customized HttpClient <!-- omit in TOC -->
+//! ### Customize the `HttpClient` <!-- omit in TOC -->
 //!
-//! If you want to change the `HttpClient` you can incorporate using the `Client::new_with_client` method.
-//! To use it, you need to implement the `HttpClient Trait`(`isahc` is used by default).
-//! There are [using-reqwest-example](./examples/cli-app-with-reqwest) of using `reqwest`.
-
+//! By default, the SDK uses [`reqwest`](https://docs.rs/reqwest/latest/reqwest/) to make http calls.
+//! The SDK lets you customize the http client by implementing the `HttpClient` trait yourself and
+//! initializing the `Client` with the `new_with_client` method.
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
