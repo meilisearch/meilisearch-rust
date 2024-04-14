@@ -63,20 +63,9 @@ impl<Q, B> Method<Q, B> {
             Method::Patch { body, query: _ } => Some(body),
         }
     }
-
-    #[cfg(feature = "reqwest")]
-    pub fn verb(&self) -> reqwest::Method {
-        match self {
-            Method::Get { .. } => reqwest::Method::GET,
-            Method::Delete { .. } => reqwest::Method::DELETE,
-            Method::Post { .. } => reqwest::Method::POST,
-            Method::Put { .. } => reqwest::Method::PUT,
-            Method::Patch { .. } => reqwest::Method::PATCH,
-        }
-    }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 pub trait HttpClient: Clone + Send + Sync {
     async fn request<Query, Body, Output>(
         &self,
@@ -111,91 +100,6 @@ pub trait HttpClient: Clone + Send + Sync {
         content_type: &str,
         expected_status_code: u16,
     ) -> Result<Output, Error>;
-}
-
-#[cfg(feature = "reqwest")]
-#[derive(Debug, Clone, Default)]
-pub struct ReqwestClient {
-    client: reqwest::Client,
-}
-
-#[cfg(feature = "reqwest")]
-impl ReqwestClient {
-    pub fn new(api_key: Option<&str>) -> Self {
-        use reqwest::{header, ClientBuilder};
-
-        let builder = ClientBuilder::new();
-        let mut headers = header::HeaderMap::new();
-        headers.insert(
-            header::USER_AGENT,
-            header::HeaderValue::from_str(&qualified_version()).unwrap(),
-        );
-
-        if let Some(api_key) = api_key {
-            headers.insert(
-                header::AUTHORIZATION,
-                header::HeaderValue::from_str(&format!("Bearer {api_key}")).unwrap(),
-            );
-        }
-
-        let builder = builder.default_headers(headers);
-        let client = builder.build().unwrap();
-
-        ReqwestClient { client }
-    }
-}
-
-#[cfg(feature = "reqwest")]
-#[async_trait(?Send)]
-impl HttpClient for ReqwestClient {
-    async fn stream_request<
-        'a,
-        Query: Serialize + Send + Sync,
-        Body: futures_io::AsyncRead + Send + Sync + 'static,
-        Output: DeserializeOwned + 'static,
-    >(
-        &self,
-        url: &str,
-        method: Method<Query, Body>,
-        content_type: &str,
-        expected_status_code: u16,
-    ) -> Result<Output, Error> {
-        use reqwest::header;
-
-        let url = add_query_parameters(url, method.query())?;
-
-        let mut request = self.client.request(method.verb(), &url);
-
-        if let Some(body) = method.into_body() {
-            let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
-            let stream = tokio_util::io::ReaderStream::new(reader);
-            let body = reqwest::Body::wrap_stream(stream);
-
-            request = request
-                .header(header::CONTENT_TYPE, content_type)
-                .body(body);
-        }
-
-        let response = self.client.execute(request.build()?).await?;
-        let status = response.status().as_u16();
-        let mut body = response.text().await?;
-
-        if body.is_empty() {
-            body = "null".to_string();
-        }
-
-        parse_response(status, expected_status_code, &body, url.to_string())
-    }
-}
-
-pub fn add_query_parameters<Query: Serialize>(url: &str, query: &Query) -> Result<String, Error> {
-    let query = yaup::to_string(query)?;
-
-    if query.is_empty() {
-        Ok(url.to_string())
-    } else {
-        Ok(format!("{url}?{query}"))
-    }
 }
 
 pub fn parse_response<Output: DeserializeOwned>(
@@ -239,13 +143,7 @@ pub fn parse_response<Output: DeserializeOwned>(
     }
 }
 
-pub fn qualified_version() -> String {
-    const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
-
-    format!("Meilisearch Rust (v{})", VERSION.unwrap_or("unknown"))
-}
-
-#[async_trait(?Send)]
+#[async_trait]
 impl HttpClient for Infallible {
     async fn request<Query, Body, Output>(
         &self,

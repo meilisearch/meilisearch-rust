@@ -48,7 +48,7 @@ impl Client {
     /// ```
     pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
         let api_key = api_key.map(|key| key.into());
-        let http_client = ReqwestClient::new(api_key.as_deref());
+        let http_client = crate::reqwest::ReqwestClient::new(api_key.as_deref());
 
         Client {
             host: host.into(),
@@ -1142,7 +1142,7 @@ mod tests {
 
     use meilisearch_test_macro::meilisearch_test;
 
-    use crate::{client::*, key::Action};
+    use crate::{client::*, key::Action, reqwest::qualified_version};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {

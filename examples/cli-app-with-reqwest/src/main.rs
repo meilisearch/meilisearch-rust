@@ -1,9 +1,7 @@
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use meilisearch_sdk::errors::Error;
-use meilisearch_sdk::request::{
-    add_query_parameters, parse_response, qualified_version, HttpClient, Method,
-};
+use meilisearch_sdk::request::{parse_response, qualified_version, HttpClient, Method};
 use meilisearch_sdk::{client::*, settings::Settings};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -19,7 +17,7 @@ lazy_static! {
 #[derive(Debug, Clone, Serialize)]
 pub struct ReqwestClient;
 
-#[async_trait(?Send)]
+#[async_trait]
 impl HttpClient for ReqwestClient {
     async fn request<Query, Body, Output>(
         &self,
@@ -247,5 +245,15 @@ impl fmt::Display for ClothesDisplay {
             "result\n article: {},\n price: {},\n size: {},\n pattern: {}\n",
             self.article, self.cost, self.size, self.pattern
         )
+    }
+}
+
+fn add_query_parameters<Query: Serialize>(url: &str, query: &Query) -> Result<String, Error> {
+    let query = yaup::to_string(query)?;
+
+    if query.is_empty() {
+        Ok(url.to_string())
+    } else {
+        Ok(format!("{url}?{query}"))
     }
 }

@@ -255,7 +255,10 @@ mod tenant_tokens;
 mod utils;
 
 #[cfg(feature = "reqwest")]
-pub type DefaultHttpClient = request::ReqwestClient;
+pub mod reqwest;
+
+#[cfg(feature = "reqwest")]
+pub type DefaultHttpClient = reqwest::ReqwestClient;
 
 #[cfg(not(feature = "reqwest"))]
 pub type DefaultHttpClient = std::convert::Infallible;
