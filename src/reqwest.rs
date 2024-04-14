@@ -25,8 +25,14 @@ impl ReqwestClient {
 
         let builder = ClientBuilder::new();
         let mut headers = header::HeaderMap::new();
+        #[cfg(not(target_arch = "wasm32"))]
         headers.insert(
             header::USER_AGENT,
+            header::HeaderValue::from_str(&qualified_version()).unwrap(),
+        );
+        #[cfg(target_arch = "wasm32")]
+        headers.insert(
+            header::HeaderName::from_static("X-Meilisearch-Client"),
             header::HeaderValue::from_str(&qualified_version()).unwrap(),
         );
 
