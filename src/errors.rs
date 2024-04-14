@@ -11,6 +11,7 @@ pub enum Error {
     /// Also check out: <https://github.com/meilisearch/Meilisearch/blob/main/meilisearch-error/src/lib.rs>
     #[error(transparent)]
     Meilisearch(#[from] MeilisearchError),
+
     #[error(transparent)]
     MeilisearchCommunication(#[from] MeilisearchCommunicationError),
     /// The Meilisearch server returned an invalid JSON for a request.
@@ -50,13 +51,18 @@ pub enum Error {
     // The library formatting the query parameters encountered an error.
     #[error("Internal Error: could not parse the query parameters: {}", .0)]
     Yaup(#[from] yaup::Error),
+
     // The library validating the format of an uuid.
     #[cfg(not(target_arch = "wasm32"))]
     #[error("The uid of the token has bit an uuid4 format: {}", .0)]
     Uuid(#[from] uuid::Error),
+
     // Error thrown in case the version of the Uuid is not v4.
     #[error("The uid provided to the token is not of version uuidv4")]
     InvalidUuid4Version,
+
+    #[error(transparent)]
+    Other(Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
 #[derive(Debug, Clone, Deserialize, Error)]

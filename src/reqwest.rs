@@ -20,7 +20,7 @@ pub struct ReqwestClient {
 }
 
 impl ReqwestClient {
-    pub fn new(api_key: Option<&str>) -> Self {
+    pub fn new(api_key: Option<&str>) -> Result<Self, Error> {
         use reqwest::{header, ClientBuilder};
 
         let builder = ClientBuilder::new();
@@ -44,9 +44,9 @@ impl ReqwestClient {
         }
 
         let builder = builder.default_headers(headers);
-        let client = builder.build().unwrap();
+        let client = builder.build()?;
 
-        ReqwestClient { client }
+        Ok(ReqwestClient { client })
     }
 }
 
@@ -93,7 +93,9 @@ impl HttpClient for ReqwestClient {
 
                 let mut buf = Vec::new();
                 pin_mut!(body);
-                body.read_to_end(&mut buf).await.unwrap();
+                body.read_to_end(&mut buf)
+                    .await
+                    .map_err(|err| Error::Other(Box::new(err)))?;
                 request = request.header(header::CONTENT_TYPE, content_type).body(buf);
             }
         }

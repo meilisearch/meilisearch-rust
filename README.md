@@ -111,7 +111,7 @@ struct Movie {
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     // Create a client (without sending any request so that can't fail)
-    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 
     // An index is where the documents are stored.
     let movies = client.index("movies");

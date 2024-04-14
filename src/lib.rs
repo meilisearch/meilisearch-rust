@@ -20,7 +20,7 @@
 //! #   let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #   let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //!     // Create a client (without sending any request so that can't fail)
-//!     let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//!     let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //!
 //! #    let index = client.create_index("movies", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //!     // An index is where the documents are stored.
@@ -55,7 +55,7 @@
 //! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! #    let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #    let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //! #    let movies = client.create_index("movies_2", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! // Meilisearch is typo-tolerant:
 //! println!("{:?}", client.index("movies_2").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
@@ -97,7 +97,7 @@
 //! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! #   let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #   let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //! #    let movies = client.create_index("movies_3", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let search_result = client.index("movies_3")
 //!   .search()
@@ -143,7 +143,7 @@
 //! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! #    let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #    let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //! #    let movies = client.create_index("movies_4", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let filterable_attributes = [
 //!     "id",
@@ -172,7 +172,7 @@
 //! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//! # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //! # let movies = client.create_index("movies_5", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! # let filterable_attributes = [
 //! #     "id",

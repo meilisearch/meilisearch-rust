@@ -8,7 +8,7 @@ use std::io::stdin;
 
 // instantiate the client. load it once
 lazy_static! {
-    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey"));
+    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey")).unwrap();
 }
 
 fn main() {
