@@ -55,15 +55,15 @@ use crate::tasks::Task;
 use crate::{errors::Error, indexes::Index};
 
 #[async_trait(?Send)]
-pub trait IndexConfig<Http: HttpClient> {
+pub trait IndexConfig {
     const INDEX_STR: &'static str;
 
     #[must_use]
-    fn index(client: &Client<Http>) -> Index<Http> {
+    fn index<Http: HttpClient>(client: &Client<Http>) -> Index<Http> {
         client.index(Self::INDEX_STR)
     }
     fn generate_settings() -> Settings;
-    async fn generate_index(client: &Client<Http>) -> Result<Index<Http>, Task>;
+    async fn generate_index<Http: HttpClient>(client: &Client<Http>) -> Result<Index<Http>, Task>;
 }
 
 #[derive(Debug, Clone, Deserialize)]
