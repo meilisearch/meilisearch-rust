@@ -15,11 +15,12 @@
 //! }
 //!
 //!
-//! fn main() { block_on(async move {
+//! #[tokio::main(flavor = "current_thread")]
+//! async fn main() {
 //! #   let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #   let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //!     // Create a client (without sending any request so that can't fail)
-//!     let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//!     let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //!
 //! #    let index = client.create_index("movies", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //!     // An index is where the documents are stored.
@@ -35,7 +36,7 @@
 //!         Movie { id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()] },
 //!     ], Some("id")).await.unwrap();
 //! #   index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-//! })}
+//! }
 //! ```
 //!
 //! With the `uid`, you can check the status (`enqueued`, `canceled`, `processing`, `succeeded` or `failed`) of your documents addition using the [task](https://www.meilisearch.com/docs/reference/api/tasks#get-task).
@@ -45,17 +46,16 @@
 //! ```
 //! # use meilisearch_sdk::client::*;
 //! # use serde::{Serialize, Deserialize};
-//! # use futures::executor::block_on;
 //! # #[derive(Serialize, Deserialize, Debug)]
 //! # struct Movie {
 //! #    id: usize,
 //! #    title: String,
 //! #    genres: Vec<String>,
 //! # }
-//! # fn main() { block_on(async move {
+//! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! #    let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #    let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //! #    let movies = client.create_index("movies_2", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! // Meilisearch is typo-tolerant:
 //! println!("{:?}", client.index("movies_2").search().with_query("caorl").execute::<Movie>().await.unwrap().hits);
@@ -88,17 +88,16 @@
 //! ```
 //! # use meilisearch_sdk::{client::*, search::*};
 //! # use serde::{Serialize, Deserialize};
-//! # use futures::executor::block_on;
 //! # #[derive(Serialize, Deserialize, Debug)]
 //! # struct Movie {
 //! #    id: usize,
 //! #    title: String,
 //! #    genres: Vec<String>,
 //! # }
-//! # fn main() { block_on(async move {
+//! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! #   let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #   let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //! #    let movies = client.create_index("movies_3", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let search_result = client.index("movies_3")
 //!   .search()
@@ -141,11 +140,10 @@
 //! ```
 //! # use meilisearch_sdk::{client::*};
 //! # use serde::{Serialize, Deserialize};
-//! # use futures::executor::block_on;
-//! # fn main() { block_on(async move {
+//! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! #    let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! #    let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//! #    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //! #    let movies = client.create_index("movies_4", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! let filterable_attributes = [
 //!     "id",
@@ -165,17 +163,16 @@
 //! ```
 //! # use meilisearch_sdk::{client::*, search::*};
 //! # use serde::{Serialize, Deserialize};
-//! # use futures::executor::block_on;
 //! # #[derive(Serialize, Deserialize, Debug)]
 //! # struct Movie {
 //! #    id: usize,
 //! #    title: String,
 //! #    genres: Vec<String>,
 //! # }
-//! # fn main() { block_on(async move {
+//! # fn main() { tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-//! # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//! # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //! # let movies = client.create_index("movies_5", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
 //! # let filterable_attributes = [
 //! #     "id",
@@ -220,12 +217,11 @@
 //! }
 //! ```
 //!
-//! ### Using users customized HttpClient <!-- omit in TOC -->
+//! ### Customize the `HttpClient` <!-- omit in TOC -->
 //!
-//! If you want to change the `HttpClient` you can incorporate using the `Client::new_with_client` method.
-//! To use it, you need to implement the `HttpClient Trait`(`isahc` is used by default).
-//! There are [using-reqwest-example](./examples/cli-app-with-reqwest) of using `reqwest`.
-
+//! By default, the SDK uses [`reqwest`](https://docs.rs/reqwest/latest/reqwest/) to make http calls.
+//! The SDK lets you customize the http client by implementing the `HttpClient` trait yourself and
+//! initializing the `Client` with the `new_with_client` method.
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
@@ -253,17 +249,18 @@ pub mod task_info;
 /// Module representing the [`Task`]s.
 pub mod tasks;
 /// Module that generates tenant tokens.
+#[cfg(not(target_arch = "wasm32"))]
 mod tenant_tokens;
 /// Module containing utilizes functions.
 mod utils;
 
-#[cfg(feature = "isahc")]
-#[cfg(not(target_arch = "wasm32"))]
-pub type DefaultHttpClient = request::IsahcClient;
-#[cfg(target_arch = "wasm32")]
-pub type DefaultHttpClient = request::WebSysClient;
+#[cfg(feature = "reqwest")]
+pub mod reqwest;
 
-#[cfg(not(feature = "isahc"))]
+#[cfg(feature = "reqwest")]
+pub type DefaultHttpClient = reqwest::ReqwestClient;
+
+#[cfg(not(feature = "reqwest"))]
 pub type DefaultHttpClient = std::convert::Infallible;
 
 #[cfg(test)]

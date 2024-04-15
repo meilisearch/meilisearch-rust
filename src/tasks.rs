@@ -263,8 +263,8 @@ impl Task {
     /// # }
     /// #
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
@@ -302,9 +302,9 @@ impl Task {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # // create the client
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task = client.create_index("try_make_index", None).await.unwrap();
     /// let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
@@ -343,8 +343,8 @@ impl Task {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task = client.create_index("unwrap_failure", None).await.unwrap();
     /// let task = client
     ///     .create_index("unwrap_failure", None)
@@ -382,8 +382,8 @@ impl Task {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task = client.create_index("is_failure", None).await.unwrap();
     /// // create an index with a conflicting uid
     /// let task = client
@@ -413,8 +413,8 @@ impl Task {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task = client
     ///     .create_index("is_success", None)
     ///     .await
@@ -443,8 +443,8 @@ impl Task {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task_info = client
     ///     .create_index("is_pending", None)
     ///     .await
@@ -888,7 +888,7 @@ mod test {
     async fn test_get_tasks_no_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path = "/tasks";
 
         let mock_res = s.mock("GET", path).with_status(200).create_async().await;
@@ -902,7 +902,7 @@ mod test {
     async fn test_get_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path =
             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
 
@@ -928,7 +928,7 @@ mod test {
     async fn test_get_tasks_with_date_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path = "/tasks?\
             beforeEnqueuedAt=2022-02-03T13%3A02%3A38.369634Z\
             &afterEnqueuedAt=2023-02-03T13%3A02%3A38.369634Z\
@@ -993,7 +993,7 @@ mod test {
     async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path =
             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&canceledBy=9";
 
@@ -1051,7 +1051,7 @@ mod test {
     async fn test_cancel_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
@@ -1075,7 +1075,7 @@ mod test {
     async fn test_cancel_tasks_with_params_execute() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
@@ -1099,7 +1099,7 @@ mod test {
     async fn test_delete_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
         let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
@@ -1122,7 +1122,7 @@ mod test {
     async fn test_delete_tasks_with_params_execute() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
         let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;

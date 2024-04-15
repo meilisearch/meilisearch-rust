@@ -91,7 +91,7 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
                 let meilisearch_api_key = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
             ));
             outer_block.push(parse_quote!(
-                let client = Client::new(meilisearch_url, Some(meilisearch_api_key));
+                let client = Client::new(meilisearch_url, Some(meilisearch_api_key)).unwrap();
             ));
         }
 

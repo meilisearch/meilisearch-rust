@@ -22,7 +22,7 @@ pub struct ExperimentalFeaturesResult {
 /// # use meilisearch_sdk::{client::Client, features::ExperimentalFeatures};
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 /// let mut features = ExperimentalFeatures::new(&client);
 /// features.set_vector_store(true);
 /// ```
@@ -57,8 +57,8 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     /// # use meilisearch_sdk::{client::Client, features::ExperimentalFeatures};
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     ///     let features = ExperimentalFeatures::new(&client);
     ///     features.get().await.unwrap();
     /// });
@@ -66,10 +66,8 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     pub async fn get(&self) -> Result<ExperimentalFeaturesResult, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), (), ExperimentalFeaturesResult>(
                 &format!("{}/experimental-features", self.client.host),
-                self.client.get_api_key(),
                 Method::Get { query: () },
                 200,
             )
@@ -84,8 +82,8 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     /// # use meilisearch_sdk::{client::Client, features::ExperimentalFeatures};
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     ///     let mut features = ExperimentalFeatures::new(&client);
     ///     features.set_vector_store(true);
     ///     features.update().await.unwrap();
@@ -94,10 +92,8 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     pub async fn update(&self) -> Result<ExperimentalFeaturesResult, Error> {
         self.client
             .http_client
-            .clone()
             .request::<(), &Self, ExperimentalFeaturesResult>(
                 &format!("{}/experimental-features", self.client.host),
-                self.client.get_api_key(),
                 Method::Patch {
                     query: (),
                     body: self,

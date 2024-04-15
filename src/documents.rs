@@ -55,15 +55,15 @@ use crate::tasks::Task;
 use crate::{errors::Error, indexes::Index};
 
 #[async_trait(?Send)]
-pub trait IndexConfig<Http: HttpClient> {
+pub trait IndexConfig {
     const INDEX_STR: &'static str;
 
     #[must_use]
-    fn index(client: &Client<Http>) -> Index<Http> {
+    fn index<Http: HttpClient>(client: &Client<Http>) -> Index<Http> {
         client.index(Self::INDEX_STR)
     }
     fn generate_settings() -> Settings;
-    async fn generate_index(client: &Client<Http>) -> Result<Index<Http>, Task>;
+    async fn generate_index<Http: HttpClient>(client: &Client<Http>) -> Result<Index<Http>, Task>;
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -103,7 +103,7 @@ impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let index = client.index("document_query_with_fields");
     /// let mut document_query = DocumentQuery::new(&index);
     ///
@@ -128,8 +128,8 @@ impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// struct MyObject {
     ///     id: String,
@@ -220,7 +220,7 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index).with_offset(1);
@@ -240,7 +240,7 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
@@ -262,7 +262,7 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
@@ -293,8 +293,8 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let index = client.create_index("documents_query_execute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// struct MyObject {
@@ -355,7 +355,7 @@ impl<'a, Http: HttpClient> DocumentDeletionQuery<'a, Http> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{client::Client, errors::*, indexes::*, request::IsahcClient};
+    use crate::{client::Client, errors::*, indexes::*};
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
 
@@ -367,10 +367,7 @@ mod tests {
 
     #[allow(unused)]
     #[derive(IndexConfig)]
-    struct MovieClips
-    where
-        IsahcClient: HttpClient,
-    {
+    struct MovieClips {
         #[index_config(primary_key)]
         movie_id: u64,
         #[index_config(distinct)]
@@ -387,10 +384,7 @@ mod tests {
 
     #[allow(unused)]
     #[derive(IndexConfig)]
-    struct VideoClips
-    where
-        IsahcClient: HttpClient,
-    {
+    struct VideoClips {
         video_id: u64,
     }
 
@@ -547,7 +541,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_get_documents_with_error_hint() -> Result<(), Error> {
         let meilisearch_url = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
-        let client = Client::new(format!("{meilisearch_url}/hello"), Some("masterKey"));
+        let client = Client::new(format!("{meilisearch_url}/hello"), Some("masterKey")).unwrap();
         let index = client.index("test_get_documents_with_filter_wrong_ms_version");
 
         let documents = DocumentsQuery::new(&index)
