@@ -1,80 +1,81 @@
 use async_trait::async_trait;
-use lazy_static::lazy_static;
 use meilisearch_sdk::errors::Error;
 use meilisearch_sdk::request::{parse_response, HttpClient, Method};
 use meilisearch_sdk::{client::*, settings::Settings};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use serde_json::to_string;
 use std::fmt;
 use std::io::stdin;
 
-lazy_static! {
-    static ref CLIENT: Client<ReqwestClient> =
-        Client::new_with_client("http://localhost:7700", Some("masterKey"), ReqwestClient);
+#[derive(Debug, Clone)]
+pub struct AwcClient {
+    api_key: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct ReqwestClient;
+impl AwcClient {
+    pub fn new(api_key: Option<&str>) -> Result<Self, Error> {
+        Ok(AwcClient {
+            api_key: api_key.map(|key| key.to_string()),
+        })
+    }
+}
 
 #[async_trait(?Send)]
-impl HttpClient for ReqwestClient {
-    async fn request<Query, Body, Output>(
+impl HttpClient for AwcClient {
+    async fn stream_request<
+        Query: Serialize + Send + Sync,
+        Body: futures::AsyncRead + Send + Sync + 'static,
+        Output: DeserializeOwned + 'static,
+    >(
         &self,
         url: &str,
         method: Method<Query, Body>,
+        content_type: &str,
         expected_status_code: u16,
-    ) -> Result<Output, Error>
-    where
-        Query: Serialize + Send + Sync,
-        Body: Serialize + Send + Sync,
-        Output: DeserializeOwned + 'static + Send,
-    {
-        let response = match &method {
-            Method::Get { query } => {
-                let url = add_query_parameters(url, query)?;
-                let client = reqwest::Client::new();
-                let builder = client.request(reqwest::Method::GET, url.as_str());
-                let req = builder.build().unwrap();
-                client.execute(req).await.unwrap()
-            }
-            Method::Post { query, body } => {
-                let url = add_query_parameters(url, query)?;
-                let client = reqwest::Client::new();
-                let mut builder = client.request(reqwest::Method::POST, url.as_str());
-                builder = builder.header(reqwest::header::CONTENT_TYPE, "application/json");
-                let req = builder.body(to_string(body).unwrap()).build().unwrap();
-                client.execute(req).await.unwrap()
-            }
-            Method::Patch { query, body } => {
-                let url = add_query_parameters(url, query)?;
-                let client = reqwest::Client::new();
-                let mut builder = client.request(reqwest::Method::PATCH, url.as_str());
-                builder = builder.header(reqwest::header::CONTENT_TYPE, "application/json");
-                let req = builder.body(to_string(body).unwrap()).build().unwrap();
-                client.execute(req).await.unwrap()
-            }
-            Method::Put { query, body } => {
-                let url = add_query_parameters(url, query)?;
-                let client = reqwest::Client::new();
-                let mut builder = client.request(reqwest::Method::PUT, url.as_str());
-                builder = builder.header(reqwest::header::CONTENT_TYPE, "application/json");
-                let req = builder.body(to_string(body).unwrap()).build().unwrap();
-                client.execute(req).await.unwrap()
-            }
-            Method::Delete { query } => {
-                let url = add_query_parameters(url, query)?;
-                let client = reqwest::Client::new();
-                let mut builder = client.request(reqwest::Method::DELETE, url.as_str());
-                builder = builder.header(reqwest::header::CONTENT_TYPE, "application/json");
-                let req = builder.build().unwrap();
-                client.execute(req).await.unwrap()
-            }
+    ) -> Result<Output, Error> {
+        let mut builder = awc::ClientBuilder::new();
+        if let Some(ref api_key) = self.api_key {
+            builder = builder.bearer_auth(api_key);
+        }
+        builder = builder.add_default_header(("User-Agent", "Rust client with Awc"));
+        let client = builder.finish();
+
+        let query = method.query();
+        let query = yaup::to_string(query)?;
+
+        let url = if query.is_empty() {
+            url.to_string()
+        } else {
+            format!("{url}?{query}")
+        };
+
+        let url = add_query_parameters(&url, method.query())?;
+        let request = client.request(verb(&method), &url);
+
+        let mut response = if let Some(body) = method.into_body() {
+            let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
+            let stream = tokio_util::io::ReaderStream::new(reader);
+            request
+                .content_type(content_type)
+                .send_stream(stream)
+                .await
+                .map_err(|err| Error::Other(Box::new(err)))?
+        } else {
+            request
+                .send()
+                .await
+                .map_err(|err| Error::Other(Box::new(err)))?
         };
 
         let status = response.status().as_u16();
-
-        let mut body = response.text().await.unwrap();
+        let mut body = String::from_utf8(
+            response
+                .body()
+                .await
+                .map_err(|err| Error::Other(Box::new(err)))?
+                .to_vec(),
+        )
+        .map_err(|err| Error::Other(Box::new(err)))?;
 
         if body.is_empty() {
             body = "null".to_string();
@@ -82,26 +83,15 @@ impl HttpClient for ReqwestClient {
 
         parse_response(status, expected_status_code, &body, url.to_string())
     }
-
-    async fn stream_request<
-        Query: Serialize + Send + Sync,
-        Body: futures::AsyncRead + Send + Sync + 'static,
-        Output: DeserializeOwned + 'static,
-    >(
-        &self,
-        _url: &str,
-        _method: Method<Query, Body>,
-        _content_type: &str,
-        _expected_status_code: u16,
-    ) -> Result<Output, Error> {
-        unimplemented!("stream_request is not implemented for ReqwestClient")
-    }
 }
 
-#[tokio::main]
+#[actix_rt::main]
 async fn main() {
+    let http_client = AwcClient::new(Some("masterKey")).unwrap();
+    let client = Client::new_with_client("http://localhost:7700", Some("masterKey"), http_client);
+
     // build the index
-    build_index().await;
+    build_index(&client).await;
 
     // enter in search queries or quit
     loop {
@@ -116,18 +106,18 @@ async fn main() {
                 break;
             }
             _ => {
-                search(input_string.trim()).await;
+                search(&client, input_string.trim()).await;
             }
         }
     }
     // get rid of the index at the end, doing this only so users don't have the index without knowing
-    let _ = CLIENT.delete_index("clothes").await.unwrap();
+    let _ = client.delete_index("clothes").await.unwrap();
 }
 
-async fn search(query: &str) {
+async fn search(client: &Client<AwcClient>, query: &str) {
     // make the search query, which excutes and serializes hits into the
     // ClothesDisplay struct
-    let query_results = CLIENT
+    let query_results = client
         .index("clothes")
         .search()
         .with_query(query)
@@ -147,7 +137,7 @@ async fn search(query: &str) {
     }
 }
 
-async fn build_index() {
+async fn build_index(client: &Client<AwcClient>) {
     // reading and parsing the file
     let content = include_str!("../assets/clothes.json");
 
@@ -177,12 +167,12 @@ async fn build_index() {
         .with_synonyms(synonyms);
 
     //add the settings to the index
-    let result = CLIENT
+    let result = client
         .index("clothes")
         .set_settings(&settings)
         .await
         .unwrap()
-        .wait_for_completion(&CLIENT, None, None)
+        .wait_for_completion(client, None, None)
         .await
         .unwrap();
 
@@ -194,12 +184,12 @@ async fn build_index() {
     }
 
     // add the documents
-    let result = CLIENT
+    let result = client
         .index("clothes")
         .add_or_update(&clothes, Some("id"))
         .await
         .unwrap()
-        .wait_for_completion(&CLIENT, None, None)
+        .wait_for_completion(client, None, None)
         .await
         .unwrap();
 
@@ -253,5 +243,15 @@ fn add_query_parameters<Query: Serialize>(url: &str, query: &Query) -> Result<St
         Ok(url.to_string())
     } else {
         Ok(format!("{url}?{query}"))
+    }
+}
+
+fn verb<Q, B>(method: &Method<Q, B>) -> awc::http::Method {
+    match method {
+        Method::Get { .. } => awc::http::Method::GET,
+        Method::Delete { .. } => awc::http::Method::DELETE,
+        Method::Post { .. } => awc::http::Method::POST,
+        Method::Put { .. } => awc::http::Method::PUT,
+        Method::Patch { .. } => awc::http::Method::PATCH,
     }
 }

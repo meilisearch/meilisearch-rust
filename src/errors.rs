@@ -62,7 +62,7 @@ pub enum Error {
     InvalidUuid4Version,
 
     #[error(transparent)]
-    Other(Box<dyn std::error::Error + Send + Sync + 'static>),
+    Other(Box<dyn std::error::Error>),
 }
 
 #[derive(Debug, Clone, Deserialize, Error)]
