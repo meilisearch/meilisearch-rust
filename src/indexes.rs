@@ -905,14 +905,12 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn add_or_update<T: Serialize + Send + Sync>(
         &self,
         documents: &[T],
-        primary_key: Option<impl AsRef<str>>,
+        primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
         let url = if let Some(primary_key) = primary_key {
             format!(
                 "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host,
-                self.uid,
-                primary_key.as_ref()
+                self.client.host, self.uid, primary_key
             )
         } else {
             format!("{}/indexes/{}/documents", self.client.host, self.uid)
@@ -2061,6 +2059,50 @@ mod tests {
 
         assert_eq!(res.limit, 1);
         assert_eq!(res.offset, 2);
+    }
+
+    #[meilisearch_test]
+    async fn test_update_document_json(client: Client, index: Index) -> Result<(), Error> {
+        let old_json = [
+            json!({ "id": 1, "body": "doggo" }),
+            json!({ "id": 2, "body": "catto" }),
+        ];
+        let updated_json = [
+            json!({ "id": 1, "second_body": "second_doggo" }),
+            json!({ "id": 2, "second_body": "second_catto" }),
+        ];
+
+        let task = index
+            .add_documents(&old_json, Some("id"))
+            .await
+            .unwrap()
+            .wait_for_completion(&client, None, None)
+            .await
+            .unwrap();
+        let _ = index.get_task(task).await?;
+
+        let task = index
+            .add_or_update(&updated_json, None)
+            .await
+            .unwrap()
+            .wait_for_completion(&client, None, None)
+            .await
+            .unwrap();
+
+        let status = index.get_task(task).await?;
+        let elements = index.get_documents::<serde_json::Value>().await.unwrap();
+
+        assert!(matches!(status, Task::Succeeded { .. }));
+        assert_eq!(elements.results.len(), 2);
+
+        let expected_result = vec![
+            json!( {"body": "doggo", "id": 1, "second_body": "second_doggo"}),
+            json!( {"body": "catto", "id": 2, "second_body": "second_catto"}),
+        ];
+
+        assert_eq!(elements.results, expected_result);
+
+        Ok(())
     }
 
     #[meilisearch_test]
