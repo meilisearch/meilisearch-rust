@@ -1,7 +1,7 @@
 [
     {
     "id": 1,
-    "seaon": "winter",
+    "season": "winter",
     "article": "sweater",
     "cost": 63.40,
     "size":"L",
@@ -9,7 +9,7 @@
   },
   {
     "id": 2,
-    "seaon": "spring",
+    "season": "spring",
     "article": "sweat pants",
     "cost": 18.00,
     "size":"XXXL",
@@ -17,7 +17,7 @@
   },
   {
     "id": 3,
-    "seaon": "fall",
+    "season": "fall",
     "article": "t-shirt",
     "cost": 1634.90,
     "size":"M",
@@ -25,7 +25,7 @@
   },
   {
     "id": 4,
-    "seaon": "summer",
+    "season": "summer",
     "article": "tank top",
     "cost": 3.40,
     "size":"L",
@@ -33,7 +33,7 @@
   },
   {
     "id": 5,
-    "seaon": "winter",
+    "season": "winter",
     "article": "jeans",
     "cost": 4.20,
     "size":"XL",
@@ -41,7 +41,7 @@
   },
   {
     "id": 6,
-    "seaon": "spring",
+    "season": "spring",
     "article": "sun dress",
     "cost": 12634.56,
     "size":"L",
@@ -49,7 +49,7 @@
   },
   {
     "id": 7,
-    "seaon": "fall",
+    "season": "fall",
     "article": "sweatshirt",
     "cost": 90.80,
     "size":"M",
@@ -57,7 +57,7 @@
   },
   {
     "id": 8,
-    "seaon": "summer",
+    "season": "summer",
     "article": "shorts",
     "cost": 16.34,
     "size":"XS",
@@ -65,7 +65,7 @@
   },
   {
     "id": 9,
-    "seaon": "winter",
+    "season": "winter",
     "article": "jacket",
     "cost": 634,
     "size":"L",

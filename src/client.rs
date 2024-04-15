@@ -4,16 +4,23 @@ use std::{collections::HashMap, time::Duration};
 use time::OffsetDateTime;
 
 use crate::{
-    errors::*, indexes::*, request::*, search::*, utils::async_sleep, Key, KeyBuilder, KeyUpdater,
-    KeysQuery, KeysResults, Task, TaskInfo, TasksCancelQuery, TasksDeleteQuery, TasksResults,
-    TasksSearchQuery,
+    errors::*,
+    indexes::*,
+    key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
+    request::*,
+    search::*,
+    task_info::TaskInfo,
+    tasks::{Task, TasksCancelQuery, TasksDeleteQuery, TasksResults, TasksSearchQuery},
+    utils::async_sleep,
+    DefaultHttpClient,
 };
 
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
-pub struct Client {
+pub struct Client<Http: HttpClient = DefaultHttpClient> {
     pub(crate) host: String,
     pub(crate) api_key: Option<String>,
+    pub(crate) http_client: Http,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +28,7 @@ pub struct SwapIndexes {
     pub indexes: (String, String),
 }
 
+#[cfg(feature = "reqwest")]
 impl Client {
     /// Create a client using the specified server.
     ///
@@ -36,16 +44,41 @@ impl Client {
     /// let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     ///
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// ```
-    pub fn new(host: impl Into<String>, api_key: Option<impl Into<String>>) -> Client {
+    pub fn new(
+        host: impl Into<String>,
+        api_key: Option<impl Into<String>>,
+    ) -> Result<Client, Error> {
+        let api_key = api_key.map(|key| key.into());
+        let http_client = crate::reqwest::ReqwestClient::new(api_key.as_deref())?;
+
+        Ok(Client {
+            host: host.into(),
+            api_key,
+            http_client,
+        })
+    }
+}
+
+impl<Http: HttpClient> Client<Http> {
+    // Create a client with a custom http client
+    pub fn new_with_client(
+        host: impl Into<String>,
+        api_key: Option<impl Into<String>>,
+        http_client: Http,
+    ) -> Client<Http> {
         Client {
             host: host.into(),
-            api_key: api_key.map(std::convert::Into::into),
+            api_key: api_key.map(|key| key.into()),
+            http_client,
         }
     }
 
-    fn parse_indexes_results_from_value(&self, value: &Value) -> Result<IndexesResults, Error> {
+    fn parse_indexes_results_from_value(
+        &self,
+        value: &Value,
+    ) -> Result<IndexesResults<Http>, Error> {
         let raw_indexes = value["results"].as_array().unwrap();
 
         let indexes_results = IndexesResults {
@@ -61,17 +94,17 @@ impl Client {
         Ok(indexes_results)
     }
 
-    pub async fn execute_multi_search_query<T: 'static + DeserializeOwned>(
+    pub async fn execute_multi_search_query<T: 'static + DeserializeOwned + Send + Sync>(
         &self,
-        body: &MultiSearchQuery<'_, '_>,
+        body: &MultiSearchQuery<'_, '_, Http>,
     ) -> Result<MultiSearchResponse<T>, Error> {
-        request::<(), &MultiSearchQuery, MultiSearchResponse<T>>(
-            &format!("{}/multi-search", &self.host),
-            self.get_api_key(),
-            Method::Post { body, query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .request::<(), &MultiSearchQuery<Http>, MultiSearchResponse<T>>(
+                &format!("{}/multi-search", &self.host),
+                Method::Post { body, query: () },
+                200,
+            )
+            .await
     }
 
     /// Make multiple search requests.
@@ -91,8 +124,8 @@ impl Client {
     ///     description: String,
     /// }
     ///
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut movies = client.index("search");
     /// # // add some documents
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -116,7 +149,8 @@ impl Client {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn multi_search(&self) -> MultiSearchQuery {
+    #[must_use]
+    pub fn multi_search(&self) -> MultiSearchQuery<Http> {
         MultiSearchQuery::new(self)
     }
 
@@ -127,10 +161,11 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*};
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
-    /// let client = Client::new("http://doggo.dog", Some(MEILISEARCH_API_KEY));
+    /// let client = Client::new("http://doggo.dog", Some(MEILISEARCH_API_KEY)).unwrap();
     ///
     /// assert_eq!(client.get_host(), "http://doggo.dog");
     /// ```
+    #[must_use]
     pub fn get_host(&self) -> &str {
         &self.host
     }
@@ -142,15 +177,16 @@ impl Client {
     /// ```
     /// # use meilisearch_sdk::{client::*};
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
-    /// let client = Client::new(MEILISEARCH_URL, Some("doggo"));
+    /// let client = Client::new(MEILISEARCH_URL, Some("doggo")).unwrap();
     ///
     /// assert_eq!(client.get_api_key(), Some("doggo"));
     /// ```
+    #[must_use]
     pub fn get_api_key(&self) -> Option<&str> {
         self.api_key.as_deref()
     }
 
-    /// List all [Indexes](Index) with query parameters and returns values as instances of [Index].
+    /// List all [Indexes](Index) with query parameters and return values as instances of [Index].
     ///
     /// # Example
     ///
@@ -160,14 +196,15 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let indexes: IndexesResults = client.list_all_indexes().await.unwrap();
     ///
+    /// let indexes: IndexesResults = client.list_all_indexes().await.unwrap();
     /// println!("{:?}", indexes);
     /// # });
     /// ```
-    pub async fn list_all_indexes(&self) -> Result<IndexesResults, Error> {
+    pub async fn list_all_indexes(&self) -> Result<IndexesResults<Http>, Error> {
         let value = self.list_all_indexes_raw().await?;
         let indexes_results = self.parse_indexes_results_from_value(&value)?;
         Ok(indexes_results)
@@ -183,8 +220,8 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut query = IndexesQuery::new(&client);
     /// query.with_limit(1);
     ///
@@ -195,8 +232,8 @@ impl Client {
     /// ```
     pub async fn list_all_indexes_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
-    ) -> Result<IndexesResults, Error> {
+        indexes_query: &IndexesQuery<'_, Http>,
+    ) -> Result<IndexesResults<Http>, Error> {
         let value = self.list_all_indexes_raw_with(indexes_query).await?;
         let indexes_results = self.parse_indexes_results_from_value(&value)?;
 
@@ -213,21 +250,22 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let json_indexes = client.list_all_indexes_raw().await.unwrap();
     ///
     /// println!("{:?}", json_indexes);
     /// # });
     /// ```
     pub async fn list_all_indexes_raw(&self) -> Result<Value, Error> {
-        let json_indexes = request::<(), (), Value>(
-            &format!("{}/indexes", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await?;
+        let json_indexes = self
+            .http_client
+            .request::<(), (), Value>(
+                &format!("{}/indexes", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
 
         Ok(json_indexes)
     }
@@ -242,8 +280,8 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut query = IndexesQuery::new(&client);
     /// query.with_limit(1);
     ///
@@ -254,17 +292,18 @@ impl Client {
     /// ```
     pub async fn list_all_indexes_raw_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
+        indexes_query: &IndexesQuery<'_, Http>,
     ) -> Result<Value, Error> {
-        let json_indexes = request::<&IndexesQuery, (), Value>(
-            &format!("{}/indexes", self.host),
-            self.get_api_key(),
-            Method::Get {
-                query: indexes_query,
-            },
-            200,
-        )
-        .await?;
+        let json_indexes = self
+            .http_client
+            .request::<&IndexesQuery<Http>, (), Value>(
+                &format!("{}/indexes", self.host),
+                Method::Get {
+                    query: indexes_query,
+                },
+                200,
+            )
+            .await?;
 
         Ok(json_indexes)
     }
@@ -279,8 +318,8 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # let index = client.create_index("get_index", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// let index = client.get_index("get_index").await.unwrap();
     ///
@@ -288,7 +327,7 @@ impl Client {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index, Error> {
+    pub async fn get_index(&self, uid: impl AsRef<str>) -> Result<Index<Http>, Error> {
         let mut idx = self.index(uid.as_ref());
         idx.fetch_info().await?;
         Ok(idx)
@@ -306,8 +345,8 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # let index = client.create_index("get_raw_index", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// let raw_index = client.get_raw_index("get_raw_index").await.unwrap();
     ///
@@ -316,17 +355,17 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_raw_index(&self, uid: impl AsRef<str>) -> Result<Value, Error> {
-        request::<(), (), Value>(
-            &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .request::<(), (), Value>(
+                &format!("{}/indexes/{}", self.host, uid.as_ref()),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Create a corresponding object of an [Index] without any check or doing an HTTP call.
-    pub fn index(&self, uid: impl Into<String>) -> Index {
+    pub fn index(&self, uid: impl Into<String>) -> Index<Http> {
         Index::new(uid, self.clone())
     }
 
@@ -343,8 +382,8 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// // Create a new index called movies and access it
     /// let task = client.create_index("create_index", None).await.unwrap();
     ///
@@ -363,44 +402,44 @@ impl Client {
         uid: impl AsRef<str>,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Value, TaskInfo>(
-            &format!("{}/indexes", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: (),
-                body: json!({
-                    "uid": uid.as_ref(),
-                    "primaryKey": primary_key,
-                }),
-            },
-            202,
-        )
-        .await
+        self.http_client
+            .request::<(), Value, TaskInfo>(
+                &format!("{}/indexes", self.host),
+                Method::Post {
+                    query: (),
+                    body: json!({
+                        "uid": uid.as_ref(),
+                        "primaryKey": primary_key,
+                    }),
+                },
+                202,
+            )
+            .await
     }
 
     /// Delete an index from its UID.
     ///
     /// To delete an [Index], use the [`Index::delete`] method.
     pub async fn delete_index(&self, uid: impl AsRef<str>) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!("{}/indexes/{}", self.host, uid.as_ref()),
-            self.get_api_key(),
-            Method::Delete { query: () },
-            202,
-        )
-        .await
+        self.http_client
+            .request::<(), (), TaskInfo>(
+                &format!("{}/indexes/{}", self.host, uid.as_ref()),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// Alias for [`Client::list_all_indexes`].
-    pub async fn get_indexes(&self) -> Result<IndexesResults, Error> {
+    pub async fn get_indexes(&self) -> Result<IndexesResults<Http>, Error> {
         self.list_all_indexes().await
     }
 
     /// Alias for [`Client::list_all_indexes_with`].
     pub async fn get_indexes_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
-    ) -> Result<IndexesResults, Error> {
+        indexes_query: &IndexesQuery<'_, Http>,
+    ) -> Result<IndexesResults<Http>, Error> {
         self.list_all_indexes_with(indexes_query).await
     }
 
@@ -412,7 +451,7 @@ impl Client {
     /// Alias for [`Client::list_all_indexes_raw_with`].
     pub async fn get_indexes_raw_with(
         &self,
-        indexes_query: &IndexesQuery<'_>,
+        indexes_query: &IndexesQuery<'_, Http>,
     ) -> Result<Value, Error> {
         self.list_all_indexes_raw_with(indexes_query).await
     }
@@ -427,8 +466,8 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task_index_1 = client.create_index("swap_index_1", None).await.unwrap();
     /// let task_index_2 = client.create_index("swap_index_2", None).await.unwrap();
     ///
@@ -445,24 +484,24 @@ impl Client {
     ///     .await
     ///     .unwrap();
     ///
-    /// # client.index("swap_index_1").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-    /// # client.index("swap_index_2").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// client.index("swap_index_1").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// client.index("swap_index_2").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
     pub async fn swap_indexes(
         &self,
         indexes: impl IntoIterator<Item = &SwapIndexes>,
     ) -> Result<TaskInfo, Error> {
-        request::<(), Vec<&SwapIndexes>, TaskInfo>(
-            &format!("{}/swap-indexes", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: (),
-                body: indexes.into_iter().collect(),
-            },
-            202,
-        )
-        .await
+        self.http_client
+            .request::<(), Vec<&SwapIndexes>, TaskInfo>(
+                &format!("{}/swap-indexes", self.host),
+                Method::Post {
+                    query: (),
+                    body: indexes.into_iter().collect(),
+                },
+                202,
+            )
+            .await
     }
 
     /// Get stats of all [Indexes](Index).
@@ -475,19 +514,19 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let stats = client.get_stats().await.unwrap();
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
-        request::<(), (), ClientStats>(
-            &format!("{}/stats", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .request::<(), (), ClientStats>(
+                &format!("{}/stats", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get health of Meilisearch server.
@@ -495,26 +534,26 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, Error, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, errors::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let health = client.health().await.unwrap();
     ///
     /// assert_eq!(health.status, "available");
     /// # });
     /// ```
     pub async fn health(&self) -> Result<Health, Error> {
-        request::<(), (), Health>(
-            &format!("{}/health", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .request::<(), (), Health>(
+                &format!("{}/health", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get health of Meilisearch server.
@@ -527,8 +566,8 @@ impl Client {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let health = client.is_healthy().await;
     ///
     /// assert_eq!(health, true);
@@ -549,13 +588,13 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, Error, KeysQuery};
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeysQuery};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut query = KeysQuery::new();
     /// query.with_limit(1);
     ///
@@ -565,13 +604,14 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_keys_with(&self, keys_query: &KeysQuery) -> Result<KeysResults, Error> {
-        let keys = request::<&KeysQuery, (), KeysResults>(
-            &format!("{}/keys", self.host),
-            self.get_api_key(),
-            Method::Get { query: keys_query },
-            200,
-        )
-        .await?;
+        let keys = self
+            .http_client
+            .request::<&KeysQuery, (), KeysResults>(
+                &format!("{}/keys", self.host),
+                Method::Get { query: keys_query },
+                200,
+            )
+            .await?;
 
         Ok(keys)
     }
@@ -583,26 +623,27 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, Error, KeyBuilder};
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let keys = client.get_keys().await.unwrap();
     ///
     /// assert_eq!(keys.limit, 20);
     /// # });
     /// ```
     pub async fn get_keys(&self) -> Result<KeysResults, Error> {
-        let keys = request::<(), (), KeysResults>(
-            &format!("{}/keys", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await?;
+        let keys = self
+            .http_client
+            .request::<(), (), KeysResults>(
+                &format!("{}/keys", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
 
         Ok(keys)
     }
@@ -614,29 +655,29 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, Error, KeyBuilder};
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # let key = client.get_keys().await.unwrap().results.into_iter()
     /// #    .find(|k| k.name.as_ref().map_or(false, |name| name.starts_with("Default Search API Key")))
-    /// #    .unwrap();
-    /// let key = client.get_key(key).await.unwrap();
+    /// #    .expect("No default search key");
+    /// let key = client.get_key(key).await.expect("Invalid key");
     ///
     /// assert_eq!(key.name, Some("Default Search API Key".to_string()));
     /// # });
     /// ```
     pub async fn get_key(&self, key: impl AsRef<str>) -> Result<Key, Error> {
-        request::<(), (), Key>(
-            &format!("{}/keys/{}", self.host, key.as_ref()),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .request::<(), (), Key>(
+                &format!("{}/keys/{}", self.host, key.as_ref()),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Delete an API [Key] from Meilisearch.
@@ -646,13 +687,13 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, Error, KeyBuilder};
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::KeyBuilder};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let key = KeyBuilder::new();
     /// let key = client.create_key(key).await.unwrap();
     /// let inner_key = key.key.clone();
@@ -665,13 +706,13 @@ impl Client {
     /// # });
     /// ```
     pub async fn delete_key(&self, key: impl AsRef<str>) -> Result<(), Error> {
-        request::<(), (), ()>(
-            &format!("{}/keys/{}", self.host, key.as_ref()),
-            self.get_api_key(),
-            Method::Delete { query: () },
-            204,
-        )
-        .await
+        self.http_client
+            .request::<(), (), ()>(
+                &format!("{}/keys/{}", self.host, key.as_ref()),
+                Method::Delete { query: () },
+                204,
+            )
+            .await
     }
 
     /// Create an API [Key] in Meilisearch.
@@ -681,13 +722,13 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, Error, KeyBuilder, Action};
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let name = "create_key".to_string();
     /// let mut key = KeyBuilder::new();
     /// key.with_name(&name);
@@ -699,16 +740,16 @@ impl Client {
     /// # });
     /// ```
     pub async fn create_key(&self, key: impl AsRef<KeyBuilder>) -> Result<Key, Error> {
-        request::<(), &KeyBuilder, Key>(
-            &format!("{}/keys", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: (),
-                body: key.as_ref(),
-            },
-            201,
-        )
-        .await
+        self.http_client
+            .request::<(), &KeyBuilder, Key>(
+                &format!("{}/keys", self.host),
+                Method::Post {
+                    query: (),
+                    body: key.as_ref(),
+                },
+                201,
+            )
+            .await
     }
 
     /// Update an API [Key] in Meilisearch.
@@ -718,13 +759,13 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, Error, KeyBuilder, KeyUpdater};
+    /// # use meilisearch_sdk::{client::*, errors::Error, key::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let new_key = KeyBuilder::new();
     /// let mut new_key = client.create_key(new_key).await.unwrap();
     /// let mut key_update = KeyUpdater::new(new_key);
@@ -739,16 +780,16 @@ impl Client {
     /// # });
     /// ```
     pub async fn update_key(&self, key: impl AsRef<KeyUpdater>) -> Result<Key, Error> {
-        request::<(), &KeyUpdater, Key>(
-            &format!("{}/keys/{}", self.host, key.as_ref().key),
-            self.get_api_key(),
-            Method::Patch {
-                body: key.as_ref(),
-                query: (),
-            },
-            200,
-        )
-        .await
+        self.http_client
+            .request::<(), &KeyUpdater, Key>(
+                &format!("{}/keys/{}", self.host, key.as_ref().key),
+                Method::Patch {
+                    body: key.as_ref(),
+                    query: (),
+                },
+                200,
+            )
+            .await
     }
 
     /// Get version of the Meilisearch server.
@@ -756,24 +797,24 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*};
+    /// # use meilisearch_sdk::client::*;
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let version = client.get_version().await.unwrap();
     /// # });
     /// ```
     pub async fn get_version(&self) -> Result<Version, Error> {
-        request::<(), (), Version>(
-            &format!("{}/version", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .request::<(), (), Version>(
+                &format!("{}/version", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Wait until Meilisearch processes a [Task], and get its status.
@@ -789,7 +830,7 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, Task};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::*};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
@@ -804,8 +845,8 @@ impl Client {
     /// # }
     /// #
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movies = client.index("movies_client_wait_for_task");
     ///
     /// let task = movies.add_documents(&[
@@ -855,13 +896,13 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::*;
+    /// # use meilisearch_sdk::{client::*, tasks::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # let index = client.create_index("movies_get_task", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// let task = index.delete_all_documents().await.unwrap();
     ///
@@ -870,13 +911,13 @@ impl Client {
     /// # });
     /// ```
     pub async fn get_task(&self, task_id: impl AsRef<u32>) -> Result<Task, Error> {
-        request::<(), (), Task>(
-            &format!("{}/tasks/{}", self.host, task_id.as_ref()),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await
+        self.http_client
+            .request::<(), (), Task>(
+                &format!("{}/tasks/{}", self.host, task_id.as_ref()),
+                Method::Get { query: () },
+                200,
+            )
+            .await
     }
 
     /// Get all tasks with query parameters from the server.
@@ -884,14 +925,14 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::*;
+    /// # use meilisearch_sdk::{client::*, tasks::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// let mut query = tasks::TasksSearchQuery::new(&client);
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let mut query = TasksSearchQuery::new(&client);
     /// query.with_index_uids(["get_tasks_with"]);
     ///
     /// let tasks = client.get_tasks_with(&query).await.unwrap();
@@ -899,15 +940,16 @@ impl Client {
     /// ```
     pub async fn get_tasks_with(
         &self,
-        tasks_query: &TasksSearchQuery<'_>,
+        tasks_query: &TasksSearchQuery<'_, Http>,
     ) -> Result<TasksResults, Error> {
-        let tasks = request::<&TasksSearchQuery, (), TasksResults>(
-            &format!("{}/tasks", self.host),
-            self.get_api_key(),
-            Method::Get { query: tasks_query },
-            200,
-        )
-        .await?;
+        let tasks = self
+            .http_client
+            .request::<&TasksSearchQuery<Http>, (), TasksResults>(
+                &format!("{}/tasks", self.host),
+                Method::Get { query: tasks_query },
+                200,
+            )
+            .await?;
 
         Ok(tasks)
     }
@@ -917,14 +959,14 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::*;
+    /// # use meilisearch_sdk::{client::*, tasks::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// let mut query = tasks::TasksCancelQuery::new(&client);
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let mut query = TasksCancelQuery::new(&client);
     /// query.with_index_uids(["movies"]);
     ///
     /// let res = client.cancel_tasks_with(&query).await.unwrap();
@@ -932,18 +974,19 @@ impl Client {
     /// ```
     pub async fn cancel_tasks_with(
         &self,
-        filters: &TasksCancelQuery<'_>,
+        filters: &TasksCancelQuery<'_, Http>,
     ) -> Result<TaskInfo, Error> {
-        let tasks = request::<&TasksCancelQuery, (), TaskInfo>(
-            &format!("{}/tasks/cancel", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: filters,
-                body: (),
-            },
-            200,
-        )
-        .await?;
+        let tasks = self
+            .http_client
+            .request::<&TasksCancelQuery<Http>, (), TaskInfo>(
+                &format!("{}/tasks/cancel", self.host),
+                Method::Post {
+                    query: filters,
+                    body: (),
+                },
+                200,
+            )
+            .await?;
 
         Ok(tasks)
     }
@@ -953,14 +996,14 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::*;
+    /// # use meilisearch_sdk::{client::*, tasks::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// let mut query = tasks::TasksDeleteQuery::new(&client);
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let mut query = TasksDeleteQuery::new(&client);
     /// query.with_index_uids(["movies"]);
     ///
     /// let res = client.delete_tasks_with(&query).await.unwrap();
@@ -968,15 +1011,16 @@ impl Client {
     /// ```
     pub async fn delete_tasks_with(
         &self,
-        filters: &TasksDeleteQuery<'_>,
+        filters: &TasksDeleteQuery<'_, Http>,
     ) -> Result<TaskInfo, Error> {
-        let tasks = request::<&TasksDeleteQuery, (), TaskInfo>(
-            &format!("{}/tasks", self.host),
-            self.get_api_key(),
-            Method::Delete { query: filters },
-            200,
-        )
-        .await?;
+        let tasks = self
+            .http_client
+            .request::<&TasksDeleteQuery<Http>, (), TaskInfo>(
+                &format!("{}/tasks", self.host),
+                Method::Delete { query: filters },
+                200,
+            )
+            .await?;
 
         Ok(tasks)
     }
@@ -986,26 +1030,27 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::*;
+    /// # use meilisearch_sdk::{client::*, tasks::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let tasks = client.get_tasks().await.unwrap();
     ///
     /// assert!(tasks.results.len() > 0);
     /// # });
     /// ```
     pub async fn get_tasks(&self) -> Result<TasksResults, Error> {
-        let tasks = request::<(), (), TasksResults>(
-            &format!("{}/tasks", self.host),
-            self.get_api_key(),
-            Method::Get { query: () },
-            200,
-        )
-        .await?;
+        let tasks = self
+            .http_client
+            .request::<(), (), TasksResults>(
+                &format!("{}/tasks", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
 
         Ok(tasks)
     }
@@ -1015,24 +1060,24 @@ impl Client {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::*;
+    /// # use meilisearch_sdk::client::Client;
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = client::Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let api_key_uid = "76cf8b87-fd12-4688-ad34-260d930ca4f4".to_string();
     /// let token = client.generate_tenant_token(api_key_uid, serde_json::json!(["*"]), None, None).unwrap();
     ///
-    /// let client = client::Client::new(MEILISEARCH_URL, Some(token));
+    /// let client = Client::new(MEILISEARCH_URL, Some(token)).unwrap();
     /// # });
     /// ```
     #[cfg(not(target_arch = "wasm32"))]
     pub fn generate_tenant_token(
         &self,
         api_key_uid: String,
-        search_rules: serde_json::Value,
+        search_rules: Value,
         api_key: Option<&str>,
         expires_at: Option<OffsetDateTime>,
     ) -> Result<String, Error> {
@@ -1100,7 +1145,7 @@ mod tests {
 
     use meilisearch_test_macro::meilisearch_test;
 
-    use crate::{client::*, Action, KeyBuilder, TasksSearchQuery};
+    use crate::{client::*, key::Action, reqwest::qualified_version};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -1160,8 +1205,9 @@ mod tests {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
         let path = "/hello";
-        let address = &format!("{}{}", mock_server_url, path);
+        let address = &format!("{mock_server_url}{path}");
         let user_agent = &*qualified_version();
+        let client = Client::new(mock_server_url, None::<String>).unwrap();
 
         let assertions = vec![
             (
@@ -1169,16 +1215,17 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(address, None, Method::Get { query: () }, 200),
+                client
+                    .http_client
+                    .request::<(), (), ()>(address, Method::Get { query: () }, 200),
             ),
             (
                 s.mock("POST", path)
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(
+                client.http_client.request::<(), (), ()>(
                     address,
-                    None,
                     Method::Post {
                         query: (),
                         body: {},
@@ -1191,16 +1238,19 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(address, None, Method::Delete { query: () }, 200),
+                client.http_client.request::<(), (), ()>(
+                    address,
+                    Method::Delete { query: () },
+                    200,
+                ),
             ),
             (
                 s.mock("PUT", path)
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(
+                client.http_client.request::<(), (), ()>(
                     address,
-                    None,
                     Method::Put {
                         query: (),
                         body: (),
@@ -1213,9 +1263,8 @@ mod tests {
                     .match_header("User-Agent", user_agent)
                     .create_async()
                     .await,
-                request::<(), (), ()>(
+                client.http_client.request::<(), (), ()>(
                     address,
-                    None,
                     Method::Patch {
                         query: (),
                         body: (),
@@ -1235,7 +1284,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_get_tasks(client: Client) {
         let tasks = client.get_tasks().await.unwrap();
-        assert!(tasks.limit == 20);
+        assert_eq!(tasks.limit, 20);
     }
 
     #[meilisearch_test]
@@ -1243,7 +1292,7 @@ mod tests {
         let query = TasksSearchQuery::new(&client);
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
-        assert!(tasks.limit == 20);
+        assert_eq!(tasks.limit, 20);
     }
 
     #[meilisearch_test]
@@ -1270,17 +1319,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_delete_key(mut client: Client, name: String) {
+    async fn test_error_delete_key(client: Client, name: String) {
         // ==> accessing a key that does not exist
         let error = client.delete_key("invalid_key").await.unwrap_err();
-        assert!(matches!(
-            error,
-            Error::Meilisearch(MeilisearchError {
-                error_code: ErrorCode::ApiKeyNotFound,
-                error_type: ErrorType::InvalidRequest,
-                ..
-            })
-        ));
+        insta::assert_snapshot!(error, @"Meilisearch invalid_request: api_key_not_found: API key `invalid_key` not found.. https://docs.meilisearch.com/errors#api_key_not_found");
 
         // ==> executing the action without enough right
         let mut key = KeyBuilder::new();
@@ -1288,10 +1330,12 @@ mod tests {
         key.with_name(&name);
         let key = client.create_key(key).await.unwrap();
         let master_key = client.api_key.clone();
-        // this key has no right
-        client.api_key = Some(key.key.clone());
+
+        // create a new client with no right
+        let client = Client::new(client.host, Some(key.key.clone())).unwrap();
         // with a wrong key
         let error = client.delete_key("invalid_key").await.unwrap_err();
+        insta::assert_snapshot!(error, @"Meilisearch auth: invalid_api_key: The provided API key is invalid.. https://docs.meilisearch.com/errors#invalid_api_key");
         assert!(matches!(
             error,
             Error::Meilisearch(MeilisearchError {
@@ -1302,6 +1346,7 @@ mod tests {
         ));
         // with a good key
         let error = client.delete_key(&key.key).await.unwrap_err();
+        insta::assert_snapshot!(error, @"Meilisearch auth: invalid_api_key: The provided API key is invalid.. https://docs.meilisearch.com/errors#invalid_api_key");
         assert!(matches!(
             error,
             Error::Meilisearch(MeilisearchError {
@@ -1312,7 +1357,7 @@ mod tests {
         ));
 
         // cleanup
-        client.api_key = master_key;
+        let client = Client::new(client.host, master_key).unwrap();
         client.delete_key(key).await.unwrap();
     }
 
@@ -1329,7 +1374,7 @@ mod tests {
 
         assert_eq!(key.actions, vec![Action::DocumentsAdd]);
         assert_eq!(&key.name, &Some(name));
-        // We can't compare the two timestamp directly because of some nanoseconds imprecision with the floats
+        // We can't compare the two timestamps directly because of some nanoseconds imprecision with the floats
         assert_eq!(
             key.expires_at.unwrap().unix_timestamp(),
             expires_at.unix_timestamp()
@@ -1340,7 +1385,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_error_create_key(mut client: Client, name: String) {
+    async fn test_error_create_key(client: Client, name: String) {
         // ==> Invalid index name
         /* TODO: uncomment once meilisearch fix this bug: https://github.com/meilisearch/meilisearch/issues/2158
         let mut key = KeyBuilder::new();
@@ -1356,7 +1401,6 @@ mod tests {
             }
         ));
         */
-
         // ==> executing the action without enough right
         let mut no_right_key = KeyBuilder::new();
         no_right_key.with_name(&format!("{name}_1"));
@@ -1364,7 +1408,7 @@ mod tests {
 
         // backup the master key for cleanup at the end of the test
         let master_client = client.clone();
-        client.api_key = Some(no_right_key.key.clone());
+        let client = Client::new(&master_client.host, Some(no_right_key.key.clone())).unwrap();
 
         let mut key = KeyBuilder::new();
         key.with_name(format!("{name}_2"));

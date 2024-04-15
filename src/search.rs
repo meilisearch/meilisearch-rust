@@ -1,6 +1,8 @@
-use crate::{Client, Error, Index};
+use crate::{
+    client::Client, errors::Error, indexes::Index, request::HttpClient, DefaultHttpClient,
+};
 use either::Either;
-use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
+use serde::{de::DeserializeOwned, ser::SerializeStruct, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
@@ -18,6 +20,7 @@ pub struct Filter<'a> {
 }
 
 impl<'a> Filter<'a> {
+    #[must_use]
     pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter {
         Filter { inner }
     }
@@ -45,6 +48,9 @@ pub struct SearchResult<T> {
     /// The object that contains information about the matches.
     #[serde(rename = "_matchesPosition")]
     pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
+    /// The relevancy score of the match.
+    #[serde(rename = "_rankingScore")]
+    pub ranking_score: Option<f64>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -53,6 +59,7 @@ pub struct FacetStats {
     pub min: f64,
     pub max: f64,
 }
+
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
@@ -106,7 +113,7 @@ fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
             let results = data
                 .iter()
                 .map(|(name, value)| {
-                    let mut result = name.to_string();
+                    let mut result = (*name).to_string();
                     if let Some(value) = value {
                         result.push(':');
                         result.push_str(value.to_string().as_str());
@@ -143,7 +150,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// ```
 /// # use serde::{Serialize, Deserialize};
-/// # use meilisearch_sdk::{Client, SearchQuery, Index};
+/// # use meilisearch_sdk::{client::Client, search::*, indexes::Index};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -153,8 +160,8 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///     name: String,
 ///     description: String,
 /// }
-/// # futures::executor::block_on(async move {
-/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+/// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 /// # let index = client
 /// #  .create_index("search_query_builder", None)
 /// #  .await
@@ -178,12 +185,12 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 ///
 /// ```
-/// # use meilisearch_sdk::{Client, SearchQuery, Index};
+/// # use meilisearch_sdk::{client::Client, search::*, indexes::Index};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
-/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 /// # let index = client.index("search_query_builder_build");
 /// let query = index.search()
 ///     .with_query("space")
@@ -193,9 +200,9 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct SearchQuery<'a> {
+pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    index: &'a Index,
+    index: &'a Index<Http>,
     /// The text that will be searched for among the documents.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "q")]
@@ -246,6 +253,13 @@ pub struct SearchQuery<'a> {
     /// Attributes to sort.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sort: Option<&'a [&'a str]>,
+    /// Attributes to perform the search on.
+    ///
+    /// Specify the subset of searchableAttributes for a search without modifying Meilisearch’s index settings.
+    ///
+    /// **Default: all searchable attributes found in the documents.**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes_to_search_on: Option<&'a [&'a str]>,
     /// Attributes to display in the returned documents.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -289,7 +303,7 @@ pub struct SearchQuery<'a> {
     /// **Default: `<em>`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight_pre_tag: Option<&'a str>,
-    /// Tag after the a highlighted term.
+    /// Tag after a highlighted term.
     ///
     /// ex: `hello world</ mytag>`
     ///
@@ -302,6 +316,12 @@ pub struct SearchQuery<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_matches_position: Option<bool>,
 
+    /// Defines whether to show the relevancy score of the match.
+    ///
+    /// **Default: `false`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_ranking_score: Option<bool>,
+
     /// Defines the strategy on how to handle queries containing multiple words.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
@@ -311,8 +331,9 @@ pub struct SearchQuery<'a> {
 }
 
 #[allow(missing_docs)]
-impl<'a> SearchQuery<'a> {
-    pub fn new(index: &'a Index) -> SearchQuery<'a> {
+impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
+    #[must_use]
+    pub fn new(index: &'a Index<Http>) -> SearchQuery<'a, Http> {
         SearchQuery {
             index,
             query: None,
@@ -323,6 +344,7 @@ impl<'a> SearchQuery<'a> {
             filter: None,
             sort: None,
             facets: None,
+            attributes_to_search_on: None,
             attributes_to_retrieve: None,
             attributes_to_crop: None,
             crop_length: None,
@@ -331,20 +353,21 @@ impl<'a> SearchQuery<'a> {
             highlight_pre_tag: None,
             highlight_post_tag: None,
             show_matches_position: None,
+            show_ranking_score: None,
             matching_strategy: None,
             index_uid: None,
         }
     }
-    pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a> {
+    pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.query = Some(query);
         self
     }
 
-    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut SearchQuery<'a> {
+    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut SearchQuery<'a, Http> {
         self.offset = Some(offset);
         self
     }
-    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut SearchQuery<'a> {
+    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut SearchQuery<'a, Http> {
         self.limit = Some(limit);
         self
     }
@@ -359,8 +382,8 @@ impl<'a> SearchQuery<'a> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
     /// #     name: String,
@@ -375,7 +398,7 @@ impl<'a> SearchQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn with_page<'b>(&'b mut self, page: usize) -> &'b mut SearchQuery<'a> {
+    pub fn with_page<'b>(&'b mut self, page: usize) -> &'b mut SearchQuery<'a, Http> {
         self.page = Some(page);
         self
     }
@@ -391,8 +414,8 @@ impl<'a> SearchQuery<'a> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # #[derive(Serialize, Deserialize, Debug)]
     /// # struct Movie {
     /// #     name: String,
@@ -407,112 +430,151 @@ impl<'a> SearchQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub fn with_hits_per_page<'b>(&'b mut self, hits_per_page: usize) -> &'b mut SearchQuery<'a> {
+    pub fn with_hits_per_page<'b>(
+        &'b mut self,
+        hits_per_page: usize,
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.hits_per_page = Some(hits_per_page);
         self
     }
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a> {
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Left(filter)));
         self
     }
-    pub fn with_array_filter<'b>(&'b mut self, filter: Vec<&'a str>) -> &'b mut SearchQuery<'a> {
+    pub fn with_array_filter<'b>(
+        &'b mut self,
+        filter: Vec<&'a str>,
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Right(filter)));
         self
     }
     pub fn with_facets<'b>(
         &'b mut self,
         facets: Selectors<&'a [&'a str]>,
-    ) -> &'b mut SearchQuery<'a> {
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.facets = Some(facets);
         self
     }
-    pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut SearchQuery<'a> {
+    pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
         self.sort = Some(sort);
+        self
+    }
+
+    pub fn with_attributes_to_search_on<'b>(
+        &'b mut self,
+        attributes_to_search_on: &'a [&'a str],
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.attributes_to_search_on = Some(attributes_to_search_on);
         self
     }
     pub fn with_attributes_to_retrieve<'b>(
         &'b mut self,
         attributes_to_retrieve: Selectors<&'a [&'a str]>,
-    ) -> &'b mut SearchQuery<'a> {
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.attributes_to_retrieve = Some(attributes_to_retrieve);
         self
     }
     pub fn with_attributes_to_crop<'b>(
         &'b mut self,
         attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>,
-    ) -> &'b mut SearchQuery<'a> {
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.attributes_to_crop = Some(attributes_to_crop);
         self
     }
-    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut SearchQuery<'a> {
+    pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut SearchQuery<'a, Http> {
         self.crop_length = Some(crop_length);
         self
     }
-    pub fn with_crop_marker<'b>(&'b mut self, crop_marker: &'a str) -> &'b mut SearchQuery<'a> {
+    pub fn with_crop_marker<'b>(
+        &'b mut self,
+        crop_marker: &'a str,
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.crop_marker = Some(crop_marker);
         self
     }
     pub fn with_attributes_to_highlight<'b>(
         &'b mut self,
         attributes_to_highlight: Selectors<&'a [&'a str]>,
-    ) -> &'b mut SearchQuery<'a> {
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
     pub fn with_highlight_pre_tag<'b>(
         &'b mut self,
         highlight_pre_tag: &'a str,
-    ) -> &'b mut SearchQuery<'a> {
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.highlight_pre_tag = Some(highlight_pre_tag);
         self
     }
     pub fn with_highlight_post_tag<'b>(
         &'b mut self,
         highlight_post_tag: &'a str,
-    ) -> &'b mut SearchQuery<'a> {
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.highlight_post_tag = Some(highlight_post_tag);
         self
     }
     pub fn with_show_matches_position<'b>(
         &'b mut self,
         show_matches_position: bool,
-    ) -> &'b mut SearchQuery<'a> {
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.show_matches_position = Some(show_matches_position);
+        self
+    }
+
+    pub fn with_show_ranking_score<'b>(
+        &'b mut self,
+        show_ranking_score: bool,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.show_ranking_score = Some(show_ranking_score);
         self
     }
     pub fn with_matching_strategy<'b>(
         &'b mut self,
         matching_strategy: MatchingStrategies,
-    ) -> &'b mut SearchQuery<'a> {
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.matching_strategy = Some(matching_strategy);
         self
     }
-    pub fn with_index_uid<'b>(&'b mut self) -> &'b mut SearchQuery<'a> {
+    pub fn with_index_uid<'b>(&'b mut self) -> &'b mut SearchQuery<'a, Http> {
         self.index_uid = Some(&self.index.uid);
         self
     }
-    pub fn build(&mut self) -> SearchQuery<'a> {
+    pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
     }
     /// Execute the query and fetch the results.
-    pub async fn execute<T: 'static + DeserializeOwned>(
+    pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
     ) -> Result<SearchResults<T>, Error> {
         self.index.execute_query::<T>(self).await
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct MultiSearchQuery<'a, 'b> {
-    #[serde(skip_serializing)]
-    client: &'a Client,
-    pub queries: Vec<SearchQuery<'b>>,
+// TODO: Make it works with the serde derive macro
+// #[derive(Debug, Serialize, Clone)]
+// #[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
+pub struct MultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
+    // #[serde(skip_serializing)]
+    client: &'a Client<Http>,
+    pub queries: Vec<SearchQuery<'b, Http>>,
+}
+
+impl<'a, 'b, Http: HttpClient> Serialize for MultiSearchQuery<'a, 'b, Http> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut strukt = serializer.serialize_struct("MultiSearchQuery", 1)?;
+        strukt.serialize_field("queries", &self.queries)?;
+        strukt.end()
+    }
 }
 
 #[allow(missing_docs)]
-impl<'a, 'b> MultiSearchQuery<'a, 'b> {
-    pub fn new(client: &'a Client) -> MultiSearchQuery<'a, 'b> {
+impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
+    #[must_use]
+    pub fn new(client: &'a Client<Http>) -> MultiSearchQuery<'a, 'b, Http> {
         MultiSearchQuery {
             client,
             queries: Vec::new(),
@@ -520,15 +582,15 @@ impl<'a, 'b> MultiSearchQuery<'a, 'b> {
     }
     pub fn with_search_query(
         &mut self,
-        mut search_query: SearchQuery<'b>,
-    ) -> &mut MultiSearchQuery<'a, 'b> {
+        mut search_query: SearchQuery<'b, Http>,
+    ) -> &mut MultiSearchQuery<'a, 'b, Http> {
         search_query.with_index_uid();
         self.queries.push(search_query);
         self
     }
 
     /// Execute the query and fetch the results.
-    pub async fn execute<T: 'static + DeserializeOwned>(
+    pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
     ) -> Result<MultiSearchResponse<T>, Error> {
         self.client.execute_multi_search_query::<T>(self).await
@@ -688,7 +750,11 @@ pub struct FacetSearchResponse {
 
 #[cfg(test)]
 mod tests {
-    use crate::{client::*, search::*};
+    use crate::{
+        client::*,
+        key::{Action, KeyBuilder},
+        search::*,
+    };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
@@ -709,6 +775,7 @@ mod tests {
     }
 
     impl PartialEq<Map<String, Value>> for Document {
+        #[allow(clippy::cmp_owned)]
         fn eq(&self, rhs: &Map<String, Value>) -> bool {
             self.id.to_string() == rhs["id"]
                 && self.value == rhs["value"]
@@ -945,22 +1012,6 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_facet_stats(client: Client, index: Index) -> Result<(), Error> {
-        setup_test_index(&client, &index).await?;
-
-        let mut query = SearchQuery::new(&index);
-        query.with_facets(Selectors::All);
-        let results: SearchResults<Document> = index.execute_query(&query).await?;
-        let facet_stats = results.facet_stats.unwrap();
-
-        assert_eq!(facet_stats.get("number").unwrap().min, 0.0);
-
-        assert_eq!(facet_stats.get("number").unwrap().max, 90.0);
-
-        Ok(())
-    }
-
-    #[meilisearch_test]
     async fn test_query_attributes_to_retrieve(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -1175,6 +1226,18 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_query_show_ranking_score(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("dolor text");
+        query.with_show_ranking_score(true);
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
+        assert!(results.hits[0].ranking_score.is_some());
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_phrase_search(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -1221,8 +1284,6 @@ mod tests {
         client: Client,
         index: Index,
     ) -> Result<(), Error> {
-        use crate::{Action, KeyBuilder};
-
         setup_test_index(&client, &index).await?;
 
         let meilisearch_url = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
@@ -1232,7 +1293,7 @@ mod tests {
             .execute(&client)
             .await
             .unwrap();
-        let allowed_client = Client::new(meilisearch_url, Some(key.key));
+        let allowed_client = Client::new(meilisearch_url, Some(key.key)).unwrap();
 
         let search_rules = vec![
             json!({ "*": {}}),
@@ -1247,7 +1308,7 @@ mod tests {
                 .generate_tenant_token(key.uid.clone(), rules, None, None)
                 .expect("Cannot generate tenant token.");
 
-            let new_client = Client::new(meilisearch_url, Some(token.clone()));
+            let new_client = Client::new(meilisearch_url, Some(token.clone())).unwrap();
 
             let result: SearchResults<Document> = new_client
                 .index(index.uid.to_string())

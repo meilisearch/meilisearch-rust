@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::{Client, Error};
+use crate::{client::Client, errors::Error, request::HttpClient};
 
 /// Represents a [meilisearch key](https://www.meilisearch.com/docs/reference/api/keys#returned-fields).
 ///
@@ -33,13 +33,13 @@ impl Key {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let description = "My not so little lovely test key".to_string();
     /// let mut key = KeyBuilder::new()
     ///     .with_action(Action::DocumentsAdd)
@@ -61,13 +61,13 @@ impl Key {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let name = "lovely key".to_string();
     /// let mut key = KeyBuilder::new()
     ///     .with_action(Action::DocumentsAdd)
@@ -92,13 +92,13 @@ impl Key {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Client};
+    /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut key = KeyBuilder::new()
     ///     .execute(&client)
     ///     .await
@@ -113,7 +113,7 @@ impl Key {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn update(&self, client: &Client) -> Result<Key, Error> {
+    pub async fn update<Http: HttpClient>(&self, client: &Client<Http>) -> Result<Key, Error> {
         // only send description and name
         let mut key_update = KeyUpdater::new(self);
 
@@ -132,20 +132,20 @@ impl Key {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Client};
+    /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut key = KeyBuilder::new()
     ///     .execute(&client).await.unwrap();
     ///
     /// client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete(&self, client: &Client) -> Result<(), Error> {
+    pub async fn delete<Http: HttpClient>(&self, client: &Client<Http>) -> Result<(), Error> {
         client.delete_key(self).await
     }
 }
@@ -185,13 +185,13 @@ impl KeyUpdater {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client, KeyUpdater};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut new_key = KeyBuilder::new()
     ///     .execute(&client)
     ///     .await
@@ -218,13 +218,13 @@ impl KeyUpdater {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client, KeyUpdater};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut new_key = KeyBuilder::new()
     ///     .execute(&client)
     ///     .await
@@ -251,13 +251,13 @@ impl KeyUpdater {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, KeyUpdater, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let description = "My little lovely test key".to_string();
     /// let key = KeyBuilder::new()
     ///     .execute(&client).await.unwrap();
@@ -269,7 +269,7 @@ impl KeyUpdater {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute(&self, client: &Client) -> Result<Key, Error> {
+    pub async fn execute<Http: HttpClient>(&self, client: &Client<Http>) -> Result<Key, Error> {
         client.update_key(self).await
     }
 }
@@ -318,6 +318,7 @@ impl KeysQuery {
     /// # use meilisearch_sdk::{key::KeysQuery};
     /// let builder = KeysQuery::new();
     /// ```
+    #[must_use]
     pub fn new() -> KeysQuery {
         Self::default()
     }
@@ -327,13 +328,13 @@ impl KeysQuery {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeysQuery, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut keys = KeysQuery::new()
     ///     .with_offset(1)
     ///     .execute(&client).await.unwrap();
@@ -351,13 +352,13 @@ impl KeysQuery {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeysQuery, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut keys = KeysQuery::new()
     ///     .with_limit(1)
     ///     .execute(&client).await.unwrap();
@@ -375,13 +376,13 @@ impl KeysQuery {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeysQuery, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut keys = KeysQuery::new()
     ///     .with_limit(1)
     ///     .execute(&client).await.unwrap();
@@ -389,7 +390,10 @@ impl KeysQuery {
     /// assert_eq!(keys.results.len(), 1);
     /// # });
     /// ```
-    pub async fn execute(&self, client: &Client) -> Result<KeysResults, Error> {
+    pub async fn execute<Http: HttpClient>(
+        &self,
+        client: &Client<Http>,
+    ) -> Result<KeysResults, Error> {
         client.get_keys_with(self).await
     }
 }
@@ -401,13 +405,13 @@ impl KeysQuery {
 /// # Example
 ///
 /// ```
-/// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+/// # use meilisearch_sdk::{key::*, client::Client};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
-/// # futures::executor::block_on(async move {
-/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+/// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 /// let description = "My little lovely test key".to_string();
 /// let key = KeyBuilder::new()
 ///     .with_description(&description)
@@ -438,9 +442,10 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::KeyBuilder;
+    /// # use meilisearch_sdk::key::KeyBuilder;
     /// let builder = KeyBuilder::new();
     /// ```
+    #[must_use]
     pub fn new() -> KeyBuilder {
         Self::default()
     }
@@ -450,7 +455,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action};
+    /// # use meilisearch_sdk::key::*;
     /// let mut builder = KeyBuilder::new();
     /// builder.with_actions(vec![Action::Search, Action::DocumentsAdd]);
     /// ```
@@ -464,7 +469,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action};
+    /// # use meilisearch_sdk::key::*;
     /// let mut builder = KeyBuilder::new();
     /// builder.with_action(Action::DocumentsAdd);
     /// ```
@@ -478,7 +483,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::KeyBuilder;
+    /// # use meilisearch_sdk::key::KeyBuilder;
     /// # use time::{OffsetDateTime, Duration};
     /// let mut builder = KeyBuilder::new();
     /// // create a key that expires in two weeks from now
@@ -494,13 +499,13 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Client};
+    /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut key = KeyBuilder::new()
     ///     .with_indexes(vec!["test", "movies"])
     ///     .execute(&client)
@@ -527,7 +532,7 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::KeyBuilder;
+    /// # use meilisearch_sdk::key::KeyBuilder;
     /// let mut builder = KeyBuilder::new();
     /// builder.with_index("test");
     /// ```
@@ -541,13 +546,13 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let description = "My not so little lovely test key".to_string();
     /// let mut key = KeyBuilder::new()
     ///     .with_description(&description)
@@ -567,13 +572,13 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let name = "lovely key".to_string();
     /// let mut key = KeyBuilder::new()
     ///     .with_name(&name)
@@ -588,18 +593,18 @@ impl KeyBuilder {
         self
     }
 
-    /// Add an uid to the [Key].
+    /// Add a uid to the [Key].
     ///
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Action, Client};
+    /// # use meilisearch_sdk::{key::*, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let uid = "93bcd7fb-2196-4fd9-acb7-3fca8a96e78f".to_string();
     /// let mut key = KeyBuilder::new()
     ///     .with_uid(&uid)
@@ -619,13 +624,13 @@ impl KeyBuilder {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{KeyBuilder, Client};
+    /// # use meilisearch_sdk::{key::KeyBuilder, client::Client};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let description = "My little lovely test key".to_string();
     /// let key = KeyBuilder::new()
     ///     .with_description(&description)
@@ -635,7 +640,7 @@ impl KeyBuilder {
     /// # client.delete_key(key).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute(&self, client: &Client) -> Result<Key, Error> {
+    pub async fn execute<Http: HttpClient>(&self, client: &Client<Http>) -> Result<Key, Error> {
         client.create_key(self).await
     }
 }

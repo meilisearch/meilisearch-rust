@@ -58,7 +58,7 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.24.1"
+meilisearch-sdk = "0.26.0"
 ```
 
 The following optional dependencies may also be useful:
@@ -108,9 +108,10 @@ struct Movie {
 }
 
 
-fn main() { block_on(async move {
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
     // Create a client (without sending any request so that can't fail)
-    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 
     // An index is where the documents are stored.
     let movies = client.index("movies");
@@ -124,7 +125,7 @@ fn main() { block_on(async move {
         Movie { id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()] },
         Movie { id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()] },
     ], Some("id")).await.unwrap();
-})}
+}
 ```
 
 With the `uid`, you can check the status (`enqueued`, `canceled`, `processing`, `succeeded` or `failed`) of your documents addition using the [task](https://www.meilisearch.com/docs/reference/api/tasks#get-task).
@@ -237,6 +238,12 @@ Json output:
   "query": "wonder"
 }
 ```
+
+#### Customize the `HttpClient` <!-- omit in TOC -->
+
+By default, the SDK uses [`reqwest`](https://docs.rs/reqwest/latest/reqwest/) to make http calls.
+The SDK lets you customize the http client by implementing the `HttpClient` trait yourself and
+initializing the `Client` with the `new_with_client` method.
 
 ## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 
