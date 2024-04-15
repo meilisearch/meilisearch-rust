@@ -127,7 +127,7 @@ fn get_index_config_implementation(
         get_settings_token_for_string(&distinct_key_attribute, "with_distinct_attribute");
 
     quote! {
-        #[::meilisearch_sdk::macro_helper::async_trait]
+        #[::meilisearch_sdk::macro_helper::async_trait(?Send)]
         impl ::meilisearch_sdk::documents::IndexConfig for #struct_ident {
             const INDEX_STR: &'static str = #index_name;
 
@@ -140,7 +140,7 @@ fn get_index_config_implementation(
             #distinct_attr_token
         }
 
-         async fn generate_index(client: &::meilisearch_sdk::client::Client) -> ::std::result::Result<::meilisearch_sdk::indexes::Index, ::meilisearch_sdk::tasks::Task> {
+         async fn generate_index<Http: ::meilisearch_sdk::request::HttpClient>(client: &::meilisearch_sdk::client::Client<Http>) -> std::result::Result<::meilisearch_sdk::indexes::Index<Http>, ::meilisearch_sdk::tasks::Task> {
             return client.create_index(#index_name, #primary_key_token)
                 .await.unwrap()
                 .wait_for_completion(&client, ::std::option::Option::None, ::std::option::Option::None)

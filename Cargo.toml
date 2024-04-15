@@ -1,6 +1,6 @@
 [package]
 name = "meilisearch-sdk"
-version = "0.25.0"
+version = "0.26.0"
 authors = ["Mubelotix <mubelotix@gmail.com>"]
 edition = "2018"
 description = "Rust wrapper for the Meilisearch API. Meilisearch is a powerful, fast, open-source, easy to use and deploy search engine."
@@ -18,28 +18,28 @@ log = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 time = { version = "0.3.7", features = ["serde-well-known", "formatting", "parsing"] }
-jsonwebtoken = { version = "9", default-features = false }
 yaup = "0.2.0"
 either = { version = "1.8.0", features = ["serde"] }
 thiserror = "1.0.37"
-meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", version = "0.25.0" }
+meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", version = "0.26.0" }
+pin-project-lite = { version = "0.2.13", optional = true }
+reqwest = { version = "0.12.3", optional = true, default-features = false, features = ["rustls-tls", "http2", "stream"] }
+bytes = { version = "1.6", optional = true }
+uuid = { version = "1.1.2", features = ["v4"] }
+futures-io = "0.3.30"
+futures = "0.3"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-futures = "0.3"
-futures-io = "0.3.26"
-isahc = { version = "1.0", features = ["http2", "text-decoding"], default_features = false }
-uuid = { version = "1.1.2", features = ["v4"] }
+jsonwebtoken = { version = "9", default-features = false }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-js-sys = "0.3.47"
-web-sys = { version = "0.3", features = ["RequestInit", "Headers", "Window", "Response", "console"] }
-wasm-bindgen = "0.2"
+uuid = { version = "1.8.0", default-features = false, features = ["v4", "js"] }
+web-sys = "0.3"
 wasm-bindgen-futures = "0.4"
 
 [features]
-default = ["isahc-static-curl"]
-isahc-static-curl = ["isahc/static-curl"]
-isahc-static-ssl = ["isahc/static-ssl"]
+default = ["reqwest"]
+reqwest = ["dep:reqwest", "pin-project-lite", "bytes"]
 
 [dev-dependencies]
 futures-await-test = "0.3"
@@ -56,3 +56,4 @@ lazy_static = "1.4"
 web-sys = "0.3"
 console_error_panic_hook = "0.1"
 big_s = "1.0.2"
+insta = "1.38.0"

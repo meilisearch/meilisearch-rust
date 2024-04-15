@@ -1,9 +1,9 @@
-use meilisearch_sdk::{Client, Index, Settings};
+use meilisearch_sdk::{client::Client, indexes::Index, settings::Settings};
 
 // we need an async runtime
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let client: Client = Client::new("http://localhost:7700", Some("masterKey"));
+    let client: Client = Client::new("http://localhost:7700", Some("masterKey")).unwrap();
 
     // We try to create an index called `movies` with a primary_key of `movie_id`.
     let my_index: Index = client

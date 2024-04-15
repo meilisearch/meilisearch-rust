@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::time::Duration;
 use time::OffsetDateTime;
 
-use crate::{tasks::*, Client, Error};
+use crate::{client::Client, errors::Error, request::HttpClient, tasks::*};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -41,7 +41,7 @@ impl TaskInfo {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, Task, TaskInfo};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::*};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -54,8 +54,8 @@ impl TaskInfo {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
@@ -72,9 +72,9 @@ impl TaskInfo {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn wait_for_completion(
+    pub async fn wait_for_completion<Http: HttpClient>(
         self,
-        client: &Client,
+        client: &Client<Http>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
     ) -> Result<Task, Error> {
@@ -85,7 +85,11 @@ impl TaskInfo {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{client::*, ErrorCode, ErrorType, Index};
+    use crate::{
+        client::*,
+        errors::{ErrorCode, ErrorType},
+        indexes::Index,
+    };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};

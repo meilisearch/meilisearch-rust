@@ -1,13 +1,14 @@
 use futures::executor::block_on;
 use lazy_static::lazy_static;
-use meilisearch_sdk::{client::*, Settings};
+use meilisearch_sdk::client::Client;
+use meilisearch_sdk::settings::Settings;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::io::stdin;
 
 // instantiate the client. load it once
 lazy_static! {
-    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey"));
+    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey")).unwrap();
 }
 
 fn main() {

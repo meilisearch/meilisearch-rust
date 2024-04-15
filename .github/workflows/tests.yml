@@ -32,6 +32,11 @@ jobs:
         with:
           command: check
           args: --workspace --all-targets --all
+      - name: Cargo check no default features
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --workspace --all-targets --all --no-default-features
 
   linter:
     name: clippy-check
