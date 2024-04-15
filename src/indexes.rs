@@ -2063,21 +2063,31 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_update_document_json(client: Client, index: Index) -> Result<(), Error> {
-        let old_json = r#"{ "id": 1, "body": "doggo" }{ "id": 2, "body": "catto" }"#.as_bytes();
-        let updated_json = r#"{ "id": 1, "second_body": "second_doggo" }{ "id": 2, "second_body": "second_catto" }"#.as_bytes();
+        let old_json = [
+            json!({ "id": 1, "body": "doggo" }),
+            json!({ "id": 2, "body": "catto" }),
+        ];
+        let updated_json = [
+            json!({ "id": 1, "second_body": "second_doggo" }),
+            json!({ "id": 2, "second_body": "second_catto" }),
+        ];
 
         let task = index
-            .add_documents(old_json, Some("id"))
-            .await?
+            .add_documents(&old_json, Some("id"))
+            .await
+            .unwrap()
             .wait_for_completion(&client, None, None)
-            .await?;
+            .await
+            .unwrap();
         let _ = index.get_task(task).await?;
 
         let task = index
-            .add_or_update(updated_json, None)
-            .await?
+            .add_or_update(&updated_json, None)
+            .await
+            .unwrap()
             .wait_for_completion(&client, None, None)
-            .await?;
+            .await
+            .unwrap();
 
         let status = index.get_task(task).await?;
         let elements = index.get_documents::<serde_json::Value>().await.unwrap();
