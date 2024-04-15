@@ -1637,7 +1637,7 @@ facet_search_1: |-
     .unwrap();
 facet_search_2: |-
   let client = client::new("http://localhost:7700", Some("apiKey"));
-  let res = client.index("movies")
+  let res = client.index("books")
     .facet_search("genres")
     .with_facet_query("c")
     .execute()
