@@ -1635,7 +1635,7 @@ facet_search_1: |-
     .execute()
     .await
     .unwrap();
-facet_search_2: |-
+facet_search_3: |-
   let client = client::new("http://localhost:7700", Some("apiKey"));
   let res = client.index("books")
     .facet_search("genres")
