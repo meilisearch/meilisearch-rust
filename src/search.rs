@@ -138,6 +138,22 @@ pub enum Selectors<T> {
     All,
 }
 
+#[cfg(feature = "experimental-vector-search")]
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HybridSearch<'a> {
+    /// Indicates one of the embedders configured for the queried index
+    ///
+    /// **Default: `"default"`**
+    embedder: &'a str,
+    /// number between `0` and `1`:
+    /// - `0.0` indicates full keyword search
+    /// - `1.0` indicates full semantic search
+    ///
+    /// **Default: `0.5`**
+    semantic_ratio: f32,
+}
+
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
 /// A struct representing a query.
@@ -328,6 +344,12 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
+
+    /// EXPERIMENTAL
+    /// Defines whether to utilise previously defined embedders for semantic searching
+    #[cfg(feature = "experimental-vector-search")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hybrid: Option<HybridSearch<'a>>,
 }
 
 #[allow(missing_docs)]
@@ -356,6 +378,8 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             show_ranking_score: None,
             matching_strategy: None,
             index_uid: None,
+            #[cfg(feature = "experimental-vector-search")]
+            hybrid: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
@@ -539,6 +563,20 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.index_uid = Some(&self.index.uid);
         self
     }
+    #[cfg(feature = "experimental-vector-search")]
+    pub fn with_hybrid<'b>(
+        &'b mut self,
+        embedder: &'a str,
+        semantic_ratio: f32,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.hybrid = Some(HybridSearch {
+            embedder,
+            semantic_ratio,
+        });
+        self
+    }
+
+    #[must_use]
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
     }
@@ -612,6 +650,7 @@ mod tests {
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{json, Map, Value};
+    use std::time::Duration;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Nested {
@@ -654,9 +693,15 @@ mod tests {
             .await?;
         let t2 = index.set_sortable_attributes(["title"]).await?;
 
-        t2.wait_for_completion(client, None, None).await?;
-        t1.wait_for_completion(client, None, None).await?;
-        t0.wait_for_completion(client, None, None).await?;
+        // the vector search has longer indexing times leading to the timeout being triggered
+        let timeout = if cfg!(feature = "experimental-vector-search") {
+            Some(Duration::from_secs(120))
+        } else {
+            None
+        };
+        t2.wait_for_completion(client, None, timeout).await?;
+        t1.wait_for_completion(client, None, timeout).await?;
+        t0.wait_for_completion(client, None, timeout).await?;
 
         Ok(())
     }
@@ -1171,6 +1216,90 @@ mod tests {
 
             assert!(!result.hits.is_empty());
         }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "experimental-vector-search")]
+    #[meilisearch_test]
+    async fn test_hybrid(client: Client, index: Index) -> Result<(), Error> {
+        use crate::settings::{Embedder, HuggingFaceEmbedderSettings};
+        log::warn!("You are executing the vector search test. This WILL take a while and might lead to timeouts in other tests. You can disable this testcase by not enabling the `experimental-vector-search`-feature and running this ");
+        // enable vector searching and configure an embedder
+        let features = crate::features::ExperimentalFeatures::new(&client)
+            .set_vector_store(true)
+            .update()
+            .await
+            .expect("could not enable the vector store");
+        assert_eq!(features.vector_store, true);
+        let embedder_setting = Embedder::HuggingFace(HuggingFaceEmbedderSettings {
+            model: Some("BAAI/bge-base-en-v1.5".into()),
+            revision: None,
+            document_template: Some("{{ doc.value }}".into()),
+        });
+        let t3 = index
+            .set_settings(&crate::settings::Settings {
+                embedders: Some(HashMap::from([("default".to_string(), embedder_setting)])),
+                ..crate::settings::Settings::default()
+            })
+            .await?;
+        t3.wait_for_completion(&client, None, None).await?;
+
+        setup_test_index(&client, &index).await?;
+
+        // "zweite" = "second" in german
+        // => an embedding should be able to detect that this is equivalent, but not the regular search
+        let results: SearchResults<Document> = index
+            .search()
+            .with_query("Facebook")
+            .with_hybrid("default", 1.0) // entirely rely on semantic searching
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 1);
+        assert_eq!(
+            &Document {
+                id: 1,
+                value: S("dolor sit amet, consectetur adipiscing elit"),
+                kind: S("text"),
+                number: 10,
+                nested: Nested { child: S("second") },
+            },
+            &results.hits[0].result
+        );
+        let results: SearchResults<Document> = index
+            .search()
+            .with_query("zweite")
+            .with_hybrid("default", 0.0) // no semantic searching => no matches
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 0);
+
+        // word that has a typo => would have been found via traditional means
+        // if entirely relying on semantic searching, no result is found
+        let results: SearchResults<Document> = index
+            .search()
+            .with_query("lohrem")
+            .with_hybrid("default", 1.0)
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 0);
+        let results: SearchResults<Document> = index
+            .search()
+            .with_query("lohrem")
+            .with_hybrid("default", 0.0)
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 1);
+        assert_eq!(
+            &Document {
+                id: 0,
+                value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
+                kind: S("text"),
+                number: 0,
+                nested: Nested { child: S("first") }
+            },
+            &results.hits[0].result
+        );
 
         Ok(())
     }
