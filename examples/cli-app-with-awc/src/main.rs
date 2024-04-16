@@ -59,12 +59,12 @@ impl HttpClient for AwcClient {
                 .content_type(content_type)
                 .send_stream(stream)
                 .await
-                .map_err(|err| Error::Other(Box::new(err)))?
+                .map_err(|err| Error::Other(anyhow::anyhow!(err.to_string()).into()))?
         } else {
             request
                 .send()
                 .await
-                .map_err(|err| Error::Other(Box::new(err)))?
+                .map_err(|err| Error::Other(anyhow::anyhow!(err.to_string()).into()))?
         };
 
         let status = response.status().as_u16();
@@ -72,10 +72,10 @@ impl HttpClient for AwcClient {
             response
                 .body()
                 .await
-                .map_err(|err| Error::Other(Box::new(err)))?
+                .map_err(|err| Error::Other(anyhow::anyhow!(err.to_string()).into()))?
                 .to_vec(),
         )
-        .map_err(|err| Error::Other(Box::new(err)))?;
+        .map_err(|err| Error::Other(anyhow::anyhow!(err.to_string()).into()))?;
 
         if body.is_empty() {
             body = "null".to_string();
