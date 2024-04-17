@@ -1626,3 +1626,8 @@ reset_proximity_precision_settings_1: |-
     .reset_proximity_precision()
     .await
     .unwrap();
+create_snapshot_1: |-
+  client
+    .create_snapshot()
+    .await
+    .unwrap();

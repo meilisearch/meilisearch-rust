@@ -244,6 +244,8 @@ pub mod request;
 pub mod search;
 /// Module containing [`Settings`].
 pub mod settings;
+/// Module containing the [snapshots] trait.
+pub mod snapshots;
 /// Module representing the [`TaskInfo`]s.
 pub mod task_info;
 /// Module representing the [`Task`]s.
