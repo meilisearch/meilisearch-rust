@@ -40,7 +40,6 @@ wasm-bindgen-futures = "0.4"
 [features]
 default = ["reqwest"]
 reqwest = ["dep:reqwest", "pin-project-lite", "bytes"]
-experimental-vector-search = []
 
 [dev-dependencies]
 futures-await-test = "0.3"

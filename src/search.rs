@@ -138,7 +138,6 @@ pub enum Selectors<T> {
     All,
 }
 
-#[cfg(feature = "experimental-vector-search")]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HybridSearch<'a> {
@@ -347,13 +346,11 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 
     /// EXPERIMENTAL
     /// Defines whether to utilise previously defined embedders for semantic searching
-    #[cfg(feature = "experimental-vector-search")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hybrid: Option<HybridSearch<'a>>,
 
     /// EXPERIMENTAL
     /// Defines what vectors an userprovided embedder has gotten for semantic searching
-    #[cfg(feature = "experimental-vector-search")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vector: Option<&'a [f32]>,
 }
@@ -384,9 +381,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             show_ranking_score: None,
             matching_strategy: None,
             index_uid: None,
-            #[cfg(feature = "experimental-vector-search")]
             hybrid: None,
-            #[cfg(feature = "experimental-vector-search")]
             vector: None,
         }
     }
@@ -573,7 +568,6 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
     /// EXPERIMENTAL
     /// Defines whether to utilise previously defined embedders for semantic searching
-    #[cfg(feature = "experimental-vector-search")]
     pub fn with_hybrid<'b>(
         &'b mut self,
         embedder: &'a str,
@@ -587,7 +581,6 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
     /// EXPERIMENTAL
     /// Defines what vectors an userprovided embedder has gotten for semantic searching
-    #[cfg(feature = "experimental-vector-search")]
     pub fn with_vector<'b>(&'b mut self, vector: &'a [f32]) -> &'b mut SearchQuery<'a, Http> {
         self.vector = Some(vector);
         self
@@ -1240,7 +1233,6 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "experimental-vector-search")]
     #[meilisearch_test]
     async fn test_hybrid(client: Client, index: Index) -> Result<(), Error> {
         use crate::settings::{Embedder, UserProvidedEmbedderSettings};

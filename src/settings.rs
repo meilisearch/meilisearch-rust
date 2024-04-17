@@ -36,7 +36,8 @@ pub struct FacetingSettings {
     pub max_values_per_facet: usize,
 }
 
-#[cfg(feature = "experimental-vector-search")]
+/// EXPERIMENTAL
+/// Allows configuring semantic seaarching
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase", tag = "source")]
 pub enum Embedder {
@@ -50,7 +51,6 @@ pub enum Embedder {
     UserProvided(UserProvidedEmbedderSettings),
 }
 
-#[cfg(feature = "experimental-vector-search")]
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HuggingFaceEmbedderSettings {
@@ -69,7 +69,6 @@ pub struct HuggingFaceEmbedderSettings {
     pub document_template: Option<String>,
 }
 
-#[cfg(feature = "experimental-vector-search")]
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenapiEmbedderSettings {
@@ -93,7 +92,6 @@ pub struct OpenapiEmbedderSettings {
     pub document_template: Option<String>,
 }
 
-#[cfg(feature = "experimental-vector-search")]
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
 pub struct UserProvidedEmbedderSettings {
     /// dimensions of your custom embedding
@@ -168,7 +166,6 @@ pub struct Settings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proximity_precision: Option<String>,
     /// Settings how the embeddings for the experimental vector search feature are generated
-    #[cfg(feature = "experimental-vector-search")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub embedders: Option<HashMap<String, Embedder>>,
 }
@@ -355,8 +352,9 @@ impl Settings {
         }
     }
 
+    /// EXPERIMENTAL
+    /// Set the [embedders](https://www.meilisearch.com/docs/learn/experimental/vector_search) of the [Index].
     #[must_use]
-    #[cfg(feature = "experimental-vector-search")]
     pub fn with_embedders<S>(self, embedders: HashMap<S, Embedder>) -> Settings
     where
         S: AsRef<str>,
@@ -840,6 +838,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
+    /// EXPERIMENTAL
     /// Get [embedders](https://www.meilisearch.com/docs/learn/experimental/vector_search) of the [Index].
     ///
     /// ```
@@ -868,7 +867,6 @@ impl<Http: HttpClient> Index<Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    #[cfg(feature = "experimental-vector-search")]
     pub async fn get_embedders(&self) -> Result<HashMap<String, Embedder>, Error> {
         self.client
             .http_client
@@ -1940,6 +1938,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
+    /// EXPERIMENTAL
     /// Reset [embedders](https://www.meilisearch.com/docs/learn/experimental/vector_search) of the [Index].
     ///
     /// # Example
@@ -1959,7 +1958,6 @@ impl<Http: HttpClient> Index<Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    #[cfg(feature = "experimental-vector-search")]
     pub async fn reset_embedders(&self) -> Result<TaskInfo, Error> {
         self.client
             .http_client
@@ -2008,7 +2006,6 @@ mod tests {
         assert_eq!(faceting, res);
     }
 
-    #[cfg(feature = "experimental-vector-search")]
     #[meilisearch_test]
     async fn test_get_embeddings(index: Index) {
         let res = index.get_embedders().await.unwrap();
@@ -2042,7 +2039,6 @@ mod tests {
         assert_eq!(faceting, res);
     }
 
-    #[cfg(feature = "experimental-vector-search")]
     #[meilisearch_test]
     async fn test_reset_embedders(client: Client, index: Index) {
         let features = crate::features::ExperimentalFeatures::new(&client)
@@ -2235,7 +2231,6 @@ mod tests {
         assert_eq!(expected, res);
     }
 
-    #[cfg(feature = "experimental-vector-search")]
     #[meilisearch_test]
     async fn test_set_embedding_settings(client: Client, index: Index) {
         let features = crate::features::ExperimentalFeatures::new(&client)
