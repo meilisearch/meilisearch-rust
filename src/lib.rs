@@ -231,8 +231,6 @@ pub mod client;
 pub mod documents;
 /// Module containing the [dumps] trait.
 pub mod dumps;
-/// Module containing the [snapshots] trait.
-pub mod snapshots;
 /// Module containing the [`errors::Error`] struct.
 pub mod errors;
 /// Module related to runtime and instance features.
@@ -246,6 +244,8 @@ pub mod request;
 pub mod search;
 /// Module containing [`Settings`].
 pub mod settings;
+/// Module containing the [snapshots] trait.
+pub mod snapshots;
 /// Module representing the [`TaskInfo`]s.
 pub mod task_info;
 /// Module representing the [`Task`]s.

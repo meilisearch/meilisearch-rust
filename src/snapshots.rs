@@ -94,11 +94,7 @@ mod tests {
         let task = client
             .create_snapshot()
             .await?
-            .wait_for_completion(
-                &client,
-                None,
-                None,
-            )
+            .wait_for_completion(&client, None, None)
             .await?;
 
         assert!(matches!(task, Task::Succeeded { .. }));
