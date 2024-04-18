@@ -1,0 +1,7 @@
+{"run_id":"1713424605-374467000","line":1325,"new":{"module_name":"meilisearch_sdk__client__tests","snapshot_name":"_inner_meilisearch_test_macro_test_error_delete_key","metadata":{"source":"src/client.rs","assertion_line":1325,"expression":"error"},"snapshot":"HTTP request failed: error sending request for url (http://localhost:7700/keys/invalid_key)"},"old":{"module_name":"meilisearch_sdk__client__tests","metadata":{},"snapshot":"Meilisearch invalid_request: api_key_not_found: API key `invalid_key` not found.. https://docs.meilisearch.com/errors#api_key_not_found"}}
+{"run_id":"1713424627-924585000","line":1325,"new":null,"old":null}
+{"run_id":"1713424627-924585000","line":1338,"new":null,"old":null}
+{"run_id":"1713424627-924585000","line":1349,"new":null,"old":null}
+{"run_id":"1713426075-248811000","line":1325,"new":null,"old":null}
+{"run_id":"1713426075-248811000","line":1338,"new":null,"old":null}
+{"run_id":"1713426075-248811000","line":1349,"new":null,"old":null}
