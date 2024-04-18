@@ -15,7 +15,7 @@
 //!
 //! # Example
 //!
-//! ```no_run
+//! ```
 //! # use meilisearch_sdk::{client::*, errors::*, dumps::*, dumps::*, task_info::*, tasks::*};
 //! # use futures_await_test::async_test;
 //! # use std::{thread::sleep, time::Duration};
@@ -50,7 +50,7 @@ impl<Http: HttpClient> Client<Http> {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// # use meilisearch_sdk::{client::*, errors::*, dumps::*, dumps::*, task_info::*, tasks::*};
     /// # use futures_await_test::async_test;
     /// # use std::{thread::sleep, time::Duration};
