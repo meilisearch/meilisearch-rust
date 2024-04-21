@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use convert_case::{Case, Casing};
 use proc_macro2::Ident;
 use quote::quote;
@@ -173,21 +171,6 @@ fn get_settings_token_for_list(
     } else {
         quote! {
             .#method_ident([#(#string_attributes),*])
-        }
-    }
-}
-
-fn get_settings_token_for_string(
-    field_name: &String,
-    method_name: &str,
-) -> proc_macro2::TokenStream {
-    let method_ident = Ident::new(method_name, proc_macro2::Span::call_site());
-
-    if field_name.is_empty() {
-        proc_macro2::TokenStream::new()
-    } else {
-        quote! {
-            .#method_ident(#field_name)
         }
     }
 }
