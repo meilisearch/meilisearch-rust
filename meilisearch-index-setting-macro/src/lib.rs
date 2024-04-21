@@ -125,8 +125,10 @@ fn get_index_config_implementation(
         get_settings_token_for_list(&filterable_attributes, "with_filterable_attributes");
     let searchable_attr_tokens =
         get_settings_token_for_list(&searchable_attributes, "with_searchable_attributes");
-    let distinct_attr_token =
-        get_settings_token_for_string_for_some_string(&distinct_key_attribute, "with_distinct_attribute");
+    let distinct_attr_token = get_settings_token_for_string_for_some_string(
+        &distinct_key_attribute,
+        "with_distinct_attribute",
+    );
 
     quote! {
         #[::meilisearch_sdk::macro_helper::async_trait(?Send)]

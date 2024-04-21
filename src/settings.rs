@@ -217,19 +217,18 @@ impl Settings {
     }
 
     #[must_use]
-    pub fn with_distinct_attribute(self, distinct_attribute:  Option< impl AsRef<str>>) -> Settings {
+    pub fn with_distinct_attribute(self, distinct_attribute: Option<impl AsRef<str>>) -> Settings {
         if let Some(distinct_attribute) = distinct_attribute {
-                Settings {
+            Settings {
                 distinct_attribute: Some(Some(distinct_attribute.as_ref().to_string())),
                 ..self
-                }
-            } else {
-                Settings {
+            }
+        } else {
+            Settings {
                 distinct_attribute: Some(None),
                 ..self
-                }
-
-            } 
+            }
+        }
     }
 
     #[must_use]
