@@ -315,7 +315,7 @@ update_settings_1: |-
       "release_date:desc",
       "rank:desc"
     ])
-    .with_distinct_attribute("movie_id")
+    .with_distinct_attribute(Some("movie_id"))
     .with_searchable_attributes([
       "title",
       "overview",
