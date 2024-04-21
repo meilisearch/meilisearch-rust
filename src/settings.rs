@@ -219,10 +219,10 @@ impl Settings {
     #[must_use]
     pub fn with_distinct_attribute(self, distinct_attribute: Option<impl AsRef<str>>) -> Settings {
         Settings {
-            distinct_attribute: Some(distinct_attribute.map(|distinct| distinct.to_string())),
+            distinct_attribute: Some(
+                distinct_attribute.map(|distinct| distinct.as_ref().to_string()),
+            ),
             ..self
-        }
-
         }
     }
 
