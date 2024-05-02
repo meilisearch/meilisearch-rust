@@ -246,6 +246,10 @@ The SDK lets you customize the http client by implementing the `HttpClient` trai
 initializing the `Client` with the `new_with_client` method.
 You may be interested by the `futures-unsend` feature which lets you specify a non-Send http client.
 
+#### Wasm support <!-- omit in TOC -->
+
+The SDK supports wasm through reqwest. You'll need to enable the `futures-unsend` feature while importing it, though.
+
 ## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 
 This crate fully supports WASM.
