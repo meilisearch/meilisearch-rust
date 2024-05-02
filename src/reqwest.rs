@@ -50,7 +50,8 @@ impl ReqwestClient {
     }
 }
 
-#[async_trait(?Send)]
+#[cfg_attr(feature = "futures-unsend", async_trait(?Send))]
+#[cfg_attr(not(feature = "futures-unsend"), async_trait)]
 impl HttpClient for ReqwestClient {
     async fn stream_request<
         Query: Serialize + Send + Sync,
