@@ -32,7 +32,7 @@ impl ReqwestClient {
         );
         #[cfg(target_arch = "wasm32")]
         headers.insert(
-            header::HeaderName::from_static("X-Meilisearch-Client"),
+            header::HeaderName::from_static("x-meilisearch-client"),
             header::HeaderValue::from_str(&qualified_version()).unwrap(),
         );
 
