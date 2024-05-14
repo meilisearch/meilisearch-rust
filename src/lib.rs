@@ -222,6 +222,11 @@
 //! By default, the SDK uses [`reqwest`](https://docs.rs/reqwest/latest/reqwest/) to make http calls.
 //! The SDK lets you customize the http client by implementing the `HttpClient` trait yourself and
 //! initializing the `Client` with the `new_with_client` method.
+//! You may be interested by the `futures-unsend` feature which lets you specify a non-Send http client.
+//!
+//! ### Wasm support <!-- omit in TOC -->
+//!
+//! The SDK supports wasm through reqwest. You'll need to enable the `futures-unsend` feature while importing it, though.
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 

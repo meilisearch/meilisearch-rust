@@ -65,7 +65,8 @@ impl<Q, B> Method<Q, B> {
     }
 }
 
-#[async_trait(?Send)]
+#[cfg_attr(feature = "futures-unsend", async_trait(?Send))]
+#[cfg_attr(not(feature = "futures-unsend"), async_trait)]
 pub trait HttpClient: Clone + Send + Sync {
     async fn request<Query, Body, Output>(
         &self,
@@ -143,7 +144,8 @@ pub fn parse_response<Output: DeserializeOwned>(
     }
 }
 
-#[async_trait(?Send)]
+#[cfg_attr(feature = "futures-unsend", async_trait(?Send))]
+#[cfg_attr(not(feature = "futures-unsend"), async_trait)]
 impl HttpClient for Infallible {
     async fn request<Query, Body, Output>(
         &self,

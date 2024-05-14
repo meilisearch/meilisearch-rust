@@ -143,7 +143,7 @@ pub struct Settings {
     pub sortable_attributes: Option<Vec<String>>,
     /// Search returns documents with distinct (different) values of the given field.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub distinct_attribute: Option<String>,
+    pub distinct_attribute: Option<Option<String>>,
     /// Fields in which to search for matching query words sorted by order of importance.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub searchable_attributes: Option<Vec<String>>,
@@ -282,9 +282,11 @@ impl Settings {
     }
 
     #[must_use]
-    pub fn with_distinct_attribute(self, distinct_attribute: impl AsRef<str>) -> Settings {
+    pub fn with_distinct_attribute(self, distinct_attribute: Option<impl AsRef<str>>) -> Settings {
         Settings {
-            distinct_attribute: Some(distinct_attribute.as_ref().to_string()),
+            distinct_attribute: Some(
+                distinct_attribute.map(|distinct| distinct.as_ref().to_string()),
+            ),
             ..self
         }
     }

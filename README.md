@@ -58,7 +58,7 @@ To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.26.0"
+meilisearch-sdk = "0.26.1"
 ```
 
 The following optional dependencies may also be useful:
@@ -244,6 +244,11 @@ Json output:
 By default, the SDK uses [`reqwest`](https://docs.rs/reqwest/latest/reqwest/) to make http calls.
 The SDK lets you customize the http client by implementing the `HttpClient` trait yourself and
 initializing the `Client` with the `new_with_client` method.
+You may be interested by the `futures-unsend` feature which lets you specify a non-Send http client.
+
+#### Wasm support <!-- omit in TOC -->
+
+The SDK supports wasm through reqwest. You'll need to enable the `futures-unsend` feature while importing it, though.
 
 ## 🌐 Running in the Browser with WASM <!-- omit in TOC -->
 

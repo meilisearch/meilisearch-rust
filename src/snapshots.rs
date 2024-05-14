@@ -87,7 +87,6 @@ mod tests {
     use super::*;
     use crate::{client::*, tasks::*};
     use meilisearch_test_macro::meilisearch_test;
-    use std::time::Duration;
 
     #[meilisearch_test]
     async fn test_snapshot_success_creation(client: Client) -> Result<(), Error> {
