@@ -72,7 +72,7 @@ impl HttpClient for ReqwestClient {
         let url = if query.is_empty() {
             url.to_string()
         } else {
-            format!("{url}?{query}")
+            format!("{url}{query}")
         };
 
         let mut request = self.client.request(verb(&method), &url);
