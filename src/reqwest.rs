@@ -32,7 +32,7 @@ impl ReqwestClient {
         );
         #[cfg(target_arch = "wasm32")]
         headers.insert(
-            header::HeaderName::from_static("X-Meilisearch-Client"),
+            header::HeaderName::from_static("x-meilisearch-client"),
             header::HeaderValue::from_str(&qualified_version()).unwrap(),
         );
 
@@ -50,7 +50,8 @@ impl ReqwestClient {
     }
 }
 
-#[async_trait(?Send)]
+#[cfg_attr(feature = "futures-unsend", async_trait(?Send))]
+#[cfg_attr(not(feature = "futures-unsend"), async_trait)]
 impl HttpClient for ReqwestClient {
     async fn stream_request<
         Query: Serialize + Send + Sync,
@@ -71,7 +72,7 @@ impl HttpClient for ReqwestClient {
         let url = if query.is_empty() {
             url.to_string()
         } else {
-            format!("{url}?{query}")
+            format!("{url}{query}")
         };
 
         let mut request = self.client.request(verb(&method), &url);

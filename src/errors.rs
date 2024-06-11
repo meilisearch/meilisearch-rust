@@ -62,7 +62,7 @@ pub enum Error {
     InvalidUuid4Version,
 
     #[error(transparent)]
-    Other(Box<dyn std::error::Error>),
+    Other(Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
 #[derive(Debug, Clone, Deserialize, Error)]
@@ -412,7 +412,7 @@ mod test {
             "Impossible to generate the token, jsonwebtoken encountered an error: InvalidToken"
         );
 
-        let error = Error::Yaup(yaup::error::Error::Custom("Test yaup error".to_string()));
+        let error = Error::Yaup(yaup::Error::Custom("Test yaup error".to_string()));
         assert_eq!(
             error.to_string(),
             "Internal Error: could not parse the query parameters: Test yaup error"
