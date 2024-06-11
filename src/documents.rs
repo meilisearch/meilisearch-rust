@@ -1,4 +1,3 @@
-use crate::TaskInfo;
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -20,7 +19,10 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// ## Sample usage:
 /// ```
 /// use serde::{Serialize, Deserialize};
-/// use meilisearch_sdk::{IndexConfig, Settings, Index, Client};
+/// use meilisearch_sdk::documents::IndexConfig;
+/// use meilisearch_sdk::settings::Settings;
+/// use meilisearch_sdk::indexes::Index;
+/// use meilisearch_sdk::client::Client;
 ///
 /// #[derive(Serialize, Deserialize, IndexConfig)]
 /// struct Movie {
@@ -45,17 +47,23 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// ```
 pub use meilisearch_index_setting_macro::IndexConfig;
 
-use crate::{Client, Error, Index, Settings, Task};
+use crate::client::Client;
+use crate::request::HttpClient;
+use crate::settings::Settings;
+use crate::task_info::TaskInfo;
+use crate::tasks::Task;
+use crate::{errors::Error, indexes::Index};
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait IndexConfig {
     const INDEX_STR: &'static str;
 
-    fn index(client: &Client) -> Index {
+    #[must_use]
+    fn index<Http: HttpClient>(client: &Client<Http>) -> Index<Http> {
         client.index(Self::INDEX_STR)
     }
     fn generate_settings() -> Settings;
-    async fn generate_index(client: &Client) -> Result<Index, Task>;
+    async fn generate_index<Http: HttpClient>(client: &Client<Http>) -> Result<Index<Http>, Task>;
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -67,17 +75,18 @@ pub struct DocumentsResults<T> {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct DocumentQuery<'a> {
+pub struct DocumentQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub index: &'a Index,
+    pub index: &'a Index<Http>,
 
-    /// The fields that should appear in the documents. By default all of the fields are present.
+    /// The fields that should appear in the documents. By default, all of the fields are present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
 }
 
-impl<'a> DocumentQuery<'a> {
-    pub fn new(index: &Index) -> DocumentQuery {
+impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
+    #[must_use]
+    pub fn new(index: &Index<Http>) -> DocumentQuery<Http> {
         DocumentQuery {
             index,
             fields: None,
@@ -94,7 +103,7 @@ impl<'a> DocumentQuery<'a> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let index = client.index("document_query_with_fields");
     /// let mut document_query = DocumentQuery::new(&index);
     ///
@@ -103,7 +112,7 @@ impl<'a> DocumentQuery<'a> {
     pub fn with_fields(
         &mut self,
         fields: impl IntoIterator<Item = &'a str>,
-    ) -> &mut DocumentQuery<'a> {
+    ) -> &mut DocumentQuery<'a, Http> {
         self.fields = Some(fields.into_iter().collect());
         self
     }
@@ -119,8 +128,8 @@ impl<'a> DocumentQuery<'a> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// struct MyObject {
     ///     id: String,
@@ -145,7 +154,7 @@ impl<'a> DocumentQuery<'a> {
     /// );
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
-    pub async fn execute<T: DeserializeOwned + 'static>(
+    pub async fn execute<T: DeserializeOwned + 'static + Send + Sync>(
         &self,
         document_id: &str,
     ) -> Result<T, Error> {
@@ -154,9 +163,9 @@ impl<'a> DocumentQuery<'a> {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct DocumentsQuery<'a> {
+pub struct DocumentsQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub index: &'a Index,
+    pub index: &'a Index<Http>,
 
     /// The number of documents to skip.
     ///
@@ -177,20 +186,21 @@ pub struct DocumentsQuery<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
 
-    /// The fields that should appear in the documents. By default all of the fields are present.
+    /// The fields that should appear in the documents. By default, all of the fields are present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
 
     /// Filters to apply.
     ///
     /// Available since v1.2 of Meilisearch
-    /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/fine_tuning_results/filtering#filter-basics) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<&'a str>,
 }
 
-impl<'a> DocumentsQuery<'a> {
-    pub fn new(index: &Index) -> DocumentsQuery {
+impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
+    #[must_use]
+    pub fn new(index: &Index<Http>) -> DocumentsQuery<Http> {
         DocumentsQuery {
             index,
             offset: None,
@@ -210,12 +220,12 @@ impl<'a> DocumentsQuery<'a> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index).with_offset(1);
     /// ```
-    pub fn with_offset(&mut self, offset: usize) -> &mut DocumentsQuery<'a> {
+    pub fn with_offset(&mut self, offset: usize) -> &mut DocumentsQuery<'a, Http> {
         self.offset = Some(offset);
         self
     }
@@ -230,14 +240,14 @@ impl<'a> DocumentsQuery<'a> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
     ///
     /// documents_query.with_limit(1);
     /// ```
-    pub fn with_limit(&mut self, limit: usize) -> &mut DocumentsQuery<'a> {
+    pub fn with_limit(&mut self, limit: usize) -> &mut DocumentsQuery<'a, Http> {
         self.limit = Some(limit);
         self
     }
@@ -252,7 +262,7 @@ impl<'a> DocumentsQuery<'a> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let index = client.index("my_index");
     ///
     /// let mut documents_query = DocumentsQuery::new(&index);
@@ -262,12 +272,12 @@ impl<'a> DocumentsQuery<'a> {
     pub fn with_fields(
         &mut self,
         fields: impl IntoIterator<Item = &'a str>,
-    ) -> &mut DocumentsQuery<'a> {
+    ) -> &mut DocumentsQuery<'a, Http> {
         self.fields = Some(fields.into_iter().collect());
         self
     }
 
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentsQuery<'a> {
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentsQuery<'a, Http> {
         self.filter = Some(filter);
         self
     }
@@ -283,8 +293,8 @@ impl<'a> DocumentsQuery<'a> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
-    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let index = client.create_index("documents_query_execute", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
     /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
     /// struct MyObject {
@@ -302,7 +312,7 @@ impl<'a> DocumentsQuery<'a> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute<T: DeserializeOwned + 'static>(
+    pub async fn execute<T: DeserializeOwned + 'static + Send + Sync>(
         &self,
     ) -> Result<DocumentsResults<T>, Error> {
         self.index.get_documents_with::<T>(self).await
@@ -310,25 +320,29 @@ impl<'a> DocumentsQuery<'a> {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct DocumentDeletionQuery<'a> {
+pub struct DocumentDeletionQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
-    pub index: &'a Index,
+    pub index: &'a Index<Http>,
 
     /// Filters to apply.
     ///
-    /// Read the [dedicated guide](https://docs.meilisearch.com/reference/features/filtering.html) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/fine_tuning_results/filtering#filter-basics) to learn the syntax.
     pub filter: Option<&'a str>,
 }
 
-impl<'a> DocumentDeletionQuery<'a> {
-    pub fn new(index: &Index) -> DocumentDeletionQuery {
+impl<'a, Http: HttpClient> DocumentDeletionQuery<'a, Http> {
+    #[must_use]
+    pub fn new(index: &Index<Http>) -> DocumentDeletionQuery<Http> {
         DocumentDeletionQuery {
             index,
             filter: None,
         }
     }
 
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentDeletionQuery<'a> {
+    pub fn with_filter<'b>(
+        &'b mut self,
+        filter: &'a str,
+    ) -> &'b mut DocumentDeletionQuery<'a, Http> {
         self.filter = Some(filter);
         self
     }
@@ -341,7 +355,7 @@ impl<'a> DocumentDeletionQuery<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{client::*, errors::*, indexes::*};
+    use crate::{client::Client, errors::*, indexes::*};
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
 
@@ -527,7 +541,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_get_documents_with_error_hint() -> Result<(), Error> {
         let meilisearch_url = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
-        let client = Client::new(format!("{}/hello", meilisearch_url), Some("masterKey"));
+        let client = Client::new(format!("{meilisearch_url}/hello"), Some("masterKey")).unwrap();
         let index = client.index("test_get_documents_with_filter_wrong_ms_version");
 
         let documents = DocumentsQuery::new(&index)
@@ -552,7 +566,7 @@ mod tests {
             }
             _ => panic!("The error was expected to be a MeilisearchCommunicationError error, but it was not."),
         };
-        assert_eq!(format!("{}", error), displayed_error);
+        assert_eq!(format!("{error}"), displayed_error);
 
         Ok(())
     }
@@ -583,7 +597,7 @@ Hint: It might not be working because you're not up to date with the Meilisearch
             }
             _ => panic!("The error was expected to be a MeilisearchCommunicationError error, but it was not."),
         };
-        assert_eq!(format!("{}", error), displayed_error);
+        assert_eq!(format!("{error}"), displayed_error);
 
         Ok(())
     }

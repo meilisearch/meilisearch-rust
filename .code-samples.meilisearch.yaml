@@ -1,7 +1,7 @@
 # This code-samples file is used by the Meilisearch documentation
 # Every example written here will be automatically fetched by
 # the documentation on build
-# You can read more on https://github.com/meilisearch/documentation/tree/master/.vuepress/code-samples
+# You can read more on https://github.com/meilisearch/documentation/tree/main/learn
 ---
 synonyms_guide_1: |-
   let mut synonyms = std::collections::HashMap::new();
@@ -315,7 +315,7 @@ update_settings_1: |-
       "release_date:desc",
       "rank:desc"
     ])
-    .with_distinct_attribute("movie_id")
+    .with_distinct_attribute(Some("movie_id"))
     .with_searchable_attributes([
       "title",
       "overview",
@@ -599,6 +599,24 @@ reset_faceting_settings_1: |-
     .reset_faceting()
     .await
     .unwrap();
+get_dictionary_1: |-
+  let task: TaskInfo = client
+    .index('books')
+    .get_dictionary()
+    .await
+    .unwrap();
+update_dictionary_1: |-
+  let task: TaskInfo = client
+    .index('books')
+    .set_dictionary(['J. R. R.', 'W. E. B.'])
+    .await
+    .unwrap();
+reset_dictionary_1: |-
+  let task: TaskInfo = client
+    .index('books')
+    .reset_dictionary()
+    .await
+    .unwrap();
 get_index_stats_1: |-
   let stats: IndexStats = client
     .index("movies")
@@ -654,7 +672,7 @@ field_properties_guide_displayed_1: |-
     .unwrap();
 filtering_guide_1: |-
   let results: SearchResults<Movie> = client
-    .index("movies")
+    .index("movie_ratings")
     .search()
     .with_query("Avengers")
     .with_filter("release_date > 795484800")
@@ -663,7 +681,7 @@ filtering_guide_1: |-
     .unwrap();
 filtering_guide_2: |-
   let results: SearchResults<Movie> = client
-    .index("movies")
+    .index("movie_ratings")
     .search()
     .with_query("Batman")
     .with_filter(r#"release_date > 795484800 AND (director = "Tim Burton" OR director = "Christopher Nolan")"#)
@@ -672,10 +690,10 @@ filtering_guide_2: |-
     .unwrap();
 filtering_guide_3: |-
   let results: SearchResults<Movie> = client
-    .index("movies")
+    .index("movie_ratings")
     .search()
     .with_query("Planet of the Apes")
-    .with_filter(r#"rating >= 3 AND (NOT director = "Tim Burton")"#)
+    .with_filter(r#"release_date > 1577884550 AND (NOT director = "Tim Burton")"#)
     .execute()
     .await
     .unwrap();
@@ -693,6 +711,15 @@ search_parameter_guide_query_1: |-
     .index("movies")
     .search()
     .with_query("shifu")
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_attributes_to_search_on_1: |-
+  let results: SearchResults<Movie> = client
+    .index("movies")
+    .search()
+    .with_query("adventure")
+    .with_attributes_to_search_on(&["overview"])
     .execute()
     .await
     .unwrap();
@@ -807,6 +834,15 @@ search_parameter_guide_show_matches_position_1: |-
     .iter()
     .map(|r| r.matches_position.as_ref().unwrap())
     .collect();
+search_parameter_guide_show_ranking_score_1: |-
+  let results: SearchResults<Movie> = client
+    .index("movies")
+    .search()
+    .with_query("dragon")
+    .with_show_ranking_score(true)
+    .execute()
+    .await
+    .unwrap();
 search_parameter_guide_matching_strategy_1: |-
   let results: SearchResults<Movie> = client
   .index("movies")
@@ -829,38 +865,6 @@ search_parameter_guide_hitsperpage_1: |-
   client.index("movies").search().with_hits_per_page(15).execute().await?;
 search_parameter_guide_page_1: |-
   client.index("movies").search().with_page(2).execute().await?;
-settings_guide_filterable_attributes_1: |-
-  let settings = Settings::new()
-    .with_filterable_attributes([
-      "director",
-      "genres"
-    ]);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-settings_guide_typo_tolerance_1: |-
-  let min_word_size_for_typos = MinWordSizeForTypos {
-    one_typo: Some(5),
-    two_typos: Some(12)
-  }
-  let typo_tolerance = TypoToleranceSettings {
-    enabled: Some(true),
-    disable_on_attributes: None,
-    disable_on_words: Some(vec!["title".to_string()]),
-    min_word_size_for_typos: Some(min_word_size_for_typos),
-  };
-
-  let settings = Settings::new()
-    .with_typo_tolerance(&typo_tolerance);
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_settings(&settings)
-    .await
-    .unwrap();
 typo_tolerance_guide_1: |-
   let typo_tolerance = TypoToleranceSettings {
     enabled: Some(false),
@@ -956,25 +960,6 @@ add_movies_json_1: |-
       .await
       .unwrap();
   })}
-documents_guide_add_movie_1: |-
-  // Define the type of our documents
-  #[derive(Serialize, Deserialize)]
-  struct IncompleteMovie {
-    id: String,
-    title: String
-  }
-
-  // Add a document to our index
-  let task: TaskInfo = client
-    .index("movies")
-    .add_documents(&[
-      IncompleteMovie {
-        id: "123sq178".to_string(),
-        title: "Amélie Poulain".to_string(),
-      }
-    ], None)
-    .await
-    .unwrap();
 primary_field_guide_update_document_primary_key: |-
   let task = IndexUpdater::new("books", &client)
     .with_primary_key("title")
@@ -1012,7 +997,7 @@ primary_field_guide_add_document_primary_key: |-
 getting_started_add_documents_md: |-
   ```toml
     [dependencies]
-    meilisearch-sdk = "0.24.1"
+    meilisearch-sdk = "0.26.1"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
@@ -1179,11 +1164,6 @@ getting_started_update_displayed_attributes: |-
     .set_displayed_attributes(&displayed_attributes)
     .await
     .unwrap();
-getting_started_communicating_with_a_protected_instance: |-
-  let client = Client::new("http://localhost:7700", Some("apiKey"));
-  client
-    .index("movies")
-    .search()
 getting_started_add_meteorites: |-
   use serde::{Serialize, Deserialize};
   use std::fs::File;
@@ -1286,28 +1266,6 @@ filtering_update_settings_1: |-
     .set_filterable_attributes(["director", "genres"])
     .await
     .unwrap();
-faceted_search_filter_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("thriller")
-    .with_filter("(genres = Horror AND genres = Mystery) OR director = \"Jordan Peele\"")
-    .execute()
-    .await
-    .unwrap();
-faceted_search_facets_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("Batman")
-    .with_facets(Selectors::Some(&["genres"]))
-    .execute()
-    .await
-    .unwrap();
-  let genres: &HashMap<String, usize> = results
-    .facet_distribution.unwrap()
-    .get("genres")
-    .unwrap();
 faceted_search_walkthrough_filter_1: |-
   let results: SearchResults<Movie> = client
     .index("movies")
@@ -1319,7 +1277,7 @@ faceted_search_walkthrough_filter_1: |-
     .unwrap();
 faceted_search_update_settings_1: |-
   let task: TaskInfo = client
-    .index("books")
+    .index("movie_ratings")
     .set_filterable_attributes(&["genres", "rating", "language"])
     .await
     .unwrap();
@@ -1332,29 +1290,6 @@ faceted_search_1: |-
     .execute()
     .await
     .unwrap();
-faceted_search_2: |-
-  let books = client.index("books");
-  let search_query_1 = SearchQuery::new(&books)
-      .with_facets(Selectors::Some(&["language", "genres", "author", "format"]))
-      .with_filter("(language = English OR language = French) AND genres = Fiction")
-      .build();
-  let search_query_2 = SearchQuery::new(&books)
-      .with_facets(Selectors::Some(&["language"]))
-      .with_filter("genres = Fiction")
-      .build();
-  let search_query_3 = SearchQuery::new(&books)
-      .with_facets(Selectors::Some(&["genres"]))
-      .with_filter("language = English OR language = French")
-      .build();
-
-  let books_response = client
-      .multi_search()
-      .with_search_query(search_query_1)
-      .with_search_query(search_query_2)
-      .with_search_query(search_query_3)
-      .execute::<Book>()
-      .await
-      .unwrap();
 post_dump_1: |-
   client
     .create_dump()
@@ -1501,7 +1436,7 @@ geosearch_guide_filter_usage_3: |-
   let results: SearchResults<Restaurant> = client
     .index("restaurants")
     .search()
-    .with_filter("_geoBoundingBox([45.494181, 9.179175], [45.449484, 9.214024])")
+    .with_filter("_geoBoundingBox([45.494181, 9.214024], [45.449484, 9.179175])")
     .execute()
     .await
     .unwrap();
@@ -1635,6 +1570,8 @@ tenant_token_guide_search_sdk_1: |-
     .unwrap();
 multi_search_1: |-
   let movie = client.index("movie");
+  let movie_ratings = client.index("movie_ratings");
+
   let search_query_1 = SearchQuery::new(&movie)
       .with_query("pooh")
       .with_limit(5)
@@ -1643,24 +1580,62 @@ multi_search_1: |-
       .with_query("nemo")
       .with_limit(5)
       .build();
-
-  let movie_response = client
-      .multi_search()
-      .with_search_query(search_query_1)
-      .with_search_query(search_query_2)
-      .execute::<Movie>()
-      .await
-      .unwrap();
-
-  let movie_ratings = client.index("movie_ratings");
   let search_query_3 = SearchQuery::new(&movie_ratings)
       .with_query("us")
       .build();
 
-  let movie_ratings_response = client
-    .multi_search()
-    .with_search_query(search_query_3)
-    .execute::<MovieRatings>()
+  let response = client
+      .multi_search()
+      .with_search_query(search_query_1)
+      .with_search_query(search_query_2)
+      .with_search_query(search_query_3)
+      .execute::<Document>()
+      .await
+      .unwrap();
+get_experimental_features_1: |-
+  let client = Client::new("http://localhost:7700", Some("apiKey"));
+  let features = ExperimentalFeatures::new(&client);
+  let res = features
+    .get()
+    .await
+    .unwrap();
+update_experimental_features_1: |-
+  let client = Client::new("http://localhost:7700", Some("apiKey"));
+  let mut features = ExperimentalFeatures::new(&client);
+  features.set_vector_store(true);
+  let res = features
+    .update()
+    .await
+    .unwrap();
+search_parameter_guide_facet_stats_1: |-
+  let books = client.index("movie_ratings");
+  let results: SearchResults<Book> = SearchQuery::new(&books)
+    .with_query("Batman")
+    .with_facets(Selectors::Some(&["genres", "rating"))
+    .execute()
+    .await
+    .unwrap();
+get_proximity_precision_settings_1: |-
+  let proximity_precision: String = client
+    .index("books")
+    .get_proximity_precision()
+    .await
+    .unwrap();
+update_proximity_precision_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .set_proximity_precision("byAttribute".to_string())
+    .await
+    .unwrap();
+reset_proximity_precision_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .reset_proximity_precision()
+    .await
+    .unwrap();
+create_snapshot_1: |-
+  client
+    .create_snapshot()
     .await
     .unwrap();
 facet_search_2: |-

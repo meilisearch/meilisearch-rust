@@ -15,16 +15,16 @@
 //!
 //! # Example
 //!
-//! ```no_run
+//! ```
 //! # use meilisearch_sdk::{client::*, errors::*, dumps::*, dumps::*, task_info::*, tasks::*};
 //! # use futures_await_test::async_test;
 //! # use std::{thread::sleep, time::Duration};
-//! # futures::executor::block_on(async move {
+//! # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 //! #
 //! # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 //! # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 //! #
-//! # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+//! # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 //!
 //! // Create a dump
 //! let task_info = client.create_dump().await.unwrap();
@@ -38,11 +38,11 @@
 //! # });
 //! ```
 
-use crate::{request::*, Client, Error, TaskInfo};
+use crate::{client::Client, errors::Error, request::*, task_info::TaskInfo};
 
 /// Dump related methods.
 /// See the [dumps](crate::dumps) module.
-impl Client {
+impl<Http: HttpClient> Client<Http> {
     /// Triggers a dump creation process.
     ///
     /// Once the process is complete, a dump is created in the [dumps directory](https://www.meilisearch.com/docs/learn/configuration/instance_options#dump-directory).
@@ -50,16 +50,16 @@ impl Client {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// # use meilisearch_sdk::{client::*, errors::*, dumps::*, dumps::*, task_info::*, tasks::*};
     /// # use futures_await_test::async_test;
     /// # use std::{thread::sleep, time::Duration};
-    /// # futures::executor::block_on(async move {
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// #
     /// let task_info = client.create_dump().await.unwrap();
     ///
@@ -73,21 +73,21 @@ impl Client {
     /// # });
     /// ```
     pub async fn create_dump(&self) -> Result<TaskInfo, Error> {
-        request::<(), (), TaskInfo>(
-            &format!("{}/dumps", self.host),
-            self.get_api_key(),
-            Method::Post {
-                query: (),
-                body: (),
-            },
-            202,
-        )
-        .await
+        self.http_client
+            .request::<(), (), TaskInfo>(
+                &format!("{}/dumps", self.host),
+                Method::Post {
+                    query: (),
+                    body: (),
+                },
+                202,
+            )
+            .await
     }
 }
 
 /// Alias for [`create_dump`](Client::create_dump).
-pub async fn create_dump(client: &Client) -> Result<TaskInfo, Error> {
+pub async fn create_dump<Http: HttpClient>(client: &Client<Http>) -> Result<TaskInfo, Error> {
     client.create_dump().await
 }
 

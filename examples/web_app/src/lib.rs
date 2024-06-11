@@ -1,6 +1,8 @@
 #![recursion_limit = "512"]
 use lazy_static::lazy_static;
-use meilisearch_sdk::{Client, Index, SearchResults, Selectors::All};
+use meilisearch_sdk::client::Client;
+use meilisearch_sdk::indexes::Index;
+use meilisearch_sdk::search::{SearchResults, Selectors::All};
 use serde_json::{Map, Value};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -12,7 +14,7 @@ mod document;
 use crate::document::{display, Crate};
 
 lazy_static! {
-    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey"));
+    static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey")).unwrap();
 }
 
 struct Model {
@@ -147,7 +149,7 @@ fn header_content(processing_time_ms: usize, link: &Scope<Model>) -> Html {
                 {"We wrote a blog post about "}<a href="https://blog.meilisearch.com/meili-finds-rust-crates/">{"how we made this search engine available for you"}</a>{"."}<br/>
                 {"What you are currently using is not the original front end, but a clone using "}<a href="https://github.com/meilisearch/meilisearch-rust">{"the Meilisearch Rust SDK"}</a>{" and "}<a href="https://yew.rs">{"Yew"}</a>{". The code is available "}<a href="https://github.com/meilisearch/meilisearch-rust/tree/main/examples/web_app">{"here"}</a>{"."}<br/>
                 {"The whole design was taken from "}<a href="https://lib.rs">{"lib.rs"}</a>{" because we love it."}<br/>
-                <br/>{"We pull new crates and crates updates every "}<em>{"10 minutes"}</em>{" from "}<a href="https://docs.rs/releases">{"docs.rs"}</a>{" and all the downloads counts "}<em>{"every day at 3:30 PM UTC"}</em>{" from "}<a href="https://crates.io/data-access">{"crates.io"}</a>{". Currently we have something like "}<em>{" 31 729 crates"}</em>{"."}<br/>
+                <br/>{"We pull new crates and crates update every "}<em>{"10 minutes"}</em>{" from "}<a href="https://docs.rs/releases">{"docs.rs"}</a>{" and all the downloads count "}<em>{"every day at 3:30 PM UTC"}</em>{" from "}<a href="https://crates.io/data-access">{"crates.io"}</a>{". Currently we have something like "}<em>{" 31 729 crates"}</em>{"."}<br/>
                 <br/>{"Have fun using it "}<img draggable="false" class="emoji" alt="⌨️" src="moz-extension://57a82bfe-3134-4c34-bdb1-bc4ada430e6c/data/components/twemoji/svg/2328.svg"/>{" "}<img draggable="false" class="emoji" alt="💨" src="moz-extension://57a82bfe-3134-4c34-bdb1-bc4ada430e6c/data/components/twemoji/svg/1f4a8.svg"/><br/>
             </p>
             <form role="search" id="search">

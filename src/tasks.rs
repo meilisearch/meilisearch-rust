@@ -2,7 +2,10 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::time::Duration;
 use time::OffsetDateTime;
 
-use crate::{Client, Error, Index, MeilisearchError, Settings, SwapIndexes, TaskInfo};
+use crate::{
+    client::Client, client::SwapIndexes, errors::Error, errors::MeilisearchError, indexes::Index,
+    request::HttpClient, settings::Settings, task_info::TaskInfo,
+};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -46,6 +49,7 @@ pub enum TaskType {
 #[derive(Debug, Clone, Deserialize)]
 pub struct TasksResults {
     pub results: Vec<Task>,
+    pub total: u64,
     pub limit: u32,
     pub from: Option<u32>,
     pub next: Option<u32>,
@@ -130,7 +134,7 @@ impl AsRef<u32> for FailedTask {
     }
 }
 
-fn deserialize_duration<'de, D>(deserializer: D) -> Result<std::time::Duration, D::Error>
+fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -182,6 +186,25 @@ impl AsRef<u32> for EnqueuedTask {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessingTask {
+    #[serde(with = "time::serde::rfc3339")]
+    pub enqueued_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub started_at: OffsetDateTime,
+    pub index_uid: Option<String>,
+    #[serde(flatten)]
+    pub update_type: TaskType,
+    pub uid: u32,
+}
+
+impl AsRef<u32> for ProcessingTask {
+    fn as_ref(&self) -> &u32 {
+        &self.uid
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "status")]
 pub enum Task {
     Enqueued {
@@ -190,7 +213,7 @@ pub enum Task {
     },
     Processing {
         #[serde(flatten)]
-        content: EnqueuedTask,
+        content: ProcessingTask,
     },
     Failed {
         #[serde(flatten)]
@@ -203,9 +226,11 @@ pub enum Task {
 }
 
 impl Task {
+    #[must_use]
     pub fn get_uid(&self) -> u32 {
         match self {
-            Self::Enqueued { content } | Self::Processing { content } => *content.as_ref(),
+            Self::Enqueued { content } => *content.as_ref(),
+            Self::Processing { content } => *content.as_ref(),
             Self::Failed { content } => *content.as_ref(),
             Self::Succeeded { content } => *content.as_ref(),
         }
@@ -224,7 +249,7 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, Task};
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
     /// # use serde::{Serialize, Deserialize};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
@@ -238,8 +263,8 @@ impl Task {
     /// # }
     /// #
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movies = client.index("movies_wait_for_completion");
     ///
     /// let status = movies.add_documents(&[
@@ -256,9 +281,9 @@ impl Task {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn wait_for_completion(
+    pub async fn wait_for_completion<Http: HttpClient>(
         self,
-        client: &Client,
+        client: &Client<Http>,
         interval: Option<Duration>,
         timeout: Option<Duration>,
     ) -> Result<Self, Error> {
@@ -267,7 +292,7 @@ impl Task {
 
     /// Extract the [Index] from a successful `IndexCreation` task.
     ///
-    /// If the task failed or was not an `IndexCreation` task it return itself.
+    /// If the task failed or was not an `IndexCreation` task it returns itself.
     ///
     /// # Example
     ///
@@ -277,9 +302,9 @@ impl Task {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # // create the client
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task = client.create_index("try_make_index", None).await.unwrap();
     /// let index = client.wait_for_task(task, None, None).await.unwrap().try_make_index(&client).unwrap();
     ///
@@ -289,7 +314,10 @@ impl Task {
     /// # });
     /// ```
     #[allow(clippy::result_large_err)] // Since `self` has been consumed, this is not an issue
-    pub fn try_make_index(self, client: &Client) -> Result<Index, Self> {
+    pub fn try_make_index<Http: HttpClient>(
+        self,
+        client: &Client<Http>,
+    ) -> Result<Index<Http>, Self> {
         match self {
             Self::Succeeded {
                 content:
@@ -310,13 +338,13 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task = client.create_index("unwrap_failure", None).await.unwrap();
     /// let task = client
     ///     .create_index("unwrap_failure", None)
@@ -334,6 +362,7 @@ impl Task {
     /// # client.index("unwrap_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn unwrap_failure(self) -> MeilisearchError {
         match self {
             Self::Failed {
@@ -348,13 +377,13 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task = client.create_index("is_failure", None).await.unwrap();
     /// // create an index with a conflicting uid
     /// let task = client
@@ -369,6 +398,7 @@ impl Task {
     /// # client.index("is_failure").delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn is_failure(&self) -> bool {
         matches!(self, Self::Failed { .. })
     }
@@ -378,13 +408,13 @@ impl Task {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task = client
     ///     .create_index("is_success", None)
     ///     .await
@@ -397,6 +427,7 @@ impl Task {
     /// # task.try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn is_success(&self) -> bool {
         matches!(self, Self::Succeeded { .. })
     }
@@ -407,13 +438,13 @@ impl Task {
     /// ```no_run
     /// # // The test is not run because it checks for an enqueued or processed status
     /// # // and the task might already be processed when checking the status after the get_task call
-    /// # use meilisearch_sdk::{client::*, indexes::*, ErrorCode};
+    /// # use meilisearch_sdk::{client::*, indexes::*, errors::ErrorCode};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let task_info = client
     ///     .create_index("is_pending", None)
     ///     .await
@@ -424,6 +455,7 @@ impl Task {
     /// # task.wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap().delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    #[must_use]
     pub fn is_pending(&self) -> bool {
         matches!(self, Self::Enqueued { .. } | Self::Processing { .. })
     }
@@ -432,7 +464,8 @@ impl Task {
 impl AsRef<u32> for Task {
     fn as_ref(&self) -> &u32 {
         match self {
-            Self::Enqueued { content } | Self::Processing { content } => content.as_ref(),
+            Self::Enqueued { content } => content.as_ref(),
+            Self::Processing { content } => content.as_ref(),
             Self::Succeeded { content } => content.as_ref(),
             Self::Failed { content } => content.as_ref(),
         }
@@ -455,15 +488,15 @@ pub struct TasksCancelFilters {}
 #[derive(Debug, Serialize, Clone)]
 pub struct TasksDeleteFilters {}
 
-pub type TasksSearchQuery<'a> = TasksQuery<'a, TasksPaginationFilters>;
-pub type TasksCancelQuery<'a> = TasksQuery<'a, TasksCancelFilters>;
-pub type TasksDeleteQuery<'a> = TasksQuery<'a, TasksDeleteFilters>;
+pub type TasksSearchQuery<'a, Http> = TasksQuery<'a, TasksPaginationFilters, Http>;
+pub type TasksCancelQuery<'a, Http> = TasksQuery<'a, TasksCancelFilters, Http>;
+pub type TasksDeleteQuery<'a, Http> = TasksQuery<'a, TasksDeleteFilters, Http>;
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct TasksQuery<'a, T> {
+pub struct TasksQuery<'a, T, Http: HttpClient> {
     #[serde(skip_serializing)]
-    client: &'a Client,
+    client: &'a Client<Http>,
     // Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
     index_uids: Option<Vec<&'a str>>,
@@ -521,88 +554,89 @@ pub struct TasksQuery<'a, T> {
 }
 
 #[allow(missing_docs)]
-impl<'a, T> TasksQuery<'a, T> {
+impl<'a, T, Http: HttpClient> TasksQuery<'a, T, Http> {
     pub fn with_index_uids<'b>(
         &'b mut self,
         index_uids: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.index_uids = Some(index_uids.into_iter().collect());
         self
     }
     pub fn with_statuses<'b>(
         &'b mut self,
         statuses: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.statuses = Some(statuses.into_iter().collect());
         self
     }
     pub fn with_types<'b>(
         &'b mut self,
         task_types: impl IntoIterator<Item = &'a str>,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.task_types = Some(task_types.into_iter().collect());
         self
     }
     pub fn with_uids<'b>(
         &'b mut self,
         uids: impl IntoIterator<Item = &'a u32>,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.uids = Some(uids.into_iter().collect());
         self
     }
     pub fn with_before_enqueued_at<'b>(
         &'b mut self,
         before_enqueued_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.before_enqueued_at = Some(*before_enqueued_at);
         self
     }
     pub fn with_after_enqueued_at<'b>(
         &'b mut self,
         after_enqueued_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.after_enqueued_at = Some(*after_enqueued_at);
         self
     }
     pub fn with_before_started_at<'b>(
         &'b mut self,
         before_started_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.before_started_at = Some(*before_started_at);
         self
     }
     pub fn with_after_started_at<'b>(
         &'b mut self,
         after_started_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.after_started_at = Some(*after_started_at);
         self
     }
     pub fn with_before_finished_at<'b>(
         &'b mut self,
         before_finished_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.before_finished_at = Some(*before_finished_at);
         self
     }
     pub fn with_after_finished_at<'b>(
         &'b mut self,
         after_finished_at: &'a OffsetDateTime,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.after_finished_at = Some(*after_finished_at);
         self
     }
     pub fn with_canceled_by<'b>(
         &'b mut self,
         task_uids: impl IntoIterator<Item = &'a u32>,
-    ) -> &'b mut TasksQuery<'a, T> {
+    ) -> &'b mut TasksQuery<'a, T, Http> {
         self.canceled_by = Some(task_uids.into_iter().collect());
         self
     }
 }
 
-impl<'a> TasksQuery<'a, TasksCancelFilters> {
-    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksCancelFilters> {
+impl<'a, Http: HttpClient> TasksQuery<'a, TasksCancelFilters, Http> {
+    #[must_use]
+    pub fn new(client: &'a Client<Http>) -> TasksQuery<'a, TasksCancelFilters, Http> {
         TasksQuery {
             client,
             index_uids: None,
@@ -625,8 +659,9 @@ impl<'a> TasksQuery<'a, TasksCancelFilters> {
     }
 }
 
-impl<'a> TasksQuery<'a, TasksDeleteFilters> {
-    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksDeleteFilters> {
+impl<'a, Http: HttpClient> TasksQuery<'a, TasksDeleteFilters, Http> {
+    #[must_use]
+    pub fn new(client: &'a Client<Http>) -> TasksQuery<'a, TasksDeleteFilters, Http> {
         TasksQuery {
             client,
             index_uids: None,
@@ -649,8 +684,9 @@ impl<'a> TasksQuery<'a, TasksDeleteFilters> {
     }
 }
 
-impl<'a> TasksQuery<'a, TasksPaginationFilters> {
-    pub fn new(client: &'a Client) -> TasksQuery<'a, TasksPaginationFilters> {
+impl<'a, Http: HttpClient> TasksQuery<'a, TasksPaginationFilters, Http> {
+    #[must_use]
+    pub fn new(client: &'a Client<Http>) -> TasksQuery<'a, TasksPaginationFilters, Http> {
         TasksQuery {
             client,
             index_uids: None,
@@ -673,14 +709,14 @@ impl<'a> TasksQuery<'a, TasksPaginationFilters> {
     pub fn with_limit<'b>(
         &'b mut self,
         limit: u32,
-    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters> {
+    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters, Http> {
         self.pagination.limit = Some(limit);
         self
     }
     pub fn with_from<'b>(
         &'b mut self,
         from: u32,
-    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters> {
+    ) -> &'b mut TasksQuery<'a, TasksPaginationFilters, Http> {
         self.pagination.from = Some(from);
         self
     }
@@ -692,7 +728,10 @@ impl<'a> TasksQuery<'a, TasksPaginationFilters> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{client::*, ErrorCode, ErrorType};
+    use crate::{
+        client::*,
+        errors::{ErrorCode, ErrorType},
+    };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
@@ -709,7 +748,7 @@ mod test {
     fn test_deserialize_task() {
         let datetime = OffsetDateTime::parse(
             "2022-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
@@ -717,7 +756,7 @@ mod test {
             r#"
 {
   "enqueuedAt": "2022-02-03T13:02:38.369634Z",
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "status": "enqueued",
   "type": "documentAdditionOrUpdate",
   "uid": 12
@@ -735,7 +774,7 @@ mod test {
                     uid: 12,
                 }
             }
-        if enqueued_at == datetime && index_uid == "mieli"));
+        if enqueued_at == datetime && index_uid == "meili"));
 
         let task: Task = serde_json::from_str(
             r#"
@@ -747,7 +786,7 @@ mod test {
   "duration": null,
   "enqueuedAt": "2022-02-03T15:17:02.801341Z",
   "finishedAt": null,
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "startedAt": "2022-02-03T15:17:02.812338Z",
   "status": "processing",
   "type": "documentAdditionOrUpdate",
@@ -759,7 +798,8 @@ mod test {
         assert!(matches!(
             task,
             Task::Processing {
-                content: EnqueuedTask {
+                content: ProcessingTask {
+                    started_at,
                     update_type: TaskType::DocumentAdditionOrUpdate {
                         details: Some(DocumentAdditionOrUpdate {
                             received_documents: 19547,
@@ -770,6 +810,10 @@ mod test {
                     ..
                 }
             }
+            if started_at == OffsetDateTime::parse(
+                "2022-02-03T15:17:02.812338Z",
+                &time::format_description::well_known::Rfc3339
+            ).unwrap()
         ));
 
         let task: Task = serde_json::from_str(
@@ -782,7 +826,7 @@ mod test {
   "duration": "PT10.848957S",
   "enqueuedAt": "2022-02-03T15:17:02.801341Z",
   "finishedAt": "2022-02-03T15:17:13.661295Z",
-  "indexUid": "mieli",
+  "indexUid": "meili",
   "startedAt": "2022-02-03T15:17:02.812338Z",
   "status": "succeeded",
   "type": "documentAdditionOrUpdate",
@@ -844,7 +888,7 @@ mod test {
     async fn test_get_tasks_no_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path = "/tasks";
 
         let mock_res = s.mock("GET", path).with_status(200).create_async().await;
@@ -858,7 +902,7 @@ mod test {
     async fn test_get_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path =
             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
 
@@ -884,7 +928,7 @@ mod test {
     async fn test_get_tasks_with_date_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path = "/tasks?\
             beforeEnqueuedAt=2022-02-03T13%3A02%3A38.369634Z\
             &afterEnqueuedAt=2023-02-03T13%3A02%3A38.369634Z\
@@ -897,35 +941,35 @@ mod test {
 
         let before_enqueued_at = OffsetDateTime::parse(
             "2022-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
         let after_enqueued_at = OffsetDateTime::parse(
             "2023-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
         let before_started_at = OffsetDateTime::parse(
             "2024-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let after_started_at = OffsetDateTime::parse(
             "2025-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let before_finished_at = OffsetDateTime::parse(
             "2026-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
         let after_finished_at = OffsetDateTime::parse(
             "2027-02-03T13:02:38.369634Z",
-            &::time::format_description::well_known::Rfc3339,
+            &time::format_description::well_known::Rfc3339,
         )
         .unwrap();
 
@@ -949,7 +993,7 @@ mod test {
     async fn test_get_tasks_on_struct_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path =
             "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&canceledBy=9";
 
@@ -1007,7 +1051,7 @@ mod test {
     async fn test_cancel_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
@@ -1031,7 +1075,7 @@ mod test {
     async fn test_cancel_tasks_with_params_execute() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path =
             "/tasks/cancel?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
@@ -1055,7 +1099,7 @@ mod test {
     async fn test_delete_tasks_with_params() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
         let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;
@@ -1078,7 +1122,7 @@ mod test {
     async fn test_delete_tasks_with_params_execute() -> Result<(), Error> {
         let mut s = mockito::Server::new_async().await;
         let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, Some("masterKey"));
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path = "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1";
 
         let mock_res = s.mock("DELETE", path).with_status(200).create_async().await;

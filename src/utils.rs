@@ -15,7 +15,7 @@ pub(crate) async fn async_sleep(interval: Duration) {
     use std::convert::TryInto;
     use wasm_bindgen_futures::JsFuture;
 
-    JsFuture::from(js_sys::Promise::new(&mut |yes, _| {
+    JsFuture::from(web_sys::js_sys::Promise::new(&mut |yes, _| {
         web_sys::window()
             .unwrap()
             .set_timeout_with_callback_and_timeout_and_arguments_0(
@@ -35,8 +35,8 @@ mod test {
 
     #[meilisearch_test]
     async fn test_async_sleep() {
-        let sleep_duration = std::time::Duration::from_millis(10);
-        let now = time::Instant::now();
+        let sleep_duration = Duration::from_millis(10);
+        let now = std::time::Instant::now();
 
         async_sleep(sleep_duration).await;
 
