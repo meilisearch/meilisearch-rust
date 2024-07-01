@@ -51,6 +51,8 @@ pub struct SearchResult<T> {
     /// The relevancy score of the match.
     #[serde(rename = "_rankingScore")]
     pub ranking_score: Option<f64>,
+    #[serde(rename = "_rankingScoreDetails")]
+    pub ranking_score_details: Option<Map<String, Value>>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -322,6 +324,12 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_ranking_score: Option<bool>,
 
+    ///Adds a detailed global ranking score field to each document.
+    ///
+    /// **Default: `false`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_ranking_score_details: Option<bool>,
+
     /// Defines the strategy on how to handle queries containing multiple words.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
@@ -354,6 +362,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             highlight_post_tag: None,
             show_matches_position: None,
             show_ranking_score: None,
+            show_ranking_score_details: None,
             matching_strategy: None,
             index_uid: None,
         }
@@ -528,6 +537,15 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.show_ranking_score = Some(show_ranking_score);
         self
     }
+
+    pub fn with_show_ranking_score_details<'b>(
+        &'b mut self,
+        show_ranking_score_details: bool,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.show_ranking_score_details = Some(show_ranking_score_details);
+        self
+    }
+
     pub fn with_matching_strategy<'b>(
         &'b mut self,
         matching_strategy: MatchingStrategies,
@@ -1087,6 +1105,21 @@ mod tests {
         query.with_show_ranking_score(true);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert!(results.hits[0].ranking_score.is_some());
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_show_ranking_score_details(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("dolor text");
+        query.with_show_ranking_score_details(true);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert!(results.hits[0].ranking_score_details.is_some());
         Ok(())
     }
 
