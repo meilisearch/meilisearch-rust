@@ -337,7 +337,8 @@ update_settings_1: |-
       "release_date"
     ])
     .with_synonyms(synonyms)
-    .with_typo_tolerance(typo_tolerance);
+    .with_typo_tolerance(typo_tolerance)
+    .with_search_cutoff(150);
 
   let task: TaskInfo = client
     .index("movies")
@@ -836,6 +837,15 @@ search_parameter_guide_show_ranking_score_1: |-
     .search()
     .with_query("dragon")
     .with_show_ranking_score(true)
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_show_ranking_score_details_1: |-
+  let results: SearchResults<Movie> = client
+    .index("movies")
+    .search()
+    .with_query("dragon")
+    .with_show_ranking_score_details(true)
     .execute()
     .await
     .unwrap();
@@ -1624,6 +1634,24 @@ reset_proximity_precision_settings_1: |-
   let task: TaskInfo = client
     .index("books")
     .reset_proximity_precision()
+    .await
+    .unwrap();
+get_search_cutoff_1: |-
+  let search_cutoff_ms: String = client
+    .index("movies")
+    .get_search_cutoff_ms()
+    .await
+    .unwrap();
+update_search_cutoff_1: |-
+  let task: TaskInfo = client
+    .index("movies")
+    .set_search_cutoff_ms(Some(150))
+    .await
+    .unwrap();
+reset_search_cutoff_1: |-
+  let task: TaskInfo = client
+    .index("movies")
+    .reset_search_cutoff_ms()
     .await
     .unwrap();
 create_snapshot_1: |-
