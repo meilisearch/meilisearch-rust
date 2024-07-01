@@ -1109,7 +1109,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_query_show_ranking_score_details(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_query_show_ranking_score_details(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let mut query = SearchQuery::new(&index);
