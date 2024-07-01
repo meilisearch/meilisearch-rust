@@ -103,6 +103,9 @@ pub struct Settings {
     /// Proximity precision settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proximity_precision: Option<String>,
+    /// SearchCutoffMs settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_cutoff_ms: Option<u64>,
 }
 
 #[allow(missing_docs)]
@@ -285,6 +288,13 @@ impl Settings {
     pub fn with_proximity_precision(self, proximity_precision: impl AsRef<str>) -> Settings {
         Settings {
             proximity_precision: Some(proximity_precision.as_ref().to_string()),
+            ..self
+        }
+    }
+
+    pub fn with_search_cutoff(self, search_cutoff_ms: u64) -> Settings {
+        Settings {
+            search_cutoff_ms: Some(search_cutoff_ms),
             ..self
         }
     }
@@ -749,6 +759,39 @@ impl<Http: HttpClient> Index<Http> {
             .request::<(), (), TypoToleranceSettings>(
                 &format!(
                     "{}/indexes/{}/settings/typo-tolerance",
+                    self.client.host, self.uid
+                ),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Get [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("get_search_cutoff_ms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("get_search_cutoff_ms");
+    ///
+    /// let task = index.get_search_cutoff_ms().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_search_cutoff_ms(&self) -> Result<Option<u64>, Error> {
+        self.client
+            .http_client
+            .request::<(), (), Option<u64>>(
+                &format!(
+                    "{}/indexes/{}/settings/search-cutoff-ms",
                     self.client.host, self.uid
                 ),
                 Method::Get { query: () },
@@ -1350,6 +1393,42 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
+    /// Update [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("update_search_cutoff_ms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("update_search_cutoff_ms");
+    ///
+    /// let task = index.set_search_cutoff_ms(Some(150)).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_search_cutoff_ms(&self, ms: Option<u64>) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), Option<u64>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/search-cutoff-ms",
+                    self.client.host, self.uid
+                ),
+                Method::Put {
+                    body: ms,
+                    query: (),
+                },
+                202,
+            )
+            .await
+    }
+
     /// Reset [Settings] of the [Index].
     ///
     /// All settings will be reset to their [default value](https://www.meilisearch.com/docs/reference/api/settings#reset-settings).
@@ -1812,6 +1891,39 @@ impl<Http: HttpClient> Index<Http> {
             )
             .await
     }
+
+    /// Reset [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("reset_search_cutoff_ms", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_search_cutoff_ms");
+    ///
+    /// let task = index.reset_search_cutoff_ms().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_search_cutoff_ms(&self) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/search-cutoff-ms",
+                    self.client.host, self.uid
+                ),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
+    }
 }
 
 #[cfg(test)]
@@ -2063,6 +2175,42 @@ mod tests {
         index.wait_for_task(reset_task, None, None).await.unwrap();
 
         let default = index.get_proximity_precision().await.unwrap();
+
+        assert_eq!(expected, default);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_search_cutoff_ms(index: Index) {
+        let expected = None;
+
+        let res = index.get_search_cutoff_ms().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_search_cutoff_ms(client: Client, index: Index) {
+        let expected = Some(150);
+
+        let task_info = index.set_search_cutoff_ms(Some(150)).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_search_cutoff_ms().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_search_cutoff_ms(index: Index) {
+        let expected = None;
+
+        let task = index.set_search_cutoff_ms(Some(150)).await.unwrap();
+        index.wait_for_task(task, None, None).await.unwrap();
+
+        let reset_task = index.reset_search_cutoff_ms().await.unwrap();
+        index.wait_for_task(reset_task, None, None).await.unwrap();
+
+        let default = index.get_search_cutoff_ms().await.unwrap();
 
         assert_eq!(expected, default);
     }
