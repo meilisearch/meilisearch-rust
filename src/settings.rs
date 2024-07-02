@@ -2074,7 +2074,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [proximity precision](https://www.meilisearch.com/docs/reference/api/settings#
+    /// Reset [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
     ///
     /// # Example
     ///
