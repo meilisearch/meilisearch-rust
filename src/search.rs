@@ -142,6 +142,21 @@ pub enum Selectors<T> {
     All,
 }
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HybridSearch<'a> {
+    /// Indicates one of the embedders configured for the queried index
+    ///
+    /// **Default: `"default"`**
+    embedder: &'a str,
+    /// number between `0` and `1`:
+    /// - `0.0` indicates full keyword search
+    /// - `1.0` indicates full semantic search
+    ///
+    /// **Default: `0.5`**
+    semantic_ratio: f32,
+}
+
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
 /// A struct representing a query.
@@ -338,6 +353,16 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
+
+    /// EXPERIMENTAL
+    /// Defines whether to utilise previously defined embedders for semantic searching
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hybrid: Option<HybridSearch<'a>>,
+
+    /// EXPERIMENTAL
+    /// Defines what vectors an userprovided embedder has gotten for semantic searching
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vector: Option<&'a [f32]>,
 }
 
 #[allow(missing_docs)]
@@ -367,6 +392,8 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             show_ranking_score_details: None,
             matching_strategy: None,
             index_uid: None,
+            hybrid: None,
+            vector: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
@@ -559,6 +586,27 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.index_uid = Some(&self.index.uid);
         self
     }
+    /// EXPERIMENTAL
+    /// Defines whether to utilise previously defined embedders for semantic searching
+    pub fn with_hybrid<'b>(
+        &'b mut self,
+        embedder: &'a str,
+        semantic_ratio: f32,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.hybrid = Some(HybridSearch {
+            embedder,
+            semantic_ratio,
+        });
+        self
+    }
+    /// EXPERIMENTAL
+    /// Defines what vectors an userprovided embedder has gotten for semantic searching
+    pub fn with_vector<'b>(&'b mut self, vector: &'a [f32]) -> &'b mut SearchQuery<'a, Http> {
+        self.vector = Some(vector);
+        self
+    }
+
+    #[must_use]
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
     }
@@ -645,6 +693,7 @@ mod tests {
         kind: String,
         number: i32,
         nested: Nested,
+        _vectors: HashMap<String, Vec<f32>>,
     }
 
     impl PartialEq<Map<String, Value>> for Document {
@@ -658,16 +707,16 @@ mod tests {
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
         let t0 = index.add_documents(&[
-            Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") } },
-            Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") } },
-            Document { id: 2, kind: "title".into(), number: 20, value: S("The Social Network"), nested: Nested { child: S("third") } },
-            Document { id: 3, kind: "title".into(), number: 30, value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") } },
-            Document { id: 4, kind: "title".into(), number: 40, value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") } },
-            Document { id: 5, kind: "title".into(), number: 50, value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") } },
-            Document { id: 6, kind: "title".into(), number: 60, value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") } },
-            Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") } },
-            Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") } },
-            Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") } },
+            Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") }, _vectors: HashMap::from([(S("default"), vec![1000.0])])},
+            Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") }, _vectors: HashMap::from([(S("default"), vec![2000.0])])  },
+            Document { id: 2, kind: "title".into(), number: 20, value: S("The Social Network"), nested: Nested { child: S("third") }, _vectors: HashMap::from([(S("default"), vec![3000.0])])  },
+            Document { id: 3, kind: "title".into(), number: 30, value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") }, _vectors: HashMap::from([(S("default"), vec![4000.0])])  },
+            Document { id: 4, kind: "title".into(), number: 40, value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") }, _vectors: HashMap::from([(S("default"), vec![5000.0])])  },
+            Document { id: 5, kind: "title".into(), number: 50, value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") }, _vectors: HashMap::from([(S("default"), vec![6000.0])])  },
+            Document { id: 6, kind: "title".into(), number: 60, value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") }, _vectors: HashMap::from([(S("default"), vec![7000.0])])  },
+            Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") }, _vectors: HashMap::from([(S("default"), vec![8000.0])])  },
+            Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") }, _vectors: HashMap::from([(S("default"), vec![9000.0])])  },
+            Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") }, _vectors: HashMap::from([(S("default"), vec![10000.0])])  },
         ], None).await?;
         let t1 = index
             .set_filterable_attributes(["kind", "value", "number"])
@@ -755,7 +804,8 @@ mod tests {
                 value: S("dolor sit amet, consectetur adipiscing elit"),
                 kind: S("text"),
                 number: 10,
-                nested: Nested { child: S("second") }
+                nested: Nested { child: S("second") },
+                _vectors: HashMap::from([(S("default"), vec![2000.0])]),
             },
             &results.hits[0].result
         );
@@ -927,7 +977,8 @@ mod tests {
                 value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do…"),
                 kind: S("text"),
                 number: 0,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("first") },
+                _vectors: HashMap::from([(S("default"), vec![1000.0])])
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -942,7 +993,8 @@ mod tests {
                 value: S("Lorem ipsum dolor sit amet…"),
                 kind: S("text"),
                 number: 0,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("first") },
+                _vectors: HashMap::from([(S("default"), vec![1000.0])])
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -963,7 +1015,8 @@ mod tests {
             value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
             kind: S("text"),
             number: 0,
-            nested: Nested { child: S("first") }
+            nested: Nested { child: S("first") },
+            _vectors: HashMap::from([(S("default"), vec![1000.0])])
         },
         results.hits[0].formatted_result.as_ref().unwrap());
 
@@ -978,7 +1031,8 @@ mod tests {
                 value: S("Lorem ipsum dolor sit amet…"),
                 kind: S("text"),
                 number: 0,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("first") },
+                _vectors: HashMap::from([(S("default"), vec![1000.0])])
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1003,7 +1057,8 @@ mod tests {
                 value: S("(ꈍᴗꈍ)sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)"),
                 kind: S("text"),
                 number: 0,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("first") },
+                _vectors: HashMap::from([(S("default"), vec![1000.0])]),
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1030,7 +1085,8 @@ mod tests {
                 value: S("The (⊃｡•́‿•̀｡)⊃ Social ⊂(´• ω •`⊂) Network"),
                 kind: S("title"),
                 number: 20,
-                nested: Nested { child: S("third") }
+                nested: Nested { child: S("third") },
+                _vectors: HashMap::from([(S("default"), vec![3000.0])])
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1052,7 +1108,8 @@ mod tests {
                 value: S("<em>dolor</em> sit amet, consectetur adipiscing elit"),
                 kind: S("<em>text</em>"),
                 number: 10,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("second") },
+                _vectors: HashMap::from([(S("default"), vec![1000.0])]),
             },
             results.hits[0].formatted_result.as_ref().unwrap(),
         );
@@ -1067,7 +1124,8 @@ mod tests {
                 value: S("<em>dolor</em> sit amet, consectetur adipiscing elit"),
                 kind: S("text"),
                 number: 10,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("second") },
+                _vectors: HashMap::from([(S("default"), vec![2000.0])])
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1221,6 +1279,87 @@ mod tests {
 
             assert!(!result.hits.is_empty());
         }
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_hybrid(client: Client, index: Index) -> Result<(), Error> {
+        use crate::settings::{Embedder, UserProvidedEmbedderSettings};
+        // enable vector searching and configure an embedder
+        let features = crate::features::ExperimentalFeatures::new(&client)
+            .set_vector_store(true)
+            .update()
+            .await
+            .expect("could not enable the vector store");
+        assert_eq!(features.vector_store, true);
+        let embedder_setting =
+            Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 1 });
+        let t3 = index
+            .set_settings(&crate::settings::Settings {
+                embedders: Some(HashMap::from([("default".to_string(), embedder_setting)])),
+                ..crate::settings::Settings::default()
+            })
+            .await?;
+        t3.wait_for_completion(&client, None, None).await?;
+
+        setup_test_index(&client, &index).await?;
+
+        // "2nd" = "second"
+        // no semantic searching => no matches
+        let results: SearchResults<Document> = index.search().with_query("2nd").execute().await?;
+        assert_eq!(results.hits.len(), 0);
+
+        // an embedding should be able to detect that this is equivalent, but not the regular search
+        let results: SearchResults<Document> = index
+            .search()
+            .with_query("2nd")
+            .with_vector(&[2000.0])
+            .with_hybrid("default", 1.0) // entirely rely on semantic searching
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 1);
+        assert_eq!(
+            &Document {
+                id: 1,
+                value: S("dolor sit amet, consectetur adipiscing elit"),
+                kind: S("text"),
+                number: 10,
+                nested: Nested { child: S("second") },
+                _vectors: HashMap::from([(S("default"), vec![2000.0])])
+            },
+            &results.hits[0].result
+        );
+
+        // word that has a typo => would have been found via traditional means
+        // if entirely relying on semantic searching, no result is found
+        let results: SearchResults<Document> = index
+            .search()
+            .with_query("lohrem")
+            .with_hybrid("default", 1.0)
+            .with_vector(&[1000.0])
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 0);
+        let results: SearchResults<Document> = index
+            .search()
+            .with_query("lohrem")
+            .with_hybrid("default", 0.0)
+            .with_vector(&[1000.0])
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 1);
+        assert_eq!(
+            &Document {
+                id: 0,
+                value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
+                kind: S("text"),
+                number: 0,
+                nested: Nested { child: S("first") },
+                _vectors: HashMap::from([(S("default"), vec![1000.0])]),
+            },
+            &results.hits[0].result
+        );
 
         Ok(())
     }
