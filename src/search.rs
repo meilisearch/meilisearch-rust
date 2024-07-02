@@ -336,7 +336,6 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
 
-
     ///Defines one attribute in the filterableAttributes list as a distinct attribute.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub distinct: Option<&'a str>,
@@ -346,7 +345,6 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
-
 }
 
 #[allow(missing_docs)]
@@ -573,8 +571,11 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     pub fn with_distinct<'b>(&'b mut self, distinct: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.distinct = Some(distinct);
         self
-    } 
-    pub fn with_ranking_score_threshold<'b>(&'b mut self, ranking_score_threshold: f64) -> &'b mut SearchQuery<'a, Http> {
+    }
+    pub fn with_ranking_score_threshold<'b>(
+        &'b mut self,
+        ranking_score_threshold: f64,
+    ) -> &'b mut SearchQuery<'a, Http> {
         self.ranking_score_threshold = Some(ranking_score_threshold);
         self
     }
