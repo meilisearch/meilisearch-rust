@@ -837,7 +837,8 @@ impl<Http: HttpClient> Index<Http> {
             )
             .await
     }
-    /// Get [separator token](https://www.meilisearch.com/docs/reference/api/settings#separator-tokens) of the [Index].
+
+        /// Get [separator token](https://www.meilisearch.com/docs/reference/api/settings#separator-tokens) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
