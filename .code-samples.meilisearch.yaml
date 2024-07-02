@@ -1704,3 +1704,29 @@ create_snapshot_1: |-
     .create_snapshot()
     .await
     .unwrap();
+search_parameter_reference_distinct_1: |-
+  let res = client
+    .index("INDEX_NAME")
+    .search()
+    .with_query("QUERY TERMS")
+    .with_distinct("ATTRIBUTE_A")
+    .execute()
+    .await
+    .unwrap();
+distinct_attribute_guide_filterable_1: |-
+  let task: TaskInfo = client
+    .index("products")
+    .settings()
+    .set_filterable_attributes(["product_id", "sku", "url"])
+    .execute()
+    .await
+    .unwrap();
+distinct_attribute_guide_distinct_parameter_1: |-
+  let res = client
+    .index("products")
+    .search()
+    .with_query("white shirt")
+    .with_distinct("sku")
+    .execute()
+    .await
+    .unwrap();
