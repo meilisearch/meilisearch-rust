@@ -1730,3 +1730,12 @@ distinct_attribute_guide_distinct_parameter_1: |-
     .execute()
     .await
     .unwrap();
+search_parameter_reference_ranking_score_threshold_1: |-
+  let res = client
+    .index("INDEX_NAME")
+    .search()
+    .with_query("badman")
+    .with_ranking_score_threshold(0.2)
+    .execute()
+    .await
+    .unwrap();
