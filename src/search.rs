@@ -338,6 +338,10 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
+
+    ///Defines one attribute in the filterableAttributes list as a distinct attribute.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) distinct: Option<&'a str>,
 }
 
 #[allow(missing_docs)]
@@ -367,6 +371,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             show_ranking_score_details: None,
             matching_strategy: None,
             index_uid: None,
+            distinct: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
@@ -559,6 +564,10 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.index_uid = Some(&self.index.uid);
         self
     }
+    pub fn with_distinct<'b>(&'b mut self, distinct: &'a str) -> &'b mut SearchQuery<'a, Http> {
+        self.distinct = Some(distinct);
+        self
+    }
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
     }
@@ -632,6 +641,7 @@ mod tests {
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{json, Map, Value};
+    use time::format_description::well_known::iso8601::DateKind;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Nested {
@@ -1179,6 +1189,20 @@ mod tests {
             .unwrap();
 
         assert_eq!(results.hits.len(), 7);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_distinct(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results = SearchQuery::new(&index)
+            .with_distinct("kind")
+            .execute::<Document>()
+            .await
+            .unwrap();
+
+        assert_eq!(results.hits.len(), 2);
         Ok(())
     }
 
