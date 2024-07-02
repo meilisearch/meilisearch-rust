@@ -876,6 +876,15 @@ search_parameter_guide_show_ranking_score_1: |-
     .execute()
     .await
     .unwrap();
+search_parameter_guide_show_ranking_score_details_1: |-
+  let results: SearchResults<Movie> = client
+    .index("movies")
+    .search()
+    .with_query("dragon")
+    .with_show_ranking_score_details(true)
+    .execute()
+    .await
+    .unwrap();
 search_parameter_guide_matching_strategy_1: |-
   let results: SearchResults<Movie> = client
   .index("movies")
