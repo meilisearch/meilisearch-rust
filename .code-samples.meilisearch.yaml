@@ -596,6 +596,42 @@ reset_faceting_settings_1: |-
     .reset_faceting()
     .await
     .unwrap();
+get_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .get_dictionary()
+    .await
+    .unwrap();
+update_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .set_dictionary(['|', '&hellip;'])
+    .await
+    .unwrap();
+reset_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .reset_dictionary()
+    .await
+    .unwrap();
+get_non_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .get_dictionary()
+    .await
+    .unwrap();
+update_non_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .set_dictionary(['@', '#'])
+    .await
+    .unwrap();
+reset_non_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .reset_dictionary()
+    .await
+    .unwrap();
 get_dictionary_1: |-
   let task: TaskInfo = client
     .index('books')
@@ -864,6 +900,15 @@ search_parameter_guide_matching_strategy_2: |-
   .search()
   .with_query("big fat liar")
   .with_matching_strategy(MatchingStrategies::ALL)
+  .execute()
+  .await
+  .unwrap();
+search_parameter_guide_matching_strategy_3: |-
+  let results: SearchResults<Movie> = client
+  .index("movies")
+  .search()
+  .with_query("white shirt")
+  .with_matching_strategy(MatchingStrategies::FREQUENCY)
   .execute()
   .await
   .unwrap();
