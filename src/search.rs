@@ -32,6 +32,8 @@ pub enum MatchingStrategies {
     ALL,
     #[serde(rename = "last")]
     LAST,
+    #[serde(rename = "frequency")]
+    FREQUENCY,
 }
 
 /// A single result.
@@ -1151,12 +1153,27 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_matching_strategy_left(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_matching_strategy_last(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results = SearchQuery::new(&index)
             .with_query("Harry Styles")
             .with_matching_strategy(MatchingStrategies::LAST)
+            .execute::<Document>()
+            .await
+            .unwrap();
+
+        assert_eq!(results.hits.len(), 7);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_matching_strategy_frequency(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results = SearchQuery::new(&index)
+            .with_query("Harry Styles")
+            .with_matching_strategy(MatchingStrategies::FREQUENCY)
             .execute::<Document>()
             .await
             .unwrap();
