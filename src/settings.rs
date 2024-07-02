@@ -106,6 +106,12 @@ pub struct Settings {
     /// SearchCutoffMs settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_cutoff_ms: Option<u64>,
+    /// Configure strings as custom separator tokens indicating where a word ends and begins.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub separator_tokens: Option<Vec<String>>,
+    /// Remove tokens from Meilisearch's default [list of word separators](https://www.meilisearch.com/docs/learn/engine/datatypes#string).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub non_separator_tokens: Option<Vec<String>>,
 }
 
 #[allow(missing_docs)]
@@ -295,6 +301,38 @@ impl Settings {
     pub fn with_search_cutoff(self, search_cutoff_ms: u64) -> Settings {
         Settings {
             search_cutoff_ms: Some(search_cutoff_ms),
+            ..self
+        }
+    }
+
+    #[must_use]
+    pub fn with_separation_tokens(
+        self,
+        separator_tokens: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Settings {
+        Settings {
+            separator_tokens: Some(
+                separator_tokens
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
+            ..self
+        }
+    }
+
+    #[must_use]
+    pub fn with_non_separation_tokens(
+        self,
+        non_separator_tokens: impl IntoIterator<Item = impl AsRef<str>>,
+    ) -> Settings {
+        Settings {
+            non_separator_tokens: Some(
+                non_separator_tokens
+                    .into_iter()
+                    .map(|v| v.as_ref().to_string())
+                    .collect(),
+            ),
             ..self
         }
     }
@@ -792,6 +830,68 @@ impl<Http: HttpClient> Index<Http> {
             .request::<(), (), Option<u64>>(
                 &format!(
                     "{}/indexes/{}/settings/search-cutoff-ms",
+                    self.client.host, self.uid
+                ),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Get [separator token](https://www.meilisearch.com/docs/reference/api/settings#separator-tokens) of the [Index].
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("get_separator_tokens", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_separator_tokens");
+    ///
+    /// let separator_tokens = index.get_separator_tokens().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_separator_tokens(&self) -> Result<Vec<String>, Error> {
+        self.client
+            .http_client
+            .request::<(), (), Vec<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/separator-tokens",
+                    self.client.host, self.uid
+                ),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Get [non separator token](https://www.meilisearch.com/docs/reference/api/settings#non-separator-tokens) of the [Index].
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("get_non_separator_tokens", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_non_separator_tokens");
+    ///
+    /// let non_separator_tokens = index.get_non_separator_tokens().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_non_separator_tokens(&self) -> Result<Vec<String>, Error> {
+        self.client
+            .http_client
+            .request::<(), (), Vec<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/non-separator-tokens",
                     self.client.host, self.uid
                 ),
                 Method::Get { query: () },
@@ -1348,6 +1448,88 @@ impl<Http: HttpClient> Index<Http> {
                 Method::Patch {
                     query: (),
                     body: typo_tolerance,
+                },
+                202,
+            )
+            .await
+    }
+
+    /// Update [separator tokens](https://www.meilisearch.com/docs/reference/api/settings#separator-tokens) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings, settings::{TypoToleranceSettings, MinWordSizeForTypos}};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("set_separator_tokens", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_separator_tokens");
+    ///
+    /// let separator_token: Vec<String> = vec!["@".to_string(), "#".to_string()];
+    ///
+    /// let task = index.set_separator_tokens(&separator_token).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_separator_tokens(
+        &self,
+        separator_token: &Vec<String>,
+    ) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), &Vec<String>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/separator-tokens",
+                    self.client.host, self.uid
+                ),
+                Method::Put {
+                    query: (),
+                    body: separator_token,
+                },
+                202,
+            )
+            .await
+    }
+
+    /// Update [non separator tokens](https://www.meilisearch.com/docs/reference/api/settings#non-separator-tokens) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings, settings::{TypoToleranceSettings, MinWordSizeForTypos}};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("set_non_separator_tokens", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_non_separator_tokens");
+    ///
+    /// let non_separator_token: Vec<String> = vec!["@".to_string(), "#".to_string()];
+    ///
+    /// let task = index.set_non_separator_tokens(&non_separator_token).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_non_separator_tokens(
+        &self,
+        non_separator_token: &Vec<String>,
+    ) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), &Vec<String>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/non-separator-tokens",
+                    self.client.host, self.uid
+                ),
+                Method::Put {
+                    query: (),
+                    body: non_separator_token,
                 },
                 202,
             )
@@ -1924,6 +2106,72 @@ impl<Http: HttpClient> Index<Http> {
             )
             .await
     }
+
+    /// Reset [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("reset_separator_tokens", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_separator_tokens");
+    ///
+    /// let task = index.reset_separator_tokens().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_separator_tokens(&self) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/separator-tokens",
+                    self.client.host, self.uid
+                ),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
+    }
+
+    /// Reset [non separator tokens](https://www.meilisearch.com/docs/reference/api/settings#non-separator-tokens) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("reset_non_separator_tokens", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_non_separator_tokens");
+    ///
+    /// let task = index.reset_non_separator_tokens().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_non_separator_tokens(&self) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/non-separator-tokens",
+                    self.client.host, self.uid
+                ),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
+    }
 }
 
 #[cfg(test)]
@@ -2201,6 +2449,26 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_get_separator_tokens(index: Index) {
+        let separator: Vec<&str> = vec![];
+        let res = index.get_separator_tokens().await.unwrap();
+
+        assert_eq!(separator, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_separator_tokens(client: Client, index: Index) {
+        let expected: Vec<String> = vec!["#".to_string(), "@".to_string()];
+
+        let task_info = index.set_separator_tokens(&expected).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_separator_tokens().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
     async fn test_reset_search_cutoff_ms(index: Index) {
         let expected = None;
 
@@ -2213,5 +2481,45 @@ mod tests {
         let default = index.get_search_cutoff_ms().await.unwrap();
 
         assert_eq!(expected, default);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_separator_tokens(client: Client, index: Index) {
+        let separator: Vec<&str> = vec![];
+        let task_info = index.reset_separator_tokens().await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_dictionary().await.unwrap();
+        assert_eq!(separator, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_non_separator_tokens(index: Index) {
+        let separator: Vec<&str> = vec![];
+        let res = index.get_non_separator_tokens().await.unwrap();
+
+        assert_eq!(separator, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_non_separator_tokens(client: Client, index: Index) {
+        let expected: Vec<String> = vec!["#".to_string(), "@".to_string()];
+
+        let task_info = index.set_non_separator_tokens(&expected).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_non_separator_tokens().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_non_separator_tokens(client: Client, index: Index) {
+        let separator: Vec<&str> = vec![];
+        let task_info = index.reset_non_separator_tokens().await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_dictionary().await.unwrap();
+        assert_eq!(separator, res);
     }
 }
