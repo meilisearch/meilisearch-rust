@@ -307,7 +307,6 @@ pub struct Search<'a> {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchQuery<'a, Http: HttpClient, SearchKind = Search<'a>> {
-
     #[serde(skip_serializing)]
     index: &'a Index<Http>,
     /// The number of documents to skip.
@@ -352,7 +351,7 @@ pub struct SearchQuery<'a, Http: HttpClient, SearchKind = Search<'a>> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_ranking_score_details: Option<bool>,
 
-    #[serde (flatten)]
+    #[serde(flatten)]
     search_kind: SearchKind,
 }
 
@@ -624,9 +623,9 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http, Search<'a>> {
         self.search_kind.distinct = Some(distinct);
         self
     }
-    
+
     /// Execute the query and fetch the results.
-    /// 
+    ///
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
     ) -> Result<SearchResults<T>, Error> {

@@ -348,7 +348,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// meilisearch_sdk::features::ExperimentalFeatures::new(&client).set_vector_store(true).update().unwrap();
     /// let mut movies = client.index("search_similar_documents");
-    /// 
+    ///
     /// # // add some documents
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
@@ -363,7 +363,10 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     #[must_use]
-    pub fn search_similar_documents <'a>(&'a self, id: &'a str) -> SearchQuery<'a, Http, Similar<'a>> {
+    pub fn search_similar_documents<'a>(
+        &'a self,
+        id: &'a str,
+    ) -> SearchQuery<'a, Http, Similar<'a>> {
         SearchQuery::new_similar(self, id)
     }
 
