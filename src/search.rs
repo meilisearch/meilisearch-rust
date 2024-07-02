@@ -340,6 +340,7 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub distinct: Option<&'a str>,
 
+    ///Excludes results below the specified ranking score.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_score_threshold: Option<f64>,
 
