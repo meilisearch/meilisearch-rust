@@ -641,7 +641,6 @@ mod tests {
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{json, Map, Value};
-    use time::format_description::well_known::iso8601::DateKind;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Nested {
