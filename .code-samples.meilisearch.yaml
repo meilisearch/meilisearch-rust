@@ -903,6 +903,15 @@ search_parameter_guide_matching_strategy_2: |-
   .execute()
   .await
   .unwrap();
+search_parameter_guide_matching_strategy_3: |-
+  let results: SearchResults<Movie> = client
+  .index("movies")
+  .search()
+  .with_query("white shirt")
+  .with_matching_strategy(MatchingStrategies::FREQUENCY)
+  .execute()
+  .await
+  .unwrap();
 search_parameter_guide_hitsperpage_1: |-
   client.index("movies").search().with_hits_per_page(15).execute().await?;
 search_parameter_guide_page_1: |-
