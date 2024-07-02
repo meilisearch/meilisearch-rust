@@ -144,6 +144,108 @@ pub enum Selectors<T> {
 
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Similar<'a> {
+    id: &'a str,
+    embedder: Option<&'a str>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Search<'a> {
+    /// The text that will be searched for among the documents.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "q")]
+    pub query: Option<&'a str>,
+    /// The page number on which you paginate.
+    ///
+    /// Pagination starts at 1. If page is 0, no results are returned.
+    ///
+    /// **Default: None unless `hits_per_page` is defined, in which case page is `1`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page: Option<usize>,
+    /// The maximum number of results in a page. A page can contain less results than the number of hits_per_page.
+    ///
+    /// **Default: None unless `page` is defined, in which case `20`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hits_per_page: Option<usize>,
+    /// Facets for which to retrieve the matching count.
+    ///
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
+    ///
+    /// **Default: all attributes found in the documents.**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "serialize_with_wildcard")]
+    pub facets: Option<Selectors<&'a [&'a str]>>,
+    /// Attributes to sort.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sort: Option<&'a [&'a str]>,
+    /// Attributes to perform the search on.
+    ///
+    /// Specify the subset of searchableAttributes for a search without modifying Meilisearch’s index settings.
+    ///
+    /// **Default: all searchable attributes found in the documents.**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes_to_search_on: Option<&'a [&'a str]>,
+    /// Attributes whose values have to be cropped.
+    ///
+    /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
+    ///
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
+    pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
+    /// Maximum number of words including the matched query term(s) contained in the returned cropped value(s).
+    ///
+    /// See [attributes_to_crop](#structfield.attributes_to_crop).
+    ///
+    /// **Default: `10`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub crop_length: Option<usize>,
+    /// Marker at the start and the end of a cropped value.
+    ///
+    /// ex: `...middle of a crop...`
+    ///
+    /// **Default: `...`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub crop_marker: Option<&'a str>,
+    /// Attributes whose values will contain **highlighted matching terms**.
+    ///
+    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "serialize_with_wildcard")]
+    pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
+    /// Tag in front of a highlighted term.
+    ///
+    /// ex: `<mytag>hello world`
+    ///
+    /// **Default: `<em>`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub highlight_pre_tag: Option<&'a str>,
+    /// Tag after a highlighted term.
+    ///
+    /// ex: `hello world</ mytag>`
+    ///
+    /// **Default: `</em>`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub highlight_post_tag: Option<&'a str>,
+    /// Defines whether an object that contains information about the matches should be returned or not.
+    ///
+    /// **Default: `false`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_matches_position: Option<bool>,
+    /// Defines the strategy on how to handle queries containing multiple words.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub matching_strategy: Option<MatchingStrategies>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) index_uid: Option<&'a str>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) distinct: Option<&'a str>,
+}
+
 /// A struct representing a query.
 ///
 /// You can add search parameters using the builder syntax.
@@ -204,13 +306,10 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 /// ```
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct SearchQuery<'a, Http: HttpClient> {
+pub struct SearchQuery<'a, Http: HttpClient, SearchKind = Search<'a>> {
+
     #[serde(skip_serializing)]
     index: &'a Index<Http>,
-    /// The text that will be searched for among the documents.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "q")]
-    pub query: Option<&'a str>,
     /// The number of documents to skip.
     ///
     /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
@@ -229,41 +328,11 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     /// **Default: `20`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
-    /// The page number on which you paginate.
-    ///
-    /// Pagination starts at 1. If page is 0, no results are returned.
-    ///
-    /// **Default: None unless `hits_per_page` is defined, in which case page is `1`**
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub page: Option<usize>,
-    /// The maximum number of results in a page. A page can contain less results than the number of hits_per_page.
-    ///
-    /// **Default: None unless `page` is defined, in which case `20`**
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub hits_per_page: Option<usize>,
     /// Filter applied to documents.
     ///
     /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/advanced/filtering) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
-    /// Facets for which to retrieve the matching count.
-    ///
-    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    ///
-    /// **Default: all attributes found in the documents.**
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_with_wildcard")]
-    pub facets: Option<Selectors<&'a [&'a str]>>,
-    /// Attributes to sort.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sort: Option<&'a [&'a str]>,
-    /// Attributes to perform the search on.
-    ///
-    /// Specify the subset of searchableAttributes for a search without modifying Meilisearch’s index settings.
-    ///
-    /// **Default: all searchable attributes found in the documents.**
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub attributes_to_search_on: Option<&'a [&'a str]>,
     /// Attributes to display in the returned documents.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -272,120 +341,135 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
-    /// Attributes whose values have to be cropped.
-    ///
-    /// Attributes are composed by the attribute name and an optional `usize` that overwrites the `crop_length` parameter.
-    ///
-    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_attributes_to_crop_with_wildcard")]
-    pub attributes_to_crop: Option<Selectors<&'a [AttributeToCrop<'a>]>>,
-    /// Maximum number of words including the matched query term(s) contained in the returned cropped value(s).
-    ///
-    /// See [attributes_to_crop](#structfield.attributes_to_crop).
-    ///
-    /// **Default: `10`**
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub crop_length: Option<usize>,
-    /// Marker at the start and the end of a cropped value.
-    ///
-    /// ex: `...middle of a crop...`
-    ///
-    /// **Default: `...`**
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub crop_marker: Option<&'a str>,
-    /// Attributes whose values will contain **highlighted matching terms**.
-    ///
-    /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_with_wildcard")]
-    pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
-    /// Tag in front of a highlighted term.
-    ///
-    /// ex: `<mytag>hello world`
-    ///
-    /// **Default: `<em>`**
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub highlight_pre_tag: Option<&'a str>,
-    /// Tag after a highlighted term.
-    ///
-    /// ex: `hello world</ mytag>`
-    ///
-    /// **Default: `</em>`**
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub highlight_post_tag: Option<&'a str>,
-    /// Defines whether an object that contains information about the matches should be returned or not.
-    ///
-    /// **Default: `false`**
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub show_matches_position: Option<bool>,
-
     /// Defines whether to show the relevancy score of the match.
     ///
     /// **Default: `false`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_ranking_score: Option<bool>,
-
     ///Adds a detailed global ranking score field to each document.
     ///
     /// **Default: `false`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_ranking_score_details: Option<bool>,
 
-    /// Defines the strategy on how to handle queries containing multiple words.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub matching_strategy: Option<MatchingStrategies>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) index_uid: Option<&'a str>,
-
-    ///Defines one attribute in the filterableAttributes list as a distinct attribute.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) distinct: Option<&'a str>,
+    #[serde (flatten)]
+    search_kind: SearchKind,
 }
 
 #[allow(missing_docs)]
-impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
-    #[must_use]
-    pub fn new(index: &'a Index<Http>) -> SearchQuery<'a, Http> {
-        SearchQuery {
-            index,
-            query: None,
-            offset: None,
-            limit: None,
-            page: None,
-            hits_per_page: None,
-            filter: None,
-            sort: None,
-            facets: None,
-            attributes_to_search_on: None,
-            attributes_to_retrieve: None,
-            attributes_to_crop: None,
-            crop_length: None,
-            crop_marker: None,
-            attributes_to_highlight: None,
-            highlight_pre_tag: None,
-            highlight_post_tag: None,
-            show_matches_position: None,
-            show_ranking_score: None,
-            show_ranking_score_details: None,
-            matching_strategy: None,
-            index_uid: None,
-            distinct: None,
-        }
-    }
-    pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
-        self.query = Some(query);
-        self
-    }
-
-    pub fn with_offset<'b>(&'b mut self, offset: usize) -> &'b mut SearchQuery<'a, Http> {
+impl<'a, Http: HttpClient, SearchKind: Clone> SearchQuery<'a, Http, SearchKind> {
+    pub fn with_offset<'b>(
+        &'b mut self,
+        offset: usize,
+    ) -> &'b mut SearchQuery<'a, Http, SearchKind> {
         self.offset = Some(offset);
         self
     }
-    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut SearchQuery<'a, Http> {
+    pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut SearchQuery<'a, Http, SearchKind> {
         self.limit = Some(limit);
         self
+    }
+    pub fn with_filter<'b>(
+        &'b mut self,
+        filter: &'a str,
+    ) -> &'b mut SearchQuery<'a, Http, SearchKind> {
+        self.filter = Some(Filter::new(Either::Left(filter)));
+        self
+    }
+    pub fn with_array_filter<'b>(
+        &'b mut self,
+        filter: Vec<&'a str>,
+    ) -> &'b mut SearchQuery<'a, Http, SearchKind> {
+        self.filter = Some(Filter::new(Either::Right(filter)));
+        self
+    }
+    pub fn with_attributes_to_retrieve<'b>(
+        &'b mut self,
+        attributes_to_retrieve: Selectors<&'a [&'a str]>,
+    ) -> &'b mut SearchQuery<'a, Http, SearchKind> {
+        self.attributes_to_retrieve = Some(attributes_to_retrieve);
+        self
+    }
+    pub fn with_show_ranking_score<'b>(
+        &'b mut self,
+        show_ranking_score: bool,
+    ) -> &'b mut SearchQuery<'a, Http, SearchKind> {
+        self.show_ranking_score = Some(show_ranking_score);
+        self
+    }
+
+    pub fn with_show_ranking_score_details<'b>(
+        &'b mut self,
+        show_ranking_score_details: bool,
+    ) -> &'b mut SearchQuery<'a, Http, SearchKind> {
+        self.show_ranking_score_details = Some(show_ranking_score_details);
+        self
+    }
+    pub fn build(&mut self) -> SearchQuery<'a, Http, SearchKind> {
+        self.clone()
+    }
+}
+
+impl<'a, Http: HttpClient> SearchQuery<'a, Http, Similar<'a>> {
+    #[must_use]
+    pub fn new_similar(index: &'a Index<Http>, id: &'a str) -> SearchQuery<'a, Http, Similar<'a>> {
+        SearchQuery {
+            search_kind: Similar { id, embedder: None },
+            index,
+            offset: None,
+            limit: None,
+            filter: None,
+            attributes_to_retrieve: None,
+            show_ranking_score: None,
+            show_ranking_score_details: None,
+        }
+    }
+    pub fn with_embedder<'b>(
+        &'b mut self,
+        embedder: &'a str,
+    ) -> &'b mut SearchQuery<'a, Http, Similar<'a>> {
+        self.search_kind.embedder = Some(embedder);
+        self
+    }
+
+    /// Execute the query and fetch the results.
+    pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
+        &'a self,
+    ) -> Result<SearchResults<T>, Error> {
+        self.index.execute_query_similar::<T>(self).await
+    }
+}
+
+impl<'a, Http: HttpClient> SearchQuery<'a, Http, Search<'a>> {
+    #[must_use]
+    pub fn new(index: &'a Index<Http>) -> SearchQuery<'a, Http, Search> {
+        SearchQuery {
+            index,
+            offset: None,
+            limit: None,
+            filter: None,
+            attributes_to_retrieve: None,
+            show_ranking_score: None,
+            show_ranking_score_details: None,
+            search_kind: Search {
+                query: None,
+                page: None,
+                hits_per_page: None,
+                sort: None,
+                facets: None,
+                attributes_to_search_on: None,
+                attributes_to_crop: None,
+                crop_length: None,
+                crop_marker: None,
+                attributes_to_highlight: None,
+                highlight_pre_tag: None,
+                highlight_post_tag: None,
+                show_matches_position: None,
+                matching_strategy: None,
+                index_uid: None,
+                distinct: None,
+            },
+        }
     }
     /// Add the page number on which to paginate.
     ///
@@ -415,7 +499,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     /// # });
     /// ```
     pub fn with_page<'b>(&'b mut self, page: usize) -> &'b mut SearchQuery<'a, Http> {
-        self.page = Some(page);
+        self.search_kind.page = Some(page);
+        self
+    }
+
+    pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
+        self.search_kind.query = Some(query);
         self
     }
 
@@ -450,29 +539,19 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         &'b mut self,
         hits_per_page: usize,
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.hits_per_page = Some(hits_per_page);
+        self.search_kind.hits_per_page = Some(hits_per_page);
         self
     }
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a, Http> {
-        self.filter = Some(Filter::new(Either::Left(filter)));
-        self
-    }
-    pub fn with_array_filter<'b>(
-        &'b mut self,
-        filter: Vec<&'a str>,
-    ) -> &'b mut SearchQuery<'a, Http> {
-        self.filter = Some(Filter::new(Either::Right(filter)));
-        self
-    }
+
     pub fn with_facets<'b>(
         &'b mut self,
         facets: Selectors<&'a [&'a str]>,
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.facets = Some(facets);
+        self.search_kind.facets = Some(facets);
         self
     }
     pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
-        self.sort = Some(sort);
+        self.search_kind.sort = Some(sort);
         self
     }
 
@@ -480,98 +559,74 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         &'b mut self,
         attributes_to_search_on: &'a [&'a str],
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.attributes_to_search_on = Some(attributes_to_search_on);
-        self
-    }
-    pub fn with_attributes_to_retrieve<'b>(
-        &'b mut self,
-        attributes_to_retrieve: Selectors<&'a [&'a str]>,
-    ) -> &'b mut SearchQuery<'a, Http> {
-        self.attributes_to_retrieve = Some(attributes_to_retrieve);
+        self.search_kind.attributes_to_search_on = Some(attributes_to_search_on);
         self
     }
     pub fn with_attributes_to_crop<'b>(
         &'b mut self,
         attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>,
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.attributes_to_crop = Some(attributes_to_crop);
+        self.search_kind.attributes_to_crop = Some(attributes_to_crop);
         self
     }
     pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut SearchQuery<'a, Http> {
-        self.crop_length = Some(crop_length);
+        self.search_kind.crop_length = Some(crop_length);
         self
     }
     pub fn with_crop_marker<'b>(
         &'b mut self,
         crop_marker: &'a str,
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.crop_marker = Some(crop_marker);
+        self.search_kind.crop_marker = Some(crop_marker);
         self
     }
     pub fn with_attributes_to_highlight<'b>(
         &'b mut self,
         attributes_to_highlight: Selectors<&'a [&'a str]>,
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.attributes_to_highlight = Some(attributes_to_highlight);
+        self.search_kind.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
     pub fn with_highlight_pre_tag<'b>(
         &'b mut self,
         highlight_pre_tag: &'a str,
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.highlight_pre_tag = Some(highlight_pre_tag);
+        self.search_kind.highlight_pre_tag = Some(highlight_pre_tag);
         self
     }
     pub fn with_highlight_post_tag<'b>(
         &'b mut self,
         highlight_post_tag: &'a str,
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.highlight_post_tag = Some(highlight_post_tag);
+        self.search_kind.highlight_post_tag = Some(highlight_post_tag);
         self
     }
     pub fn with_show_matches_position<'b>(
         &'b mut self,
         show_matches_position: bool,
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.show_matches_position = Some(show_matches_position);
+        self.search_kind.show_matches_position = Some(show_matches_position);
         self
     }
-
-    pub fn with_show_ranking_score<'b>(
-        &'b mut self,
-        show_ranking_score: bool,
-    ) -> &'b mut SearchQuery<'a, Http> {
-        self.show_ranking_score = Some(show_ranking_score);
-        self
-    }
-
-    pub fn with_show_ranking_score_details<'b>(
-        &'b mut self,
-        show_ranking_score_details: bool,
-    ) -> &'b mut SearchQuery<'a, Http> {
-        self.show_ranking_score_details = Some(show_ranking_score_details);
-        self
-    }
-
     pub fn with_matching_strategy<'b>(
         &'b mut self,
         matching_strategy: MatchingStrategies,
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.matching_strategy = Some(matching_strategy);
+        self.search_kind.matching_strategy = Some(matching_strategy);
         self
     }
     pub fn with_index_uid<'b>(&'b mut self) -> &'b mut SearchQuery<'a, Http> {
-        self.index_uid = Some(&self.index.uid);
+        self.search_kind.index_uid = Some(&self.index.uid);
         self
     }
+
     pub fn with_distinct<'b>(&'b mut self, distinct: &'a str) -> &'b mut SearchQuery<'a, Http> {
-        self.distinct = Some(distinct);
+        self.search_kind.distinct = Some(distinct);
         self
     }
-    pub fn build(&mut self) -> SearchQuery<'a, Http> {
-        self.clone()
-    }
+    
     /// Execute the query and fetch the results.
+    /// 
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
     ) -> Result<SearchResults<T>, Error> {

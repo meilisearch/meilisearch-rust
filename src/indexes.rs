@@ -226,12 +226,58 @@ impl<Http: HttpClient> Index<Http> {
     /// ```
     pub async fn execute_query<T: 'static + DeserializeOwned + Send + Sync>(
         &self,
-        body: &SearchQuery<'_, Http>,
+        body: &SearchQuery<'_, Http, Search<'_>>,
     ) -> Result<SearchResults<T>, Error> {
         self.client
             .http_client
             .request::<(), &SearchQuery<Http>, SearchResults<T>>(
                 &format!("{}/indexes/{}/search", self.client.host, self.uid),
+                Method::Post { body, query: () },
+                200,
+            )
+            .await
+    }
+
+    /// The /similar route uses AI-powered search to return a number of documents similar to a target document.
+    ///
+    /// See also [`Index::search_similar_documents`].
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let movies = client.index("execute_query_similar");
+    ///
+    /// // add some documents
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let query = SearchQuery::new_similar(&movies, "Interstellar").with_limit(5).build();
+    /// let results = movies.execute_query_similar::<Movie>(&query).await.unwrap();
+    ///
+    /// assert!(results.hits.len() > 0);
+    /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn execute_query_similar<T: 'static + DeserializeOwned + Send + Sync>(
+        &self,
+        body: &SearchQuery<'_, Http, Similar<'_>>,
+    ) -> Result<SearchResults<T>, Error> {
+        self.client
+            .http_client
+            .request::<(), &SearchQuery<Http, Similar>, SearchResults<T>>(
+                &format!("{}/indexes/{}/similar", self.client.host, self.uid),
                 Method::Post { body, query: () },
                 200,
             )
@@ -277,6 +323,48 @@ impl<Http: HttpClient> Index<Http> {
     #[must_use]
     pub fn search(&self) -> SearchQuery<Http> {
         SearchQuery::new(self)
+    }
+
+    /// Uses AI-powered search to return a number of documents similar to a target document.
+    ///
+    /// See also [`Index::execute_query`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    ///
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// meilisearch_sdk::features::ExperimentalFeatures::new(&client).set_vector_store(true).update().unwrap();
+    /// let mut movies = client.index("search_similar_documents");
+    /// 
+    /// # // add some documents
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let results = movies.search_similar_documents()
+    ///     .with_limit(5)
+    ///     .execute::<Movie>()
+    ///     .await
+    ///     .unwrap();
+    ///
+    /// assert!(results.hits.len() > 0);
+    /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    #[must_use]
+    pub fn search_similar_documents <'a>(&'a self, id: &'a str) -> SearchQuery<'a, Http, Similar<'a>> {
+        SearchQuery::new_similar(self, id)
     }
 
     /// Get one document using its unique id.
