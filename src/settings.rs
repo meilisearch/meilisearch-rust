@@ -37,38 +37,54 @@ pub struct FacetingSettings {
 }
 
 /// EXPERIMENTAL
-/// Allows configuring semantic seaarching
+/// Allows configuring semantic searching
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase", tag = "source")]
 pub enum Embedder {
-    /// Compute embeddings locally.
-    /// This is a resource-intensive operation and might affect indexing performance.
+    /// Compute embeddings inside meilisearch with models from [HuggingFace](https://huggingface.co/).
+    /// This is a resource-intensive operation and might affect indexing performance negatively.
     HuggingFace(HuggingFaceEmbedderSettings),
     /// Use OpenAi's API to generate embeddings
+    /// Depending on hardware, this is a
     OpenAi(OpenapiEmbedderSettings),
+    /// [Ollama](https://ollama.com/) is a framework for building and running language models locally.
+    /// This is a resource-intensive operation and might affect indexing performance negatively.
+    Ollama(OllamaEmbedderSettings),
+    /// Supports arbitrary embedders which supply a [REST](https://en.wikipedia.org/wiki/REST) interface
+    REST(GenericRESTEmbedderSettings),
     /// Provide custom embeddings.
     /// In this case, you must manually update your embeddings when adding, updating, and removing documents to your index.
     UserProvided(UserProvidedEmbedderSettings),
 }
 
+/// EXPERIMENTAL
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HuggingFaceEmbedderSettings {
-    /// the BERT embedding model you want to use from HuggingFace
-    /// Defaults to `BAAI/bge-base-en-v1.5`
+    /// the [BERT embedding model](https://en.wikipedia.org/wiki/BERT_(language_model)) you want to use from [HuggingFace](https://huggingface.co)
+    /// Defaults to `"BAAI/bge-base-en-v1.5"`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
+    /// revisions allow you to pin a specific version of a model, using a commit hash, tag or branch
+    /// this allows (according to [huggingface](https://huggingface.co/transformers/v4.8.2/model_sharing.html)):
+    /// - built-in versioning
+    /// - access control
+    /// - scalability
     #[serde(skip_serializing_if = "Option::is_none")]
     pub revision: Option<String>,
-    /// if present, document_template must be a [Liquid template](https://shopify.github.io/liquid/).
+    /// Use it to customize the data you send to the embedder. It is highly recommended you configure a custom template for your documents.
+    ///
+    /// if present, `document_template` must be a [Liquid template](https://shopify.github.io/liquid/).
     /// Use `{{ doc.attribute }}` to access document field values.
     /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
     ///
     /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
+    /// Example: "A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
 }
 
+/// EXPERIMENTAL
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenapiEmbedderSettings {
@@ -83,22 +99,169 @@ pub struct OpenapiEmbedderSettings {
     /// Defaults to the default for said model name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dimensions: Option<usize>,
-    /// if present, document_template must be a [Liquid template](https://shopify.github.io/liquid/).
+    /// Use it to customize the data you send to the embedder. It is highly recommended you configure a custom template for your documents.
+    ///
+    /// if present, `document_template` must be a [Liquid template](https://shopify.github.io/liquid/).
     /// Use `{{ doc.attribute }}` to access document field values.
     /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
     ///
     /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
+    /// Example: "A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
 }
 
+/// EXPERIMENTAL
+///
+/// # Example
+/// ```
+/// # use meilisearch_sdk::settings::OllamaEmbedderSettings;
+/// let embedder_setting = OllamaEmbedderSettings {
+///   url: Some("http://localhost:11434/api/embeddings".to_string()),
+///   api_key: Some("foobarbaz".to_string()),
+///   model: "nomic-embed-text".to_string(),
+///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+/// };
+/// # let expected = r#"{"url":"http://localhost:11434/api/embeddings","apiKey":"foobarbaz","model":"nomic-embed-text","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}"}"#;
+/// # let expected: OllamaEmbedderSettings = serde_json::from_str(expected).unwrap(); 
+/// # assert_eq!(embedder_setting, expected);
+/// ```
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct OllamaEmbedderSettings {
+    /// Mandatory, full URL to the embedding endpoint.
+    /// Must be parseable as a URL.
+    /// If not specified, [Meilisearch](https://www.meilisearch.com/) (**not the sdk you are currently using**) will try to fetch the `MEILI_OLLAMA_URL` environment variable
+    /// Example: `"http://localhost:11434/api/embeddings"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// Optional, token used to authenticate against [Ollama](https://ollama.com/)
+    /// Example: `"foobarbaz"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
+    /// See https://ollama.com/library?q=embed for suitable embedding models
+    ///
+    /// # Example embedding models
+    ///
+    /// | Model	                   | Parameter    | Size                                                            |
+    /// |--------------------------|--------------|-----------------------------------------------------------------|
+    /// | `mxbai-embed-large`	   | `334M`	      | [View model](https://ollama.com/library/mxbai-embed-large)      |
+    /// | `nomic-embed-text`	   | `137M`	      | [View model](https://ollama.com/library/nomic-embed-text)       |
+    /// | `all-minilm`             | `23M`,`33M`  | [View model](https://ollama.com/library/all-minilm)             |
+    /// | `snowflake-arctic-embed` | varies       | [View model](https://ollama.com/library/snowflake-arctic-embed) |
+    pub model: String,
+    /// Use it to customize the data you send to the embedder. It is highly recommended you configure a custom template for your documents.
+    ///
+    /// if present, `document_template` must be a [Liquid template](https://shopify.github.io/liquid/).
+    /// Use `{{ doc.attribute }}` to access document field values.
+    /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
+    ///
+    /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
+    /// Example: "A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template: Option<String>,
+}
+
+/// EXPERIMENTAL
+///
+/// # Example
+/// ```
+/// # use std::collections::HashMap;
+/// # use meilisearch_sdk::settings::{GenericRestEmbedderSettings,GenericRestInputType};
+/// use serde_json::Value;
+/// let embedder_setting = GenericRestEmbedderSettings {
+///   url: Some("http://localhost:12345/api/v1/embed".to_string()),
+///   api_key: Some("SOURCE_API_KEY".to_string()),
+///   dimensions: Some(512),
+///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+///   input_field: vec!["data".to_string(), "text".to_string()],
+///   input_type: Some(GenericRestInputType::Text),
+///   query: HashMap::from([("model".to_string(), Value::from("MODEL_NAME")), ("dimensions".to_string(), Value::from(512))]),
+///   path_to_embeddings: vec!["data".to_string()],
+///   embedding_object: vec!["embedding".to_string()],
+/// };
+/// # let expected = r#"{"url":"http://localhost:12345/api/v1/embed","apiKey":"SOURCE_API_KEY","dimensions":512,"documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}","inputField":["data","text"],"inputType":"text","query":{"dimensions":512,"model":"MODEL_NAME"},"pathToEmbeddings":["data"],"embeddingObject":["embedding"]}"#;
+/// # let expected: GenericRestEmbedderSettings = serde_json::from_str(expected).unwrap(); 
+/// # assert_eq!(embedder_setting, expected);
+/// ```
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct GenericRestEmbedderSettings {
+    /// Mandatory, full URL to the embedding endpoint
+    /// Must be parseable as a URL.
+    /// If not specified, [Meilisearch](https://www.meilisearch.com/) (**not the sdk you are currently using**) will try to fetch the `MEILI_OLLAMA_URL` environment variable
+    /// Example: `"http://localhost:12345/api/v1/embed"`
+    pub url: Option<String>,
+    /// Optional, passed as Bearer in the Authorization header
+    /// Example: `"187HFLDH97CNHN"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
+    /// Optional
+    /// Inferred with a dummy request if missing
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dimensions: Option<usize>,
+    /// Use it to customize the data you send to the embedder. It is highly recommended you configure a custom template for your documents.
+    ///
+    /// if present, `document_template` must be a [Liquid template](https://shopify.github.io/liquid/).
+    /// Use `{{ doc.attribute }}` to access document field values.
+    /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
+    ///
+    /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
+    /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template: Option<String>,
+    /// Optional
+    /// Inject texts in `data.text` in the query
+    /// Determines what name they use for that input.
+    ///
+    /// Default: []
+    /// Example: `["data", "text"]`
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub input_field: Vec<String>,
+    /// Optional
+    /// Default: [`GenericRestInputType::Text`]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_type: Option<GenericRestInputType>,
+    /// Optional, defaults to {}
+    ///
+    /// Example:
+    /// ```json
+    /// {
+    ///   "model": "MODEL_NAME",
+    ///   "dimensions": 512
+    /// }
+    /// ```
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub query: HashMap<String, serde_json::Value>,
+    /// Optional
+    /// Defaults to []
+    /// Example: `["data"]`
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub path_to_embeddings: Vec<String>,
+    /// Optional
+    /// Defaults to []
+    /// Example: `["embedding"]`
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub embedding_object: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum GenericRestInputType {
+    /// indicates that the model accepts a single text
+    Text,
+    /// indicates that the model accepts a single text
+    TextArray,
+}
+
+/// EXPERIMENTAL
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
 pub struct UserProvidedEmbedderSettings {
     /// dimensions of your custom embedding
     pub dimensions: usize,
 }
 
-/// Struct reprensenting a set of settings.
+/// Struct representing a set of settings.
 ///
 /// You can build this struct using the builder syntax.
 ///
@@ -165,6 +328,7 @@ pub struct Settings {
     /// Proximity precision settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proximity_precision: Option<String>,
+    /// EXPERIMENTAL
     /// Settings how the embeddings for the experimental vector search feature are generated
     #[serde(skip_serializing_if = "Option::is_none")]
     pub embedders: Option<HashMap<String, Embedder>>,
