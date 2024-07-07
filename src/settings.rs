@@ -42,22 +42,35 @@ pub struct FacetingSettings {
 #[serde(rename_all = "camelCase", tag = "source")]
 pub enum Embedder {
     /// Compute embeddings inside meilisearch with models from [HuggingFace](https://huggingface.co/).
+    /// You may be able to significantly improve performance by [compiling a CUDA-compatible Meilisearch binary](https://www.meilisearch.com/docs/guides/ai/computing_hugging_face_embeddings_gpu).
     /// This is a resource-intensive operation and might affect indexing performance negatively.
     HuggingFace(HuggingFaceEmbedderSettings),
     /// Use OpenAi's API to generate embeddings
     /// Depending on hardware, this is a
     OpenAi(OpenapiEmbedderSettings),
     /// [Ollama](https://ollama.com/) is a framework for building and running language models locally.
-    /// This is a resource-intensive operation and might affect indexing performance negatively.
     Ollama(OllamaEmbedderSettings),
     /// Supports arbitrary embedders which supply a [REST](https://en.wikipedia.org/wiki/REST) interface
-    REST(GenericRESTEmbedderSettings),
+    REST(GenericRestEmbedderSettings),
     /// Provide custom embeddings.
     /// In this case, you must manually update your embeddings when adding, updating, and removing documents to your index.
     UserProvided(UserProvidedEmbedderSettings),
 }
 
 /// EXPERIMENTAL
+///
+/// # Example
+/// ```
+/// # use meilisearch_sdk::settings::HuggingFaceEmbedderSettings;
+/// let embedder_setting = HuggingFaceEmbedderSettings {
+///   model: Some("BAAI/bge-base-en-v1.5".to_string()),
+///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+///   ..Default::default()
+/// };
+/// # let expected = r#"{"model":"BAAI/bge-base-en-v1.5","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}"}"#;
+/// # let expected: HuggingFaceEmbedderSettings = serde_json::from_str(expected).unwrap(); 
+/// # assert_eq!(embedder_setting, expected);
+/// ```
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HuggingFaceEmbedderSettings {
@@ -85,6 +98,20 @@ pub struct HuggingFaceEmbedderSettings {
 }
 
 /// EXPERIMENTAL
+///
+/// # Example
+/// ```
+/// # use meilisearch_sdk::settings::OpenapiEmbedderSettings;
+/// let embedder_setting = OpenapiEmbedderSettings {
+///   api_key: "anOpenAiApiKey".to_string(),
+///   model: Some("text-embedding-3-small".to_string()),
+///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+///   ..Default::default()
+/// };
+/// # let expected = r#"{"apiKey":"anOpenAiApiKey","model":"text-embedding-3-small","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}","dimensions": 1536"}"#;
+/// # let expected: OpenapiEmbedderSettings = serde_json::from_str(expected).unwrap(); 
+/// # assert_eq!(embedder_setting, expected);
+/// ```
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenapiEmbedderSettings {

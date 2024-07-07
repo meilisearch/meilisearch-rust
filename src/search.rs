@@ -142,6 +142,7 @@ pub enum Selectors<T> {
     All,
 }
 
+/// EXPERIMENTAL
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HybridSearch<'a> {
