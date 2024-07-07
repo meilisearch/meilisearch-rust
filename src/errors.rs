@@ -17,6 +17,11 @@ pub enum Error {
     /// The Meilisearch server returned an invalid JSON for a request.
     #[error("Error parsing response JSON: {}", .0)]
     ParseError(#[from] serde_json::Error),
+
+    /// An error occurred while parsing the fields of the response JSON.
+    #[error("Error parsing fields: {0}")]
+    ParseStringError(String),
+    
     /// A timeout happened while waiting for an update to complete.
     #[error("A task did not succeed in time.")]
     Timeout,

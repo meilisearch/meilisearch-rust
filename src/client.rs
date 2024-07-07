@@ -79,18 +79,34 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         value: &Value,
     ) -> Result<IndexesResults<Http>, Error> {
-        let raw_indexes = value["results"].as_array().unwrap();
-
+        let raw_indexes = value["results"]
+            .as_array()
+            .ok_or_else(|| Error::ParseStringError("Missing or invalid 'results' field".to_string()))?;
+    
+        let limit = value["limit"]
+            .as_u64()
+            .ok_or_else(|| Error::ParseStringError("Missing or invalid 'limit' field".to_string()))? as u32;
+    
+        let offset = value["offset"]
+            .as_u64()
+            .ok_or_else(|| Error::ParseStringError("Missing or invalid 'offset' field".to_string()))? as u32;
+    
+        let total = value["total"]
+            .as_u64()
+            .ok_or_else(|| Error::ParseStringError("Missing or invalid 'total' field".to_string()))? as u32;
+    
+        let results = raw_indexes
+            .iter()
+            .map(|raw_index| Index::from_value(raw_index.clone(), self.clone()))
+            .collect::<Result<_, _>>()?;
+    
         let indexes_results = IndexesResults {
-            limit: value["limit"].as_u64().unwrap() as u32,
-            offset: value["offset"].as_u64().unwrap() as u32,
-            total: value["total"].as_u64().unwrap() as u32,
-            results: raw_indexes
-                .iter()
-                .map(|raw_index| Index::from_value(raw_index.clone(), self.clone()))
-                .collect::<Result<_, _>>()?,
+            limit,
+            offset,
+            total,
+            results,
         };
-
+    
         Ok(indexes_results)
     }
 
