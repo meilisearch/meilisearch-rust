@@ -364,6 +364,14 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     /// Defines what vectors an userprovided embedder has gotten for semantic searching
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vector: Option<&'a [f32]>,
+
+    /// EXPERIMENTAL
+    /// Defines whether vectors for semantic searching are returned in the search results
+    /// Can Significantly increase the response size.
+    ///
+    /// **Default: `false`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    retrieve_vectors: Option<bool>
 }
 
 #[allow(missing_docs)]
@@ -395,6 +403,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             index_uid: None,
             hybrid: None,
             vector: None,
+            retrieve_vectors: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
@@ -485,6 +494,13 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         filter: Vec<&'a str>,
     ) -> &'b mut SearchQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Right(filter)));
+        self
+    }
+    pub fn with_retrieve_vectors<'b>(
+        &'b mut self,
+        retrieve_vectors: bool,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.retrieve_vectors = Some(retrieve_vectors);
         self
     }
     pub fn with_facets<'b>(
@@ -694,7 +710,23 @@ mod tests {
         kind: String,
         number: i32,
         nested: Nested,
-        _vectors: HashMap<String, Vec<f32>>,
+        #[serde(default)]
+        _vectors: Option<Vectors>,
+    }
+
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Vector {
+        embeddings: Vec<Vec<f32>>,
+        regenerate: bool,
+    }
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Vectors(HashMap<String, Vector>);
+
+    impl From<&[f32; 1]> for Vectors {
+        fn from(value: &[f32;1]) -> Self {
+            Vectors(HashMap::from([(S("default"), Vector { embeddings: Vec::from([value.to_vec()]), regenerate:false })]))
+        }
     }
 
     impl PartialEq<Map<String, Value>> for Document {
@@ -708,16 +740,16 @@ mod tests {
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
         let t0 = index.add_documents(&[
-            Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") }, _vectors: HashMap::from([(S("default"), vec![1000.0])])},
-            Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") }, _vectors: HashMap::from([(S("default"), vec![2000.0])])  },
-            Document { id: 2, kind: "title".into(), number: 20, value: S("The Social Network"), nested: Nested { child: S("third") }, _vectors: HashMap::from([(S("default"), vec![3000.0])])  },
-            Document { id: 3, kind: "title".into(), number: 30, value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") }, _vectors: HashMap::from([(S("default"), vec![4000.0])])  },
-            Document { id: 4, kind: "title".into(), number: 40, value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") }, _vectors: HashMap::from([(S("default"), vec![5000.0])])  },
-            Document { id: 5, kind: "title".into(), number: 50, value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") }, _vectors: HashMap::from([(S("default"), vec![6000.0])])  },
-            Document { id: 6, kind: "title".into(), number: 60, value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") }, _vectors: HashMap::from([(S("default"), vec![7000.0])])  },
-            Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") }, _vectors: HashMap::from([(S("default"), vec![8000.0])])  },
-            Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") }, _vectors: HashMap::from([(S("default"), vec![9000.0])])  },
-            Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") }, _vectors: HashMap::from([(S("default"), vec![10000.0])])  },
+            Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") }, _vectors: Some(Vectors::from(&[1000.0]))},
+            Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") }, _vectors: Some(Vectors::from(&[2000.0]))  },
+            Document { id: 2, kind: "title".into(), number: 20, value: S("The Social Network"), nested: Nested { child: S("third") }, _vectors: Some(Vectors::from(&[3000.0]))  },
+            Document { id: 3, kind: "title".into(), number: 30, value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") }, _vectors: Some(Vectors::from(&[4000.0]))  },
+            Document { id: 4, kind: "title".into(), number: 40, value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") }, _vectors: Some(Vectors::from(&[5000.0]))  },
+            Document { id: 5, kind: "title".into(), number: 50, value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") }, _vectors: Some(Vectors::from(&[6000.0]))  },
+            Document { id: 6, kind: "title".into(), number: 60, value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") }, _vectors: Some(Vectors::from(&[7000.0]))  },
+            Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") }, _vectors: Some(Vectors::from(&[8000.0]))  },
+            Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") }, _vectors: Some(Vectors::from(&[9000.0]))  },
+            Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") }, _vectors: Some(Vectors::from(&[10000.0]))  },
         ], None).await?;
         let t1 = index
             .set_filterable_attributes(["kind", "value", "number"])
@@ -806,7 +838,9 @@ mod tests {
                 kind: S("text"),
                 number: 10,
                 nested: Nested { child: S("second") },
-                _vectors: HashMap::from([(S("default"), vec![2000.0])]),
+                // TODO: This is likely a bug upstream. vectors should not be present
+                // => correct would be `_vectors: None`
+                _vectors: Some(Vectors::from(&[2000.0])),
             },
             &results.hits[0].result
         );
@@ -979,7 +1013,7 @@ mod tests {
                 kind: S("text"),
                 number: 0,
                 nested: Nested { child: S("first") },
-                _vectors: HashMap::from([(S("default"), vec![1000.0])])
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -995,7 +1029,7 @@ mod tests {
                 kind: S("text"),
                 number: 0,
                 nested: Nested { child: S("first") },
-                _vectors: HashMap::from([(S("default"), vec![1000.0])])
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1017,7 +1051,7 @@ mod tests {
             kind: S("text"),
             number: 0,
             nested: Nested { child: S("first") },
-            _vectors: HashMap::from([(S("default"), vec![1000.0])])
+            _vectors: None,
         },
         results.hits[0].formatted_result.as_ref().unwrap());
 
@@ -1033,7 +1067,7 @@ mod tests {
                 kind: S("text"),
                 number: 0,
                 nested: Nested { child: S("first") },
-                _vectors: HashMap::from([(S("default"), vec![1000.0])])
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1059,7 +1093,7 @@ mod tests {
                 kind: S("text"),
                 number: 0,
                 nested: Nested { child: S("first") },
-                _vectors: HashMap::from([(S("default"), vec![1000.0])]),
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1087,7 +1121,7 @@ mod tests {
                 kind: S("title"),
                 number: 20,
                 nested: Nested { child: S("third") },
-                _vectors: HashMap::from([(S("default"), vec![3000.0])])
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1110,7 +1144,7 @@ mod tests {
                 kind: S("<em>text</em>"),
                 number: 10,
                 nested: Nested { child: S("second") },
-                _vectors: HashMap::from([(S("default"), vec![1000.0])]),
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap(),
         );
@@ -1126,7 +1160,7 @@ mod tests {
                 kind: S("text"),
                 number: 10,
                 nested: Nested { child: S("second") },
-                _vectors: HashMap::from([(S("default"), vec![2000.0])])
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1284,18 +1318,16 @@ mod tests {
         Ok(())
     }
 
-    #[meilisearch_test]
-    async fn test_hybrid(client: Client, index: Index) -> Result<(), Error> {
+    /// enable vector searching and configure an userProvided embedder
+    async fn setup_hybrid_searching(client: &Client, index: &Index) -> Result<(), Error> {
         use crate::settings::{Embedder, UserProvidedEmbedderSettings};
-        // enable vector searching and configure an embedder
         let features = crate::features::ExperimentalFeatures::new(&client)
             .set_vector_store(true)
             .update()
             .await
             .expect("could not enable the vector store");
         assert_eq!(features.vector_store, true);
-        let embedder_setting =
-            Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 1 });
+        let embedder_setting = Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 1 });
         let t3 = index
             .set_settings(&crate::settings::Settings {
                 embedders: Some(HashMap::from([("default".to_string(), embedder_setting)])),
@@ -1303,7 +1335,34 @@ mod tests {
             })
             .await?;
         t3.wait_for_completion(&client, None, None).await?;
+        Ok(())
+    }
 
+    #[meilisearch_test]
+    async fn test_with_vectors(client: Client, index: Index) -> Result<(), Error> {
+        setup_hybrid_searching(&client, &index).await?;
+        setup_test_index(&client, &index).await?;
+
+        let results: SearchResults<Document> = index.search()
+            .with_query("lorem ipsum")
+            .with_retrieve_vectors(true)
+            .execute().await?;
+        assert_eq!(results.hits.len(), 1);
+        let expected = Vectors::from(&[1000.0]);
+        assert_eq!(results.hits[0].result._vectors, Some(expected));
+
+        let results: SearchResults<Document> = index.search()
+            .with_query("lorem ipsum")
+            .with_retrieve_vectors(false)
+            .execute().await?;
+        assert_eq!(results.hits.len(), 1);
+        assert_eq!(results.hits[0].result._vectors, None);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_hybrid(client: Client, index: Index) -> Result<(), Error> {
+        setup_hybrid_searching(&client, &index).await?;
         setup_test_index(&client, &index).await?;
 
         // "2nd" = "second"
@@ -1327,7 +1386,7 @@ mod tests {
                 kind: S("text"),
                 number: 10,
                 nested: Nested { child: S("second") },
-                _vectors: HashMap::from([(S("default"), vec![2000.0])])
+                _vectors: None,
             },
             &results.hits[0].result
         );
@@ -1357,7 +1416,7 @@ mod tests {
                 kind: S("text"),
                 number: 0,
                 nested: Nested { child: S("first") },
-                _vectors: HashMap::from([(S("default"), vec![1000.0])]),
+                _vectors: None,
             },
             &results.hits[0].result
         );
