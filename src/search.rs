@@ -352,6 +352,14 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
 
+    ///Defines one attribute in the filterableAttributes list as a distinct attribute.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distinct: Option<&'a str>,
+
+    ///Excludes results below the specified ranking score.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ranking_score_threshold: Option<f64>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
 
@@ -404,6 +412,8 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             hybrid: None,
             vector: None,
             retrieve_vectors: None,
+            distinct: None,
+            ranking_score_threshold: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
@@ -622,8 +632,18 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.vector = Some(vector);
         self
     }
-
     #[must_use]
+    pub fn with_distinct<'b>(&'b mut self, distinct: &'a str) -> &'b mut SearchQuery<'a, Http> {
+        self.distinct = Some(distinct);
+        self
+    }
+    pub fn with_ranking_score_threshold<'b>(
+        &'b mut self,
+        ranking_score_threshold: f64,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.ranking_score_threshold = Some(ranking_score_threshold);
+        self
+    }
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
     }
@@ -1219,6 +1239,21 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_query_show_ranking_score_threshold(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("dolor text");
+        query.with_ranking_score_threshold(1.0);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert!(results.hits.is_empty());
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_phrase_search(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
@@ -1272,6 +1307,20 @@ mod tests {
             .unwrap();
 
         assert_eq!(results.hits.len(), 7);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_distinct(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results = SearchQuery::new(&index)
+            .with_distinct("kind")
+            .execute::<Document>()
+            .await
+            .unwrap();
+
+        assert_eq!(results.hits.len(), 2);
         Ok(())
     }
 

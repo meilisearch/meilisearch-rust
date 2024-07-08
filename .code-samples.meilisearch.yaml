@@ -1048,7 +1048,7 @@ primary_field_guide_add_document_primary_key: |-
 getting_started_add_documents_md: |-
   ```toml
     [dependencies]
-    meilisearch-sdk = "0.26.1"
+    meilisearch-sdk = "0.27.0"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
@@ -1702,5 +1702,40 @@ reset_search_cutoff_1: |-
 create_snapshot_1: |-
   client
     .create_snapshot()
+    .await
+    .unwrap();
+search_parameter_reference_distinct_1: |-
+  let res = client
+    .index("INDEX_NAME")
+    .search()
+    .with_query("QUERY TERMS")
+    .with_distinct("ATTRIBUTE_A")
+    .execute()
+    .await
+    .unwrap();
+distinct_attribute_guide_filterable_1: |-
+  let task: TaskInfo = client
+    .index("products")
+    .settings()
+    .set_filterable_attributes(["product_id", "sku", "url"])
+    .execute()
+    .await
+    .unwrap();
+distinct_attribute_guide_distinct_parameter_1: |-
+  let res = client
+    .index("products")
+    .search()
+    .with_query("white shirt")
+    .with_distinct("sku")
+    .execute()
+    .await
+    .unwrap();
+search_parameter_reference_ranking_score_threshold_1: |-
+  let res = client
+    .index("INDEX_NAME")
+    .search()
+    .with_query("badman")
+    .with_ranking_score_threshold(0.2)
+    .execute()
     .await
     .unwrap();
