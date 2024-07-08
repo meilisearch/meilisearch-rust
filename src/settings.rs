@@ -68,7 +68,7 @@ pub enum Embedder {
 ///   ..Default::default()
 /// };
 /// # let expected = r#"{"model":"BAAI/bge-base-en-v1.5","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}"}"#;
-/// # let expected: HuggingFaceEmbedderSettings = serde_json::from_str(expected).unwrap(); 
+/// # let expected: HuggingFaceEmbedderSettings = serde_json::from_str(expected).unwrap();
 /// # assert_eq!(embedder_setting, expected);
 /// ```
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -109,7 +109,7 @@ pub struct HuggingFaceEmbedderSettings {
 ///   ..Default::default()
 /// };
 /// # let expected = r#"{"apiKey":"anOpenAiApiKey","model":"text-embedding-3-small","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}","dimensions": 1536"}"#;
-/// # let expected: OpenapiEmbedderSettings = serde_json::from_str(expected).unwrap(); 
+/// # let expected: OpenapiEmbedderSettings = serde_json::from_str(expected).unwrap();
 /// # assert_eq!(embedder_setting, expected);
 /// ```
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -150,7 +150,7 @@ pub struct OpenapiEmbedderSettings {
 ///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
 /// };
 /// # let expected = r#"{"url":"http://localhost:11434/api/embeddings","apiKey":"foobarbaz","model":"nomic-embed-text","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}"}"#;
-/// # let expected: OllamaEmbedderSettings = serde_json::from_str(expected).unwrap(); 
+/// # let expected: OllamaEmbedderSettings = serde_json::from_str(expected).unwrap();
 /// # assert_eq!(embedder_setting, expected);
 /// ```
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -170,10 +170,10 @@ pub struct OllamaEmbedderSettings {
     ///
     /// # Example embedding models
     ///
-    /// | Model	                   | Parameter    | Size                                                            |
+    /// | Model                    | Parameter    | Size                                                            |
     /// |--------------------------|--------------|-----------------------------------------------------------------|
-    /// | `mxbai-embed-large`	   | `334M`	      | [View model](https://ollama.com/library/mxbai-embed-large)      |
-    /// | `nomic-embed-text`	   | `137M`	      | [View model](https://ollama.com/library/nomic-embed-text)       |
+    /// | `mxbai-embed-large`      | `334M`       | [View model](https://ollama.com/library/mxbai-embed-large)      |
+    /// | `nomic-embed-text`       | `137M`       | [View model](https://ollama.com/library/nomic-embed-text)       |
     /// | `all-minilm`             | `23M`,`33M`  | [View model](https://ollama.com/library/all-minilm)             |
     /// | `snowflake-arctic-embed` | varies       | [View model](https://ollama.com/library/snowflake-arctic-embed) |
     pub model: String,
@@ -208,7 +208,7 @@ pub struct OllamaEmbedderSettings {
 ///   embedding_object: vec!["embedding".to_string()],
 /// };
 /// # let expected = r#"{"url":"http://localhost:12345/api/v1/embed","apiKey":"SOURCE_API_KEY","dimensions":512,"documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}","inputField":["data","text"],"inputType":"text","query":{"dimensions":512,"model":"MODEL_NAME"},"pathToEmbeddings":["data"],"embeddingObject":["embedding"]}"#;
-/// # let expected: GenericRestEmbedderSettings = serde_json::from_str(expected).unwrap(); 
+/// # let expected: GenericRestEmbedderSettings = serde_json::from_str(expected).unwrap();
 /// # assert_eq!(embedder_setting, expected);
 /// ```
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]

@@ -379,7 +379,7 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     ///
     /// **Default: `false`**
     #[serde(skip_serializing_if = "Option::is_none")]
-    retrieve_vectors: Option<bool>
+    retrieve_vectors: Option<bool>,
 }
 
 #[allow(missing_docs)]
@@ -734,18 +734,24 @@ mod tests {
         _vectors: Option<Vectors>,
     }
 
-
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Vector {
         embeddings: Vec<Vec<f32>>,
         regenerate: bool,
     }
+
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Vectors(HashMap<String, Vector>);
 
     impl From<&[f32; 1]> for Vectors {
-        fn from(value: &[f32;1]) -> Self {
-            Vectors(HashMap::from([(S("default"), Vector { embeddings: Vec::from([value.to_vec()]), regenerate:false })]))
+        fn from(value: &[f32; 1]) -> Self {
+            Vectors(HashMap::from([(
+                S("default"),
+                Vector {
+                    embeddings: Vec::from([value.to_vec()]),
+                    regenerate: false,
+                },
+            )]))
         }
     }
 
@@ -1376,7 +1382,8 @@ mod tests {
             .await
             .expect("could not enable the vector store");
         assert_eq!(features.vector_store, true);
-        let embedder_setting = Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 1 });
+        let embedder_setting =
+            Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 1 });
         let t3 = index
             .set_settings(&crate::settings::Settings {
                 embedders: Some(HashMap::from([("default".to_string(), embedder_setting)])),
@@ -1392,18 +1399,22 @@ mod tests {
         setup_hybrid_searching(&client, &index).await?;
         setup_test_index(&client, &index).await?;
 
-        let results: SearchResults<Document> = index.search()
+        let results: SearchResults<Document> = index
+            .search()
             .with_query("lorem ipsum")
             .with_retrieve_vectors(true)
-            .execute().await?;
+            .execute()
+            .await?;
         assert_eq!(results.hits.len(), 1);
         let expected = Vectors::from(&[1000.0]);
         assert_eq!(results.hits[0].result._vectors, Some(expected));
 
-        let results: SearchResults<Document> = index.search()
+        let results: SearchResults<Document> = index
+            .search()
             .with_query("lorem ipsum")
             .with_retrieve_vectors(false)
-            .execute().await?;
+            .execute()
+            .await?;
         assert_eq!(results.hits.len(), 1);
         assert_eq!(results.hits[0].result._vectors, None);
         Ok(())
