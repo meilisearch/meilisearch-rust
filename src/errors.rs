@@ -15,13 +15,9 @@ pub enum Error {
     #[error(transparent)]
     MeilisearchCommunication(#[from] MeilisearchCommunicationError),
     /// The Meilisearch server returned an invalid JSON for a request.
-    #[error("Error parsing response JSON: {}", .0)]
-    ParseError(#[from] serde_json::Error),
+    #[error(transparent)]
+    SerdeParseError(#[from] serde_json::Error),
 
-    /// An error occurred while parsing the fields of the response JSON.
-    #[error("Error parsing fields: {0}")]
-    ParseStringError(String),
-    
     /// A timeout happened while waiting for an update to complete.
     #[error("A task did not succeed in time.")]
     Timeout,
@@ -390,7 +386,7 @@ mod test {
             "age": 43,
         }"#;
 
-        let error = Error::ParseError(serde_json::from_str::<String>(data).unwrap_err());
+        let error = Error::SerdeParseError(serde_json::from_str::<String>(data).unwrap_err());
         assert_eq!(
             error.to_string(),
             "Error parsing response JSON: invalid type: map, expected a string at line 2 column 8"

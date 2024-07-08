@@ -1,3 +1,4 @@
+use serde::de::Error as SerdeError;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{collections::HashMap, time::Duration};
@@ -81,32 +82,36 @@ impl<Http: HttpClient> Client<Http> {
     ) -> Result<IndexesResults<Http>, Error> {
         let raw_indexes = value["results"]
             .as_array()
-            .ok_or_else(|| Error::ParseStringError("Missing or invalid 'results' field".to_string()))?;
-    
+            .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'results' field"))
+            .map_err(Error::SerdeParseError)?;
+
         let limit = value["limit"]
             .as_u64()
-            .ok_or_else(|| Error::ParseStringError("Missing or invalid 'limit' field".to_string()))? as u32;
-    
+            .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'limit' field"))
+            .map_err(Error::SerdeParseError)? as u32;
+
         let offset = value["offset"]
             .as_u64()
-            .ok_or_else(|| Error::ParseStringError("Missing or invalid 'offset' field".to_string()))? as u32;
-    
+            .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'offset' field"))
+            .map_err(Error::SerdeParseError)? as u32;
+
         let total = value["total"]
             .as_u64()
-            .ok_or_else(|| Error::ParseStringError("Missing or invalid 'total' field".to_string()))? as u32;
-    
+            .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'total' field"))
+            .map_err(Error::SerdeParseError)? as u32;
+
         let results = raw_indexes
             .iter()
             .map(|raw_index| Index::from_value(raw_index.clone(), self.clone()))
             .collect::<Result<_, _>>()?;
-    
+
         let indexes_results = IndexesResults {
             limit,
             offset,
             total,
             results,
         };
-    
+
         Ok(indexes_results)
     }
 

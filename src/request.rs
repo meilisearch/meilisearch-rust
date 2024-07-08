@@ -117,7 +117,7 @@ pub fn parse_response<Output: DeserializeOwned>(
             }
             Err(e) => {
                 error!("Request succeeded but failed to parse response");
-                Err(Error::ParseError(e))
+                Err(Error::SerdeParseError(e))
             }
         };
     }
@@ -139,7 +139,7 @@ pub fn parse_response<Output: DeserializeOwned>(
                     },
                 ));
             }
-            Err(Error::ParseError(e))
+            Err(Error::SerdeParseError(e))
         }
     }
 }
