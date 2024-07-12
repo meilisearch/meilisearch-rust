@@ -106,9 +106,10 @@ pub struct HuggingFaceEmbedderSettings {
 ///   api_key: "anOpenAiApiKey".to_string(),
 ///   model: Some("text-embedding-3-small".to_string()),
 ///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+///   dimensions: Some(1536),
 ///   ..Default::default()
 /// };
-/// # let expected = r#"{"apiKey":"anOpenAiApiKey","model":"text-embedding-3-small","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}","dimensions": 1536"}"#;
+/// # let expected = r#"{"apiKey":"anOpenAiApiKey","model":"text-embedding-3-small","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}","dimensions":1536}"#;
 /// # let expected: OpenapiEmbedderSettings = serde_json::from_str(expected).unwrap();
 /// # assert_eq!(embedder_setting, expected);
 /// ```
