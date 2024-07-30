@@ -83,22 +83,22 @@ impl<Http: HttpClient> Client<Http> {
         let raw_indexes = value["results"]
             .as_array()
             .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'results' field"))
-            .map_err(Error::SerdeParseError)?;
+            .map_err(Error::ParseError)?;
 
         let limit = value["limit"]
             .as_u64()
             .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'limit' field"))
-            .map_err(Error::SerdeParseError)? as u32;
+            .map_err(Error::ParseError)? as u32;
 
         let offset = value["offset"]
             .as_u64()
             .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'offset' field"))
-            .map_err(Error::SerdeParseError)? as u32;
+            .map_err(Error::ParseError)? as u32;
 
         let total = value["total"]
             .as_u64()
             .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'total' field"))
-            .map_err(Error::SerdeParseError)? as u32;
+            .map_err(Error::ParseError)? as u32;
 
         let results = raw_indexes
             .iter()

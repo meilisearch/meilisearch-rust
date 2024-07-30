@@ -102,8 +102,7 @@ impl<Http: HttpClient> Index<Http> {
             primaryKey: Option<String>,
         }
 
-        let i: IndexFromSerde =
-            serde_json::from_value(raw_index).map_err(Error::SerdeParseError)?;
+        let i: IndexFromSerde = serde_json::from_value(raw_index).map_err(Error::ParseError)?;
 
         Ok(Index {
             uid: i.uid,

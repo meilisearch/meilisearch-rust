@@ -386,7 +386,7 @@ mod test {
             "age": 43,
         }"#;
 
-        let error = Error::SerdeParseError(serde_json::from_str::<String>(data).unwrap_err());
+        let error = Error::ParseError(serde_json::from_str::<String>(data).unwrap_err());
         assert_eq!(
             error.to_string(),
             "Error parsing response JSON: invalid type: map, expected a string at line 2 column 8"
