@@ -736,8 +736,15 @@ mod tests {
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Vector {
-        embeddings: Vec<Vec<f32>>,
+        embeddings: SingleOrMultipleVectors,
         regenerate: bool,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    #[serde(untagged)]
+    enum SingleOrMultipleVectors {
+        Single(Vec<f32>),
+        Multiple(Vec<Vec<f32>>),
     }
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -748,7 +755,7 @@ mod tests {
             Vectors(HashMap::from([(
                 S("default"),
                 Vector {
-                    embeddings: Vec::from([value.to_vec()]),
+                    embeddings: SingleOrMultipleVectors::Multiple(Vec::from([value.to_vec()])),
                     regenerate: false,
                 },
             )]))
@@ -765,6 +772,13 @@ mod tests {
     }
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
+        // Vector store is enabled for all to have consistent test runs
+        // This setting is shared by every index
+        let features = crate::features::ExperimentalFeatures::new(&client)
+            .set_vector_store(true)
+            .update()
+            .await?;
+        assert_eq!(features.vector_store, true);
         let t0 = index.add_documents(&[
             Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") }, _vectors: Some(Vectors::from(&[1000.0]))},
             Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") }, _vectors: Some(Vectors::from(&[2000.0]))  },
@@ -864,8 +878,6 @@ mod tests {
                 kind: S("text"),
                 number: 10,
                 nested: Nested { child: S("second") },
-                // TODO: This is likely a bug upstream. vectors should not be present
-                // => correct would be `_vectors: None`
                 _vectors: Some(Vectors::from(&[2000.0])),
             },
             &results.hits[0].result
@@ -1376,12 +1388,6 @@ mod tests {
     /// enable vector searching and configure an userProvided embedder
     async fn setup_hybrid_searching(client: &Client, index: &Index) -> Result<(), Error> {
         use crate::settings::{Embedder, UserProvidedEmbedderSettings};
-        let features = crate::features::ExperimentalFeatures::new(&client)
-            .set_vector_store(true)
-            .update()
-            .await
-            .expect("could not enable the vector store");
-        assert_eq!(features.vector_store, true);
         let embedder_setting =
             Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 1 });
         let t3 = index
