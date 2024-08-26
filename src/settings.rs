@@ -195,21 +195,30 @@ pub struct OllamaEmbedderSettings {
 /// # Example
 /// ```
 /// # use std::collections::HashMap;
-/// # use meilisearch_sdk::settings::{GenericRestEmbedderSettings,GenericRestInputType};
+/// # use meilisearch_sdk::settings::{GenericRestEmbedderSettings};
 /// use serde_json::Value;
 /// let embedder_setting = GenericRestEmbedderSettings {
 ///   url: Some("http://localhost:12345/api/v1/embed".to_string()),
 ///   api_key: Some("SOURCE_API_KEY".to_string()),
 ///   dimensions: Some(512),
 ///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
-///   input_field: vec!["data".to_string(), "text".to_string()],
-///   input_type: Some(GenericRestInputType::Text),
-///   query: HashMap::from([("model".to_string(), Value::from("MODEL_NAME")), ("dimensions".to_string(), Value::from(512))]),
-///   path_to_embeddings: vec!["data".to_string()],
-///   embedding_object: vec!["embedding".to_string()],
+///   request: HashMap::from([
+///     ("model".to_string(), Value::from("MODEL_NAME")),
+///     ("prompt".to_string(), Value::from("{{text}}"))
+///   ]),
+///   response: HashMap::from([
+///     ("model".to_string(), Value::from("{{embedding}}"))
+///   ]),
 /// };
-/// # let expected = r#"{"url":"http://localhost:12345/api/v1/embed","apiKey":"SOURCE_API_KEY","dimensions":512,"documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}","inputField":["data","text"],"inputType":"text","query":{"dimensions":512,"model":"MODEL_NAME"},"pathToEmbeddings":["data"],"embeddingObject":["embedding"]}"#;
-/// # let expected: GenericRestEmbedderSettings = serde_json::from_str(expected).unwrap();
+/// # let expected = serde_json::json!({
+/// #   "url":"http://localhost:12345/api/v1/embed",
+/// #   "apiKey":"SOURCE_API_KEY",
+/// #   "dimensions":512,
+/// #   "documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}",
+/// #   "request":{"prompt":"{{text}}","model":"MODEL_NAME"},
+/// #   "response":{"model":"{{embedding}}"}
+/// # });
+/// # let expected: GenericRestEmbedderSettings = serde_json::from_value(expected).unwrap();
 /// # assert_eq!(embedder_setting, expected);
 /// ```
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -238,48 +247,29 @@ pub struct GenericRestEmbedderSettings {
     /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
-    /// Optional
-    /// Inject texts in `data.text` in the query
-    /// Determines what name they use for that input.
-    ///
-    /// Default: []
-    /// Example: `["data", "text"]`
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub input_field: Vec<String>,
-    /// Optional
-    /// Default: [`GenericRestInputType::Text`]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_type: Option<GenericRestInputType>,
-    /// Optional, defaults to {}
+    /// A JSON value that represents the request made by Meilisearch to the remote embedder.
+    /// The text to embed must be replaced by the placeholder value `“{{text}}”`.
     ///
     /// Example:
     /// ```json
     /// {
     ///   "model": "MODEL_NAME",
-    ///   "dimensions": 512
+    ///   "prompt": "{{text}}"
     /// }
     /// ```
     #[serde(skip_serializing_if = "HashMap::is_empty")]
-    pub query: HashMap<String, serde_json::Value>,
-    /// Optional
-    /// Defaults to []
-    /// Example: `["data"]`
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub path_to_embeddings: Vec<String>,
-    /// Optional
-    /// Defaults to []
-    /// Example: `["embedding"]`
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub embedding_object: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub enum GenericRestInputType {
-    /// indicates that the model accepts a single text
-    Text,
-    /// indicates that the model accepts a single text
-    TextArray,
+    pub request: HashMap<String, serde_json::Value>,
+    ///  A JSON value that represents a fragment of the response made by the remote embedder to Meilisearch.
+    /// The embedding must be replaced by the placeholder value `"{{embedding}}"`
+    ///
+    /// Example:
+    /// ```json
+    /// {
+    ///   "embedding": "{{embedding}}"
+    /// }
+    /// ```
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub response: HashMap<String, serde_json::Value>,
 }
 
 /// EXPERIMENTAL
