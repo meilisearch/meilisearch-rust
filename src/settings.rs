@@ -209,6 +209,9 @@ pub struct OllamaEmbedderSettings {
 ///   response: HashMap::from([
 ///     ("model".to_string(), Value::from("{{embedding}}"))
 ///   ]),
+///   headers: HashMap::from([
+///     ("X-MAGIC".to_string(), "open sesame".to_string())
+///   ]),
 /// };
 /// # let expected = serde_json::json!({
 /// #   "url":"http://localhost:12345/api/v1/embed",
@@ -216,7 +219,8 @@ pub struct OllamaEmbedderSettings {
 /// #   "dimensions":512,
 /// #   "documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}",
 /// #   "request":{"prompt":"{{text}}","model":"MODEL_NAME"},
-/// #   "response":{"model":"{{embedding}}"}
+/// #   "response":{"model":"{{embedding}}"},
+/// #   "headers":{"X-MAGIC":"open sesame"}
 /// # });
 /// # let expected: GenericRestEmbedderSettings = serde_json::from_value(expected).unwrap();
 /// # assert_eq!(embedder_setting, expected);
@@ -270,6 +274,17 @@ pub struct GenericRestEmbedderSettings {
     /// ```
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub response: HashMap<String, serde_json::Value>,
+    /// JSON object whose keys represent the name and values of additional headers to send in requests.
+    ///
+    /// Embedding requests sent from Meilisearch to a remote REST embedder by default contain these headers:
+    ///
+    /// - if `api_key` was provided: `Authorization: Bearer <apiKey>`
+    /// - always: `Content-Type: application/json`
+    ///
+    /// If `headers` is empty, only `Authorization` and `Content-Type` are sent, as described above.
+    /// If `headers` contains `Authorization` and `Content-Type`, the declared values will override the ones that are sent by default.
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub headers: HashMap<String, String>,
 }
 
 /// EXPERIMENTAL
