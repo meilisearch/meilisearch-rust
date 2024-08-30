@@ -9,6 +9,7 @@ use crate::{
     DefaultHttpClient,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::Value;
 use std::{collections::HashMap, fmt::Display, time::Duration};
 use time::OffsetDateTime;
 
@@ -74,6 +75,13 @@ pub struct Index<Http: HttpClient = DefaultHttpClient> {
     #[serde(with = "time::serde::rfc3339::option")]
     pub created_at: Option<OffsetDateTime>,
     pub primary_key: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DocumentEditionByFunction {
+    pub filter: Option<Value>,
+    pub context: Option<Value>,
+    pub function: String,
 }
 
 impl<Http: HttpClient> Index<Http> {
@@ -326,6 +334,62 @@ impl<Http: HttpClient> Index<Http> {
             .request::<(), (), T>(&url, Method::Get { query: () }, 200)
             .await
     }
+
+    /// Add a new capability to update documents based on a function.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String
+    /// }
+    /// let function =  DocumentEditionByFunction {
+    ///     filter: None,
+    ///     context: None,
+    ///     function: "if doc[\"id\"] % 2 == 0 { doc[\"title\"] = \"The best movie\" }".to_string(),
+    /// };
+    ///
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let movies = client.index("update_documents_by_function");
+    /// let interstellar = movies.update_documents_by_function(function).await.expect("Error during test");
+    ///
+    /// assert_eq!(interstellar.status.len(), 2);
+    /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn update_documents_by_function(
+        &self,
+        function: DocumentEditionByFunction,
+    ) -> Result<TaskInfo, Error> {
+        let url = format!(
+            "{}/indexes/{}/documents/edit",
+            self.client.host, self.uid
+        );
+        
+
+         self.client
+            .http_client
+            .request::<(), DocumentEditionByFunction, TaskInfo>(
+                &url,
+                Method::Post {
+                    query: (),
+                    body: function,
+                },
+                202,
+            )
+            .await
+    }
+
 
     /// Get one document with parameters.
     ///
