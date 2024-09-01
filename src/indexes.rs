@@ -668,7 +668,7 @@ impl<Http: HttpClient> Index<Http> {
         self.add_or_replace(documents, primary_key).await
     }
 
-    /// Add a raw ndjson payload and update them if they already.
+    /// Add a raw ndjson payload and update them if they already exist.
     ///
     /// It configures the correct content type for ndjson data.
     ///
@@ -760,7 +760,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Add a raw csv payload and update them if they already.
+    /// Add a raw csv payload and update them if they already exist.
     ///
     /// It configures the correct content type for csv data.
     ///
@@ -850,7 +850,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Add a list of documents and update them if they already.
+    /// Add a list of documents and update them if they already exist.
     ///
     /// If you send an already existing document (same id) the old document will be only partially updated according to the fields of the new document.
     /// Thus, any fields not present in the new document are kept and remained unchanged.
