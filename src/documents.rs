@@ -16,6 +16,10 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// ## Index name
 /// The name of the index will be the name of the struct converted to snake case.
 ///
+/// Or it can be overridden with `#[index_config(index_name = "new_name")]` at the struct attribute level.
+///
+/// ⚠️ Struct and index names should follow the naming [guidelines](https://www.meilisearch.com/docs/learn/getting_started/indexes#index-uid)
+///
 /// ## Sample usage:
 /// ```
 /// use serde::{Serialize, Deserialize};
