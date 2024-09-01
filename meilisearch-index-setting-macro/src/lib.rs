@@ -22,6 +22,7 @@ struct StructAttrs {
 fn is_valid_name(name: &str) -> bool {
     name.chars()
         .all(|c| matches!(c, 'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_'))
+        && !name.is_empty()
 }
 
 #[proc_macro_derive(IndexConfig, attributes(index_config))]
