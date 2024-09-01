@@ -93,26 +93,26 @@ fn filter_attrs(attrs: &[Attribute]) -> impl Iterator<Item = &Attribute> {
 }
 
 fn get_index_name(struct_ident: &Ident, struct_attrs: &[Attribute]) -> proc_macro2::TokenStream {
-    filter_attrs(struct_attrs)
+    let (span, name) = filter_attrs(struct_attrs)
         .find_map(|attr| attr.parse_args::<StructAttrs>().ok())
         .map(|attr| {
             let index_name = attr.index_name;
             let span = index_name.name_span;
             let name = index_name.value.value();
 
-            if is_valid_name(&name) {
-                name.to_token_stream()
-            } else {
-                // Throw an error instead of silently using struct name
-                syn::Error::new(span, "Invalid index name").to_compile_error()
-            }
+            (span, name)
         })
         .unwrap_or_else(|| {
-            struct_ident
-                .to_string()
-                .to_case(Case::Snake)
-                .to_token_stream()
-        })
+            (
+                struct_ident.span(),
+                struct_ident.to_string().to_case(Case::Snake),
+            )
+        });
+
+    match is_valid_name(&name) {
+        true => name.to_token_stream(),
+        false => syn::Error::new(span, "Invalid index name").to_compile_error(),
+    }
 }
 
 fn get_index_config_implementation(
