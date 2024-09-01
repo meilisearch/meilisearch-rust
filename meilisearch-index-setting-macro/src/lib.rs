@@ -1,6 +1,6 @@
 use convert_case::{Case, Casing};
 use proc_macro2::Ident;
-use quote::{quote, ToTokens};
+use quote::quote;
 use structmeta::{Flag, NameValue, StructMeta};
 use syn::{parse_macro_input, spanned::Spanned, Attribute, LitStr};
 
@@ -16,7 +16,8 @@ struct FieldAttrs {
 
 #[derive(StructMeta)]
 struct StructAttrs {
-    index_name: NameValue<LitStr>,
+    index_name: Option<NameValue<LitStr>>,
+    max_total_hits: Option<NameValue<syn::Expr>>,
 }
 
 fn is_valid_name(name: &str) -> bool {
@@ -54,29 +55,6 @@ fn filter_attrs(attrs: &[Attribute]) -> impl Iterator<Item = &Attribute> {
         .filter(|attr| attr.path().is_ident("index_config"))
 }
 
-fn get_index_name(struct_ident: &Ident, struct_attrs: &[Attribute]) -> proc_macro2::TokenStream {
-    let (span, name) = filter_attrs(struct_attrs)
-        .find_map(|attr| attr.parse_args::<StructAttrs>().ok())
-        .map(|attr| {
-            let index_name = attr.index_name;
-            let span = index_name.name_span;
-            let name = index_name.value.value();
-
-            (span, name)
-        })
-        .unwrap_or_else(|| {
-            (
-                struct_ident.span(),
-                struct_ident.to_string().to_case(Case::Snake),
-            )
-        });
-
-    match is_valid_name(&name) {
-        true => name.to_token_stream(),
-        false => syn::Error::new(span, "Invalid index name").to_compile_error(),
-    }
-}
-
 fn get_index_config_implementation(
     struct_ident: &Ident,
     fields: &syn::Fields,
@@ -89,7 +67,33 @@ fn get_index_config_implementation(
     let mut filterable_attributes = vec![];
     let mut sortable_attributes = vec![];
 
-    let index_name = get_index_name(struct_ident, &attrs);
+    let mut index_name_override = None;
+
+    let mut max_total_hits = None;
+
+    let struct_attrs =
+        filter_attrs(&attrs).filter_map(|attr| attr.parse_args::<StructAttrs>().ok());
+    for struct_attr in struct_attrs {
+        if let Some(index_name_value) = struct_attr.index_name {
+            index_name_override = Some((index_name_value.value.value(), index_name_value.name_span))
+        }
+
+        if let Some(max_total_hits_value) = struct_attr.max_total_hits {
+            max_total_hits = Some(max_total_hits_value.value)
+        }
+    }
+
+    let (index_name, span) = index_name_override.unwrap_or_else(|| {
+        (
+            struct_ident.to_string().to_case(Case::Snake),
+            struct_ident.span(),
+        )
+    });
+
+    if !is_valid_name(&index_name) {
+        return syn::Error::new(span, "Index must follow the naming guidelines.")
+            .to_compile_error();
+    }
 
     let mut primary_key_found = false;
     let mut distinct_found = false;
@@ -162,6 +166,8 @@ fn get_index_config_implementation(
         "with_distinct_attribute",
     );
 
+    let pagination_token = get_pagination_token(&max_total_hits, "with_pagination");
+
     quote! {
         #[::meilisearch_sdk::macro_helper::async_trait(?Send)]
         impl ::meilisearch_sdk::documents::IndexConfig for #struct_ident {
@@ -174,6 +180,7 @@ fn get_index_config_implementation(
                 #filterable_attr_tokens
                 #searchable_attr_tokens
                 #distinct_attr_token
+                #pagination_token
             }
 
             async fn generate_index<Http: ::meilisearch_sdk::request::HttpClient>(client: &::meilisearch_sdk::client::Client<Http>) -> std::result::Result<::meilisearch_sdk::indexes::Index<Http>, ::meilisearch_sdk::tasks::Task> {
@@ -184,6 +191,20 @@ fn get_index_config_implementation(
                     .try_make_index(client)
             }
         }
+    }
+}
+
+fn get_pagination_token(
+    max_hits: &Option<syn::Expr>,
+    method_name: &str,
+) -> proc_macro2::TokenStream {
+    let method_ident = Ident::new(method_name, proc_macro2::Span::call_site());
+
+    match max_hits {
+        Some(value) => {
+            quote! { .#method_ident(::meilisearch_sdk::settings::PaginationSetting { max_total_hits: #value }) }
+        }
+        None => quote! {},
     }
 }
 
