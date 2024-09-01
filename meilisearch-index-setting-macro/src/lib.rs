@@ -1,3 +1,42 @@
+/*!
+# Usage
+
+### Basic usage
+```no_run
+use meilisearch_index_setting_macro::IndexConfig;
+use meilisearch_sdk::documents::IndexConfig as IndexConfigTrait;
+
+#[derive(IndexConfig)]
+pub struct Products {
+    #[index_config(primary_key)]
+    pub id: i64,
+    #[index_config(searchable, filterable)]
+    pub name: String
+}
+
+#[tokio::main]
+async fn main() {
+    let client = ...;
+    let index = Products::generate_index(&client).await.unwrap();
+    let _ = index.set_settings(&Products::generate_settings()).await.unwrap();
+}
+```
+
+### Overriding index name
+```no_run
+use meilisearch_index_setting_macro::IndexConfig;
+
+#[derive(IndexConfig)]
+#[index_config(index_name = "unique_products")]
+pub struct Products {
+    #[index_config(primary_key)]
+    pub id: i64,
+    #[index_config(searchable, filterable)]
+    pub name: String
+}
+```
+*/
+
 use convert_case::{Case, Casing};
 use proc_macro2::Ident;
 use quote::quote;
