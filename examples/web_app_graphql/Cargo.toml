@@ -10,7 +10,7 @@ authors = ["Eugene Korir <korir16071@gmail.com>"]
 actix-cors = "0.7.0"
 actix-web = "4.4.0"
 async-graphql = "6.0.11"
-async-graphql-actix-web = "6.0.11"
+async-graphql-actix-web = "7.0.11"
 diesel = { version = "2.1.4", features = ["postgres"] }
 diesel-async = { version = "0.5.0", features = ["postgres", "deadpool"] }
 diesel_migrations = "2.1.0"
