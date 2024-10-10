@@ -1739,3 +1739,12 @@ search_parameter_reference_ranking_score_threshold_1: |-
     .execute()
     .await
     .unwrap();
+search_parameter_reference_locales_1: |-
+  let res = client
+    .index("books")
+    .search()
+    .with_query("進撃の巨人")
+    .with_locales(&["jpn"])
+    .execute()
+    .await
+    .unwrap();
