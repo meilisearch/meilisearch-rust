@@ -119,6 +119,9 @@ pub struct Settings {
     /// Remove tokens from Meilisearch's default [list of word separators](https://www.meilisearch.com/docs/learn/engine/datatypes#string).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub non_separator_tokens: Option<Vec<String>>,
+    /// LocalizedAttributes settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub localized_attributes: Option<Vec<LocalizedAttributes>>,
 }
 
 #[allow(missing_docs)]
@@ -340,6 +343,17 @@ impl Settings {
                     .map(|v| v.as_ref().to_string())
                     .collect(),
             ),
+            ..self
+        }
+    }
+
+    #[must_use]
+    pub fn with_localized_attributes(
+        self,
+        localized_attributes: impl IntoIterator<Item = LocalizedAttributes>,
+    ) -> Settings {
+        Settings {
+            localized_attributes: Some(localized_attributes.into_iter().collect()),
             ..self
         }
     }
