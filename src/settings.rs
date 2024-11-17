@@ -92,7 +92,16 @@ pub struct HuggingFaceEmbedderSettings {
     /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
     ///
     /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
-    /// Example: "A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"
+    /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
+    /// 
+    /// Default:
+    /// ```raw
+    /// {% for field in fields %}
+    /// {% if field.is_searchable and not field.value == nil %}
+    /// {{ field.name }}: {{ field.value }}\n
+    /// {% endif %}
+    /// {% endfor %}
+    /// ```
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
 }
@@ -121,7 +130,7 @@ pub struct OpenapiEmbedderSettings {
     /// Use [tier 2 keys](https://platform.openai.com/docs/guides/rate-limits/usage-tiers?context=tier-two) or above for optimal performance.
     pub api_key: String,
     /// The openapi model name
-    /// Default: `text-embedding-ada-002`
+    /// Default: `text-embedding-3-small`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
     /// Defaults to the default for said model name
@@ -134,7 +143,16 @@ pub struct OpenapiEmbedderSettings {
     /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
     ///
     /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
-    /// Example: "A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"
+    /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
+    /// 
+    /// Default:
+    /// ```raw
+    /// {% for field in fields %}
+    /// {% if field.is_searchable and not field.value == nil %}
+    /// {{ field.name }}: {{ field.value }}\n
+    /// {% endif %}
+    /// {% endfor %}
+    /// ```
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
 }
@@ -185,7 +203,16 @@ pub struct OllamaEmbedderSettings {
     /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
     ///
     /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
-    /// Example: "A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"
+    /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
+    /// 
+    /// Default:
+    /// ```raw
+    /// {% for field in fields %}
+    /// {% if field.is_searchable and not field.value == nil %}
+    /// {{ field.name }}: {{ field.value }}\n
+    /// {% endif %}
+    /// {% endfor %}
+    /// ```
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
 }
@@ -249,6 +276,15 @@ pub struct GenericRestEmbedderSettings {
     ///
     /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
     /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
+    /// 
+    /// Default:
+    /// ```raw
+    /// {% for field in fields %}
+    /// {% if field.is_searchable and not field.value == nil %}
+    /// {{ field.name }}: {{ field.value }}\n
+    /// {% endif %}
+    /// {% endfor %}
+    /// ```
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
     /// A JSON value that represents the request made by Meilisearch to the remote embedder.
