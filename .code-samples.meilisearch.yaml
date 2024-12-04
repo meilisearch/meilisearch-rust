@@ -1739,3 +1739,34 @@ search_parameter_reference_ranking_score_threshold_1: |-
     .execute()
     .await
     .unwrap();
+search_parameter_reference_locales_1: |-
+  let res = client
+    .index("books")
+    .search()
+    .with_query("進撃の巨人")
+    .with_locales(&["jpn"])
+    .execute()
+    .await
+    .unwrap();
+get_localized_attribute_settings_1: |-
+  let localized_attributes: Option<Vec<LocalizedAttributes>> = client
+    .index("books")
+    .get_localized_attributes()
+    .await
+    .unwrap();
+update_localized_attribute_settings_1: |-
+  let localized_attributes = vec![LocalizedAttributes {
+      locales: vec!["jpn".to_string()],
+      attribute_patterns: vec!["*_ja".to_string()],
+  }];
+  let task: TaskInfo = client
+    .index("books")
+    .set_localized_attributes(&localizced_attributes)
+    .await
+    .unwrap();
+reset_localized_attribute_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .reset_localized_attributes()
+    .await
+    .unwrap();

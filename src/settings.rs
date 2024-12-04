@@ -36,6 +36,13 @@ pub struct FacetingSettings {
     pub max_values_per_facet: usize,
 }
 
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalizedAttributes {
+    pub locales: Vec<String>,
+    pub attribute_patterns: Vec<String>,
+}
+
 /// Struct reprensenting a set of settings.
 ///
 /// You can build this struct using the builder syntax.
@@ -112,6 +119,9 @@ pub struct Settings {
     /// Remove tokens from Meilisearch's default [list of word separators](https://www.meilisearch.com/docs/learn/engine/datatypes#string).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub non_separator_tokens: Option<Vec<String>>,
+    /// LocalizedAttributes settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub localized_attributes: Option<Vec<LocalizedAttributes>>,
 }
 
 #[allow(missing_docs)]
@@ -333,6 +343,17 @@ impl Settings {
                     .map(|v| v.as_ref().to_string())
                     .collect(),
             ),
+            ..self
+        }
+    }
+
+    #[must_use]
+    pub fn with_localized_attributes(
+        self,
+        localized_attributes: impl IntoIterator<Item = LocalizedAttributes>,
+    ) -> Settings {
+        Settings {
+            localized_attributes: Some(localized_attributes.into_iter().collect()),
             ..self
         }
     }
@@ -892,6 +913,39 @@ impl<Http: HttpClient> Index<Http> {
             .request::<(), (), Vec<String>>(
                 &format!(
                     "{}/indexes/{}/settings/non-separator-tokens",
+                    self.client.host, self.uid
+                ),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Get [localized attributes](https://www.meilisearch.com/docs/reference/api/settings#localized-attributes-object) settings of the [Index].
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::LocalizedAttributes};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("get_localized_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_localized_attributes");
+    ///
+    /// let localized_attributes = index.get_localized_attributes().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_localized_attributes(
+        &self,
+    ) -> Result<Option<Vec<LocalizedAttributes>>, Error> {
+        self.client
+            .http_client
+            .request::<(), (), Option<Vec<LocalizedAttributes>>>(
+                &format!(
+                    "{}/indexes/{}/settings/localized-attributes",
                     self.client.host, self.uid
                 ),
                 Method::Get { query: () },
@@ -1611,6 +1665,50 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
+    /// Update [localized attributes](https://www.meilisearch.com/docs/reference/api/settings#localized-attributes-object) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings, settings::{LocalizedAttributes}};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("set_localized_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_localized_attributes");
+    ///
+    /// let localized_attributes = vec![LocalizedAttributes {
+    ///     locales: vec!["jpn".to_string()],
+    ///     attribute_patterns: vec!["*_ja".to_string()],
+    /// }];
+    ///
+    /// let task = index.set_localized_attributes(&localized_attributes).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_localized_attributes(
+        &self,
+        localized_attributes: &Vec<LocalizedAttributes>,
+    ) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), &Vec<LocalizedAttributes>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/localized-attributes",
+                    self.client.host, self.uid
+                ),
+                Method::Put {
+                    query: (),
+                    body: localized_attributes,
+                },
+                202,
+            )
+            .await
+    }
+
     /// Reset [Settings] of the [Index].
     ///
     /// All settings will be reset to their [default value](https://www.meilisearch.com/docs/reference/api/settings#reset-settings).
@@ -2172,6 +2270,39 @@ impl<Http: HttpClient> Index<Http> {
             )
             .await
     }
+
+    /// Reset [localized attributes](https://www.meilisearch.com/docs/reference/api/settings#localized-attributes-object) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("reset_localized_attributes", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("reset_localized_attributes");
+    ///
+    /// let task = index.reset_localized_attributes().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_localized_attributes(&self) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/localized-attributes",
+                    self.client.host, self.uid
+                ),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
+    }
 }
 
 #[cfg(test)]
@@ -2521,5 +2652,46 @@ mod tests {
 
         let res = index.get_dictionary().await.unwrap();
         assert_eq!(separator, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_localized_attributes(index: Index) {
+        let res = index.get_localized_attributes().await.unwrap();
+        assert_eq!(None, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_localized_attributes(client: Client, index: Index) {
+        let localized_attributes = vec![LocalizedAttributes {
+            locales: vec!["jpn".to_string()],
+            attribute_patterns: vec!["*_ja".to_string()],
+        }];
+        let task_info = index
+            .set_localized_attributes(&localized_attributes)
+            .await
+            .unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_localized_attributes().await.unwrap();
+        assert_eq!(Some(localized_attributes), res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_localized_attributes(client: Client, index: Index) {
+        let localized_attributes = vec![LocalizedAttributes {
+            locales: vec!["jpn".to_string()],
+            attribute_patterns: vec!["*_ja".to_string()],
+        }];
+        let task_info = index
+            .set_localized_attributes(&localized_attributes)
+            .await
+            .unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let reset_task = index.reset_localized_attributes().await.unwrap();
+        client.wait_for_task(reset_task, None, None).await.unwrap();
+
+        let res = index.get_localized_attributes().await.unwrap();
+        assert_eq!(None, res);
     }
 }
