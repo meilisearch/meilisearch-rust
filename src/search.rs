@@ -66,6 +66,9 @@ pub struct SearchResult<T> {
     pub ranking_score: Option<f64>,
     #[serde(rename = "_rankingScoreDetails")]
     pub ranking_score_details: Option<Map<String, Value>>,
+    /// Only returned for federated multi search.
+    #[serde(rename = "_federation")]
+    pub federation: Option<FederationHitInfo>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -624,7 +627,6 @@ pub struct MultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
     pub queries: Vec<SearchQuery<'b, Http>>,
 }
 
-
 #[allow(missing_docs)]
 impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
     #[must_use]
@@ -642,6 +644,17 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
         self.queries.push(search_query);
         self
     }
+    /// Adds the `federation` parameter, making the search a federated search.
+    pub fn with_federation(
+        self,
+        federation: FederationOptions,
+    ) -> FederatedMultiSearchQuery<'a, 'b, Http> {
+        FederatedMultiSearchQuery {
+            client: self.client,
+            queries: self.queries,
+            federation: Some(federation),
+        }
+    }
 
     /// Execute the query and fetch the results.
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
@@ -653,6 +666,78 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
 #[derive(Debug, Clone, Deserialize)]
 pub struct MultiSearchResponse<T> {
     pub results: Vec<SearchResults<T>>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FederatedMultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
+    #[serde(skip_serializing)]
+    client: &'a Client<Http>,
+    #[serde(bound(serialize = ""))]
+    pub queries: Vec<SearchQuery<'b, Http>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub federation: Option<FederationOptions>,
+}
+
+/// The `federation` field of the multi search API.
+/// See [the docs](https://www.meilisearch.com/docs/reference/api/multi_search#federation).
+#[derive(Debug, Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct FederationOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub offset: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub facets_by_index: Option<HashMap<String, Vec<String>>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub merge_facets: Option<bool>,
+}
+
+#[allow(missing_docs)]
+impl<'a, Http: HttpClient> FederatedMultiSearchQuery<'a, '_, Http> {
+    /// Execute the query and fetch the results.
+    pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
+        &'a self,
+    ) -> Result<FederatedMultiSearchResponse<T>, Error> {
+        self.client
+            .execute_federated_multi_search_query::<T>(self)
+            .await
+    }
+}
+
+/// Returned by federated multi search.
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FederatedMultiSearchResponse<T> {
+    /// Merged results of the query.
+    pub hits: Vec<SearchResult<T>>,
+
+    // TODO: are offset, limit and estimated_total_hits really non-optional? In
+    // my tests they are always returned, but that's not a proof.
+    /// Number of documents skipped.
+    pub offset: usize,
+    /// Number of results returned.
+    pub limit: usize,
+    /// Estimated total number of matches.
+    pub estimated_total_hits: usize,
+
+    /// Distribution of the given facets.
+    pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
+    /// facet stats of the numerical facets requested in the `facet` search parameter.
+    pub facet_stats: Option<HashMap<String, FacetStats>>,
+    /// Processing time of the query.
+    pub processing_time_ms: usize,
+}
+
+/// Returned for each hit in `_federation` when doing federated multi search.
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FederationHitInfo {
+    pub index_uid: String,
+    pub queries_position: usize,
+    // TOOD: not mentioned in the docs, is that optional?
+    pub weighted_ranking_score: f32,
 }
 
 #[cfg(test)]
