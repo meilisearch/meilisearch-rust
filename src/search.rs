@@ -2,7 +2,7 @@ use crate::{
     client::Client, errors::Error, indexes::Index, request::HttpClient, DefaultHttpClient,
 };
 use either::Either;
-use serde::{de::DeserializeOwned, ser::SerializeStruct, Deserialize, Serialize, Serializer};
+use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
@@ -611,26 +611,19 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
 }
 
-// TODO: Make it works with the serde derive macro
-// #[derive(Debug, Serialize, Clone)]
-// #[serde(rename_all = "camelCase")]
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
-    // #[serde(skip_serializing)]
+    #[serde(skip_serializing)]
     client: &'a Client<Http>,
+    // The weird `serialize = ""` is actually useful: without it, serde adds the
+    // bound `Http: Serialize` to the `Serialize` impl block, but that's not
+    // necessary. `SearchQuery` always implements `Serialize` (regardless of
+    // type parameter), so no bound is fine.
+    #[serde(bound(serialize = ""))]
     pub queries: Vec<SearchQuery<'b, Http>>,
 }
 
-impl<Http: HttpClient> Serialize for MultiSearchQuery<'_, '_, Http> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut strukt = serializer.serialize_struct("MultiSearchQuery", 1)?;
-        strukt.serialize_field("queries", &self.queries)?;
-        strukt.end()
-    }
-}
 
 #[allow(missing_docs)]
 impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
