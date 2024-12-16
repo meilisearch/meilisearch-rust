@@ -364,6 +364,16 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) federation_options: Option<QueryFederationOptions>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryFederationOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weight: Option<f32>,
 }
 
 #[allow(missing_docs)]
@@ -396,6 +406,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             distinct: None,
             ranking_score_threshold: None,
             locales: None,
+            federation_options: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
@@ -601,6 +612,14 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
     pub fn with_locales<'b>(&'b mut self, locales: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
         self.locales = Some(locales);
+        self
+    }
+    /// Only usable in federated multi search queries.
+    pub fn with_federation_options<'b>(
+        &'b mut self,
+        federation_options: QueryFederationOptions,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.federation_options = Some(federation_options);
         self
     }
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
