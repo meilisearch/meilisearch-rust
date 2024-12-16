@@ -21,7 +21,7 @@ pub struct Filter<'a> {
 
 impl<'a> Filter<'a> {
     #[must_use]
-    pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter {
+    pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter<'a> {
         Filter { inner }
     }
 }
