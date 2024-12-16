@@ -68,7 +68,6 @@ pub enum Error {
 
 #[derive(Debug, Clone, Deserialize, Error)]
 #[serde(rename_all = "camelCase")]
-
 pub struct MeilisearchCommunicationError {
     pub status_code: u16,
     pub message: Option<String>,
