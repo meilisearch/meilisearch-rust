@@ -93,7 +93,7 @@ pub struct HuggingFaceEmbedderSettings {
     ///
     /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
     /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
-    /// 
+    ///
     /// Default:
     /// ```raw
     /// {% for field in fields %}
@@ -144,7 +144,7 @@ pub struct OpenapiEmbedderSettings {
     ///
     /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
     /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
-    /// 
+    ///
     /// Default:
     /// ```raw
     /// {% for field in fields %}
@@ -204,7 +204,7 @@ pub struct OllamaEmbedderSettings {
     ///
     /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
     /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
-    /// 
+    ///
     /// Default:
     /// ```raw
     /// {% for field in fields %}
@@ -276,7 +276,7 @@ pub struct GenericRestEmbedderSettings {
     ///
     /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
     /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
-    /// 
+    ///
     /// Default:
     /// ```raw
     /// {% for field in fields %}
