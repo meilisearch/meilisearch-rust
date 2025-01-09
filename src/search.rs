@@ -21,7 +21,7 @@ pub struct Filter<'a> {
 
 impl<'a> Filter<'a> {
     #[must_use]
-    pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter {
+    pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter<'a> {
         Filter { inner }
     }
 }
@@ -601,7 +601,7 @@ pub struct MultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
     pub queries: Vec<SearchQuery<'b, Http>>,
 }
 
-impl<'a, 'b, Http: HttpClient> Serialize for MultiSearchQuery<'a, 'b, Http> {
+impl<Http: HttpClient> Serialize for MultiSearchQuery<'_, '_, Http> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
