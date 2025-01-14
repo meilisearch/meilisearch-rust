@@ -10,6 +10,17 @@ use std::collections::HashMap;
 pub struct MatchRange {
     pub start: usize,
     pub length: usize,
+
+    /// If the match is somewhere inside a (potentially nested) array, this
+    /// field is set to the index/indices of the matched element(s).
+    ///
+    /// In the simple case, if the field has the value `["foo", "bar"]`, then
+    /// searching for `ba` will return `indices: Some([1])`. If the value
+    /// contains multiple nested arrays, the first index describes the most
+    /// top-level array, and descending from there. For example, if the value is
+    /// `[{ x: "cat" }, "bear", { y: ["dog", "fox"] }]`, searching for `dog`
+    /// will return `indices: Some([2, 0])`.
+    pub indices: Option<Vec<usize>>,
 }
 
 #[derive(Serialize, Debug, Eq, PartialEq, Clone)]
@@ -1122,7 +1133,8 @@ mod tests {
                 .unwrap(),
             &vec![MatchRange {
                 start: 0,
-                length: 5
+                length: 5,
+                indices: None,
             }]
         );
         Ok(())
