@@ -551,6 +551,10 @@ pub struct TasksQuery<'a, T, Http: HttpClient> {
 
     #[serde(flatten)]
     pagination: T,
+
+    // Whether to reverse the sort
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reverse: Option<bool>,
 }
 
 #[allow(missing_docs)]
@@ -632,6 +636,10 @@ impl<'a, T, Http: HttpClient> TasksQuery<'a, T, Http> {
         self.canceled_by = Some(task_uids.into_iter().collect());
         self
     }
+    pub fn with_reverse<'b>(&'b mut self, reverse: bool) -> &'b mut TasksQuery<'a, T, Http> {
+        self.reverse = Some(reverse);
+        self
+    }
 }
 
 impl<'a, Http: HttpClient> TasksQuery<'a, TasksCancelFilters, Http> {
@@ -650,6 +658,7 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksCancelFilters, Http> {
             after_started_at: None,
             before_finished_at: None,
             after_finished_at: None,
+            reverse: None,
             pagination: TasksCancelFilters {},
         }
     }
@@ -676,6 +685,7 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksDeleteFilters, Http> {
             before_finished_at: None,
             after_finished_at: None,
             pagination: TasksDeleteFilters {},
+            reverse: None,
         }
     }
 
@@ -704,6 +714,7 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksPaginationFilters, Http> {
                 limit: None,
                 from: None,
             },
+            reverse: None,
         }
     }
     pub fn with_limit<'b>(
@@ -904,7 +915,7 @@ mod test {
         let mock_server_url = s.url();
         let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
         let path =
-            "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1";
+            "/tasks?indexUids=movies,test&statuses=equeued&types=documentDeletion&uids=1&limit=0&from=1&reverse=true";
 
         let mock_res = s.mock("GET", path).with_status(200).create_async().await;
 
@@ -915,7 +926,8 @@ mod test {
             .with_types(["documentDeletion"])
             .with_from(1)
             .with_limit(0)
-            .with_uids([&1]);
+            .with_uids([&1])
+            .with_reverse(true);
 
         let _ = client.get_tasks_with(&query).await;
 
