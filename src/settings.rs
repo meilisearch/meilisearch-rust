@@ -1714,10 +1714,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn set_facet_search(
-        &self,
-        facet_search: bool,
-    ) -> Result<TaskInfo, Error> {
+    pub async fn set_facet_search(&self, facet_search: bool) -> Result<TaskInfo, Error> {
         self.client
             .http_client
             .request::<(), bool, TaskInfo>(
@@ -1753,10 +1750,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn set_prefix_search(
-        &self,
-        prefix_search: String,
-    ) -> Result<TaskInfo, Error> {
+    pub async fn set_prefix_search(&self, prefix_search: String) -> Result<TaskInfo, Error> {
         self.client
             .http_client
             .request::<(), String, TaskInfo>(
@@ -2781,10 +2775,7 @@ mod tests {
     async fn test_set_facet_search(client: Client, index: Index) {
         let expected = false;
 
-        let task_info = index
-            .set_facet_search(false)
-            .await
-            .unwrap();
+        let task_info = index.set_facet_search(false).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
 
         let res = index.get_facet_search().await.unwrap();
@@ -2796,10 +2787,7 @@ mod tests {
     async fn test_reset_facet_search(index: Index) {
         let expected = true;
 
-        let task = index
-            .set_facet_search(false)
-            .await
-            .unwrap();
+        let task = index.set_facet_search(false).await.unwrap();
         index.wait_for_task(task, None, None).await.unwrap();
 
         let reset_task = index.reset_facet_search().await.unwrap();
