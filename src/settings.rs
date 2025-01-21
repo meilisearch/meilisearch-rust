@@ -828,6 +828,39 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
+    /// Get [prefix-search settings](https://www.meilisearch.com/docs/reference/api/settings#prefix-search) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("get_prefix_search", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_prefix_search");
+    ///
+    /// let prefix_search = index.get_prefix_search().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_prefix_search(&self) -> Result<String, Error> {
+        self.client
+            .http_client
+            .request::<(), (), String>(
+                &format!(
+                    "{}/indexes/{}/settings/prefix-search",
+                    self.client.host, self.uid
+                ),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
     /// Get [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) of the [Index].
     ///
     /// ```
@@ -1701,6 +1734,45 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
+    /// update [prefix-search settings](https://www.meilisearch.com/docs/reference/api/settings#prefix-search) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("set_prefix_search", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("set_prefix_search");
+    ///
+    /// let task = index.set_prefix_search("disabled".to_string()).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_prefix_search(
+        &self,
+        prefix_search: String,
+    ) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), String, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/prefix-search",
+                    self.client.host, self.uid
+                ),
+                Method::Put {
+                    query: (),
+                    body: prefix_search,
+                },
+                202,
+            )
+            .await
+    }
+
     /// Update [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
     ///
     /// # Example
@@ -2277,6 +2349,39 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
+    /// Reset [prefix-search settings](https://www.meilisearch.com/docs/reference/api/settings#prefix-search) settings of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("reset_prefix_search", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_prefix_search");
+    ///
+    /// let task = index.reset_prefix_search().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_prefix_search(&self) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/prefix-search",
+                    self.client.host, self.uid
+                ),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
+    }
+
     /// Reset [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
     ///
     /// # Example
@@ -2701,6 +2806,48 @@ mod tests {
         index.wait_for_task(reset_task, None, None).await.unwrap();
 
         let default = index.get_facet_search().await.unwrap();
+
+        assert_eq!(expected, default);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_prefix_search(index: Index) {
+        let expected = "indexingTime".to_string();
+
+        let res = index.get_prefix_search().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_prefix_search(client: Client, index: Index) {
+        let expected = "disabled".to_string();
+
+        let task_info = index
+            .set_prefix_search("disabled".to_string())
+            .await
+            .unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_prefix_search().await.unwrap();
+
+        assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_prefix_search(index: Index) {
+        let expected = "indexingTime".to_string();
+
+        let task = index
+            .set_prefix_search("disabled".to_string())
+            .await
+            .unwrap();
+        index.wait_for_task(task, None, None).await.unwrap();
+
+        let reset_task = index.reset_prefix_search().await.unwrap();
+        index.wait_for_task(reset_task, None, None).await.unwrap();
+
+        let default = index.get_prefix_search().await.unwrap();
 
         assert_eq!(expected, default);
     }
