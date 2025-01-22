@@ -8,7 +8,7 @@ use thiserror::Error;
 pub enum Error {
     /// The exhaustive list of Meilisearch errors: <https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md>
     ///
-    /// Also check out: <https://github.com/meilisearch/Meilisearch/blob/main/meilisearch-error/src/lib.rs>
+    /// Also check out: <https://github.com/meilisearch/meilisearch/blob/main/crates/meilisearch-types/src/error.rs>
     #[error(transparent)]
     Meilisearch(#[from] MeilisearchError),
 

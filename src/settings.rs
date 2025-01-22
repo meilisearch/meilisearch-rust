@@ -795,7 +795,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) of the [Index].
+    /// Get [typo tolerance](https://www.meilisearch.com/docs/reference/api/settings#typo-tolerance) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -1462,7 +1462,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
+    /// Update [typo tolerance](https://www.meilisearch.com/docs/reference/api/settings#typo-tolerance) settings of the [Index].
     ///
     /// # Example
     ///
@@ -1590,7 +1590,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [proximity-precision](https://www.meilisearch.com/docs/learn/configuration/proximity-precision) settings of the [Index].
+    /// Update [proximity-precision](https://www.meilisearch.com/docs/reference/api/settings#proximity-precision) settings of the [Index].
     ///
     /// # Example
     ///
@@ -1973,7 +1973,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [searchable attributes](https://www.meilisearch.com/docs/learn/configuration/displayed_searchable_attributes#searchable-fields) of
+    /// Reset [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings#searchable-attributes) of
     /// the [Index] (enable all attributes).
     ///
     /// # Example
@@ -2106,7 +2106,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [typo tolerance](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
+    /// Reset [typo tolerance](https://www.meilisearch.com/docs/reference/api/settings#typo-tolerance) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2139,7 +2139,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [proximity precision](https://www.meilisearch.com/docs/learn/configuration/typo_tolerance#typo-tolerance) settings of the [Index].
+    /// Reset [proximity precision](https://www.meilisearch.com/docs/reference/api/settings#proximity-precision) settings of the [Index].
     ///
     /// # Example
     ///
