@@ -36,7 +36,6 @@ pub struct FacetingSettings {
     pub max_values_per_facet: usize,
 }
 
-/// EXPERIMENTAL
 /// Allows configuring semantic searching
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase", tag = "source")]
@@ -45,19 +44,20 @@ pub enum Embedder {
     /// You may be able to significantly improve performance by [compiling a CUDA-compatible Meilisearch binary](https://www.meilisearch.com/docs/guides/ai/computing_hugging_face_embeddings_gpu).
     /// This is a resource-intensive operation and might affect indexing performance negatively.
     HuggingFace(HuggingFaceEmbedderSettings),
-    /// Use OpenAi's API to generate embeddings
+    /// Use OpenAI's API to generate embeddings
     /// Depending on hardware, this is a
-    OpenAi(OpenapiEmbedderSettings),
+    OpenAI(OpenAIEmbedderSettings),
     /// [Ollama](https://ollama.com/) is a framework for building and running language models locally.
     Ollama(OllamaEmbedderSettings),
     /// Supports arbitrary embedders which supply a [REST](https://en.wikipedia.org/wiki/REST) interface
     REST(GenericRestEmbedderSettings),
-    /// Provide custom embeddings.
-    /// In this case, you must manually update your embeddings when adding, updating, and removing documents to your index.
+    /// Provide custom embeddings
+    ///
+    /// When using a custom embedder, you must vectorize both your documents (both for adding and updating documents) and user queries
     UserProvided(UserProvidedEmbedderSettings),
 }
 
-/// EXPERIMENTAL
+/// Settings for configuring [Ollama](https://ollama.com/) embedders
 ///
 /// # Example
 /// ```
@@ -106,25 +106,25 @@ pub struct HuggingFaceEmbedderSettings {
     pub document_template: Option<String>,
 }
 
-/// EXPERIMENTAL
+/// Settings for configuring [OpenAI](https://openai.com/) embedders
 ///
 /// # Example
 /// ```
-/// # use meilisearch_sdk::settings::OpenapiEmbedderSettings;
-/// let embedder_setting = OpenapiEmbedderSettings {
-///   api_key: "anOpenAiApiKey".to_string(),
+/// # use meilisearch_sdk::settings::OpenAIEmbedderSettings;
+/// let embedder_setting = OpenAIEmbedderSettings {
+///   api_key: "anOpenAIApiKey".to_string(),
 ///   model: Some("text-embedding-3-small".to_string()),
 ///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
 ///   dimensions: Some(1536),
 ///   ..Default::default()
 /// };
-/// # let expected = r#"{"apiKey":"anOpenAiApiKey","model":"text-embedding-3-small","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}","dimensions":1536}"#;
-/// # let expected: OpenapiEmbedderSettings = serde_json::from_str(expected).unwrap();
+/// # let expected = r#"{"apiKey":"anOpenAIApiKey","model":"text-embedding-3-small","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}","dimensions":1536}"#;
+/// # let expected: OpenAIEmbedderSettings = serde_json::from_str(expected).unwrap();
 /// # assert_eq!(embedder_setting, expected);
 /// ```
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct OpenapiEmbedderSettings {
+pub struct OpenAIEmbedderSettings {
     /// API key used to authorize against OpenAI.
     /// [Generate an API key](https://platform.openai.com/api-keys) from your OpenAI account.
     /// Use [tier 2 keys](https://platform.openai.com/docs/guides/rate-limits/usage-tiers?context=tier-two) or above for optimal performance.
@@ -157,7 +157,7 @@ pub struct OpenapiEmbedderSettings {
     pub document_template: Option<String>,
 }
 
-/// EXPERIMENTAL
+/// Settings for configuring [Ollama](https://ollama.com/) embedders
 ///
 /// # Example
 /// ```
@@ -217,7 +217,7 @@ pub struct OllamaEmbedderSettings {
     pub document_template: Option<String>,
 }
 
-/// EXPERIMENTAL
+/// Settings for configuring generic [REST](https://en.wikipedia.org/wiki/REST) embedders
 ///
 /// # Example
 /// ```
@@ -323,7 +323,9 @@ pub struct GenericRestEmbedderSettings {
     pub headers: HashMap<String, String>,
 }
 
-/// EXPERIMENTAL
+/// Settings for user provided embedder
+///
+/// When using a custom embedder, you must vectorize both your documents and user queries.
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
 pub struct UserProvidedEmbedderSettings {
     /// dimensions of your custom embedding
@@ -404,8 +406,7 @@ pub struct Settings {
     /// Proximity precision settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proximity_precision: Option<String>,
-    /// EXPERIMENTAL
-    /// Settings how the embeddings for the experimental vector search feature are generated
+    /// Settings how the embeddings for the vector search feature are generated
     #[serde(skip_serializing_if = "Option::is_none")]
     pub embedders: Option<HashMap<String, Embedder>>,
     /// SearchCutoffMs settings.
@@ -606,8 +607,7 @@ impl Settings {
         }
     }
 
-    /// EXPERIMENTAL
-    /// Set the [embedders](https://www.meilisearch.com/docs/learn/experimental/vector_search) of the [Index].
+    /// Set the [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
     #[must_use]
     pub fn with_embedders<S>(self, embedders: HashMap<S, Embedder>) -> Settings
     where
@@ -1142,13 +1142,12 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// EXPERIMENTAL
-    /// Get [embedders](https://www.meilisearch.com/docs/learn/experimental/vector_search) of the [Index].
+    /// Get [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
     ///
     /// ```
     /// # use std::collections::HashMap;
     /// # use std::string::String;
-    /// # use meilisearch_sdk::{indexes::*,features::ExperimentalFeatures,settings::Embedder,settings::UserProvidedEmbedderSettings,settings::Settings,client::*};
+    /// # use meilisearch_sdk::{indexes::*,settings::Embedder,settings::UserProvidedEmbedderSettings,settings::Settings,client::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -1157,12 +1156,8 @@ impl<Http: HttpClient> Index<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("get_embedders", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_embedders");
-    ///
-    /// # let mut features = ExperimentalFeatures::new(&client);
-    /// # features.set_vector_store(true);
-    /// # let res = features.update().await.unwrap();
     /// #
-    /// # let t=index.set_settings(&Settings{
+    /// # let t = index.set_settings(&Settings{
     /// #     embedders:Some(HashMap::from([(String::from("default"),Embedder::UserProvided(UserProvidedEmbedderSettings{dimensions:1}))])),
     /// #     ..Settings::default()
     /// # }).await.unwrap();
@@ -2532,8 +2527,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// EXPERIMENTAL
-    /// Reset [embedders](https://www.meilisearch.com/docs/learn/experimental/vector_search) of the [Index].
+    /// Reset [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
     ///
     /// # Example
     ///
@@ -2767,12 +2761,6 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_reset_embedders(client: Client, index: Index) {
-        let features = crate::features::ExperimentalFeatures::new(&client)
-            .set_vector_store(true)
-            .update()
-            .await
-            .expect("could not enable the vector store");
-        assert_eq!(features.vector_store, true);
         let task_info = index.reset_embedders().await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
 
@@ -2959,13 +2947,6 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_set_embedding_settings(client: Client, index: Index) {
-        let features = crate::features::ExperimentalFeatures::new(&client)
-            .set_vector_store(true)
-            .update()
-            .await
-            .expect("could not enable the vector store");
-        assert_eq!(features.vector_store, true);
-
         let custom_embedder =
             Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 2 });
         let embeddings = HashMap::from([("default".into(), custom_embedder)]);

@@ -142,20 +142,28 @@ pub enum Selectors<T> {
     All,
 }
 
-/// EXPERIMENTAL
+/// Setting whether to utilise previously defined embedders for semantic searching
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HybridSearch<'a> {
     /// Indicates one of the embedders configured for the queried index
     ///
     /// **Default: `"default"`**
-    embedder: &'a str,
+    pub embedder: &'a str,
     /// number between `0` and `1`:
     /// - `0.0` indicates full keyword search
     /// - `1.0` indicates full semantic search
     ///
     /// **Default: `0.5`**
-    semantic_ratio: f32,
+    pub semantic_ratio: f32,
+}
+impl Default for HybridSearch{
+    fn default() -> Self {
+        HybridSearch{
+            embedder: "default",
+            semantic_ratio: 0.5,
+        }
+    }
 }
 
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
@@ -367,17 +375,14 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
 
-    /// EXPERIMENTAL
     /// Defines whether to utilise previously defined embedders for semantic searching
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hybrid: Option<HybridSearch<'a>>,
 
-    /// EXPERIMENTAL
     /// Defines what vectors an userprovided embedder has gotten for semantic searching
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vector: Option<&'a [f32]>,
 
-    /// EXPERIMENTAL
     /// Defines whether vectors for semantic searching are returned in the search results
     /// Can Significantly increase the response size.
     ///
@@ -618,7 +623,6 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.index_uid = Some(&self.index.uid);
         self
     }
-    /// EXPERIMENTAL
     /// Defines whether to utilise previously defined embedders for semantic searching
     pub fn with_hybrid<'b>(
         &'b mut self,
@@ -631,7 +635,6 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         });
         self
     }
-    /// EXPERIMENTAL
     /// Defines what vectors an userprovided embedder has gotten for semantic searching
     pub fn with_vector<'b>(&'b mut self, vector: &'a [f32]) -> &'b mut SearchQuery<'a, Http> {
         self.vector = Some(vector);
@@ -781,13 +784,6 @@ mod tests {
     }
 
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
-        // Vector store is enabled for all to have consistent test runs
-        // This setting is shared by every index
-        let features = crate::features::ExperimentalFeatures::new(&client)
-            .set_vector_store(true)
-            .update()
-            .await?;
-        assert_eq!(features.vector_store, true);
         let t0 = index.add_documents(&[
             Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") }, _vectors: Some(Vectors::from(&[1000.0]))},
             Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") }, _vectors: Some(Vectors::from(&[2000.0]))  },
