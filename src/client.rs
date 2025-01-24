@@ -1424,7 +1424,7 @@ mod tests {
         */
         // ==> executing the action without enough right
         let mut no_right_key = KeyBuilder::new();
-        no_right_key.with_name(&format!("{name}_1"));
+        no_right_key.with_name(format!("{name}_1"));
         let no_right_key = client.create_key(no_right_key).await.unwrap();
 
         // backup the master key for cleanup at the end of the test

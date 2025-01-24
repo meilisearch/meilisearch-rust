@@ -21,7 +21,7 @@ pub struct Filter<'a> {
 
 impl<'a> Filter<'a> {
     #[must_use]
-    pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter {
+    pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter<'a> {
         Filter { inner }
     }
 }
@@ -360,6 +360,10 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_score_threshold: Option<f64>,
 
+    /// Defines the language of the search query.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub locales: Option<&'a [&'a str]>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
 
@@ -414,6 +418,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             retrieve_vectors: None,
             distinct: None,
             ranking_score_threshold: None,
+            locales: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
@@ -644,6 +649,10 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.ranking_score_threshold = Some(ranking_score_threshold);
         self
     }
+    pub fn with_locales<'b>(&'b mut self, locales: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
+        self.locales = Some(locales);
+        self
+    }
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
     }
@@ -665,7 +674,7 @@ pub struct MultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
     pub queries: Vec<SearchQuery<'b, Http>>,
 }
 
-impl<'a, 'b, Http: HttpClient> Serialize for MultiSearchQuery<'a, 'b, Http> {
+impl<Http: HttpClient> Serialize for MultiSearchQuery<'_, '_, Http> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -1268,6 +1277,18 @@ mod tests {
         query.with_ranking_score_threshold(1.0);
         let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
         assert!(results.hits.is_empty());
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_locales(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("Harry Styles");
+        query.with_locales(&["eng"]);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 7);
         Ok(())
     }
 
