@@ -384,11 +384,10 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     pub vector: Option<&'a [f32]>,
 
     /// Defines whether vectors for semantic searching are returned in the search results
-    /// Can Significantly increase the response size.
     ///
-    /// **Default: `false`**
+    /// Can Significantly increase the response size.
     #[serde(skip_serializing_if = "Option::is_none")]
-    retrieve_vectors: Option<bool>,
+    pub retrieve_vectors: Option<bool>,
 }
 
 #[allow(missing_docs)]
@@ -516,6 +515,9 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Right(filter)));
         self
     }
+    /// Defines whether vectors for semantic searching are returned in the search results
+    ///
+    /// Can Significantly increase the response size.
     pub fn with_retrieve_vectors<'b>(
         &'b mut self,
         retrieve_vectors: bool,
@@ -640,7 +642,6 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.vector = Some(vector);
         self
     }
-    #[must_use]
     pub fn with_distinct<'b>(&'b mut self, distinct: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.distinct = Some(distinct);
         self
@@ -742,7 +743,7 @@ mod tests {
         kind: String,
         number: i32,
         nested: Nested,
-        #[serde(default)]
+        #[serde(skip_serializing_if = "Option::is_none", default)]
         _vectors: Option<Vectors>,
     }
 
