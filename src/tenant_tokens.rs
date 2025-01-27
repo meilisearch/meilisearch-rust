@@ -29,7 +29,7 @@ pub fn generate_tenant_token(
         return Err(Error::InvalidUuid4Version);
     }
 
-    if expires_at.map_or(false, |expires_at| OffsetDateTime::now_utc() > expires_at) {
+    if expires_at.is_some_and(|expires_at| OffsetDateTime::now_utc() > expires_at) {
         return Err(Error::TenantTokensExpiredSignature);
     }
 
