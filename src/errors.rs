@@ -49,16 +49,16 @@ pub enum Error {
     #[error("HTTP request failed: {}", .0)]
     HttpError(#[from] reqwest::Error),
 
-    // The library formatting the query parameters encountered an error.
+    /// The library formatting the query parameters encountered an error.
     #[error("Internal Error: could not parse the query parameters: {}", .0)]
     Yaup(#[from] yaup::Error),
 
-    // The library validating the format of an uuid.
+    /// The library validating the format of an uuid.
     #[cfg(not(target_arch = "wasm32"))]
     #[error("The uid of the token has bit an uuid4 format: {}", .0)]
     Uuid(#[from] uuid::Error),
 
-    // Error thrown in case the version of the Uuid is not v4.
+    /// Error thrown in case the version of the Uuid is not v4.
     #[error("The uid provided to the token is not of version uuidv4")]
     InvalidUuid4Version,
 
