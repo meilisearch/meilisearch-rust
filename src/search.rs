@@ -76,13 +76,13 @@ pub struct SearchResults<T> {
     pub limit: Option<usize>,
     /// Estimated total number of matches.
     pub estimated_total_hits: Option<usize>,
-    // Current page number
+    /// Current page number
     pub page: Option<usize>,
-    // Maximum number of hits in a page.
+    /// Maximum number of hits in a page.
     pub hits_per_page: Option<usize>,
-    // Exhaustive number of matches.
+    /// Exhaustive number of matches.
     pub total_hits: Option<usize>,
-    // Exhaustive number of pages.
+    /// Exhaustive number of pages.
     pub total_pages: Option<usize>,
     /// Distribution of the given facets.
     pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
