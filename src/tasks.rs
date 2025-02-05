@@ -474,10 +474,10 @@ impl AsRef<u32> for Task {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct TasksPaginationFilters {
-    // Maximum number of tasks to return.
+    /// Maximum number of tasks to return.
     #[serde(skip_serializing_if = "Option::is_none")]
     limit: Option<u32>,
-    // The first task uid that should be returned.
+    /// The first task uid that should be returned.
     #[serde(skip_serializing_if = "Option::is_none")]
     from: Option<u32>,
 }
@@ -497,52 +497,52 @@ pub type TasksDeleteQuery<'a, Http> = TasksQuery<'a, TasksDeleteFilters, Http>;
 pub struct TasksQuery<'a, T, Http: HttpClient> {
     #[serde(skip_serializing)]
     client: &'a Client<Http>,
-    // Index uids array to only retrieve the tasks of the indexes.
+    /// Index uids array to only retrieve the tasks of the indexes.
     #[serde(skip_serializing_if = "Option::is_none")]
     index_uids: Option<Vec<&'a str>>,
-    // Statuses array to only retrieve the tasks with these statuses.
+    /// Statuses array to only retrieve the tasks with these statuses.
     #[serde(skip_serializing_if = "Option::is_none")]
     statuses: Option<Vec<&'a str>>,
-    // Types array to only retrieve the tasks with these [TaskType].
+    /// Types array to only retrieve the tasks with these [`TaskType`]s.
     #[serde(skip_serializing_if = "Option::is_none", rename = "types")]
     task_types: Option<Vec<&'a str>>,
-    // Uids of the tasks to retrieve.
+    /// Uids of the tasks to retrieve.
     #[serde(skip_serializing_if = "Option::is_none")]
     uids: Option<Vec<&'a u32>>,
-    // Uids of the tasks that canceled other tasks.
+    /// Uids of the tasks that canceled other tasks.
     #[serde(skip_serializing_if = "Option::is_none")]
     canceled_by: Option<Vec<&'a u32>>,
-    // Date to retrieve all tasks that were enqueued before it.
+    /// Date to retrieve all tasks that were enqueued before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
     before_enqueued_at: Option<OffsetDateTime>,
-    // Date to retrieve all tasks that were enqueued after it.
+    /// Date to retrieve all tasks that were enqueued after it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
     after_enqueued_at: Option<OffsetDateTime>,
-    // Date to retrieve all tasks that were started before it.
+    /// Date to retrieve all tasks that were started before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
     before_started_at: Option<OffsetDateTime>,
-    // Date to retrieve all tasks that were started after it.
+    /// Date to retrieve all tasks that were started after it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
     after_started_at: Option<OffsetDateTime>,
-    // Date to retrieve all tasks that were finished before it.
+    /// Date to retrieve all tasks that were finished before it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
     )]
     before_finished_at: Option<OffsetDateTime>,
-    // Date to retrieve all tasks that were finished after it.
+    /// Date to retrieve all tasks that were finished after it.
     #[serde(
         skip_serializing_if = "Option::is_none",
         serialize_with = "time::serde::rfc3339::option::serialize"
@@ -552,7 +552,7 @@ pub struct TasksQuery<'a, T, Http: HttpClient> {
     #[serde(flatten)]
     pagination: T,
 
-    // Whether to reverse the sort
+    /// Whether to reverse the sort
     #[serde(skip_serializing_if = "Option::is_none")]
     reverse: Option<bool>,
 }

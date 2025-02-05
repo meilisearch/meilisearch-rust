@@ -599,37 +599,37 @@ reset_faceting_settings_1: |-
 get_separator_tokens_1: |-
   let task: TaskInfo = client
     .index('articles')
-    .get_dictionary()
+    .get_separator_tokens()
     .await
     .unwrap();
 update_separator_tokens_1: |-
   let task: TaskInfo = client
     .index('articles')
-    .set_dictionary(['|', '&hellip;'])
+    .set_separator_tokens(&vec!['|'.to_string(), '&hellip;'.to_string()])
     .await
     .unwrap();
 reset_separator_tokens_1: |-
   let task: TaskInfo = client
     .index('articles')
-    .reset_dictionary()
+    .reset_separator_tokens()
     .await
     .unwrap();
 get_non_separator_tokens_1: |-
   let task: TaskInfo = client
     .index('articles')
-    .get_dictionary()
+    .get_non_separator_tokens()
     .await
     .unwrap();
 update_non_separator_tokens_1: |-
   let task: TaskInfo = client
     .index('articles')
-    .set_dictionary(['@', '#'])
+    .set_non_separator_tokens(&vec!['@'.to_string(), '#'.to_string()])
     .await
     .unwrap();
 reset_non_separator_tokens_1: |-
   let task: TaskInfo = client
     .index('articles')
-    .reset_dictionary()
+    .reset_non_separator_tokens()
     .await
     .unwrap();
 get_dictionary_1: |-

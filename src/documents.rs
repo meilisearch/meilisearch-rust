@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-/// Derive the [`IndexConfig`](crate::documents::IndexConfig) trait.
+/// Derive the [`IndexConfig`] trait.
 ///
 /// ## Field attribute
 /// Use the `#[index_config(..)]` field attribute to generate the correct settings
