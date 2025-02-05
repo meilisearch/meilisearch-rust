@@ -157,9 +157,9 @@ pub struct HybridSearch<'a> {
     /// **Default: `0.5`**
     pub semantic_ratio: f32,
 }
-impl Default for HybridSearch{
+impl Default for HybridSearch<'_> {
     fn default() -> Self {
-        HybridSearch{
+        HybridSearch {
             embedder: "default",
             semantic_ratio: 0.5,
         }
