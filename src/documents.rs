@@ -3,9 +3,19 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// Derive the [`IndexConfig`] trait.
 ///
+/// ## Struct attribute
+/// Use the `#[index_config(..)]` struct attribute to set general index settings.
+///
+/// The available parameters are:
+/// - `index_name = "new_name"` - Override index name
+/// - `max_total_hits = 5_000` - [Set pagination settings](https://www.meilisearch.com/docs/reference/api/settings#update-pagination-settings)
+///     - Value can be anything that returns usize.
+///
 /// ## Field attribute
 /// Use the `#[index_config(..)]` field attribute to generate the correct settings
-/// for each field. The available parameters are:
+/// for each field.
+///
+/// The available parameters are:
 /// - `primary_key` (can only be used once)
 /// - `distinct` (can only be used once)
 /// - `searchable`
@@ -15,6 +25,10 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 ///
 /// ## Index name
 /// The name of the index will be the name of the struct converted to snake case.
+///
+/// Or it can be overridden with `index_name` at the struct attribute level.
+///
+/// ⚠️ Struct and index names should follow the naming [guidelines](https://www.meilisearch.com/docs/learn/getting_started/indexes#index-uid)
 ///
 /// ## Sample usage:
 /// ```
