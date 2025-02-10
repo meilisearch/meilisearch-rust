@@ -109,24 +109,17 @@ mod tests {
     use super::*;
     use meilisearch_test_macro::meilisearch_test;
 
-    #[meilisearch_test]
-    async fn test_experimental_features_get(client: Client) {
-        let mut features = ExperimentalFeatures::new(&client);
-        features.set_vector_store(false);
-        let _ = features.update().await.unwrap();
-
-        let res = features.get().await.unwrap();
-
-        assert!(!res.vector_store);
-    }
-
+    /// there is purposely no test which disables this feature to prevent impact on other testcases
+    /// the setting is shared amongst all indexes
     #[meilisearch_test]
     async fn test_experimental_features_enable_vector_store(client: Client) {
         let mut features = ExperimentalFeatures::new(&client);
         features.set_vector_store(true);
 
         let res = features.update().await.unwrap();
+        assert!(res.vector_store);
 
+        let res = features.get().await.unwrap();
         assert!(res.vector_store);
     }
 }
