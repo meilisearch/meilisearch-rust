@@ -1649,8 +1649,8 @@ get_experimental_features_1: |-
     .unwrap();
 update_experimental_features_1: |-
   let client = Client::new("http://localhost:7700", Some("apiKey"));
-  let mut features = ExperimentalFeatures::new(&client);
-  features.set_vector_store(true);
+  let features = ExperimentalFeatures::new(&client);
+  // update the feature you want here
   let res = features
     .update()
     .await
