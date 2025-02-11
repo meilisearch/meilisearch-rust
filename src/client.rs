@@ -19,7 +19,7 @@ use crate::{
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
 pub struct Client<Http: HttpClient = DefaultHttpClient> {
-    pub(crate) inner:std::sync::Arc<ClientInner<Http>>
+    pub(crate) inner: std::sync::Arc<ClientInner<Http>>,
 }
 
 #[derive(Debug)]
@@ -69,7 +69,7 @@ impl Client {
                 host: host.into(),
                 api_key,
                 http_client,
-            })
+            }),
         })
     }
 }
@@ -86,7 +86,7 @@ impl<Http: HttpClient> Client<Http> {
                 host: host.into(),
                 api_key: api_key.map(|key| key.into()),
                 http_client,
-            })
+            }),
         }
     }
 
