@@ -104,6 +104,12 @@ pub struct HuggingFaceEmbedderSettings {
     /// ```
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
+    /// The maximum size of a rendered document template.
+    // 
+    // Longer texts are truncated to fit the configured limit.
+    /// Default: `400`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template_max_bytes: Option<usize>,
 }
 
 /// Settings for configuring [OpenAI](https://openai.com/) embedders
@@ -126,6 +132,7 @@ pub struct HuggingFaceEmbedderSettings {
 #[serde(rename_all = "camelCase")]
 pub struct OpenAIEmbedderSettings {
     /// API key used to authorize against OpenAI.
+    ///
     /// [Generate an API key](https://platform.openai.com/api-keys) from your OpenAI account.
     /// Use [tier 2 keys](https://platform.openai.com/docs/guides/rate-limits/usage-tiers?context=tier-two) or above for optimal performance.
     pub api_key: String,
@@ -133,7 +140,10 @@ pub struct OpenAIEmbedderSettings {
     /// Default: `text-embedding-3-small`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
-    /// Defaults to the default for said model name
+    /// Number of dimensions in the chosen model.
+    ///
+    /// If not supplied, Meilisearch tries to infer this value.
+    /// In most cases, dimensions should be the exact same value of your chosen model
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dimensions: Option<usize>,
     /// Use it to customize the data you send to the embedder. It is highly recommended you configure a custom template for your documents.
@@ -155,6 +165,12 @@ pub struct OpenAIEmbedderSettings {
     /// ```
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
+    /// The maximum size of a rendered document template.
+    // 
+    // Longer texts are truncated to fit the configured limit.
+    /// Default: `400`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template_max_bytes: Option<usize>,
 }
 
 /// Settings for configuring [Ollama](https://ollama.com/) embedders
@@ -215,6 +231,12 @@ pub struct OllamaEmbedderSettings {
     /// ```
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
+    /// The maximum size of a rendered document template.
+    // 
+    // Longer texts are truncated to fit the configured limit.
+    /// Default: `400`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template_max_bytes: Option<usize>,
 }
 
 /// Settings for configuring generic [REST](https://en.wikipedia.org/wiki/REST) embedders
@@ -256,17 +278,22 @@ pub struct OllamaEmbedderSettings {
 #[serde(rename_all = "camelCase")]
 pub struct GenericRestEmbedderSettings {
     /// Mandatory, full URL to the embedding endpoint
+    ///
     /// Must be parseable as a URL.
     /// If not specified, [Meilisearch](https://www.meilisearch.com/) (**not the sdk you are currently using**) will try to fetch the `MEILI_OLLAMA_URL` environment variable
     /// Example: `"http://localhost:12345/api/v1/embed"`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
-    /// Optional, passed as Bearer in the Authorization header
+    /// Authentication token Meilisearch should send with each request to the embedder.
+    ///
+    /// Is passed as Bearer in the Authorization header
     /// Example: `"187HFLDH97CNHN"`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub api_key: Option<String>,
-    /// Optional
-    /// Inferred with a dummy request if missing
+    /// Number of dimensions in the chosen model.
+    ///
+    /// If not supplied, Meilisearch tries to infer this value.
+    /// In most cases, dimensions should be the exact same value of your chosen model
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dimensions: Option<usize>,
     /// Use it to customize the data you send to the embedder. It is highly recommended you configure a custom template for your documents.
@@ -297,6 +324,19 @@ pub struct GenericRestEmbedderSettings {
     ///   "model": "MODEL_NAME",
     ///   "prompt": "{{text}}"
     /// }
+    /// ```
+    /// The maximum size of a rendered document template.
+    // 
+    // Longer texts are truncated to fit the configured limit.
+    /// Default: `400`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template_max_bytes: Option<usize>,
+    /// JSON object with the same structure and data of the request you must send to your rest embedder.
+    /// 
+    /// The field containing the input text Meilisearch should send to the embedder must be replaced with `{{text}}`.
+    /// Example:
+    /// ```json
+    /// {"prompt": "{{text}}"}
     /// ```
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub request: HashMap<String, serde_json::Value>,
@@ -329,7 +369,9 @@ pub struct GenericRestEmbedderSettings {
 /// When using a custom embedder, you must vectorize both your documents and user queries.
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
 pub struct UserProvidedEmbedderSettings {
-    /// dimensions of your custom embedding
+    /// Number of dimensions in the user-provided model.
+    ///
+    /// In most cases, dimensions should be the exact same value of your chosen model
     pub dimensions: usize,
 }
 
