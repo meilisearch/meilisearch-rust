@@ -183,6 +183,7 @@ pub struct OpenAIEmbedderSettings {
 ///   api_key: Some("foobarbaz".to_string()),
 ///   model: "nomic-embed-text".to_string(),
 ///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+///   document_template_max_bytes: None,
 /// };
 /// # let expected = r#"{"url":"http://localhost:11434/api/embeddings","apiKey":"foobarbaz","model":"nomic-embed-text","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}"}"#;
 /// # let expected: OllamaEmbedderSettings = serde_json::from_str(expected).unwrap();
@@ -251,6 +252,7 @@ pub struct OllamaEmbedderSettings {
 ///   api_key: Some("SOURCE_API_KEY".to_string()),
 ///   dimensions: Some(512),
 ///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+///   document_template_max_bytes: None,
 ///   request: HashMap::from([
 ///     ("model".to_string(), Value::from("MODEL_NAME")),
 ///     ("prompt".to_string(), Value::from("{{text}}"))
