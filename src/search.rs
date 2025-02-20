@@ -1420,13 +1420,14 @@ mod tests {
         use crate::settings::{Embedder, UserProvidedEmbedderSettings};
         let embedder_setting =
             Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 1 });
-        let t3 = index
+        index
             .set_settings(&crate::settings::Settings {
                 embedders: Some(HashMap::from([("default".to_string(), embedder_setting)])),
                 ..crate::settings::Settings::default()
             })
+            .await?
+            .wait_for_completion(&client, None, None)
             .await?;
-        t3.wait_for_completion(&client, None, None).await?;
         Ok(())
     }
 
