@@ -105,7 +105,7 @@ pub struct HuggingFaceEmbedderSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
     /// The maximum size of a rendered document template.
-    // 
+    //
     // Longer texts are truncated to fit the configured limit.
     /// Default: `400`
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -166,7 +166,7 @@ pub struct OpenAIEmbedderSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
     /// The maximum size of a rendered document template.
-    // 
+    //
     // Longer texts are truncated to fit the configured limit.
     /// Default: `400`
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -232,7 +232,7 @@ pub struct OllamaEmbedderSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
     /// The maximum size of a rendered document template.
-    // 
+    //
     // Longer texts are truncated to fit the configured limit.
     /// Default: `400`
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -326,13 +326,13 @@ pub struct GenericRestEmbedderSettings {
     /// }
     /// ```
     /// The maximum size of a rendered document template.
-    // 
+    //
     // Longer texts are truncated to fit the configured limit.
     /// Default: `400`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template_max_bytes: Option<usize>,
     /// JSON object with the same structure and data of the request you must send to your rest embedder.
-    /// 
+    ///
     /// The field containing the input text Meilisearch should send to the embedder must be replaced with `{{text}}`.
     /// Example:
     /// ```json
