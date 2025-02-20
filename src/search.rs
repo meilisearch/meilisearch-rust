@@ -895,7 +895,7 @@ mod tests {
                 kind: S("text"),
                 number: 10,
                 nested: Nested { child: S("second") },
-                _vectors: Some(Vectors::from(&[2000.0])),
+                _vectors: None,
             },
             &results.hits[0].result
         );
