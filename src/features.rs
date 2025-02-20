@@ -8,9 +8,7 @@ use serde::{Deserialize, Serialize};
 /// Struct representing the experimental features result from the API.
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ExperimentalFeaturesResult {
-    pub vector_store: bool,
-}
+pub struct ExperimentalFeaturesResult {}
 
 /// Struct representing the experimental features request.
 ///
@@ -24,29 +22,18 @@ pub struct ExperimentalFeaturesResult {
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 /// let mut features = ExperimentalFeatures::new(&client);
-/// features.set_vector_store(true);
 /// ```
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExperimentalFeatures<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
     client: &'a Client<Http>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vector_store: Option<bool>,
 }
 
 impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     #[must_use]
     pub fn new(client: &'a Client<Http>) -> Self {
-        ExperimentalFeatures {
-            client,
-            vector_store: None,
-        }
-    }
-
-    pub fn set_vector_store(&mut self, vector_store: bool) -> &mut Self {
-        self.vector_store = Some(vector_store);
-        self
+        ExperimentalFeatures { client }
     }
 
     /// Get all the experimental features
@@ -83,11 +70,10 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
-    /// tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    ///     let mut features = ExperimentalFeatures::new(&client);
-    ///     features.set_vector_store(true);
-    ///     features.update().await.unwrap();
-    /// });
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let features = ExperimentalFeatures::new(&client);
+    /// features.update().await.unwrap();
+    /// # });
     /// ```
     pub async fn update(&self) -> Result<ExperimentalFeaturesResult, Error> {
         self.client
@@ -109,17 +95,13 @@ mod tests {
     use super::*;
     use meilisearch_test_macro::meilisearch_test;
 
-    /// there is purposely no test which disables this feature to prevent impact on other testcases
-    /// the setting is shared amongst all indexes
     #[meilisearch_test]
-    async fn test_experimental_features_enable_vector_store(client: Client) {
-        let mut features = ExperimentalFeatures::new(&client);
-        features.set_vector_store(true);
+    async fn test_experimental_features_get(client: Client) {
+        let features = ExperimentalFeatures::new(&client);
+        // set feature here, once some exist again
+        let _ = features.update().await.unwrap();
 
-        let res = features.update().await.unwrap();
-        assert!(res.vector_store);
-
-        let res = features.get().await.unwrap();
-        assert!(res.vector_store);
+        let _res = features.get().await.unwrap();
+        // assert that the feature has been set once they exist again
     }
 }

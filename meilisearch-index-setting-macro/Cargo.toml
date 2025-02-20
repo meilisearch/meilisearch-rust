@@ -1,6 +1,6 @@
 [package]
 name = "meilisearch-index-setting-macro"
-version = "0.27.1"
+version = "0.28.0"
 description = "Helper tool to generate settings of a Meilisearch index"
 edition = "2021"
 license = "MIT"
