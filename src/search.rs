@@ -371,10 +371,6 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vector: Option<Vec<f64>>,
 
-    /// Defines the embedder that the custom embedding vector is for.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub embedder: Option<String>,
-
     /// Defines the language of the search query.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locales: Option<&'a [&'a str]>,
@@ -414,7 +410,6 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             ranking_score_threshold: None,
             hybrid: None,
             vector: None,
-            embedder: None,
             locales: None,
         }
     }
@@ -629,10 +624,8 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     pub fn with_custom_embedding_vector<'b>(
         &'b mut self,
         vector: Vec<f64>,
-        embedder: String,
     ) -> &'b mut SearchQuery<'a, Http> {
         self.vector = Some(vector);
-        self.embedder = Some(embedder);
         self
     }
     pub fn with_locales<'b>(&'b mut self, locales: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
