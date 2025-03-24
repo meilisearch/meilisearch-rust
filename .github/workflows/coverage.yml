@@ -1,4 +1,4 @@
-name: Tests
+name: Code Coverage
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ jobs:
     # Will still run for each push to bump-meilisearch-v*
     if: github.event_name != 'pull_request' || !startsWith(github.base_ref, 'bump-meilisearch-v')
     runs-on: ubuntu-latest
-    name: integration-tests
+    name: Code Coverage
     steps:
       - uses: actions/checkout@v4
       # Nightly Rust is used for cargo llvm-cov --doc below.
