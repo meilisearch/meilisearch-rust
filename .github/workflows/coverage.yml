@@ -8,7 +8,7 @@ on:
       - trying
       - staging
       - main
-      
+
 permissions:
   contents: read
   issues: write
