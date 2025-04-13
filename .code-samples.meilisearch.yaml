@@ -1823,3 +1823,23 @@ reset_localized_attribute_settings_1: |-
     .reset_localized_attributes()
     .await
     .unwrap();
+get_network_1: |-
+  let network: Network = client.get_network().await.unwrap();
+update_network_1: |-
+  client.update_network(
+      NetworkUpdate::new()
+           .with_self("ms-00")
+           .with_remotes(&[
+               Remote {
+                   name: "ms-00".to_string(),
+                   url: "http://INSTANCE_URL".to_string(),
+                   search_api_key: Some("INSTANCE_API_KEY".to_string()),
+               },
+               Remote {
+                   name: "ms-01".to_string(),
+                   url: "http://ANOTHER_INSTANCE_URL".to_string(),
+                   search_api_key: Some("ANOTHER_INSTANCE_API_KEY".to_string()),
+               },
+           ]),
+  )
+  .await.unwrap();
