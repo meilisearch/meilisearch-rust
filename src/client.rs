@@ -8,6 +8,7 @@ use crate::{
     errors::*,
     indexes::*,
     key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
+    network::{Network, NetworkUpdate},
     request::*,
     search::*,
     task_info::TaskInfo,
@@ -1107,6 +1108,76 @@ impl<Http: HttpClient> Client<Http> {
         Ok(tasks)
     }
 
+    /// Get the network configuration (sharding).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, features::ExperimentalFeatures};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # ExperimentalFeatures::new(&client).set_network(true).update().await.unwrap();
+    /// let network = client.get_network().await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_network(&self) -> Result<Network, Error> {
+        let network = self
+            .http_client
+            .request::<(), (), Network>(
+                &format!("{}/network", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
+
+        Ok(network)
+    }
+
+    /// Update the network configuration (sharding).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, features::ExperimentalFeatures, network::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # ExperimentalFeatures::new(&client).set_network(true).update().await.unwrap();
+    /// let network = client.update_network(
+    ///     NetworkUpdate::new()
+    ///          // .reset_self()
+    ///          // .reset_remotes()
+    ///          // .delete_remotes(&["ms-00"])
+    ///          .with_self("ms-00")
+    ///          .with_remotes(&[Remote {
+    ///              name: "ms-00".to_string(),
+    ///              url: "http://localhost:7700".to_string(),
+    ///              search_api_key: Some("secret".to_string()),
+    ///          }]),
+    /// )
+    /// .await.unwrap();
+    /// # });
+    /// ```
+    pub async fn update_network(&self, network_update: &NetworkUpdate) -> Result<Network, Error> {
+        self.http_client
+            .request::<(), &NetworkUpdate, Network>(
+                &format!("{}/network", self.host),
+                Method::Patch {
+                    body: network_update,
+                    query: (),
+                },
+                200,
+            )
+            .await
+    }
+
     /// Generates a new tenant token.
     ///
     /// # Example
@@ -1205,7 +1276,10 @@ mod tests {
 
     use meilisearch_test_macro::meilisearch_test;
 
-    use crate::{client::*, key::Action, reqwest::qualified_version};
+    use crate::{
+        client::*, features::ExperimentalFeatures, key::Action, network::Remote,
+        reqwest::qualified_version,
+    };
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -1353,6 +1427,80 @@ mod tests {
         let tasks = client.get_tasks_with(&query).await.unwrap();
 
         assert_eq!(tasks.limit, 20);
+    }
+
+    async fn enable_network(client: &Client) {
+        ExperimentalFeatures::new(client)
+            .set_network(true)
+            .update()
+            .await
+            .unwrap();
+    }
+
+    #[meilisearch_test]
+    async fn test_get_network(client: Client) {
+        enable_network(&client).await;
+
+        let network = client.get_network().await.unwrap();
+        assert!(matches!(
+            network,
+            Network {
+                self_: _,
+                remotes: _,
+            }
+        ))
+    }
+
+    #[meilisearch_test]
+    async fn test_update_network_self(client: Client) {
+        enable_network(&client).await;
+
+        client
+            .update_network(NetworkUpdate::new().reset_self())
+            .await
+            .unwrap();
+
+        let network = client
+            .update_network(NetworkUpdate::new().with_self("ms-00"))
+            .await
+            .unwrap();
+
+        assert_eq!(network.self_, Some("ms-00".to_string()));
+    }
+
+    #[meilisearch_test]
+    async fn test_update_network_remotes(client: Client) {
+        enable_network(&client).await;
+
+        client
+            .update_network(NetworkUpdate::new().reset_remotes())
+            .await
+            .unwrap();
+
+        let network = client
+            .update_network(NetworkUpdate::new().with_remotes(&[Remote {
+                name: "ms-00".to_string(),
+                url: "http://localhost:7700".to_string(),
+                search_api_key: Some("secret".to_string()),
+            }]))
+            .await
+            .unwrap();
+
+        assert_eq!(
+            network.remotes,
+            vec![Remote {
+                name: "ms-00".to_string(),
+                url: "http://localhost:7700".to_string(),
+                search_api_key: Some("secret".to_string()),
+            }]
+        );
+
+        let network = client
+            .update_network(NetworkUpdate::new().delete_remotes(&["ms-00"]))
+            .await
+            .unwrap();
+
+        assert_eq!(network.remotes, vec![]);
     }
 
     #[meilisearch_test]
