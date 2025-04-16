@@ -19,11 +19,21 @@ use crate::{
 /// The top-level struct of the SDK, representing a client containing [indexes](../indexes/struct.Index.html).
 #[derive(Debug, Clone)]
 pub struct Client<Http: HttpClient = DefaultHttpClient> {
+    pub(crate) inner: std::sync::Arc<ClientInner<Http>>,
+}
+
+#[derive(Debug)]
+pub struct ClientInner<Http: HttpClient = DefaultHttpClient> {
     pub(crate) host: String,
     pub(crate) api_key: Option<String>,
     pub(crate) http_client: Http,
 }
-
+impl<Http: HttpClient> std::ops::Deref for Client<Http> {
+    type Target = ClientInner<Http>;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SwapIndexes {
     pub indexes: (String, String),
@@ -55,9 +65,11 @@ impl Client {
         let http_client = crate::reqwest::ReqwestClient::new(api_key.as_deref())?;
 
         Ok(Client {
-            host: host.into(),
-            api_key,
-            http_client,
+            inner: std::sync::Arc::new(ClientInner {
+                host: host.into(),
+                api_key,
+                http_client,
+            }),
         })
     }
 }
@@ -70,9 +82,11 @@ impl<Http: HttpClient> Client<Http> {
         http_client: Http,
     ) -> Client<Http> {
         Client {
-            host: host.into(),
-            api_key: api_key.map(|key| key.into()),
-            http_client,
+            inner: std::sync::Arc::new(ClientInner {
+                host: host.into(),
+                api_key: api_key.map(|key| key.into()),
+                http_client,
+            }),
         }
     }
 
@@ -1353,7 +1367,7 @@ mod tests {
         let master_key = client.api_key.clone();
 
         // create a new client with no right
-        let client = Client::new(client.host, Some(key.key.clone())).unwrap();
+        let client = Client::new(client.host.clone(), Some(key.key.clone())).unwrap();
         // with a wrong key
         let error = client.delete_key("invalid_key").await.unwrap_err();
         insta::assert_snapshot!(error, @"Meilisearch auth: invalid_api_key: The provided API key is invalid.. https://docs.meilisearch.com/errors#invalid_api_key");
@@ -1378,7 +1392,7 @@ mod tests {
         ));
 
         // cleanup
-        let client = Client::new(client.host, master_key).unwrap();
+        let client = Client::new(client.host.clone(), master_key).unwrap();
         client.delete_key(key).await.unwrap();
     }
 
@@ -1446,7 +1460,7 @@ mod tests {
 
         // cleanup
         master_client
-            .delete_key(client.api_key.unwrap())
+            .delete_key(client.api_key.clone().unwrap())
             .await
             .unwrap();
     }
