@@ -1681,6 +1681,42 @@ reset_proximity_precision_settings_1: |-
     .reset_proximity_precision()
     .await
     .unwrap();
+get_facet_search_settings_1: |-
+  let facet_search: bool = client
+    .index(INDEX_UID)
+    .get_facet_search()
+    .await
+    .unwrap();
+update_facet_search_settings_1: |-
+  let task: TaskInfo = client
+    .index(INDEX_UID)
+    .set_facet_search(false)
+    .await
+    .unwrap();
+reset_facet_search_settings_1: |-
+  let task: TaskInfo = client
+    .index(INDEX_UID)
+    .reset_facet_search()
+    .await
+    .unwrap();
+get_prefix_search_settings_1: |-
+  let prefix_search: String = client
+    .index(INDEX_UID)
+    .get_prefix_search()
+    .await
+    .unwrap();
+update_prefix_search_settings_1: |-
+  let task: TaskInfo = client
+    .index(INDEX_UID)
+    .set_prefix_search("disabled".to_string())
+    .await
+    .unwrap();
+reset_prefix_search_settings_1: |-
+  let task: TaskInfo = client
+    .index(INDEX_UID)
+    .reset_prefix_search()
+    .await
+    .unwrap();
 get_search_cutoff_1: |-
   let search_cutoff_ms: String = client
     .index("movies")
