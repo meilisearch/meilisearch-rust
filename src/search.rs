@@ -47,6 +47,14 @@ pub enum MatchingStrategies {
     FREQUENCY,
 }
 
+/// Hybrid search options.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HybridSearch {
+    pub semantic_ratio: f64,
+    pub embedder: String,
+}
+
 /// A single result.
 ///
 /// Contains the complete object, optionally the formatted object, and optionally an object that contains information about the matches.
@@ -347,13 +355,21 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
 
-    ///Defines one attribute in the filterableAttributes list as a distinct attribute.
+    /// Defines one attribute in the filterableAttributes list as a distinct attribute.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub distinct: Option<&'a str>,
 
-    ///Excludes results below the specified ranking score.
+    /// Excludes results below the specified ranking score.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_score_threshold: Option<f64>,
+
+    /// Defines hybrid search options.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hybrid: Option<HybridSearch>,
+
+    /// Defines a custom embedding vector.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vector: Option<Vec<f64>>,
 
     /// Defines the language of the search query.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -392,6 +408,8 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             index_uid: None,
             distinct: None,
             ranking_score_threshold: None,
+            hybrid: None,
+            vector: None,
             locales: None,
         }
     }
@@ -594,6 +612,20 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         ranking_score_threshold: f64,
     ) -> &'b mut SearchQuery<'a, Http> {
         self.ranking_score_threshold = Some(ranking_score_threshold);
+        self
+    }
+    pub fn with_hybrid_search<'b>(
+        &'b mut self,
+        hybrid: HybridSearch,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.hybrid = Some(hybrid);
+        self
+    }
+    pub fn with_custom_embedding_vector<'b>(
+        &'b mut self,
+        vector: Vec<f64>,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.vector = Some(vector);
         self
     }
     pub fn with_locales<'b>(&'b mut self, locales: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
