@@ -1119,6 +1119,7 @@ impl<Http: HttpClient> Client<Http> {
 #[serde(rename_all = "camelCase")]
 pub struct ClientStats {
     pub database_size: usize,
+    pub used_database_size: usize,
     #[serde(with = "time::serde::rfc3339::option")]
     pub last_update: Option<OffsetDateTime>,
     pub indexes: HashMap<String, IndexStats>,
