@@ -244,6 +244,8 @@ pub mod features;
 pub mod indexes;
 /// Module containing the [`Key`](key::Key) struct.
 pub mod key;
+// Module containing the [`Network`](network::Network) struct.
+pub mod network;
 pub mod request;
 /// Module related to search queries and results.
 pub mod search;
