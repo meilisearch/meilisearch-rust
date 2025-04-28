@@ -128,6 +128,21 @@ impl<Http: HttpClient> Client<Http> {
             .await
     }
 
+    pub async fn execute_federated_multi_search_query<
+        T: 'static + DeserializeOwned + Send + Sync,
+    >(
+        &self,
+        body: &FederatedMultiSearchQuery<'_, '_, Http>,
+    ) -> Result<FederatedMultiSearchResponse<T>, Error> {
+        self.http_client
+            .request::<(), &FederatedMultiSearchQuery<Http>, FederatedMultiSearchResponse<T>>(
+                &format!("{}/multi-search", &self.host),
+                Method::Post { body, query: () },
+                200,
+            )
+            .await
+    }
+
     /// Make multiple search requests.
     ///
     /// # Example
@@ -170,6 +185,22 @@ impl<Http: HttpClient> Client<Http> {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
+    ///
+    /// # Federated Search
+    ///
+    /// You can use [`MultiSearchQuery::with_federation`] to perform a [federated
+    /// search][1] where results from different indexes are merged and returned as
+    /// one list.
+    ///
+    /// When executing a federated query, the type parameter `T` is less clear,
+    /// as the documents in the different indexes potentially have different
+    /// fields and you might have one Rust type per index. In most cases, you
+    /// either want to create an enum with one variant per index and `#[serde
+    /// (untagged)]` attribute, or if you need more control, just pass
+    /// `serde_json::Map<String, serde_json::Value>` and then deserialize that
+    /// into the appropriate target types later.
+    ///
+    /// [1]: https://www.meilisearch.com/docs/learn/multi_search/multi_search_vs_federated_search#what-is-federated-search
     #[must_use]
     pub fn multi_search(&self) -> MultiSearchQuery<Http> {
         MultiSearchQuery::new(self)
