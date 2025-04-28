@@ -36,6 +36,347 @@ pub struct FacetingSettings {
     pub max_values_per_facet: usize,
 }
 
+/// Allows configuring semantic searching
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase", tag = "source")]
+pub enum Embedder {
+    /// Compute embeddings inside meilisearch with models from [HuggingFace](https://huggingface.co/).
+    /// You may be able to significantly improve performance by [compiling a CUDA-compatible Meilisearch binary](https://www.meilisearch.com/docs/guides/ai/computing_hugging_face_embeddings_gpu).
+    /// This is a resource-intensive operation and might affect indexing performance negatively.
+    HuggingFace(HuggingFaceEmbedderSettings),
+    /// Use OpenAI's API to generate embeddings
+    /// Depending on hardware, this is a
+    OpenAI(OpenAIEmbedderSettings),
+    /// [Ollama](https://ollama.com/) is a framework for building and running language models locally.
+    Ollama(OllamaEmbedderSettings),
+    /// Supports arbitrary embedders which supply a [REST](https://en.wikipedia.org/wiki/REST) interface
+    REST(GenericRestEmbedderSettings),
+    /// Provide custom embeddings
+    ///
+    /// When using a custom embedder, you must vectorize both your documents (both for adding and updating documents) and user queries
+    UserProvided(UserProvidedEmbedderSettings),
+}
+
+/// Settings for configuring [Ollama](https://ollama.com/) embedders
+///
+/// # Example
+/// ```
+/// # use meilisearch_sdk::settings::HuggingFaceEmbedderSettings;
+/// let embedder_setting = HuggingFaceEmbedderSettings {
+///   model: Some("BAAI/bge-base-en-v1.5".to_string()),
+///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+///   ..Default::default()
+/// };
+/// # let expected = r#"{"model":"BAAI/bge-base-en-v1.5","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}"}"#;
+/// # let expected: HuggingFaceEmbedderSettings = serde_json::from_str(expected).unwrap();
+/// # assert_eq!(embedder_setting, expected);
+/// ```
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct HuggingFaceEmbedderSettings {
+    /// the [BERT embedding model](https://en.wikipedia.org/wiki/BERT_(language_model)) you want to use from [HuggingFace](https://huggingface.co)
+    /// Defaults to `"BAAI/bge-base-en-v1.5"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    /// revisions allow you to pin a specific version of a model, using a commit hash, tag or branch
+    /// this allows (according to [huggingface](https://huggingface.co/transformers/v4.8.2/model_sharing.html)):
+    /// - built-in versioning
+    /// - access control
+    /// - scalability
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub revision: Option<String>,
+    /// Use it to customize the data you send to the embedder. It is highly recommended you configure a custom template for your documents.
+    ///
+    /// if present, `document_template` must be a [Liquid template](https://shopify.github.io/liquid/).
+    /// Use `{{ doc.attribute }}` to access document field values.
+    /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
+    ///
+    /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
+    /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
+    ///
+    /// Default:
+    /// ```raw
+    /// {% for field in fields %}
+    /// {% if field.is_searchable and not field.value == nil %}
+    /// {{ field.name }}: {{ field.value }}\n
+    /// {% endif %}
+    /// {% endfor %}
+    /// ```
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template: Option<String>,
+    /// The maximum size of a rendered document template.
+    //
+    // Longer texts are truncated to fit the configured limit.
+    /// Default: `400`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template_max_bytes: Option<usize>,
+}
+
+/// Settings for configuring [OpenAI](https://openai.com/) embedders
+///
+/// # Example
+/// ```
+/// # use meilisearch_sdk::settings::OpenAIEmbedderSettings;
+/// let embedder_setting = OpenAIEmbedderSettings {
+///   api_key: "anOpenAIApiKey".to_string(),
+///   model: Some("text-embedding-3-small".to_string()),
+///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+///   dimensions: Some(1536),
+///   ..Default::default()
+/// };
+/// # let expected = r#"{"apiKey":"anOpenAIApiKey","model":"text-embedding-3-small","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}","dimensions":1536}"#;
+/// # let expected: OpenAIEmbedderSettings = serde_json::from_str(expected).unwrap();
+/// # assert_eq!(embedder_setting, expected);
+/// ```
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenAIEmbedderSettings {
+    /// API key used to authorize against OpenAI.
+    ///
+    /// [Generate an API key](https://platform.openai.com/api-keys) from your OpenAI account.
+    /// Use [tier 2 keys](https://platform.openai.com/docs/guides/rate-limits/usage-tiers?context=tier-two) or above for optimal performance.
+    pub api_key: String,
+    /// The openapi model name
+    /// Default: `text-embedding-3-small`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    /// Number of dimensions in the chosen model.
+    ///
+    /// If not supplied, Meilisearch tries to infer this value.
+    /// In most cases, dimensions should be the exact same value of your chosen model
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dimensions: Option<usize>,
+    /// Use it to customize the data you send to the embedder. It is highly recommended you configure a custom template for your documents.
+    ///
+    /// if present, `document_template` must be a [Liquid template](https://shopify.github.io/liquid/).
+    /// Use `{{ doc.attribute }}` to access document field values.
+    /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
+    ///
+    /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
+    /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
+    ///
+    /// Default:
+    /// ```raw
+    /// {% for field in fields %}
+    /// {% if field.is_searchable and not field.value == nil %}
+    /// {{ field.name }}: {{ field.value }}\n
+    /// {% endif %}
+    /// {% endfor %}
+    /// ```
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template: Option<String>,
+    /// The maximum size of a rendered document template.
+    //
+    // Longer texts are truncated to fit the configured limit.
+    /// Default: `400`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template_max_bytes: Option<usize>,
+}
+
+/// Settings for configuring [Ollama](https://ollama.com/) embedders
+///
+/// # Example
+/// ```
+/// # use meilisearch_sdk::settings::OllamaEmbedderSettings;
+/// let embedder_setting = OllamaEmbedderSettings {
+///   url: Some("http://localhost:11434/api/embeddings".to_string()),
+///   api_key: Some("foobarbaz".to_string()),
+///   model: "nomic-embed-text".to_string(),
+///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+///   document_template_max_bytes: None,
+/// };
+/// # let expected = r#"{"url":"http://localhost:11434/api/embeddings","apiKey":"foobarbaz","model":"nomic-embed-text","documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}"}"#;
+/// # let expected: OllamaEmbedderSettings = serde_json::from_str(expected).unwrap();
+/// # assert_eq!(embedder_setting, expected);
+/// ```
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct OllamaEmbedderSettings {
+    /// Mandatory, full URL to the embedding endpoint.
+    /// Must be parseable as a URL.
+    /// If not specified, [Meilisearch](https://www.meilisearch.com/) (**not the sdk you are currently using**) will try to fetch the `MEILI_OLLAMA_URL` environment variable
+    /// Example: `"http://localhost:11434/api/embeddings"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// Optional, token used to authenticate against [Ollama](https://ollama.com/)
+    /// Example: `"foobarbaz"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
+    /// See https://ollama.com/library?q=embed for suitable embedding models
+    ///
+    /// # Example embedding models
+    ///
+    /// | Model                    | Parameter    | Size                                                            |
+    /// |--------------------------|--------------|-----------------------------------------------------------------|
+    /// | `mxbai-embed-large`      | `334M`       | [View model](https://ollama.com/library/mxbai-embed-large)      |
+    /// | `nomic-embed-text`       | `137M`       | [View model](https://ollama.com/library/nomic-embed-text)       |
+    /// | `all-minilm`             | `23M`,`33M`  | [View model](https://ollama.com/library/all-minilm)             |
+    /// | `snowflake-arctic-embed` | varies       | [View model](https://ollama.com/library/snowflake-arctic-embed) |
+    pub model: String,
+    /// Use it to customize the data you send to the embedder. It is highly recommended you configure a custom template for your documents.
+    ///
+    /// if present, `document_template` must be a [Liquid template](https://shopify.github.io/liquid/).
+    /// Use `{{ doc.attribute }}` to access document field values.
+    /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
+    ///
+    /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
+    /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
+    ///
+    /// Default:
+    /// ```raw
+    /// {% for field in fields %}
+    /// {% if field.is_searchable and not field.value == nil %}
+    /// {{ field.name }}: {{ field.value }}\n
+    /// {% endif %}
+    /// {% endfor %}
+    /// ```
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template: Option<String>,
+    /// The maximum size of a rendered document template.
+    //
+    // Longer texts are truncated to fit the configured limit.
+    /// Default: `400`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template_max_bytes: Option<usize>,
+}
+
+/// Settings for configuring generic [REST](https://en.wikipedia.org/wiki/REST) embedders
+///
+/// # Example
+/// ```
+/// # use std::collections::HashMap;
+/// # use meilisearch_sdk::settings::{GenericRestEmbedderSettings};
+/// use serde_json::Value;
+/// let embedder_setting = GenericRestEmbedderSettings {
+///   url: Some("http://localhost:12345/api/v1/embed".to_string()),
+///   api_key: Some("SOURCE_API_KEY".to_string()),
+///   dimensions: Some(512),
+///   document_template: Some("A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}".to_string()),
+///   document_template_max_bytes: None,
+///   request: HashMap::from([
+///     ("model".to_string(), Value::from("MODEL_NAME")),
+///     ("prompt".to_string(), Value::from("{{text}}"))
+///   ]),
+///   response: HashMap::from([
+///     ("model".to_string(), Value::from("{{embedding}}"))
+///   ]),
+///   headers: HashMap::from([
+///     ("X-MAGIC".to_string(), "open sesame".to_string())
+///   ]),
+/// };
+/// # let expected = serde_json::json!({
+/// #   "url":"http://localhost:12345/api/v1/embed",
+/// #   "apiKey":"SOURCE_API_KEY",
+/// #   "dimensions":512,
+/// #   "documentTemplate":"A document titled {{doc.title}} whose description starts with {{doc.overview|truncatewords: 20}}",
+/// #   "request":{"prompt":"{{text}}","model":"MODEL_NAME"},
+/// #   "response":{"model":"{{embedding}}"},
+/// #   "headers":{"X-MAGIC":"open sesame"}
+/// # });
+/// # let expected: GenericRestEmbedderSettings = serde_json::from_value(expected).unwrap();
+/// # assert_eq!(embedder_setting, expected);
+/// ```
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct GenericRestEmbedderSettings {
+    /// Mandatory, full URL to the embedding endpoint
+    ///
+    /// Must be parseable as a URL.
+    /// If not specified, [Meilisearch](https://www.meilisearch.com/) (**not the sdk you are currently using**) will try to fetch the `MEILI_OLLAMA_URL` environment variable
+    /// Example: `"http://localhost:12345/api/v1/embed"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// Authentication token Meilisearch should send with each request to the embedder.
+    ///
+    /// Is passed as Bearer in the Authorization header
+    /// Example: `"187HFLDH97CNHN"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
+    /// Number of dimensions in the chosen model.
+    ///
+    /// If not supplied, Meilisearch tries to infer this value.
+    /// In most cases, dimensions should be the exact same value of your chosen model
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dimensions: Option<usize>,
+    /// Use it to customize the data you send to the embedder. It is highly recommended you configure a custom template for your documents.
+    ///
+    /// if present, `document_template` must be a [Liquid template](https://shopify.github.io/liquid/).
+    /// Use `{{ doc.attribute }}` to access document field values.
+    /// Meilisearch also exposes a `{{ fields }}` array containing one object per document field, which you may access with `{{ field.name }}` and `{{ field.value }}`.
+    ///
+    /// For best results, use short strings indicating the type of document in that index, only include highly relevant document fields, and truncate long fields.
+    /// Example: `"A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}"`
+    ///
+    /// Default:
+    /// ```raw
+    /// {% for field in fields %}
+    /// {% if field.is_searchable and not field.value == nil %}
+    /// {{ field.name }}: {{ field.value }}\n
+    /// {% endif %}
+    /// {% endfor %}
+    /// ```
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template: Option<String>,
+    /// A JSON value that represents the request made by Meilisearch to the remote embedder.
+    /// The text to embed must be replaced by the placeholder value `“{{text}}”`.
+    ///
+    /// Example:
+    /// ```json
+    /// {
+    ///   "model": "MODEL_NAME",
+    ///   "prompt": "{{text}}"
+    /// }
+    /// ```
+    /// The maximum size of a rendered document template.
+    //
+    // Longer texts are truncated to fit the configured limit.
+    /// Default: `400`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template_max_bytes: Option<usize>,
+    /// JSON object with the same structure and data of the request you must send to your rest embedder.
+    ///
+    /// The field containing the input text Meilisearch should send to the embedder must be replaced with `{{text}}`.
+    /// Example:
+    /// ```json
+    /// {"prompt": "{{text}}"}
+    /// ```
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub request: HashMap<String, serde_json::Value>,
+    ///  A JSON value that represents a fragment of the response made by the remote embedder to Meilisearch.
+    /// The embedding must be replaced by the placeholder value `"{{embedding}}"`
+    ///
+    /// Example:
+    /// ```json
+    /// {
+    ///   "embedding": "{{embedding}}"
+    /// }
+    /// ```
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub response: HashMap<String, serde_json::Value>,
+    /// JSON object whose keys represent the name and values of additional headers to send in requests.
+    ///
+    /// Embedding requests sent from Meilisearch to a remote REST embedder by default contain these headers:
+    ///
+    /// - if `api_key` was provided: `Authorization: Bearer <apiKey>`
+    /// - always: `Content-Type: application/json`
+    ///
+    /// If `headers` is empty, only `Authorization` and `Content-Type` are sent, as described above.
+    /// If `headers` contains `Authorization` and `Content-Type`, the declared values will override the ones that are sent by default.
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub headers: HashMap<String, String>,
+}
+
+/// Settings for user provided embedder
+///
+/// When using a custom embedder, you must vectorize both your documents and user queries.
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
+pub struct UserProvidedEmbedderSettings {
+    /// Number of dimensions in the user-provided model.
+    ///
+    /// In most cases, dimensions should be the exact same value of your chosen model
+    pub dimensions: usize,
+}
+
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalizedAttributes {
@@ -43,7 +384,7 @@ pub struct LocalizedAttributes {
     pub attribute_patterns: Vec<String>,
 }
 
-/// Struct reprensenting a set of settings.
+/// Struct representing a set of settings.
 ///
 /// You can build this struct using the builder syntax.
 ///
@@ -110,6 +451,9 @@ pub struct Settings {
     /// Proximity precision settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proximity_precision: Option<String>,
+    /// Settings how the embeddings for the vector search feature are generated
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub embedders: Option<HashMap<String, Embedder>>,
     /// SearchCutoffMs settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_cutoff_ms: Option<u64>,
@@ -304,6 +648,23 @@ impl Settings {
     pub fn with_proximity_precision(self, proximity_precision: impl AsRef<str>) -> Settings {
         Settings {
             proximity_precision: Some(proximity_precision.as_ref().to_string()),
+            ..self
+        }
+    }
+
+    /// Set the [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    #[must_use]
+    pub fn with_embedders<S>(self, embedders: HashMap<S, Embedder>) -> Settings
+    where
+        S: AsRef<str>,
+    {
+        Settings {
+            embedders: Some(
+                embedders
+                    .into_iter()
+                    .map(|(key, value)| (key.as_ref().to_string(), value))
+                    .collect(),
+            ),
             ..self
         }
     }
@@ -804,7 +1165,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("get_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_typo_tolerance");
     ///
@@ -824,6 +1185,45 @@ impl<Http: HttpClient> Index<Http> {
                 200,
             )
             .await
+    }
+
+    /// Get [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    ///
+    /// ```
+    /// # use std::collections::HashMap;
+    /// # use std::string::String;
+    /// # use meilisearch_sdk::{indexes::*,settings::Embedder,settings::UserProvidedEmbedderSettings,settings::Settings,client::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("get_embedders", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_embedders");
+    /// #
+    /// # let t = index.set_settings(&Settings{
+    /// #     embedders:Some(HashMap::from([(String::from("default"),Embedder::UserProvided(UserProvidedEmbedderSettings{dimensions:1}))])),
+    /// #     ..Settings::default()
+    /// # }).await.unwrap();
+    /// # t.wait_for_completion(&client, None, None).await.unwrap();
+    /// let embedders = index.get_embedders().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_embedders(&self) -> Result<HashMap<String, Embedder>, Error> {
+        self.client
+            .http_client
+            .request::<(), (), Option<HashMap<String, Embedder>>>(
+                &format!(
+                    "{}/indexes/{}/settings/embedders",
+                    self.client.host, self.uid
+                ),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+            .map(|r| r.unwrap_or_default())
     }
 
     /// Get [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
@@ -1473,7 +1873,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("set_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_typo_tolerance");
     ///
@@ -1601,7 +2001,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("set_proximity_precision", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_proximity_precision");
     ///
@@ -2117,7 +2517,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("reset_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_typo_tolerance");
     ///
@@ -2150,7 +2550,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("reset_proximity_precision", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_proximity_precision");
     ///
@@ -2164,6 +2564,39 @@ impl<Http: HttpClient> Index<Http> {
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/proximity-precision",
+                    self.client.host, self.uid
+                ),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
+    }
+
+    /// Reset [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("reset_embedders", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_embedders");
+    ///
+    /// let task = index.reset_embedders().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_embedders(&self) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/embedders",
                     self.client.host, self.uid
                 ),
                 Method::Delete { query: () },
@@ -2339,6 +2772,13 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_get_embeddings(index: Index) {
+        let res = index.get_embedders().await.unwrap();
+
+        assert_eq!(HashMap::new(), res);
+    }
+
+    #[meilisearch_test]
     async fn test_set_faceting(client: Client, index: Index) {
         let faceting = FacetingSettings {
             max_values_per_facet: 5,
@@ -2362,6 +2802,16 @@ mod tests {
         let res = index.get_faceting().await.unwrap();
 
         assert_eq!(faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_embedders(client: Client, index: Index) {
+        let task_info = index.reset_embedders().await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_embedders().await.unwrap();
+
+        assert_eq!(HashMap::new(), res);
     }
 
     #[meilisearch_test]
@@ -2538,6 +2988,21 @@ mod tests {
         let res = index.get_proximity_precision().await.unwrap();
 
         assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_embedding_settings(client: Client, index: Index) {
+        let custom_embedder =
+            Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 2 });
+        let embeddings = HashMap::from([("default".into(), custom_embedder)]);
+        let settings = Settings::new().with_embedders(embeddings.clone());
+
+        let task_info = index.set_settings(&settings).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_embedders().await.unwrap();
+
+        assert_eq!(embeddings, res);
     }
 
     #[meilisearch_test]
