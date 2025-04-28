@@ -1058,7 +1058,6 @@ getting_started_add_documents: |-
   ```
 
   // In your .rs file:
-  
   // Documents in the Rust library are strongly typed
   #[derive(Serialize, Deserialize)]
   struct Movie {
