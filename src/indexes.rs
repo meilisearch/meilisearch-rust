@@ -1798,6 +1798,10 @@ pub struct IndexStats {
     pub number_of_documents: usize,
     pub is_indexing: bool,
     pub field_distribution: HashMap<String, usize>,
+    pub raw_document_db_size: usize,
+    pub avg_document_size: usize,
+    pub number_of_embedded_documents: usize,
+    pub number_of_embeddings: usize,
 }
 
 /// An [`IndexesQuery`] containing filter and pagination parameters when searching for [Indexes](Index).
