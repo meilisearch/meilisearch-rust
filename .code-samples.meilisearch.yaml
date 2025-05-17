@@ -1045,8 +1045,8 @@ primary_field_guide_add_document_primary_key: |-
     ], Some("reference_number"))
     .await
     .unwrap();
-getting_started_add_documents_md: |-
-  ```toml
+getting_started_add_documents: |-
+  // In your .toml file:
     [dependencies]
     meilisearch-sdk = "0.28.0"
     # futures: because we want to block on futures
@@ -1057,9 +1057,8 @@ getting_started_add_documents_md: |-
     serde_json = "1.0"
   ```
 
-  Documents in the Rust library are strongly typed.
-
-  ```rust
+  // In your .rs file:
+  // Documents in the Rust library are strongly typed
   #[derive(Serialize, Deserialize)]
   struct Movie {
     id: i64,
@@ -1069,23 +1068,17 @@ getting_started_add_documents_md: |-
     release_date: i64,
     genres: Vec<String>
   }
-  ```
 
-  You will often need this `Movie` struct in other parts of this documentation. (you will have to change it a bit sometimes)
-  You can also use schemaless values, by putting a `serde_json::Value` inside your own struct like this:
-
-  ```rust
+  // You will often need this `Movie` struct in other parts of this documentation. (you will have to change it a bit sometimes)
+  // You can also use schemaless values, by putting a `serde_json::Value` inside your own struct like this:
   #[derive(Serialize, Deserialize)]
   struct Movie {
     id: i64,
     #[serde(flatten)]
     value: serde_json::Value,
   }
-  ```
 
-  Then, add documents into the index:
-
-  ```rust
+  // Then, add documents into the index:
   use meilisearch_sdk::{
     indexes::*,
     client::*,
@@ -1099,7 +1092,7 @@ getting_started_add_documents_md: |-
   fn main() { block_on(async move {
     let client = Client::new("http://localhost:7700", Some("aSampleMasterKey"));
 
-    // reading and parsing the file
+    // Reading and parsing the file
     let mut file = File::open("movies.json")
       .unwrap();
     let mut content = String::new();
@@ -1109,19 +1102,15 @@ getting_started_add_documents_md: |-
     let movies_docs: Vec<Movie> = serde_json::from_str(&content)
       .unwrap();
 
-    // adding documents
+    // Adding documents
     client
       .index("movies")
       .add_documents(&movies_docs, None)
       .await
       .unwrap();
   })}
-  ```
-
-  [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
-getting_started_search_md: |-
-  You can build a `SearchQuery` and execute it later:
-  ```rust
+getting_started_search: |-
+  // You can build a `SearchQuery` and execute it later:
   let query: SearchQuery = SearchQuery::new(&movies)
     .with_query("botman")
     .build();
@@ -1131,19 +1120,15 @@ getting_started_search_md: |-
     .execute_query(&query)
     .await
     .unwrap();
-  ```
 
-  You can build a `SearchQuery` and execute it directly:
-  ```rust
+  // You can build a `SearchQuery` and execute it directly:
   let results: SearchResults<Movie> = SearchQuery::new(&movies)
     .with_query("botman")
     .execute()
     .await
     .unwrap();
-  ```
 
-  You can search in an index directly:
-  ```rust
+  // You can search in an index directly:
   let results: SearchResults<Movie> = client
     .index("movies")
     .search()
@@ -1151,9 +1136,6 @@ getting_started_search_md: |-
     .execute()
     .await
     .unwrap();
-  ```
-
-  [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 getting_started_update_ranking_rules: |-
   let ranking_rules = [
     "exactness",
@@ -1650,7 +1632,7 @@ get_experimental_features_1: |-
 update_experimental_features_1: |-
   let client = Client::new("http://localhost:7700", Some("apiKey"));
   let features = ExperimentalFeatures::new(&client);
-  // update the feature you want here
+  features.set_metrics(true)
   let res = features
     .update()
     .await
