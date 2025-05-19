@@ -46,7 +46,7 @@ pub enum Embedder {
     HuggingFace(HuggingFaceEmbedderSettings),
     /// Use OpenAI's API to generate embeddings
     /// Depending on hardware, this is a
-    OpenAI(OpenAIEmbedderSettings),
+    OpenAi(OpenAIEmbedderSettings),
     /// [Ollama](https://ollama.com/) is a framework for building and running language models locally.
     Ollama(OllamaEmbedderSettings),
     /// Supports arbitrary embedders which supply a [REST](https://en.wikipedia.org/wiki/REST) interface
