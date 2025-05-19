@@ -41,11 +41,13 @@ pub struct FacetingSettings {
 #[serde(rename_all = "camelCase", tag = "source")]
 pub enum Embedder {
     /// Compute embeddings inside meilisearch with models from [HuggingFace](https://huggingface.co/).
+    ///
     /// You may be able to significantly improve performance by [compiling a CUDA-compatible Meilisearch binary](https://www.meilisearch.com/docs/guides/ai/computing_hugging_face_embeddings_gpu).
     /// This is a resource-intensive operation and might affect indexing performance negatively.
     HuggingFace(HuggingFaceEmbedderSettings),
     /// Use OpenAI's API to generate embeddings
-    /// Depending on hardware, this is a
+    ///
+    /// Depending on your hardware, this network request may be faster
     OpenAi(OpenAIEmbedderSettings),
     /// [Ollama](https://ollama.com/) is a framework for building and running language models locally.
     Ollama(OllamaEmbedderSettings),
