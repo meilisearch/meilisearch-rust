@@ -6,7 +6,7 @@ use serde::{de::DeserializeOwned, ser::SerializeStruct, Deserialize, Serialize, 
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, Eq, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct MatchRange {
     pub start: usize,
     pub length: usize,
@@ -50,7 +50,7 @@ pub enum MatchingStrategies {
 /// A single result.
 ///
 /// Contains the complete object, optionally the formatted object, and optionally an object that contains information about the matches.
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SearchResult<T> {
     /// The full result.
     #[serde(flatten)]
@@ -68,14 +68,14 @@ pub struct SearchResult<T> {
     pub ranking_score_details: Option<Map<String, Value>>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetStats {
     pub min: f64,
     pub max: f64,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A struct containing search results and other information about the search.
 pub struct SearchResults<T> {
@@ -657,7 +657,7 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
         self.client.execute_multi_search_query::<T>(self).await
     }
 }
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MultiSearchResponse<T> {
     pub results: Vec<SearchResults<T>>,
 }
