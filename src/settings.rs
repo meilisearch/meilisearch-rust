@@ -284,7 +284,6 @@ pub struct GenericRestEmbedderSettings {
     /// Mandatory, full URL to the embedding endpoint
     ///
     /// Must be parseable as a URL.
-    /// If not specified, [Meilisearch](https://www.meilisearch.com/) (**not the sdk you are currently using**) will try to fetch the `MEILI_OLLAMA_URL` environment variable
     /// Example: `"http://localhost:12345/api/v1/embed"`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
