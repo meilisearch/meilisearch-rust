@@ -82,6 +82,8 @@ pub struct DocumentQuery<'a, Http: HttpClient> {
     /// The fields that should appear in the documents. By default, all of the fields are present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "retrieveVectors")]
+    pub retrieve_vectors: Option<bool>,
 }
 
 impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
@@ -90,6 +92,7 @@ impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
         DocumentQuery {
             index,
             fields: None,
+            retrieve_vectors: None,
         }
     }
 
@@ -114,6 +117,30 @@ impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
         fields: impl IntoIterator<Item = &'a str>,
     ) -> &mut DocumentQuery<'a, Http> {
         self.fields = Some(fields.into_iter().collect());
+        self
+    }
+
+    /// Return document vector data with search result.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let index = client.index("document_query_with_retrieve_vectors");
+    /// let mut document_query = DocumentQuery::new(&index);
+    ///
+    /// document_query.with_retrieve_vectors(true);
+    /// ```
+    pub fn with_retrieve_vectors(
+        &mut self,
+        retrieve_vectors: bool,
+    ) -> &mut DocumentQuery<'a, Http> {
+        self.retrieve_vectors = Some(retrieve_vectors);
         self
     }
 
@@ -143,7 +170,9 @@ impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
     /// # let index = client.index("document_query_execute");
     /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
-    /// let document = DocumentQuery::new(&index).with_fields(["id"])
+    /// let document = DocumentQuery::new(&index)
+    ///     .with_fields(["id"]).
+    ///     .with_retrieve_vectors(true)
     ///     .execute::<MyObjectReduced>("1")
     ///     .await
     ///     .unwrap();
