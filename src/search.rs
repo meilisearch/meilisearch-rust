@@ -819,6 +819,56 @@ mod tests {
         Ok(())
     }
 
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct VideoDocument {
+        id: usize,
+        title: String,
+        description: Option<String>,
+        duration: u32,
+    }
+
+    async fn setup_test_video_index(client: &Client, index: &Index) -> Result<(), Error> {
+        let t0 = index
+            .add_documents(
+                &[
+                    VideoDocument {
+                        id: 0,
+                        title: S("Spring"),
+                        description: Some(S("A Blender Open movie")),
+                        duration: 123,
+                    },
+                    VideoDocument {
+                        id: 1,
+                        title: S("Wing It!"),
+                        description: None,
+                        duration: 234,
+                    },
+                    VideoDocument {
+                        id: 2,
+                        title: S("Coffee Run"),
+                        description: Some(S("Directed by Hjalti Hjalmarsson")),
+                        duration: 345,
+                    },
+                    VideoDocument {
+                        id: 3,
+                        title: S("Harry Potter and the Deathly Hallows"),
+                        description: None,
+                        duration: 7654,
+                    },
+                ],
+                None,
+            )
+            .await?;
+        let t1 = index.set_filterable_attributes(["duration"]).await?;
+        let t2 = index.set_sortable_attributes(["title"]).await?;
+
+        t2.wait_for_completion(client, None, None).await?;
+        t1.wait_for_completion(client, None, None).await?;
+        t0.wait_for_completion(client, None, None).await?;
+
+        Ok(())
+    }
+
     #[meilisearch_test]
     async fn test_multi_search(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
@@ -838,6 +888,78 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.results.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_federated_multi_search(
+        client: Client,
+        index_a: Index,
+        index_b: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index_a).await?;
+        setup_test_video_index(&client, &index_b).await?;
+
+        let query_death_a = SearchQuery::new(&index_a).with_query("death").build();
+        let query_death_b = SearchQuery::new(&index_b).with_query("death").build();
+
+        #[derive(Debug, Serialize, Deserialize, PartialEq)]
+        #[serde(untagged)]
+        enum AnyDocument {
+            IndexA(Document),
+            IndexB(VideoDocument),
+        }
+
+        let mut multi_query = client.multi_search();
+        multi_query.with_search_query(query_death_a.clone());
+        multi_query.with_search_query(query_death_b.clone());
+        let response = multi_query
+            .with_federation(FederationOptions::default())
+            .execute::<AnyDocument>()
+            .await?;
+
+        assert_eq!(response.hits.len(), 2);
+        let pos_a = response
+            .hits
+            .iter()
+            .position(|hit| hit.federation.as_ref().unwrap().index_uid == index_a.uid)
+            .expect("No hit of index_a found");
+        let hit_a = &response.hits[pos_a];
+        let hit_b = &response.hits[if pos_a == 0 { 1 } else { 0 }];
+        assert_eq!(
+            hit_a.result,
+            AnyDocument::IndexA(Document {
+                id: 9,
+                kind: "title".into(),
+                number: 90,
+                value: S("Harry Potter and the Deathly Hallows"),
+                nested: Nested { child: S("tenth") },
+            })
+        );
+        assert_eq!(
+            hit_b.result,
+            AnyDocument::IndexB(VideoDocument {
+                id: 3,
+                title: S("Harry Potter and the Deathly Hallows"),
+                description: None,
+                duration: 7654,
+            })
+        );
+
+        // Make sure federation options are applied
+        let mut multi_query = client.multi_search();
+        multi_query.with_search_query(query_death_a.clone());
+        multi_query.with_search_query(query_death_b.clone());
+        let response = multi_query
+            .with_federation(FederationOptions {
+                limit: Some(1),
+                ..Default::default()
+            })
+            .execute::<AnyDocument>()
+            .await?;
+
+        assert_eq!(response.hits.len(), 1);
+
         Ok(())
     }
 
