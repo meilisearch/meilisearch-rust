@@ -107,7 +107,7 @@ pub struct SearchResults<T> {
     pub index_uid: Option<String>,
 }
 
-fn serialize_with_wildcard<S: Serializer, T: Serialize>(
+pub(crate) fn serialize_with_wildcard<S: Serializer, T: Serialize>(
     data: &Option<Selectors<T>>,
     s: S,
 ) -> Result<S::Ok, S::Error> {

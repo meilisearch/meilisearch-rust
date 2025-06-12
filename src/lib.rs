@@ -261,6 +261,9 @@ mod tenant_tokens;
 /// Module containing utilizes functions.
 mod utils;
 
+/// Module related to similar queries and results.
+pub mod similar;
+
 #[cfg(feature = "reqwest")]
 pub mod reqwest;
 

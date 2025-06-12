@@ -4,6 +4,7 @@ use crate::{
     errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
     request::*,
     search::*,
+    similar::*,
     task_info::TaskInfo,
     tasks::*,
     DefaultHttpClient,
@@ -1621,6 +1622,50 @@ impl<Http: HttpClient> Index<Http> {
             task.push(self.add_or_update(document_batch, primary_key).await?);
         }
         Ok(task)
+    }
+
+    /// Get similar documents in the index.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, similar::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     description: String,
+    /// }
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let movies = client.index("execute_query");
+    ///
+    /// // add some documents
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let query = SimilarQuery::new(&movies, "1", "default").build();
+    /// let results = query.similar_query::<Movie>(&query).await.unwrap();
+    ///
+    /// assert!(results.hits.len() > 0);
+    /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn similar_query<T: 'static + DeserializeOwned + Send + Sync>(
+        &self,
+        body: &SimilarQuery<'_, Http>,
+    ) -> Result<SimilarResults<T>, Error> {
+        self.client
+            .http_client
+            .request::<(), &SimilarQuery<Http>, SimilarResults<T>>(
+                &format!("{}/indexes/{}/similar", self.client.host, self.uid),
+                Method::Post { body, query: () },
+                200,
+            )
+            .await
     }
 }
 
