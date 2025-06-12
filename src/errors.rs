@@ -395,7 +395,7 @@ mod test {
             reqwest::Client::new()
                 .execute(reqwest::Request::new(
                     reqwest::Method::POST,
-                    // there will never be a `meilisearch.gouv.fr` addr since these domain name are controlled by the state of france
+                    // there will never be a `meilisearch.gouv.fr` addr since these domain names are controlled by the state of france
                     reqwest::Url::parse("https://meilisearch.gouv.fr").unwrap(),
                 ))
                 .await
@@ -403,7 +403,7 @@ mod test {
         );
         assert_eq!(
             error.to_string(),
-            "HTTP request failed: error sending request for url (https://meilisearch.gouv.fr/)"
+            "HTTP request failed: error sending request"
         );
 
         let error = Error::InvalidTenantToken(jsonwebtoken::errors::Error::from(InvalidToken));

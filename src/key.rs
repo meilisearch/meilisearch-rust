@@ -656,6 +656,9 @@ pub enum Action {
     /// Provides access to everything.
     #[serde(rename = "*")]
     All,
+    /// Provides access to the `/chatCompletions` endpoint, since Meilisearch 1.15.1.
+    #[serde(rename = "chatCompletions")]
+    ChatCompletions,
     /// Provides access to both [`POST`](https://www.meilisearch.com/docs/reference/api/search#search-in-an-index-with-post-route) and [`GET`](https://www.meilisearch.com/docs/reference/api/search#search-in-an-index-with-get-route) search endpoints on authorized indexes.
     #[serde(rename = "search")]
     Search,
