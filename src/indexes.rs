@@ -1648,7 +1648,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let query = SimilarQuery::new(&movies, "1", "default").build();
-    /// let results = query.similar_query::<Movie>(&query).await.unwrap();
+    /// let results = movies.similar_query::<Movie>(&query).await.unwrap();
     ///
     /// assert!(results.hits.len() > 0);
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
