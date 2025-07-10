@@ -299,7 +299,7 @@ impl<Http: HttpClient> Index<Http> {
     /// }
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
-    /// let movies = client.index("execute_query");
+    /// let movies = client.index("execute_query2");
     ///
     /// // add some documents
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
