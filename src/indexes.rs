@@ -279,6 +279,56 @@ impl<Http: HttpClient> Index<Http> {
         SearchQuery::new(self)
     }
 
+    /// Returns the facet stats matching a specific query in the index.
+    ///
+    /// See also [`Index::facet_search`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     genre: String,
+    /// }
+    /// # futures::executor::block_on(async move {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// let movies = client.index("execute_query");
+    ///
+    /// // add some documents
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.set_filterable_attributes(["genre"]).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let query = FacetSearchQuery::new(&movies, "genre").with_facet_query("scifi").build();
+    /// let res = movies.execute_facet_query(&query).await.unwrap();
+    ///
+    /// assert!(res.facet_hits.len() > 0);
+    /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn execute_facet_query(
+        &self,
+        body: &FacetSearchQuery<'_>,
+    ) -> Result<FacetSearchResponse, Error> {
+        request::<(), &FacetSearchQuery, FacetSearchResponse>(
+            &format!("{}/indexes/{}/facet-search", self.client.host, self.uid),
+            self.client.get_api_key(),
+            Method::Post { body, query: () },
+            200,
+        )
+        .await
+    }
+
+    pub fn facet_search<'a>(&'a self, facet_name: &'a str) -> FacetSearchQuery<'a> {
+        FacetSearchQuery::new(self, facet_name)
+    }
+
     /// Get one document using its unique id.
     ///
     /// Serde is needed. Add `serde = {version="1.0", features=["derive"]}` in the dependencies section of your Cargo.toml.

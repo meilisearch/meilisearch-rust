@@ -1663,6 +1663,21 @@ reset_proximity_precision_settings_1: |-
     .reset_proximity_precision()
     .await
     .unwrap();
+facet_search_1: |-
+  let client = client::new("http://localhost:7700", Some("apiKey"));
+  let res = client.index("books")
+    .facet_search("genres")
+    .with_facet_query("fiction")
+    .with_filter("rating > 3")
+    .execute()
+    .await
+    .unwrap();
+facet_search_3: |-
+  let client = client::new("http://localhost:7700", Some("apiKey"));
+  let res = client.index("books")
+    .facet_search("genres")
+    .with_facet_query("c")
+    .execute()
 get_search_cutoff_1: |-
   let search_cutoff_ms: String = client
     .index("movies")
