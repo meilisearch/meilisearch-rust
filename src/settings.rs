@@ -289,13 +289,9 @@ impl Settings {
     }
 
     #[must_use]
-    pub fn with_faceting(self, faceting: &FacetingSettings) -> Settings {
-        let faceting_clone = FacetingSettings {
-            max_values_per_facet: faceting.max_values_per_facet,
-            sort_facet_values_by: faceting.sort_facet_values_by.clone(),
-        };
+    pub fn with_faceting(self, faceting: FacetingSettings) -> Settings {
         Settings {
-            faceting: Some(faceting_clone),
+            faceting: Some(faceting),
             ..self
         }
     }
@@ -2381,7 +2377,7 @@ mod tests {
             max_values_per_facet: 5,
             sort_facet_values_by: Some(req_facet_sort_setting),
         };
-        let settings = Settings::new().with_faceting(&req_faceting);
+        let settings = Settings::new().with_faceting(req_faceting.clone());
 
         let task_info = index.set_settings(&settings).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
