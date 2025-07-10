@@ -153,6 +153,18 @@ pub enum Selectors<T> {
     All,
 }
 
+/// Configures Meilisearch to return search results based on a query’s meaning and context
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct HybridSearch<'a> {
+    /// Indicates one of the embedders configured for the queried index
+    pub embedder: &'a str,
+    /// number between `0` and `1`:
+    /// - `0.0` indicates full keyword search
+    /// - `1.0` indicates full semantic search
+    pub semantic_ratio: f32,
+}
+
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
 
 /// A struct representing a query.
@@ -361,6 +373,18 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
+
+    /// Configures Meilisearch to return search results based on a query’s meaning and context.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hybrid: Option<HybridSearch<'a>>,
+
+    /// Use a custom vector to perform a search query.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vector: Option<&'a [f32]>,
+
+    /// Defines whether document embeddings are returned with search results.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub retrieve_vectors: Option<bool>,
 }
 
 #[allow(missing_docs)]
@@ -390,11 +414,15 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             show_ranking_score_details: None,
             matching_strategy: None,
             index_uid: None,
+            hybrid: None,
+            vector: None,
+            retrieve_vectors: None,
             distinct: None,
             ranking_score_threshold: None,
             locales: None,
         }
     }
+
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.query = Some(query);
         self
@@ -404,10 +432,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.offset = Some(offset);
         self
     }
+
     pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut SearchQuery<'a, Http> {
         self.limit = Some(limit);
         self
     }
+
     /// Add the page number on which to paginate.
     ///
     /// # Example
@@ -474,10 +504,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.hits_per_page = Some(hits_per_page);
         self
     }
+
     pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Left(filter)));
         self
     }
+
     pub fn with_array_filter<'b>(
         &'b mut self,
         filter: Vec<&'a str>,
@@ -485,6 +517,16 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Right(filter)));
         self
     }
+
+    /// Defines whether document embeddings are returned with search results.
+    pub fn with_retrieve_vectors<'b>(
+        &'b mut self,
+        retrieve_vectors: bool,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.retrieve_vectors = Some(retrieve_vectors);
+        self
+    }
+
     pub fn with_facets<'b>(
         &'b mut self,
         facets: Selectors<&'a [&'a str]>,
@@ -492,6 +534,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.facets = Some(facets);
         self
     }
+
     pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
         self.sort = Some(sort);
         self
@@ -504,6 +547,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.attributes_to_search_on = Some(attributes_to_search_on);
         self
     }
+
     pub fn with_attributes_to_retrieve<'b>(
         &'b mut self,
         attributes_to_retrieve: Selectors<&'a [&'a str]>,
@@ -511,6 +555,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.attributes_to_retrieve = Some(attributes_to_retrieve);
         self
     }
+
     pub fn with_attributes_to_crop<'b>(
         &'b mut self,
         attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>,
@@ -518,10 +563,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.attributes_to_crop = Some(attributes_to_crop);
         self
     }
+
     pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut SearchQuery<'a, Http> {
         self.crop_length = Some(crop_length);
         self
     }
+
     pub fn with_crop_marker<'b>(
         &'b mut self,
         crop_marker: &'a str,
@@ -529,6 +576,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.crop_marker = Some(crop_marker);
         self
     }
+
     pub fn with_attributes_to_highlight<'b>(
         &'b mut self,
         attributes_to_highlight: Selectors<&'a [&'a str]>,
@@ -536,6 +584,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
+
     pub fn with_highlight_pre_tag<'b>(
         &'b mut self,
         highlight_pre_tag: &'a str,
@@ -543,6 +592,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.highlight_pre_tag = Some(highlight_pre_tag);
         self
     }
+
     pub fn with_highlight_post_tag<'b>(
         &'b mut self,
         highlight_post_tag: &'a str,
@@ -550,6 +600,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.highlight_post_tag = Some(highlight_post_tag);
         self
     }
+
     pub fn with_show_matches_position<'b>(
         &'b mut self,
         show_matches_position: bool,
@@ -581,14 +632,41 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.matching_strategy = Some(matching_strategy);
         self
     }
+
     pub fn with_index_uid<'b>(&'b mut self) -> &'b mut SearchQuery<'a, Http> {
         self.index_uid = Some(&self.index.uid);
         self
     }
+
+    /// Configures Meilisearch to return search results based on a query’s meaning and context
+    pub fn with_hybrid<'b>(
+        &'b mut self,
+        embedder: &'a str,
+        semantic_ratio: f32,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.hybrid = Some(HybridSearch {
+            embedder,
+            semantic_ratio,
+        });
+        self
+    }
+
+    /// Use a custom vector to perform a search query
+    ///
+    /// `vector` is mandatory when performing searches with `userProvided` embedders.
+    /// You may also use `vector` to override an embedder’s automatic vector generation.
+    ///
+    /// `vector` dimensions must match the dimensions of the embedder.
+    pub fn with_vector<'b>(&'b mut self, vector: &'a [f32]) -> &'b mut SearchQuery<'a, Http> {
+        self.vector = Some(vector);
+        self
+    }
+
     pub fn with_distinct<'b>(&'b mut self, distinct: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.distinct = Some(distinct);
         self
     }
+
     pub fn with_ranking_score_threshold<'b>(
         &'b mut self,
         ranking_score_threshold: f64,
@@ -596,13 +674,16 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.ranking_score_threshold = Some(ranking_score_threshold);
         self
     }
+
     pub fn with_locales<'b>(&'b mut self, locales: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
         self.locales = Some(locales);
         self
     }
+
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
     }
+
     /// Execute the query and fetch the results.
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
@@ -662,12 +743,184 @@ pub struct MultiSearchResponse<T> {
     pub results: Vec<SearchResults<T>>,
 }
 
+/// A struct representing a facet-search query.
+///
+/// You can add search parameters using the builder syntax.
+///
+/// See [this page](https://www.meilisearch.com/docs/reference/api/facet_search) for the official list and description of all parameters.
+///
+/// # Examples
+///
+/// ```
+/// # use serde::{Serialize, Deserialize};
+/// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+/// #
+/// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
+/// #[derive(Serialize)]
+/// struct Movie {
+///     name: String,
+///     genre: String,
+/// }
+/// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+/// let movies = client.index("execute_query");
+///
+/// // add some documents
+/// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+/// # movies.set_filterable_attributes(["genre"]).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+///
+/// let query = FacetSearchQuery::new(&movies, "genre").with_facet_query("scifi").build();
+/// let res = movies.execute_facet_query(&query).await.unwrap();
+///
+/// assert!(res.facet_hits.len() > 0);
+/// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+/// # });
+/// ```
+///
+/// ```
+/// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+/// #
+/// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+/// # let index = client.index("facet_search_query_builder_build");
+/// let query = index.facet_search("kind")
+///     .with_facet_query("space")
+///     .build(); // you can also execute() instead of build()
+/// ```
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FacetSearchQuery<'a, Http: HttpClient = DefaultHttpClient> {
+    #[serde(skip_serializing)]
+    index: &'a Index<Http>,
+    /// The facet name to search values on.
+    pub facet_name: &'a str,
+    /// The search query for the facet values.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub facet_query: Option<&'a str>,
+    /// The text that will be searched for among the documents.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "q")]
+    pub search_query: Option<&'a str>,
+    /// Filter applied to documents.
+    ///
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/advanced/filtering) to learn the syntax.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filter: Option<Filter<'a>>,
+    /// Defines the strategy on how to handle search queries containing multiple words.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub matching_strategy: Option<MatchingStrategies>,
+    /// Restrict search to the specified attributes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes_to_search_on: Option<&'a [&'a str]>,
+    /// Return an exhaustive count of facets, up to the limit defined by maxTotalHits. Default is false.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exhaustive_facet_count: Option<bool>,
+}
+
+#[allow(missing_docs)]
+impl<'a, Http: HttpClient> FacetSearchQuery<'a, Http> {
+    pub fn new(index: &'a Index<Http>, facet_name: &'a str) -> FacetSearchQuery<'a, Http> {
+        FacetSearchQuery {
+            index,
+            facet_name,
+            facet_query: None,
+            search_query: None,
+            filter: None,
+            matching_strategy: None,
+            attributes_to_search_on: None,
+            exhaustive_facet_count: None,
+        }
+    }
+
+    pub fn with_facet_query<'b>(
+        &'b mut self,
+        facet_query: &'a str,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.facet_query = Some(facet_query);
+        self
+    }
+
+    pub fn with_search_query<'b>(
+        &'b mut self,
+        search_query: &'a str,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.search_query = Some(search_query);
+        self
+    }
+
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.filter = Some(Filter::new(Either::Left(filter)));
+        self
+    }
+
+    pub fn with_array_filter<'b>(
+        &'b mut self,
+        filter: Vec<&'a str>,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.filter = Some(Filter::new(Either::Right(filter)));
+        self
+    }
+
+    pub fn with_matching_strategy<'b>(
+        &'b mut self,
+        matching_strategy: MatchingStrategies,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.matching_strategy = Some(matching_strategy);
+        self
+    }
+
+    pub fn with_attributes_to_search_on<'b>(
+        &'b mut self,
+        attributes_to_search_on: &'a [&'a str],
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.attributes_to_search_on = Some(attributes_to_search_on);
+        self
+    }
+
+    pub fn with_exhaustive_facet_count<'b>(
+        &'b mut self,
+        exhaustive_facet_count: bool,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.exhaustive_facet_count = Some(exhaustive_facet_count);
+        self
+    }
+
+    pub fn build(&mut self) -> FacetSearchQuery<'a, Http> {
+        self.clone()
+    }
+
+    pub async fn execute(&'a self) -> Result<FacetSearchResponse, Error> {
+        self.index.execute_facet_query(self).await
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FacetHit {
+    pub value: String,
+    pub count: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FacetSearchResponse {
+    pub facet_hits: Vec<FacetHit>,
+    pub facet_query: Option<String>,
+    pub processing_time_ms: usize,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
         client::*,
         key::{Action, KeyBuilder},
         search::*,
+        settings::EmbedderSource,
     };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
@@ -686,6 +939,37 @@ mod tests {
         kind: String,
         number: i32,
         nested: Nested,
+        #[serde(skip_serializing_if = "Option::is_none", default)]
+        _vectors: Option<Vectors>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Vector {
+        embeddings: SingleOrMultipleVectors,
+        regenerate: bool,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    #[serde(untagged)]
+    enum SingleOrMultipleVectors {
+        Single(Vec<f32>),
+        Multiple(Vec<Vec<f32>>),
+    }
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Vectors(HashMap<String, Vector>);
+
+    impl<T: Into<Vec<f32>>> From<T> for Vectors {
+        fn from(value: T) -> Self {
+            let vec: Vec<f32> = value.into();
+            Vectors(HashMap::from([(
+                S("default"),
+                Vector {
+                    embeddings: SingleOrMultipleVectors::Multiple(Vec::from([vec])),
+                    regenerate: false,
+                },
+            )]))
+        }
     }
 
     impl PartialEq<Map<String, Value>> for Document {
@@ -697,18 +981,25 @@ mod tests {
         }
     }
 
+    fn vectorize(is_harry_potter: bool, id: usize) -> Vec<f32> {
+        let mut vector: Vec<f32> = vec![0.; 11];
+        vector[0] = if is_harry_potter { 1. } else { 0. };
+        vector[id + 1] = 1.;
+        vector
+    }
+
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
         let t0 = index.add_documents(&[
-            Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") } },
-            Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") } },
-            Document { id: 2, kind: "title".into(), number: 20, value: S("The Social Network"), nested: Nested { child: S("third") } },
-            Document { id: 3, kind: "title".into(), number: 30, value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") } },
-            Document { id: 4, kind: "title".into(), number: 40, value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") } },
-            Document { id: 5, kind: "title".into(), number: 50, value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") } },
-            Document { id: 6, kind: "title".into(), number: 60, value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") } },
-            Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") } },
-            Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") } },
-            Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") } },
+            Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") }, _vectors: Some(Vectors::from(vectorize(false, 0))) },
+            Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") }, _vectors: Some(Vectors::from(vectorize(false, 1))) },
+            Document { id: 2, kind: "title".into(), number: 20, value: S("The Social Network"), nested: Nested { child: S("third") }, _vectors: Some(Vectors::from(vectorize(false, 2))) },
+            Document { id: 3, kind: "title".into(), number: 30, value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") }, _vectors: Some(Vectors::from(vectorize(true, 3))) },
+            Document { id: 4, kind: "title".into(), number: 40, value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") }, _vectors: Some(Vectors::from(vectorize(true, 4))) },
+            Document { id: 5, kind: "title".into(), number: 50, value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") }, _vectors: Some(Vectors::from(vectorize(true, 5))) },
+            Document { id: 6, kind: "title".into(), number: 60, value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") }, _vectors: Some(Vectors::from(vectorize(true, 6))) },
+            Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") }, _vectors: Some(Vectors::from(vectorize(true, 7))) },
+            Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") }, _vectors: Some(Vectors::from(vectorize(true, 8))) },
+            Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") }, _vectors: Some(Vectors::from(vectorize(true, 9))) },
         ], None).await?;
         let t1 = index
             .set_filterable_attributes(["kind", "value", "number"])
@@ -719,6 +1010,24 @@ mod tests {
         t1.wait_for_completion(client, None, None).await?;
         t0.wait_for_completion(client, None, None).await?;
 
+        Ok(())
+    }
+
+    async fn setup_hybrid_searching(client: &Client, index: &Index) -> Result<(), Error> {
+        use crate::settings::Embedder;
+        let embedder_setting = Embedder {
+            source: EmbedderSource::UserProvided,
+            dimensions: Some(11),
+            ..Embedder::default()
+        };
+        index
+            .set_settings(&crate::settings::Settings {
+                embedders: Some(HashMap::from([("default".to_string(), embedder_setting)])),
+                ..crate::settings::Settings::default()
+            })
+            .await?
+            .wait_for_completion(client, None, None)
+            .await?;
         Ok(())
     }
 
@@ -796,7 +1105,8 @@ mod tests {
                 value: S("dolor sit amet, consectetur adipiscing elit"),
                 kind: S("text"),
                 number: 10,
-                nested: Nested { child: S("second") }
+                nested: Nested { child: S("second") },
+                _vectors: None,
             },
             &results.hits[0].result
         );
@@ -968,7 +1278,8 @@ mod tests {
                 value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do…"),
                 kind: S("text"),
                 number: 0,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("first") },
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -983,7 +1294,8 @@ mod tests {
                 value: S("Lorem ipsum dolor sit amet…"),
                 kind: S("text"),
                 number: 0,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("first") },
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1004,7 +1316,8 @@ mod tests {
             value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
             kind: S("text"),
             number: 0,
-            nested: Nested { child: S("first") }
+            nested: Nested { child: S("first") },
+            _vectors: None,
         },
         results.hits[0].formatted_result.as_ref().unwrap());
 
@@ -1019,7 +1332,8 @@ mod tests {
                 value: S("Lorem ipsum dolor sit amet…"),
                 kind: S("text"),
                 number: 0,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("first") },
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1044,7 +1358,8 @@ mod tests {
                 value: S("(ꈍᴗꈍ)sed do eiusmod tempor incididunt ut(ꈍᴗꈍ)"),
                 kind: S("text"),
                 number: 0,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("first") },
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1071,7 +1386,8 @@ mod tests {
                 value: S("The (⊃｡•́‿•̀｡)⊃ Social ⊂(´• ω •`⊂) Network"),
                 kind: S("title"),
                 number: 20,
-                nested: Nested { child: S("third") }
+                nested: Nested { child: S("third") },
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1093,7 +1409,8 @@ mod tests {
                 value: S("<em>dolor</em> sit amet, consectetur adipiscing elit"),
                 kind: S("<em>text</em>"),
                 number: 10,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("second") },
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap(),
         );
@@ -1108,7 +1425,8 @@ mod tests {
                 value: S("<em>dolor</em> sit amet, consectetur adipiscing elit"),
                 kind: S("text"),
                 number: 10,
-                nested: Nested { child: S("first") }
+                nested: Nested { child: S("second") },
+                _vectors: None,
             },
             results.hits[0].formatted_result.as_ref().unwrap()
         );
@@ -1305,6 +1623,209 @@ mod tests {
             assert!(!result.hits.is_empty());
         }
 
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_base(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index.facet_search("kind").execute().await?;
+        assert_eq!(res.facet_hits.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_exhaustive_facet_count(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_exhaustive_facet_count(true)
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_facet_query(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_facet_query("title")
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        assert_eq!(res.facet_hits[0].value, "title");
+        assert_eq!(res.facet_hits[0].count, 8);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_attributes_to_search_on(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_search_query("title")
+            .with_attributes_to_search_on(&["value"])
+            .execute()
+            .await?;
+        println!("{:?}", res);
+        assert_eq!(res.facet_hits.len(), 0);
+
+        let res = index
+            .facet_search("kind")
+            .with_search_query("title")
+            .with_attributes_to_search_on(&["kind"])
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_with_vectors(client: Client, index: Index) -> Result<(), Error> {
+        setup_hybrid_searching(&client, &index).await?;
+        setup_test_index(&client, &index).await?;
+
+        let results: SearchResults<Document> = index
+            .search()
+            .with_query("lorem ipsum")
+            .with_retrieve_vectors(true)
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 1);
+        let expected = Some(Vectors::from(vectorize(false, 0)));
+        assert_eq!(results.hits[0].result._vectors, expected);
+
+        let results: SearchResults<Document> = index
+            .search()
+            .with_query("lorem ipsum")
+            .with_retrieve_vectors(false)
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 1);
+        assert_eq!(results.hits[0].result._vectors, None);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_hybrid(client: Client, index: Index) -> Result<(), Error> {
+        setup_hybrid_searching(&client, &index).await?;
+        setup_test_index(&client, &index).await?;
+
+        // Search for an Harry Potter but with lorem ipsum's id
+        // Will yield lorem ipsum first, them harry potter documents, then the rest
+        let results: SearchResults<Document> = index
+            .search()
+            .with_hybrid("default", 1.0)
+            .with_vector(&vectorize(true, 0))
+            .execute()
+            .await?;
+        let ids = results
+            .hits
+            .iter()
+            .map(|hit| hit.result.id)
+            .collect::<Vec<_>>();
+        assert_eq!(ids, vec![0, 3, 4, 5, 6, 7, 8, 9, 1, 2]);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_search_query(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_search_query("Harry Potter")
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        assert_eq!(res.facet_hits[0].value, "title");
+        assert_eq!(res.facet_hits[0].count, 7);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_filter(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_filter("value = \"The Social Network\"")
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        assert_eq!(res.facet_hits[0].value, "title");
+        assert_eq!(res.facet_hits[0].count, 1);
+
+        let res = index
+            .facet_search("kind")
+            .with_filter("NOT value = \"The Social Network\"")
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_array_filter(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_array_filter(vec![
+                "value = \"The Social Network\"",
+                "value = \"The Social Network\"",
+            ])
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        assert_eq!(res.facet_hits[0].value, "title");
+        assert_eq!(res.facet_hits[0].count, 1);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_matching_strategy_all(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_search_query("Harry Styles")
+            .with_matching_strategy(MatchingStrategies::ALL)
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 0);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_matching_strategy_last(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_search_query("Harry Styles")
+            .with_matching_strategy(MatchingStrategies::LAST)
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        assert_eq!(res.facet_hits[0].value, "title");
+        assert_eq!(res.facet_hits[0].count, 7);
         Ok(())
     }
 }

@@ -122,10 +122,7 @@ pub fn parse_response<Output: DeserializeOwned>(
         };
     }
 
-    warn!(
-        "Expected response code {}, got {}",
-        expected_status_code, status_code
-    );
+    warn!("Expected response code {expected_status_code}, got {status_code}");
 
     match from_str::<MeilisearchError>(body) {
         Ok(e) => Err(Error::from(e)),
