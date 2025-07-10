@@ -314,18 +314,19 @@ impl<Http: HttpClient> Index<Http> {
     /// ```
     pub async fn execute_facet_query(
         &self,
-        body: &FacetSearchQuery<'_>,
+        body: &FacetSearchQuery<'_, Http>,
     ) -> Result<FacetSearchResponse, Error> {
-        request::<(), &FacetSearchQuery, FacetSearchResponse>(
-            &format!("{}/indexes/{}/facet-search", self.client.host, self.uid),
-            self.client.get_api_key(),
-            Method::Post { body, query: () },
-            200,
-        )
-        .await
+        self.client
+            .http_client
+            .request::<(), &FacetSearchQuery<Http>, FacetSearchResponse>(
+                &format!("{}/indexes/{}/facet-search", self.client.host, self.uid),
+                Method::Post { body, query: () },
+                200,
+            )
+            .await
     }
 
-    pub fn facet_search<'a>(&'a self, facet_name: &'a str) -> FacetSearchQuery<'a> {
+    pub fn facet_search<'a>(&'a self, facet_name: &'a str) -> FacetSearchQuery<'a, Http> {
         FacetSearchQuery::new(self, facet_name)
     }
 

@@ -713,9 +713,9 @@ pub struct MultiSearchResponse<T> {
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct FacetSearchQuery<'a> {
+pub struct FacetSearchQuery<'a, Http: HttpClient = DefaultHttpClient> {
     #[serde(skip_serializing)]
-    index: &'a Index,
+    index: &'a Index<Http>,
     /// The facet name to search values on.
     pub facet_name: &'a str,
     /// The search query for the facet values.
@@ -736,8 +736,8 @@ pub struct FacetSearchQuery<'a> {
 }
 
 #[allow(missing_docs)]
-impl<'a> FacetSearchQuery<'a> {
-    pub fn new(index: &'a Index, facet_name: &'a str) -> FacetSearchQuery<'a> {
+impl<'a, Http: HttpClient> FacetSearchQuery<'a, Http> {
+    pub fn new(index: &'a Index<Http>, facet_name: &'a str) -> FacetSearchQuery<'a, Http> {
         FacetSearchQuery {
             index,
             facet_name,
@@ -751,7 +751,7 @@ impl<'a> FacetSearchQuery<'a> {
     pub fn with_facet_query<'b>(
         &'b mut self,
         facet_query: &'a str,
-    ) -> &'b mut FacetSearchQuery<'a> {
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
         self.facet_query = Some(facet_query);
         self
     }
@@ -759,12 +759,12 @@ impl<'a> FacetSearchQuery<'a> {
     pub fn with_search_query<'b>(
         &'b mut self,
         search_query: &'a str,
-    ) -> &'b mut FacetSearchQuery<'a> {
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
         self.search_query = Some(search_query);
         self
     }
 
-    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut FacetSearchQuery<'a> {
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut FacetSearchQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Left(filter)));
         self
     }
@@ -772,7 +772,7 @@ impl<'a> FacetSearchQuery<'a> {
     pub fn with_array_filter<'b>(
         &'b mut self,
         filter: Vec<&'a str>,
-    ) -> &'b mut FacetSearchQuery<'a> {
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Right(filter)));
         self
     }
@@ -780,12 +780,12 @@ impl<'a> FacetSearchQuery<'a> {
     pub fn with_matching_strategy<'b>(
         &'b mut self,
         matching_strategy: MatchingStrategies,
-    ) -> &'b mut FacetSearchQuery<'a> {
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
         self.matching_strategy = Some(matching_strategy);
         self
     }
 
-    pub fn build(&mut self) -> FacetSearchQuery<'a> {
+    pub fn build(&mut self) -> FacetSearchQuery<'a, Http> {
         self.clone()
     }
 
