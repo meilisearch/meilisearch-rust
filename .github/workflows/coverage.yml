@@ -26,11 +26,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Nightly Rust is used for cargo llvm-cov --doc below.
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          profile: minimal
-          toolchain: nightly
-          override: true
           components: llvm-tools-preview
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
