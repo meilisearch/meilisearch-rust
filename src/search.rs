@@ -1488,6 +1488,21 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_facet_search_with_exhaustive_facet_count(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_exhaustive_facet_count(true)
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_facet_search_with_facet_query(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         let res = index
