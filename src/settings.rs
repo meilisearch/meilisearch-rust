@@ -2356,11 +2356,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_set_faceting_settings(client: Client, index: Index) {
-        let req_faceting = FacetingSettings {
-            max_values_per_facet: 5,
-            sort_facet_values_by: None,
-        };
-        let settings = Settings::new().with_faceting(&req_faceting);
+        let settings = Settings::new().with_max_values_per_facet(5);
 
         let task_info = index.set_settings(&settings).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
@@ -2370,7 +2366,7 @@ mod tests {
         let mut expected_facet_sort_setting = BTreeMap::new();
         expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
         let expected_faceting = FacetingSettings {
-            max_values_per_facet: req_faceting.max_values_per_facet,
+            max_values_per_facet: 5,
             sort_facet_values_by: Some(expected_facet_sort_setting),
         };
 
