@@ -49,12 +49,96 @@ pub struct FacetingSettings {
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub enum EmbedderSource {
+    #[default]
+    UserProvided,
+    HuggingFace,
+    OpenAi,
+    Ollama,
+    Rest,
+    Composite,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct EmbedderDistribution {
+    pub mean: f64,
+    pub sigma: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Embedder {
+    /// The third-party tool that will generate embeddings from documents
+    pub source: EmbedderSource,
+
+    /// The URL Meilisearch contacts when querying the embedder
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+
+    /// Authentication token Meilisearch should send with each request to the embedder.
+    /// If not present, Meilisearch will attempt to read it from environment variables
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
+
+    /// The model your embedder uses when generating vectors
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+
+    /// Model revision hash
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub revision: Option<String>,
+
+    /// Pooling method for Hugging Face embedders
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pooling: Option<String>,
+
+    /// Template defining the data Meilisearch sends to the embedder
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template: Option<String>,
+
+    /// Maximum allowed size of rendered document template
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_template_max_bytes: Option<usize>,
+
+    /// Number of dimensions in the chosen model.
+    /// If not supplied, Meilisearch tries to infer this value
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dimensions: Option<usize>,
+
+    /// Describes the natural distribution of search results.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distribution: Option<EmbedderDistribution>,
+
+    /// A JSON value representing the request Meilisearch makes to the remote embedder
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub request: Option<serde_json::Value>,
+
+    /// A JSON value representing the response Meilisearch expects from the remote embedder
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub response: Option<serde_json::Value>,
+
+    /// Once set to true, irreversibly converts all vector dimensions to 1-bit values
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub binary_quantized: Option<bool>,
+
+    /// Configures embedder to vectorize documents during indexing (composite embedders only)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub indexing_embedder: Option<Box<Embedder>>,
+
+    /// Configures embedder to vectorize search queries (composite embedders only)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_embedder: Option<Box<Embedder>>,
+}
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct LocalizedAttributes {
     pub locales: Vec<String>,
     pub attribute_patterns: Vec<String>,
 }
 
-/// Struct reprensenting a set of settings.
+/// Struct representing a set of settings.
 ///
 /// You can build this struct using the builder syntax.
 ///
@@ -121,6 +205,9 @@ pub struct Settings {
     /// Proximity precision settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proximity_precision: Option<String>,
+    /// Embedders translate documents and queries into vector embeddings
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub embedders: Option<HashMap<String, Embedder>>,
     /// SearchCutoffMs settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_cutoff_ms: Option<u64>,
@@ -338,6 +425,23 @@ impl Settings {
     pub fn with_proximity_precision(self, proximity_precision: impl AsRef<str>) -> Settings {
         Settings {
             proximity_precision: Some(proximity_precision.as_ref().to_string()),
+            ..self
+        }
+    }
+
+    /// Set the [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    #[must_use]
+    pub fn with_embedders<S>(self, embedders: HashMap<S, Embedder>) -> Settings
+    where
+        S: Into<String>,
+    {
+        Settings {
+            embedders: Some(
+                embedders
+                    .into_iter()
+                    .map(|(key, value)| (key.into(), value))
+                    .collect(),
+            ),
             ..self
         }
     }
@@ -838,7 +942,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("get_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_typo_tolerance");
     ///
@@ -856,6 +960,97 @@ impl<Http: HttpClient> Index<Http> {
                 ),
                 Method::Get { query: () },
                 200,
+            )
+            .await
+    }
+
+    /// Get [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    ///
+    /// ```
+    /// # use std::collections::HashMap;
+    /// # use std::string::String;
+    /// # use meilisearch_sdk::{indexes::*,settings::Embedder,settings::EmbedderSource,settings::Settings,client::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("get_embedders", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("get_embedders");
+    /// #
+    /// # let t = index.set_embedders(&HashMap::from([(
+    /// #         String::from("default"),
+    /// #         Embedder {
+    /// #             source: EmbedderSource::UserProvided,
+    /// #             dimensions: Some(1),
+    /// #             ..Embedder::default()
+    /// #         }
+    /// #     )])).await.unwrap();
+    /// # t.wait_for_completion(&client, None, None).await.unwrap();
+    /// let embedders = index.get_embedders().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_embedders(&self) -> Result<HashMap<String, Embedder>, Error> {
+        self.client
+            .http_client
+            .request::<(), (), Option<HashMap<String, Embedder>>>(
+                &format!(
+                    "{}/indexes/{}/settings/embedders",
+                    self.client.host, self.uid
+                ),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+            .map(|r| r.unwrap_or_default())
+    }
+
+    /// Set [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    ///
+    /// ```
+    /// # use std::collections::HashMap;
+    /// # use std::string::String;
+    /// # use meilisearch_sdk::{indexes::*,settings::Embedder,settings::EmbedderSource,settings::Settings,client::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("set_embedders", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("set_embedders");
+    /// #
+    /// let t = index.set_embedders(&HashMap::from([(
+    ///         String::from("default"),
+    ///         Embedder {
+    ///             source: EmbedderSource::UserProvided,
+    ///             dimensions: Some(1),
+    ///             ..Embedder::default()
+    ///         }
+    ///     )])).await.unwrap();
+    /// # t.wait_for_completion(&client, None, None).await.unwrap();
+    /// # let embedders = index.get_embedders().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_embedders(
+        &self,
+        embedders: &HashMap<String, Embedder>,
+    ) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), &HashMap<String, Embedder>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/embedders",
+                    self.client.host, self.uid
+                ),
+                Method::Patch {
+                    query: (),
+                    body: embedders,
+                },
+                202,
             )
             .await
     }
@@ -1508,7 +1703,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("set_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_typo_tolerance");
     ///
@@ -1636,7 +1831,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("set_proximity_precision", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_proximity_precision");
     ///
@@ -2152,7 +2347,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("reset_typo_tolerance", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_typo_tolerance");
     ///
@@ -2185,7 +2380,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    /// let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # client.create_index("reset_proximity_precision", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("reset_proximity_precision");
     ///
@@ -2199,6 +2394,39 @@ impl<Http: HttpClient> Index<Http> {
             .request::<(), (), TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/proximity-precision",
+                    self.client.host, self.uid
+                ),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
+    }
+
+    /// Reset [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("reset_embedders", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut index = client.index("reset_embedders");
+    ///
+    /// let task = index.reset_embedders().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn reset_embedders(&self) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), (), TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/embedders",
                     self.client.host, self.uid
                 ),
                 Method::Delete { query: () },
@@ -2412,6 +2640,13 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_get_embedders(index: Index) {
+        let res = index.get_embedders().await.unwrap();
+
+        assert_eq!(HashMap::new(), res);
+    }
+
+    #[meilisearch_test]
     async fn test_set_faceting(client: Client, index: Index) {
         let req_faceting = FacetingSettings {
             max_values_per_facet: 5,
@@ -2475,6 +2710,16 @@ mod tests {
         };
 
         assert_eq!(expected_faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_embedders(client: Client, index: Index) {
+        let task_info = index.reset_embedders().await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_embedders().await.unwrap();
+
+        assert_eq!(HashMap::new(), res);
     }
 
     #[meilisearch_test]
@@ -2651,6 +2896,23 @@ mod tests {
         let res = index.get_proximity_precision().await.unwrap();
 
         assert_eq!(expected, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_embedder_settings(client: Client, index: Index) {
+        let custom_embedder = Embedder {
+            source: EmbedderSource::UserProvided,
+            dimensions: Some(2),
+            ..Default::default()
+        };
+        let embedders = HashMap::from([("default".into(), custom_embedder)]);
+
+        let task_info = index.set_embedders(&embedders).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_embedders().await.unwrap();
+
+        assert_eq!(embedders, res);
     }
 
     #[meilisearch_test]
