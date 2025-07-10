@@ -583,8 +583,8 @@ get_faceting_settings_1: |-
     .unwrap();
 update_faceting_settings_1: |-
   let mut facet_sort_setting = BTreeMap::new();
-  facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
-  facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
+  facet_sort_setting.insert(String::from("*"), FacetSortValue::Alpha);
+  facet_sort_setting.insert(String::from("genres"), FacetSortValue::Count);
   let mut faceting = FacetingSettings {
     max_values_per_facet: 2,
     sort_facet_values_by: Some(facet_sort_setting),
