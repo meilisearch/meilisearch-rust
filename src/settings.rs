@@ -33,9 +33,9 @@ pub struct TypoToleranceSettings {
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Serialize)]
 pub enum FacetSortValue {
     #[serde(rename = "alpha")]
-    ALPHA,
+    Alpha,
     #[serde(rename = "count")]
-    COUNT,
+    Count,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -2341,7 +2341,7 @@ mod tests {
         let res = index.get_faceting().await.unwrap();
 
         let mut expected_facet_sort_setting = BTreeMap::new();
-        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
         let expected_faceting = FacetingSettings {
             max_values_per_facet: req_faceting.max_values_per_facet,
             sort_facet_values_by: Some(expected_facet_sort_setting),
@@ -2353,7 +2353,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_set_faceting_settings_with_sort_values(client: Client, index: Index) {
         let mut req_facet_sort_setting = BTreeMap::new();
-        req_facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+        req_facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
         let req_faceting = FacetingSettings {
             max_values_per_facet: 5,
             sort_facet_values_by: Some(req_facet_sort_setting),
@@ -2366,8 +2366,8 @@ mod tests {
         let res = index.get_faceting().await.unwrap();
 
         let mut expected_facet_sort_setting = BTreeMap::new();
-        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
-        expected_facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
+        expected_facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
         let expected_faceting = FacetingSettings {
             max_values_per_facet: req_faceting.max_values_per_facet,
             sort_facet_values_by: Some(expected_facet_sort_setting),
@@ -2386,7 +2386,7 @@ mod tests {
         let res = index.get_faceting().await.unwrap();
 
         let mut expected_facet_sort_setting = BTreeMap::new();
-        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
         let expected_faceting = FacetingSettings {
             max_values_per_facet: req_faceting.max_values_per_facet,
             sort_facet_values_by: Some(expected_facet_sort_setting),
@@ -2407,7 +2407,7 @@ mod tests {
         let res = index.get_faceting().await.unwrap();
 
         let mut expected_facet_sort_setting = BTreeMap::new();
-        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
         let expected_faceting = FacetingSettings {
             max_values_per_facet: req_faceting.max_values_per_facet,
             sort_facet_values_by: Some(expected_facet_sort_setting),
@@ -2419,7 +2419,7 @@ mod tests {
     #[meilisearch_test]
     async fn test_set_faceting_with_sort_values(client: Client, index: Index) {
         let mut req_facet_sort_setting = BTreeMap::new();
-        req_facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+        req_facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
         let req_faceting = FacetingSettings {
             max_values_per_facet: 5,
             sort_facet_values_by: Some(req_facet_sort_setting),
@@ -2430,8 +2430,8 @@ mod tests {
         let res = index.get_faceting().await.unwrap();
 
         let mut expected_facet_sort_setting = BTreeMap::new();
-        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
-        expected_facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
+        expected_facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
         let expected_faceting = FacetingSettings {
             max_values_per_facet: req_faceting.max_values_per_facet,
             sort_facet_values_by: Some(expected_facet_sort_setting),
@@ -2452,7 +2452,7 @@ mod tests {
         let res = index.get_faceting().await.unwrap();
 
         let mut expected_facet_sort_setting = BTreeMap::new();
-        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
         let expected_faceting = FacetingSettings {
             max_values_per_facet: req_faceting.max_values_per_facet,
             sort_facet_values_by: Some(expected_facet_sort_setting),

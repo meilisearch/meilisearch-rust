@@ -582,8 +582,8 @@ get_faceting_settings_1: |-
     .unwrap();
 update_faceting_settings_1: |-
   let mut facet_sort_setting = BTreeMap::new();
-  facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
-  facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+  facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
+  facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
   let mut faceting = FacetingSettings {
     max_values_per_facet: 2,
     sort_facet_values_by: Some(facet_sort_setting),
@@ -1270,7 +1270,7 @@ getting_started_sorting: |-
     .unwrap();
 getting_started_faceting: |-
   let mut facet_sort_setting = BTreeMap::new();
-  facet_sort_setting.insert("*".to_string(), FacetSortValue::COUNT);
+  facet_sort_setting.insert("*".to_string(), FacetSortValue::Count);
   let mut faceting = FacetingSettings {
     max_values_per_facet: 2,
     sort_facet_values_by: Some(facet_sort_setting),
@@ -1680,7 +1680,7 @@ facet_search_1: |-
     .unwrap();
 facet_search_2: |-
   let mut facet_sort_setting = BTreeMap::new();
-  facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+  facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
   let faceting = FacetingSettings {
     max_values_per_facet: 5,
     sort_facet_values_by: Some(facet_sort_setting),
