@@ -1517,7 +1517,10 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_facet_search_with_attributes_to_search_on(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_facet_search_with_attributes_to_search_on(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
         let res = index
             .facet_search("kind")
