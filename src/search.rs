@@ -652,10 +652,10 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
 
     /// Use a custom vector to perform a search query
-    /// 
+    ///
     /// `vector` is mandatory when performing searches with `userProvided` embedders.
     /// You may also use `vector` to override an embedder’s automatic vector generation.
-    /// 
+    ///
     /// `vector` dimensions must match the dimensions of the embedder.
     pub fn with_vector<'b>(&'b mut self, vector: &'a [f32]) -> &'b mut SearchQuery<'a, Http> {
         self.vector = Some(vector);
@@ -1723,7 +1723,11 @@ mod tests {
             .with_vector(&vectorize(true, 0))
             .execute()
             .await?;
-        let ids = results.hits.iter().map(|hit| hit.result.id).collect::<Vec<_>>();
+        let ids = results
+            .hits
+            .iter()
+            .map(|hit| hit.result.id)
+            .collect::<Vec<_>>();
         assert_eq!(ids, vec![0, 3, 4, 5, 6, 7, 8, 9, 1, 2]);
 
         Ok(())
