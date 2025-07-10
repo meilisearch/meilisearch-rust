@@ -81,8 +81,6 @@ pub trait HttpClient: Clone + Send + Sync {
     {
         use futures::io::Cursor;
 
-        println!("Body: {}", serde_json::to_string(&method.body()).unwrap());
-
         self.stream_request(
             url,
             method.map_body(|body| Cursor::new(to_vec(&body).unwrap())),
