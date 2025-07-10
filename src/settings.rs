@@ -71,35 +71,63 @@ pub struct EmbedderDistribution {
 pub struct Embedder {
     /// The third-party tool that will generate embeddings from documents
     pub source: EmbedderSource,
+
     /// The URL Meilisearch contacts when querying the embedder
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
+
     /// Authentication token Meilisearch should send with each request to the embedder.
     /// If not present, Meilisearch will attempt to read it from environment variables
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub api_key: Option<String>,
+
     /// The model your embedder uses when generating vectors
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
+
     /// Model revision hash
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub revision: Option<String>,
+
     /// Pooling method for Hugging Face embedders
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub pooling: Option<String>,
+
     /// Template defining the data Meilisearch sends to the embedder
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template: Option<String>,
+
     /// Maximum allowed size of rendered document template
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub document_template_max_bytes: Option<usize>,
+
     /// Number of dimensions in the chosen model.
+    #[serde(skip_serializing_if = "Option::is_none")]
     /// If not supplied, Meilisearch tries to infer this value
     pub dimensions: Option<usize>,
+
     /// Describes the natural distribution of search results.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub distribution: Option<EmbedderDistribution>,
+
     /// A JSON value representing the request Meilisearch makes to the remote embedder
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub request: Option<serde_json::Value>,
+
     /// A JSON value representing the response Meilisearch expects from the remote embedder
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub response: Option<serde_json::Value>,
+
     /// Once set to true, irreversibly converts all vector dimensions to 1-bit values
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub binary_quantized: Option<bool>,
+
     /// Configures embedder to vectorize documents during indexing (composite embedders only)
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub indexing_embedder: Option<Box<Embedder>>,
+
     /// Configures embedder to vectorize search queries (composite embedders only)
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub search_embedder: Option<Box<Embedder>>,
 }
 
@@ -941,7 +969,7 @@ impl<Http: HttpClient> Index<Http> {
     /// ```
     /// # use std::collections::HashMap;
     /// # use std::string::String;
-    /// # use meilisearch_sdk::{indexes::*,settings::Embedder,settings::UserProvidedEmbedderSettings,settings::Settings,client::*};
+    /// # use meilisearch_sdk::{indexes::*,settings::Embedder,settings::EmbedderSource,settings::Settings,client::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -952,7 +980,14 @@ impl<Http: HttpClient> Index<Http> {
     /// let index = client.index("get_embedders");
     /// #
     /// # let t = index.set_settings(&Settings{
-    /// #     embedders:Some(HashMap::from([(String::from("default"),Embedder::UserProvided(UserProvidedEmbedderSettings{dimensions:1}))])),
+    /// #     embedders: Some(HashMap::from([(
+    /// #         String::from("default"),
+    /// #         Embedder {
+    /// #             source: EmbedderSource::UserProvided,
+    /// #             dimensions: Some(1),
+    /// #             ..Embedder::default()
+    /// #         }
+    /// #     )])),
     /// #     ..Settings::default()
     /// # }).await.unwrap();
     /// # t.wait_for_completion(&client, None, None).await.unwrap();
@@ -2820,12 +2855,11 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_set_embedding_settings(client: Client, index: Index) {
-        let custom_embedder =
-            Embedder {
-                source: EmbedderSource::UserProvided,
-                dimensions: Some(2),
-                ..Default::default()
-            };
+        let custom_embedder = Embedder {
+            source: EmbedderSource::UserProvided,
+            dimensions: Some(2),
+            ..Default::default()
+        };
         let embeddings = HashMap::from([("default".into(), custom_embedder)]);
         let settings = Settings::new().with_embedders(embeddings.clone());
 

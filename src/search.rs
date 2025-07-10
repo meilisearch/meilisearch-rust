@@ -919,7 +919,8 @@ mod tests {
     use crate::{
         client::*,
         key::{Action, KeyBuilder},
-        search::*, settings::EmbedderSource,
+        search::*,
+        settings::EmbedderSource,
     };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
@@ -1013,13 +1014,12 @@ mod tests {
     }
 
     async fn setup_hybrid_searching(client: &Client, index: &Index) -> Result<(), Error> {
-        use crate::settings::{Embedder};
-        let embedder_setting =
-            Embedder {
-                source: EmbedderSource::UserProvided,
-                dimensions: Some(11),
-                ..Embedder::default()
-            };
+        use crate::settings::Embedder;
+        let embedder_setting = Embedder {
+            source: EmbedderSource::UserProvided,
+            dimensions: Some(11),
+            ..Embedder::default()
+        };
         index
             .set_settings(&crate::settings::Settings {
                 embedders: Some(HashMap::from([("default".to_string(), embedder_setting)])),
