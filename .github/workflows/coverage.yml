@@ -18,10 +18,9 @@ env:
 
 jobs:
   coverage:
-    # Will not run if the event is a PR to bump-meilisearch-v* (so a pre-release PR)
-    # Will still run for each push to bump-meilisearch-v*
     # Will not run if the actor is Dependabot (dependabot PRs)
-    if: github.event_name != 'pull_request' || !startsWith(github.base_ref, 'bump-meilisearch-v') ||  github.actor != 'dependabot[bot]'
+    # Will not run if the event is a PR to bump-meilisearch-v* (so a pre-release PR)
+    if: github.actor != 'dependabot[bot]' && !( github.event_name == 'pull_request' && startsWith(github.base_ref, 'bump-meilisearch-v') )
     runs-on: ubuntu-latest
     name: Code Coverage
     steps:
