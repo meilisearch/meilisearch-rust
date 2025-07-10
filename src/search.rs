@@ -738,7 +738,7 @@ pub struct FacetSearchQuery<'a, Http: HttpClient = DefaultHttpClient> {
     pub attributes_to_search_on: Option<&'a [&'a str]>,
     /// Return an exhaustive count of facets, up to the limit defined by maxTotalHits. Default is false.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub exhaustive_facet_count: Option<usize>,
+    pub exhaustive_facet_count: Option<bool>,
 }
 
 #[allow(missing_docs)]
@@ -803,7 +803,7 @@ impl<'a, Http: HttpClient> FacetSearchQuery<'a, Http> {
 
     pub fn with_exhaustive_facet_count<'b>(
         &'b mut self,
-        exhaustive_facet_count: usize,
+        exhaustive_facet_count: bool,
     ) -> &'b mut FacetSearchQuery<'a, Http> {
         self.exhaustive_facet_count = Some(exhaustive_facet_count);
         self
