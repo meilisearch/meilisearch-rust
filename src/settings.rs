@@ -5,7 +5,7 @@ use crate::{
     task_info::TaskInfo,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq, Copy)]
 #[serde(rename_all = "camelCase")]
@@ -30,10 +30,20 @@ pub struct TypoToleranceSettings {
     pub min_word_size_for_typos: Option<MinWordSizeForTypos>,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq, Copy)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Serialize)]
+pub enum FacetSortValue {
+    #[serde(rename = "alpha")]
+    ALPHA,
+    #[serde(rename = "count")]
+    COUNT,
+}
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetingSettings {
     pub max_values_per_facet: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sort_facet_values_by: Option<BTreeMap<String, FacetSortValue>>,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -279,8 +289,12 @@ impl Settings {
 
     #[must_use]
     pub fn with_faceting(self, faceting: &FacetingSettings) -> Settings {
+        let faceting_clone = FacetingSettings {
+            max_values_per_facet: faceting.max_values_per_facet,
+            sort_facet_values_by: faceting.sort_facet_values_by.clone(),
+        };
         Settings {
-            faceting: Some(*faceting),
+            faceting: Some(faceting_clone),
             ..self
         }
     }
@@ -1397,6 +1411,7 @@ impl<Http: HttpClient> Index<Http> {
     ///
     /// let mut faceting = FacetingSettings {
     ///     max_values_per_facet: 12,
+    ///     sort_facet_values_by: None,
     /// };
     ///
     /// let task = index.set_faceting(&faceting).await.unwrap();
@@ -2314,54 +2329,136 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_set_faceting_settings(client: Client, index: Index) {
-        let faceting = FacetingSettings {
+        let req_faceting = FacetingSettings {
             max_values_per_facet: 5,
+            sort_facet_values_by: None,
         };
-        let settings = Settings::new().with_faceting(&faceting);
+        let settings = Settings::new().with_faceting(&req_faceting);
 
         let task_info = index.set_settings(&settings).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
 
         let res = index.get_faceting().await.unwrap();
 
-        assert_eq!(faceting, res);
-    }
-
-    #[meilisearch_test]
-    async fn test_get_faceting(index: Index) {
-        let faceting = FacetingSettings {
-            max_values_per_facet: 100,
+        let mut expected_facet_sort_setting = BTreeMap::new();
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+        let expected_faceting = FacetingSettings {
+            max_values_per_facet: req_faceting.max_values_per_facet,
+            sort_facet_values_by: Some(expected_facet_sort_setting),
         };
 
-        let res = index.get_faceting().await.unwrap();
-
-        assert_eq!(faceting, res);
+        assert_eq!(expected_faceting, res);
     }
 
     #[meilisearch_test]
-    async fn test_set_faceting(client: Client, index: Index) {
-        let faceting = FacetingSettings {
+    async fn test_set_faceting_settings_with_sort_values(client: Client, index: Index) {
+        let mut req_facet_sort_setting = BTreeMap::new();
+        req_facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+        let req_faceting = FacetingSettings {
             max_values_per_facet: 5,
+            sort_facet_values_by: Some(req_facet_sort_setting),
         };
-        let task_info = index.set_faceting(&faceting).await.unwrap();
+        let settings = Settings::new().with_faceting(&req_faceting);
+
+        let task_info = index.set_settings(&settings).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
 
         let res = index.get_faceting().await.unwrap();
 
-        assert_eq!(faceting, res);
+        let mut expected_facet_sort_setting = BTreeMap::new();
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+        expected_facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+        let expected_faceting = FacetingSettings {
+            max_values_per_facet: req_faceting.max_values_per_facet,
+            sort_facet_values_by: Some(expected_facet_sort_setting),
+        };
+
+        assert_eq!(expected_faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_faceting(index: Index) {
+        let req_faceting = FacetingSettings {
+            max_values_per_facet: 100,
+            sort_facet_values_by: None,
+        };
+
+        let res = index.get_faceting().await.unwrap();
+
+        let mut expected_facet_sort_setting = BTreeMap::new();
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+        let expected_faceting = FacetingSettings {
+            max_values_per_facet: req_faceting.max_values_per_facet,
+            sort_facet_values_by: Some(expected_facet_sort_setting),
+        };
+
+        assert_eq!(expected_faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_faceting(client: Client, index: Index) {
+        let req_faceting = FacetingSettings {
+            max_values_per_facet: 5,
+            sort_facet_values_by: None,
+        };
+        let task_info = index.set_faceting(&req_faceting).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_faceting().await.unwrap();
+
+        let mut expected_facet_sort_setting = BTreeMap::new();
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+        let expected_faceting = FacetingSettings {
+            max_values_per_facet: req_faceting.max_values_per_facet,
+            sort_facet_values_by: Some(expected_facet_sort_setting),
+        };
+
+        assert_eq!(expected_faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_faceting_with_sort_values(client: Client, index: Index) {
+        let mut req_facet_sort_setting = BTreeMap::new();
+        req_facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+        let req_faceting = FacetingSettings {
+            max_values_per_facet: 5,
+            sort_facet_values_by: Some(req_facet_sort_setting),
+        };
+        let task_info = index.set_faceting(&req_faceting).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_faceting().await.unwrap();
+
+        let mut expected_facet_sort_setting = BTreeMap::new();
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+        expected_facet_sort_setting.insert("genres".to_string(), FacetSortValue::COUNT);
+        let expected_faceting = FacetingSettings {
+            max_values_per_facet: req_faceting.max_values_per_facet,
+            sort_facet_values_by: Some(expected_facet_sort_setting),
+        };
+
+        assert_eq!(expected_faceting, res);
     }
 
     #[meilisearch_test]
     async fn test_reset_faceting(client: Client, index: Index) {
         let task_info = index.reset_faceting().await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
-        let faceting = FacetingSettings {
+        let req_faceting = FacetingSettings {
             max_values_per_facet: 100,
+            sort_facet_values_by: None,
         };
 
         let res = index.get_faceting().await.unwrap();
 
-        assert_eq!(faceting, res);
+        let mut expected_facet_sort_setting = BTreeMap::new();
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::ALPHA);
+        let expected_faceting = FacetingSettings {
+            max_values_per_facet: req_faceting.max_values_per_facet,
+            sort_facet_values_by: Some(expected_facet_sort_setting),
+        };
+
+        assert_eq!(expected_faceting, res);
     }
 
     #[meilisearch_test]
