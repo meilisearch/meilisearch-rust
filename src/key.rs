@@ -713,6 +713,8 @@ pub enum Action {
     /// Provides access to the [delete key](https://www.meilisearch.com/docs/reference/api/keys#delete-a-key) endpoint.
     #[serde(rename = "keys.delete")]
     KeyDelete,
+    #[serde(rename = "chatCompletions")]
+    ChatCompletions,
 }
 
 #[derive(Debug, Clone, Deserialize)]
