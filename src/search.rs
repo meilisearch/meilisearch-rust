@@ -662,6 +662,177 @@ pub struct MultiSearchResponse<T> {
     pub results: Vec<SearchResults<T>>,
 }
 
+/// A struct representing a facet-search query.
+///
+/// You can add search parameters using the builder syntax.
+///
+/// See [this page](https://www.meilisearch.com/docs/reference/api/facet_search) for the official list and description of all parameters.
+///
+/// # Examples
+///
+/// ```
+/// # use serde::{Serialize, Deserialize};
+/// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+/// #
+/// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
+/// #[derive(Serialize)]
+/// struct Movie {
+///     name: String,
+///     genre: String,
+/// }
+/// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+/// let movies = client.index("execute_query");
+///
+/// // add some documents
+/// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+/// # movies.set_filterable_attributes(["genre"]).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+///
+/// let query = FacetSearchQuery::new(&movies, "genre").with_facet_query("scifi").build();
+/// let res = movies.execute_facet_query(&query).await.unwrap();
+///
+/// assert!(res.facet_hits.len() > 0);
+/// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+/// # });
+/// ```
+///
+/// ```
+/// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+/// #
+/// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+/// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+/// #
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+/// # let index = client.index("facet_search_query_builder_build");
+/// let query = index.facet_search("kind")
+///     .with_facet_query("space")
+///     .build(); // you can also execute() instead of build()
+/// ```
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FacetSearchQuery<'a, Http: HttpClient = DefaultHttpClient> {
+    #[serde(skip_serializing)]
+    index: &'a Index<Http>,
+    /// The facet name to search values on.
+    pub facet_name: &'a str,
+    /// The search query for the facet values.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub facet_query: Option<&'a str>,
+    /// The text that will be searched for among the documents.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "q")]
+    pub search_query: Option<&'a str>,
+    /// Filter applied to documents.
+    ///
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/advanced/filtering) to learn the syntax.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filter: Option<Filter<'a>>,
+    /// Defines the strategy on how to handle search queries containing multiple words.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub matching_strategy: Option<MatchingStrategies>,
+    /// Restrict search to the specified attributes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes_to_search_on: Option<&'a [&'a str]>,
+    /// Return an exhaustive count of facets, up to the limit defined by maxTotalHits. Default is false.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exhaustive_facet_count: Option<bool>,
+}
+
+#[allow(missing_docs)]
+impl<'a, Http: HttpClient> FacetSearchQuery<'a, Http> {
+    pub fn new(index: &'a Index<Http>, facet_name: &'a str) -> FacetSearchQuery<'a, Http> {
+        FacetSearchQuery {
+            index,
+            facet_name,
+            facet_query: None,
+            search_query: None,
+            filter: None,
+            matching_strategy: None,
+            attributes_to_search_on: None,
+            exhaustive_facet_count: None,
+        }
+    }
+
+    pub fn with_facet_query<'b>(
+        &'b mut self,
+        facet_query: &'a str,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.facet_query = Some(facet_query);
+        self
+    }
+
+    pub fn with_search_query<'b>(
+        &'b mut self,
+        search_query: &'a str,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.search_query = Some(search_query);
+        self
+    }
+
+    pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.filter = Some(Filter::new(Either::Left(filter)));
+        self
+    }
+
+    pub fn with_array_filter<'b>(
+        &'b mut self,
+        filter: Vec<&'a str>,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.filter = Some(Filter::new(Either::Right(filter)));
+        self
+    }
+
+    pub fn with_matching_strategy<'b>(
+        &'b mut self,
+        matching_strategy: MatchingStrategies,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.matching_strategy = Some(matching_strategy);
+        self
+    }
+
+    pub fn with_attributes_to_search_on<'b>(
+        &'b mut self,
+        attributes_to_search_on: &'a [&'a str],
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.attributes_to_search_on = Some(attributes_to_search_on);
+        self
+    }
+
+    pub fn with_exhaustive_facet_count<'b>(
+        &'b mut self,
+        exhaustive_facet_count: bool,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.exhaustive_facet_count = Some(exhaustive_facet_count);
+        self
+    }
+
+    pub fn build(&mut self) -> FacetSearchQuery<'a, Http> {
+        self.clone()
+    }
+
+    pub async fn execute(&'a self) -> Result<FacetSearchResponse, Error> {
+        self.index.execute_facet_query(self).await
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FacetHit {
+    pub value: String,
+    pub count: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FacetSearchResponse {
+    pub facet_hits: Vec<FacetHit>,
+    pub facet_query: Option<String>,
+    pub processing_time_ms: usize,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -1305,6 +1476,160 @@ mod tests {
             assert!(!result.hits.is_empty());
         }
 
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_base(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index.facet_search("kind").execute().await?;
+        assert_eq!(res.facet_hits.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_exhaustive_facet_count(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_exhaustive_facet_count(true)
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_facet_query(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_facet_query("title")
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        assert_eq!(res.facet_hits[0].value, "title");
+        assert_eq!(res.facet_hits[0].count, 8);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_attributes_to_search_on(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_search_query("title")
+            .with_attributes_to_search_on(&["value"])
+            .execute()
+            .await?;
+        println!("{:?}", res);
+        assert_eq!(res.facet_hits.len(), 0);
+
+        let res = index
+            .facet_search("kind")
+            .with_search_query("title")
+            .with_attributes_to_search_on(&["kind"])
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_search_query(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_search_query("Harry Potter")
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        assert_eq!(res.facet_hits[0].value, "title");
+        assert_eq!(res.facet_hits[0].count, 7);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_filter(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_filter("value = \"The Social Network\"")
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        assert_eq!(res.facet_hits[0].value, "title");
+        assert_eq!(res.facet_hits[0].count, 1);
+
+        let res = index
+            .facet_search("kind")
+            .with_filter("NOT value = \"The Social Network\"")
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_array_filter(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_array_filter(vec![
+                "value = \"The Social Network\"",
+                "value = \"The Social Network\"",
+            ])
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        assert_eq!(res.facet_hits[0].value, "title");
+        assert_eq!(res.facet_hits[0].count, 1);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_matching_strategy_all(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_search_query("Harry Styles")
+            .with_matching_strategy(MatchingStrategies::ALL)
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 0);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_facet_search_with_matching_strategy_last(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_search_query("Harry Styles")
+            .with_matching_strategy(MatchingStrategies::LAST)
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        assert_eq!(res.facet_hits[0].value, "title");
+        assert_eq!(res.facet_hits[0].count, 7);
         Ok(())
     }
 }
