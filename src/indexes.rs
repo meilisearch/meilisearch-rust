@@ -1843,6 +1843,7 @@ impl<'a, Http: HttpClient> AsRef<IndexUpdater<'a, Http>> for IndexUpdater<'a, Ht
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStats {
