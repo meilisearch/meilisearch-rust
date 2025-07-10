@@ -1925,7 +1925,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
   
-    /// update [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings#facet-search) settings of the [Index].
+    /// Update [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings#facet-search) settings of the [Index].
     ///
     /// # Example
     ///
