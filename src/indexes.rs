@@ -535,7 +535,7 @@ impl<Http: HttpClient> Index<Http> {
                         Error::MeilisearchCommunication(MeilisearchCommunicationError {
                             status_code: error.status_code,
                             url: error.url,
-                            message: Some(format!("{}.", MEILISEARCH_VERSION_HINT)),
+                            message: Some(format!("{MEILISEARCH_VERSION_HINT}.")),
                         })
                     }
                     Error::Meilisearch(error) => Error::Meilisearch(MeilisearchError {
