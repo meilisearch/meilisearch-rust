@@ -205,7 +205,7 @@ pub struct Settings {
     /// Proximity precision settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proximity_precision: Option<String>,
-    /// Settings how the embeddings for the vector search feature are generated
+    /// Embedders translate documents and queries into vector embeddings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub embedders: Option<HashMap<String, Embedder>>,
     /// SearchCutoffMs settings.
@@ -433,13 +433,13 @@ impl Settings {
     #[must_use]
     pub fn with_embedders<S>(self, embedders: HashMap<S, Embedder>) -> Settings
     where
-        S: AsRef<str>,
+        S: Into<String>,
     {
         Settings {
             embedders: Some(
                 embedders
                     .into_iter()
-                    .map(|(key, value)| (key.as_ref().to_string(), value))
+                    .map(|(key, value)| (key.into(), value))
                     .collect(),
             ),
             ..self
@@ -2595,7 +2595,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_get_embeddings(index: Index) {
+    async fn test_get_embedders(index: Index) {
         let res = index.get_embedders().await.unwrap();
 
         assert_eq!(HashMap::new(), res);
@@ -2854,7 +2854,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_set_embedding_settings(client: Client, index: Index) {
+    async fn test_set_embedder_settings(client: Client, index: Index) {
         let custom_embedder = Embedder {
             source: EmbedderSource::UserProvided,
             dimensions: Some(2),
