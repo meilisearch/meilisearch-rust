@@ -31,10 +31,9 @@ pub struct TypoToleranceSettings {
 }
 
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub enum FacetSortValue {
-    #[serde(rename = "alpha")]
     Alpha,
-    #[serde(rename = "count")]
     Count,
 }
 
