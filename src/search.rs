@@ -1663,7 +1663,7 @@ mod tests {
         assert_eq!(res.facet_hits.len(), 1);
         Ok(())
     }
-  
+
     #[meilisearch_test]
     async fn test_with_vectors(client: Client, index: Index) -> Result<(), Error> {
         setup_hybrid_searching(&client, &index).await?;
@@ -1720,7 +1720,7 @@ mod tests {
         results?; // purposely not done above to have better debugging output
         Ok(())
     }
-  
+
     #[meilisearch_test]
     async fn test_facet_search_with_search_query(
         client: Client,
