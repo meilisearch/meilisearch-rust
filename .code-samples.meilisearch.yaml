@@ -1689,7 +1689,6 @@ facet_search_2: |-
 
   let res = client.index("books")
     .set_faceting(&faceting)
-    .execute()
     .await
     .unwrap();
 facet_search_3: |-
