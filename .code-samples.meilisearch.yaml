@@ -2,6 +2,7 @@
 # Every example written here will be automatically fetched by
 # the documentation on build
 # You can read more on https://github.com/meilisearch/documentation/tree/main/learn
+# See the original at https://github.com/meilisearch/documentation/blob/main/.code-samples.meilisearch.yaml
 ---
 synonyms_guide_1: |-
   let mut synonyms = std::collections::HashMap::new();
@@ -581,8 +582,12 @@ get_faceting_settings_1: |-
     .await
     .unwrap();
 update_faceting_settings_1: |-
+  let mut facet_sort_setting = BTreeMap::new();
+  facet_sort_setting.insert(String::from("*"), FacetSortValue::Alpha);
+  facet_sort_setting.insert(String::from("genres"), FacetSortValue::Count);
   let mut faceting = FacetingSettings {
     max_values_per_facet: 2,
+    sort_facet_values_by: Some(facet_sort_setting),
   };
 
   let task: TaskInfo = client
@@ -1265,8 +1270,11 @@ getting_started_sorting: |-
     .await
     .unwrap();
 getting_started_faceting: |-
+  let mut facet_sort_setting = BTreeMap::new();
+  facet_sort_setting.insert("*".to_string(), FacetSortValue::Count);
   let mut faceting = FacetingSettings {
     max_values_per_facet: 2,
+    sort_facet_values_by: Some(facet_sort_setting),
   };
 
   let task: TaskInfo = client
@@ -1661,6 +1669,33 @@ reset_proximity_precision_settings_1: |-
   let task: TaskInfo = client
     .index("books")
     .reset_proximity_precision()
+    .await
+    .unwrap();
+facet_search_1: |-
+  let res = client.index("books")
+    .facet_search("genres")
+    .with_facet_query("fiction")
+    .with_filter("rating > 3")
+    .execute()
+    .await
+    .unwrap();
+facet_search_2: |-
+  let mut facet_sort_setting = BTreeMap::new();
+  facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
+  let faceting = FacetingSettings {
+    max_values_per_facet: 100,
+    sort_facet_values_by: Some(facet_sort_setting),
+  };
+
+  let res = client.index("books")
+    .set_faceting(&faceting)
+    .await
+    .unwrap();
+facet_search_3: |-
+  let res = client.index("books")
+    .facet_search("genres")
+    .with_facet_query("c")
+    .execute()
     .await
     .unwrap();
 get_search_cutoff_1: |-
