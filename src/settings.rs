@@ -932,7 +932,7 @@ impl<Http: HttpClient> Index<Http> {
             )
             .await
     }
-  
+
     /// Get [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings#facet-search) of the [Index].
     ///
     /// # Example
@@ -1924,7 +1924,7 @@ impl<Http: HttpClient> Index<Http> {
             )
             .await
     }
-  
+
     /// Update [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings#facet-search) settings of the [Index].
     ///
     /// # Example
@@ -2572,7 +2572,7 @@ impl<Http: HttpClient> Index<Http> {
             )
             .await
     }
-  
+
     /// Reset [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings#facet-search) settings of the [Index].
     ///
     /// # Example
@@ -3136,7 +3136,7 @@ mod tests {
 
         assert_eq!(expected, default);
     }
-  
+
     #[meilisearch_test]
     async fn test_get_facet_search(index: Index) {
         let expected = true;
