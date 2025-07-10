@@ -1719,7 +1719,7 @@ mod tests {
         setup_hybrid_searching(&client, &index).await?;
         setup_test_index(&client, &index).await?;
 
-        // Search for an Harry Potter that but with lorem ipsum's id
+        // Search for an Harry Potter but with lorem ipsum's id
         // Will yield lorem ipsum first, them harry potter documents, then the rest
         let results: SearchResults<Document> = index
             .search()
