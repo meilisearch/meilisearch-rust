@@ -374,15 +374,15 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
 
-    /// Defines whether to utilise previously defined embedders for semantic searching
+    /// Configures Meilisearch to return search results based on a query’s meaning and context.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hybrid: Option<HybridSearch<'a>>,
 
-    /// Defines what vectors an userprovided embedder has gotten for semantic searching
+    /// Use a custom vector to perform a search query.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vector: Option<&'a [f32]>,
 
-    /// Defines whether vectors for semantic searching are returned in the search results
+    /// Defines whether vectors for semantic searching are returned in the search results.
     ///
     /// Can Significantly increase the response size.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -642,7 +642,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self
     }
 
-    /// Defines whether to utilise previously defined embedders for semantic searching
+    /// Configures Meilisearch to return search results based on a query’s meaning and context
     pub fn with_hybrid<'b>(
         &'b mut self,
         embedder: &'a str,
@@ -655,7 +655,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self
     }
 
-    /// Defines what vectors an userprovided embedder has gotten for semantic searching
+    /// Use a custom vector to perform a search query
     pub fn with_vector<'b>(&'b mut self, vector: &'a [f32]) -> &'b mut SearchQuery<'a, Http> {
         self.vector = Some(vector);
         self
