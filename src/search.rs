@@ -1502,6 +1502,28 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_facet_search_with_attributes_to_search_on(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let res = index
+            .facet_search("kind")
+            .with_search_query("title")
+            .with_attributes_to_search_on(&["value"])
+            .execute()
+            .await?;
+        println!("{:?}", res);
+        assert_eq!(res.facet_hits.len(), 0);
+
+        let res = index
+            .facet_search("kind")
+            .with_search_query("title")
+            .with_attributes_to_search_on(&["kind"])
+            .execute()
+            .await?;
+        assert_eq!(res.facet_hits.len(), 1);
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_facet_search_with_search_query(
         client: Client,
         index: Index,
