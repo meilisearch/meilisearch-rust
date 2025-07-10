@@ -1676,6 +1676,8 @@ facet_search_3: |-
     .facet_search("genres")
     .with_facet_query("c")
     .execute()
+    .await
+    .unwrap();
 get_search_cutoff_1: |-
   let search_cutoff_ms: String = client
     .index("movies")
