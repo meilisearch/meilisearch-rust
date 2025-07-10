@@ -1597,7 +1597,7 @@ mod tests {
                 ..crate::settings::Settings::default()
             })
             .await?
-            .wait_for_completion(&client, None, None)
+            .wait_for_completion(client, None, None)
             .await?;
         Ok(())
     }
