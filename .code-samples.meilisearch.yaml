@@ -337,7 +337,8 @@ update_settings_1: |-
       "release_date"
     ])
     .with_synonyms(synonyms)
-    .with_typo_tolerance(typo_tolerance);
+    .with_typo_tolerance(typo_tolerance)
+    .with_search_cutoff(150);
 
   let task: TaskInfo = client
     .index("movies")
@@ -599,6 +600,42 @@ reset_faceting_settings_1: |-
     .reset_faceting()
     .await
     .unwrap();
+get_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .get_separator_tokens()
+    .await
+    .unwrap();
+update_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .set_separator_tokens(&vec!['|'.to_string(), '&hellip;'.to_string()])
+    .await
+    .unwrap();
+reset_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .reset_separator_tokens()
+    .await
+    .unwrap();
+get_non_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .get_non_separator_tokens()
+    .await
+    .unwrap();
+update_non_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .set_non_separator_tokens(&vec!['@'.to_string(), '#'.to_string()])
+    .await
+    .unwrap();
+reset_non_separator_tokens_1: |-
+  let task: TaskInfo = client
+    .index('articles')
+    .reset_non_separator_tokens()
+    .await
+    .unwrap();
 get_dictionary_1: |-
   let task: TaskInfo = client
     .index('books')
@@ -843,6 +880,15 @@ search_parameter_guide_show_ranking_score_1: |-
     .execute()
     .await
     .unwrap();
+search_parameter_guide_show_ranking_score_details_1: |-
+  let results: SearchResults<Movie> = client
+    .index("movies")
+    .search()
+    .with_query("dragon")
+    .with_show_ranking_score_details(true)
+    .execute()
+    .await
+    .unwrap();
 search_parameter_guide_matching_strategy_1: |-
   let results: SearchResults<Movie> = client
   .index("movies")
@@ -858,6 +904,15 @@ search_parameter_guide_matching_strategy_2: |-
   .search()
   .with_query("big fat liar")
   .with_matching_strategy(MatchingStrategies::ALL)
+  .execute()
+  .await
+  .unwrap();
+search_parameter_guide_matching_strategy_3: |-
+  let results: SearchResults<Movie> = client
+  .index("movies")
+  .search()
+  .with_query("white shirt")
+  .with_matching_strategy(MatchingStrategies::FREQUENCY)
   .execute()
   .await
   .unwrap();
@@ -994,10 +1049,10 @@ primary_field_guide_add_document_primary_key: |-
     ], Some("reference_number"))
     .await
     .unwrap();
-getting_started_add_documents_md: |-
-  ```toml
+getting_started_add_documents: |-
+  // In your .toml file:
     [dependencies]
-    meilisearch-sdk = "0.26.1"
+    meilisearch-sdk = "0.28.0"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
@@ -1006,9 +1061,8 @@ getting_started_add_documents_md: |-
     serde_json = "1.0"
   ```
 
-  Documents in the Rust library are strongly typed.
-
-  ```rust
+  // In your .rs file:
+  // Documents in the Rust library are strongly typed
   #[derive(Serialize, Deserialize)]
   struct Movie {
     id: i64,
@@ -1018,23 +1072,17 @@ getting_started_add_documents_md: |-
     release_date: i64,
     genres: Vec<String>
   }
-  ```
 
-  You will often need this `Movie` struct in other parts of this documentation. (you will have to change it a bit sometimes)
-  You can also use schemaless values, by putting a `serde_json::Value` inside your own struct like this:
-
-  ```rust
+  // You will often need this `Movie` struct in other parts of this documentation. (you will have to change it a bit sometimes)
+  // You can also use schemaless values, by putting a `serde_json::Value` inside your own struct like this:
   #[derive(Serialize, Deserialize)]
   struct Movie {
     id: i64,
     #[serde(flatten)]
     value: serde_json::Value,
   }
-  ```
 
-  Then, add documents into the index:
-
-  ```rust
+  // Then, add documents into the index:
   use meilisearch_sdk::{
     indexes::*,
     client::*,
@@ -1048,7 +1096,7 @@ getting_started_add_documents_md: |-
   fn main() { block_on(async move {
     let client = Client::new("http://localhost:7700", Some("aSampleMasterKey"));
 
-    // reading and parsing the file
+    // Reading and parsing the file
     let mut file = File::open("movies.json")
       .unwrap();
     let mut content = String::new();
@@ -1058,19 +1106,15 @@ getting_started_add_documents_md: |-
     let movies_docs: Vec<Movie> = serde_json::from_str(&content)
       .unwrap();
 
-    // adding documents
+    // Adding documents
     client
       .index("movies")
       .add_documents(&movies_docs, None)
       .await
       .unwrap();
   })}
-  ```
-
-  [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
-getting_started_search_md: |-
-  You can build a `SearchQuery` and execute it later:
-  ```rust
+getting_started_search: |-
+  // You can build a `SearchQuery` and execute it later:
   let query: SearchQuery = SearchQuery::new(&movies)
     .with_query("botman")
     .build();
@@ -1080,19 +1124,15 @@ getting_started_search_md: |-
     .execute_query(&query)
     .await
     .unwrap();
-  ```
 
-  You can build a `SearchQuery` and execute it directly:
-  ```rust
+  // You can build a `SearchQuery` and execute it directly:
   let results: SearchResults<Movie> = SearchQuery::new(&movies)
     .with_query("botman")
     .execute()
     .await
     .unwrap();
-  ```
 
-  You can search in an index directly:
-  ```rust
+  // You can search in an index directly:
   let results: SearchResults<Movie> = client
     .index("movies")
     .search()
@@ -1100,9 +1140,6 @@ getting_started_search_md: |-
     .execute()
     .await
     .unwrap();
-  ```
-
-  [About this SDK](https://github.com/meilisearch/meilisearch-rust/)
 getting_started_update_ranking_rules: |-
   let ranking_rules = [
     "exactness",
@@ -1601,8 +1638,8 @@ get_experimental_features_1: |-
     .unwrap();
 update_experimental_features_1: |-
   let client = Client::new("http://localhost:7700", Some("apiKey"));
-  let mut features = ExperimentalFeatures::new(&client);
-  features.set_vector_store(true);
+  let features = ExperimentalFeatures::new(&client);
+  features.set_metrics(true)
   let res = features
     .update()
     .await
@@ -1633,9 +1670,12 @@ reset_proximity_precision_settings_1: |-
     .reset_proximity_precision()
     .await
     .unwrap();
-create_snapshot_1: |-
-  client
-    .create_snapshot()
+facet_search_1: |-
+  let res = client.index("books")
+    .facet_search("genres")
+    .with_facet_query("fiction")
+    .with_filter("rating > 3")
+    .execute()
     .await
     .unwrap();
 facet_search_2: |-
@@ -1650,5 +1690,101 @@ facet_search_2: |-
   let res = client.index("books")
     .set_faceting(&faceting)
     .execute()
+    .await
+    .unwrap();
+facet_search_3: |-
+  let res = client.index("books")
+    .facet_search("genres")
+    .with_facet_query("c")
+    .execute()
+    .await
+    .unwrap();
+get_search_cutoff_1: |-
+  let search_cutoff_ms: String = client
+    .index("movies")
+    .get_search_cutoff_ms()
+    .await
+    .unwrap();
+update_search_cutoff_1: |-
+  let task: TaskInfo = client
+    .index("movies")
+    .set_search_cutoff_ms(Some(150))
+    .await
+    .unwrap();
+reset_search_cutoff_1: |-
+  let task: TaskInfo = client
+    .index("movies")
+    .reset_search_cutoff_ms()
+    .await
+    .unwrap();
+create_snapshot_1: |-
+  client
+    .create_snapshot()
+    .await
+    .unwrap();
+search_parameter_reference_distinct_1: |-
+  let res = client
+    .index("INDEX_NAME")
+    .search()
+    .with_query("QUERY TERMS")
+    .with_distinct("ATTRIBUTE_A")
+    .execute()
+    .await
+    .unwrap();
+distinct_attribute_guide_filterable_1: |-
+  let task: TaskInfo = client
+    .index("products")
+    .settings()
+    .set_filterable_attributes(["product_id", "sku", "url"])
+    .execute()
+    .await
+    .unwrap();
+distinct_attribute_guide_distinct_parameter_1: |-
+  let res = client
+    .index("products")
+    .search()
+    .with_query("white shirt")
+    .with_distinct("sku")
+    .execute()
+    .await
+    .unwrap();
+search_parameter_reference_ranking_score_threshold_1: |-
+  let res = client
+    .index("INDEX_NAME")
+    .search()
+    .with_query("badman")
+    .with_ranking_score_threshold(0.2)
+    .execute()
+    .await
+    .unwrap();
+search_parameter_reference_locales_1: |-
+  let res = client
+    .index("books")
+    .search()
+    .with_query("進撃の巨人")
+    .with_locales(&["jpn"])
+    .execute()
+    .await
+    .unwrap();
+get_localized_attribute_settings_1: |-
+  let localized_attributes: Option<Vec<LocalizedAttributes>> = client
+    .index("books")
+    .get_localized_attributes()
+    .await
+    .unwrap();
+update_localized_attribute_settings_1: |-
+  let localized_attributes = vec![LocalizedAttributes {
+      locales: vec!["jpn".to_string()],
+      attribute_patterns: vec!["*_ja".to_string()],
+  }];
+  let task: TaskInfo = client
+    .index("books")
+    .set_localized_attributes(&localizced_attributes)
+    .await
+    .unwrap();
+reset_localized_attribute_settings_1: |-
+  let task: TaskInfo = client
+    .index("books")
+    .reset_localized_attributes()
     .await
     .unwrap();

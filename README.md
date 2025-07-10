@@ -35,7 +35,6 @@
 ## Table of Contents <!-- omit in TOC -->
 
 - [📖 Documentation](#-documentation)
-- [⚡ Supercharge your Meilisearch experience](#-supercharge-your-meilisearch-experience)
 - [🔧 Installation](#-installation)
 - [🚀 Getting started](#-getting-started)
 - [🌐 Running in the Browser with WASM](#-running-in-the-browser-with-wasm)
@@ -48,17 +47,13 @@ This readme contains all the documentation you need to start using this Meilisea
 
 For general information on how to use Meilisearch—such as our API reference, tutorials, guides, and in-depth articles—refer to our [main documentation website](https://www.meilisearch.com/docs).
 
-## ⚡ Supercharge your Meilisearch experience
-
-Say goodbye to server deployment and manual updates with [Meilisearch Cloud](https://www.meilisearch.com/cloud?utm_campaign=oss&utm_source=github&utm_medium=meilisearch-rust). Get started with a 14-day free trial! No credit card required.
-
 ## 🔧 Installation
 
 To use `meilisearch-sdk`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-meilisearch-sdk = "0.26.1"
+meilisearch-sdk = "0.28.0"
 ```
 
 The following optional dependencies may also be useful:
@@ -73,23 +68,11 @@ You can enable the `sync` feature to make most structs `Sync`. It may be a bit s
 
 Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
 
-### Run a Meilisearch Instance <!-- omit in TOC -->
+### Run Meilisearch <!-- omit in toc -->
 
-This crate requires a Meilisearch server to run.
+⚡️ **Launch, scale, and streamline in minutes with Meilisearch Cloud**—no maintenance, no commitment, cancel anytime. [Try it free now](https://cloud.meilisearch.com/login?utm_campaign=oss&utm_source=github&utm_medium=meilisearch-rust).
 
-There are many easy ways to [download and run a Meilisearch instance](https://www.meilisearch.com/docs/learn/getting_started/installation).
-
-For example,using the `curl` command in [your Terminal](https://itconnect.uw.edu/learn/workshops/online-tutorials/web-publishing/what-is-a-terminal/):
-
-```bash
-# Install Meilisearch
-curl -L https://install.meilisearch.com | sh
-
-# Launch Meilisearch
-./meilisearch --master-key=masterKey
-```
-
-NB: you can also download Meilisearch from **Homebrew** or **APT**.
+🪨  Prefer to self-host? [Download and deploy](https://www.meilisearch.com/docs/learn/self_hosted/getting_started_with_self_hosted_meilisearch?utm_campaign=oss&utm_source=github&utm_medium=meilisearch-rust) our fast, open-source search engine on your own infrastructure.
 
 ## 🚀 Getting started
 

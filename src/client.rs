@@ -1,3 +1,4 @@
+use serde::de::Error as SerdeError;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{collections::HashMap, time::Duration};
@@ -79,16 +80,36 @@ impl<Http: HttpClient> Client<Http> {
         &self,
         value: &Value,
     ) -> Result<IndexesResults<Http>, Error> {
-        let raw_indexes = value["results"].as_array().unwrap();
+        let raw_indexes = value["results"]
+            .as_array()
+            .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'results' field"))
+            .map_err(Error::ParseError)?;
+
+        let limit = value["limit"]
+            .as_u64()
+            .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'limit' field"))
+            .map_err(Error::ParseError)? as u32;
+
+        let offset = value["offset"]
+            .as_u64()
+            .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'offset' field"))
+            .map_err(Error::ParseError)? as u32;
+
+        let total = value["total"]
+            .as_u64()
+            .ok_or_else(|| serde_json::Error::custom("Missing or invalid 'total' field"))
+            .map_err(Error::ParseError)? as u32;
+
+        let results = raw_indexes
+            .iter()
+            .map(|raw_index| Index::from_value(raw_index.clone(), self.clone()))
+            .collect::<Result<_, _>>()?;
 
         let indexes_results = IndexesResults {
-            limit: value["limit"].as_u64().unwrap() as u32,
-            offset: value["offset"].as_u64().unwrap() as u32,
-            total: value["total"].as_u64().unwrap() as u32,
-            results: raw_indexes
-                .iter()
-                .map(|raw_index| Index::from_value(raw_index.clone(), self.clone()))
-                .collect::<Result<_, _>>()?,
+            limit,
+            offset,
+            total,
+            results,
         };
 
         Ok(indexes_results)
@@ -1098,6 +1119,7 @@ impl<Http: HttpClient> Client<Http> {
 #[serde(rename_all = "camelCase")]
 pub struct ClientStats {
     pub database_size: usize,
+    pub used_database_size: usize,
     #[serde(with = "time::serde::rfc3339::option")]
     pub last_update: Option<OffsetDateTime>,
     pub indexes: HashMap<String, IndexStats>,
@@ -1403,7 +1425,7 @@ mod tests {
         */
         // ==> executing the action without enough right
         let mut no_right_key = KeyBuilder::new();
-        no_right_key.with_name(&format!("{name}_1"));
+        no_right_key.with_name(format!("{name}_1"));
         let no_right_key = client.create_key(no_right_key).await.unwrap();
 
         // backup the master key for cleanup at the end of the test

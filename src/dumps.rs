@@ -6,7 +6,7 @@
 //!
 //! - Creating a dump is also referred to as exporting it, whereas launching Meilisearch with a dump is referred to as importing it.
 //!
-//! - During a [dump export](Client::create_dump), all [indexes](crate::indexes::Index) of the current instance are exported—together with their documents and settings—and saved as a single `.dump` file.
+//! - During a [dump export](crate::client::Client::create_dump), all [indexes](crate::indexes::Index) of the current instance are exported—together with their documents and settings—and saved as a single `.dump` file.
 //!
 //! - During a dump import, all indexes contained in the indicated `.dump` file are imported along with their associated documents and [settings](crate::settings::Settings).
 //! Any existing [index](crate::indexes::Index) with the same uid as an index in the dump file will be overwritten.
