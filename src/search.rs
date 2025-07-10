@@ -382,9 +382,7 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vector: Option<&'a [f32]>,
 
-    /// Defines whether vectors for semantic searching are returned in the search results.
-    ///
-    /// Can Significantly increase the response size.
+    /// Defines whether document embeddings are returned with search results.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retrieve_vectors: Option<bool>,
 }
@@ -520,9 +518,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self
     }
 
-    /// Defines whether vectors for semantic searching are returned in the search results
-    ///
-    /// Can Significantly increase the response size.
+    /// Defines whether document embeddings are returned with search results.
     pub fn with_retrieve_vectors<'b>(
         &'b mut self,
         retrieve_vectors: bool,
@@ -1598,7 +1594,7 @@ mod tests {
         Ok(())
     }
 
-    /// enable vector searching and configure an userProvided embedder
+    /// Enable vector searching and configure an userProvided embedder
     async fn setup_hybrid_searching(client: &Client, index: &Index) -> Result<(), Error> {
         use crate::settings::{Embedder, UserProvidedEmbedderSettings};
         let embedder_setting =
