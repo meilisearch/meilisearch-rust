@@ -733,6 +733,12 @@ pub struct FacetSearchQuery<'a, Http: HttpClient = DefaultHttpClient> {
     /// Defines the strategy on how to handle search queries containing multiple words.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
+    /// Restrict search to the specified attributes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes_to_search_on: Option<&'a [&'a str]>,
+    /// Return an exhaustive count of facets, up to the limit defined by maxTotalHits. Default is false.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_total_hits: Option<usize>,
 }
 
 #[allow(missing_docs)]
@@ -745,6 +751,8 @@ impl<'a, Http: HttpClient> FacetSearchQuery<'a, Http> {
             search_query: None,
             filter: None,
             matching_strategy: None,
+            attributes_to_search_on: None,
+            max_total_hits: None,
         }
     }
 
@@ -782,6 +790,22 @@ impl<'a, Http: HttpClient> FacetSearchQuery<'a, Http> {
         matching_strategy: MatchingStrategies,
     ) -> &'b mut FacetSearchQuery<'a, Http> {
         self.matching_strategy = Some(matching_strategy);
+        self
+    }
+
+    pub fn with_attributes_to_search_on<'b>(
+        &'b mut self,
+        attributes_to_search_on: &'a [&'a str],
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.attributes_to_search_on = Some(attributes_to_search_on);
+        self
+    }
+
+    pub fn with_max_total_hits<'b>(
+        &'b mut self,
+        max_total_hits: usize,
+    ) -> &'b mut FacetSearchQuery<'a, Http> {
+        self.max_total_hits = Some(max_total_hits);
         self
     }
 
