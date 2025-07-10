@@ -153,28 +153,16 @@ pub enum Selectors<T> {
     All,
 }
 
-/// Setting whether to utilise previously defined embedders for semantic searching
+/// Configures Meilisearch to return search results based on a query’s meaning and context
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HybridSearch<'a> {
     /// Indicates one of the embedders configured for the queried index
-    ///
-    /// **Default: `"default"`**
     pub embedder: &'a str,
     /// number between `0` and `1`:
     /// - `0.0` indicates full keyword search
     /// - `1.0` indicates full semantic search
-    ///
-    /// **Default: `0.5`**
     pub semantic_ratio: f32,
-}
-impl Default for HybridSearch<'_> {
-    fn default() -> Self {
-        HybridSearch {
-            embedder: "default",
-            semantic_ratio: 0.5,
-        }
-    }
 }
 
 type AttributeToCrop<'a> = (&'a str, Option<usize>);
@@ -436,6 +424,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             locales: None,
         }
     }
+
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.query = Some(query);
         self
@@ -445,10 +434,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.offset = Some(offset);
         self
     }
+
     pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut SearchQuery<'a, Http> {
         self.limit = Some(limit);
         self
     }
+
     /// Add the page number on which to paginate.
     ///
     /// # Example
@@ -515,10 +506,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.hits_per_page = Some(hits_per_page);
         self
     }
+
     pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Left(filter)));
         self
     }
+
     pub fn with_array_filter<'b>(
         &'b mut self,
         filter: Vec<&'a str>,
@@ -526,6 +519,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Right(filter)));
         self
     }
+
     /// Defines whether vectors for semantic searching are returned in the search results
     ///
     /// Can Significantly increase the response size.
@@ -536,6 +530,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.retrieve_vectors = Some(retrieve_vectors);
         self
     }
+
     pub fn with_facets<'b>(
         &'b mut self,
         facets: Selectors<&'a [&'a str]>,
@@ -543,6 +538,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.facets = Some(facets);
         self
     }
+
     pub fn with_sort<'b>(&'b mut self, sort: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
         self.sort = Some(sort);
         self
@@ -555,6 +551,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.attributes_to_search_on = Some(attributes_to_search_on);
         self
     }
+
     pub fn with_attributes_to_retrieve<'b>(
         &'b mut self,
         attributes_to_retrieve: Selectors<&'a [&'a str]>,
@@ -562,6 +559,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.attributes_to_retrieve = Some(attributes_to_retrieve);
         self
     }
+
     pub fn with_attributes_to_crop<'b>(
         &'b mut self,
         attributes_to_crop: Selectors<&'a [(&'a str, Option<usize>)]>,
@@ -569,10 +567,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.attributes_to_crop = Some(attributes_to_crop);
         self
     }
+
     pub fn with_crop_length<'b>(&'b mut self, crop_length: usize) -> &'b mut SearchQuery<'a, Http> {
         self.crop_length = Some(crop_length);
         self
     }
+
     pub fn with_crop_marker<'b>(
         &'b mut self,
         crop_marker: &'a str,
@@ -580,6 +580,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.crop_marker = Some(crop_marker);
         self
     }
+
     pub fn with_attributes_to_highlight<'b>(
         &'b mut self,
         attributes_to_highlight: Selectors<&'a [&'a str]>,
@@ -587,6 +588,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.attributes_to_highlight = Some(attributes_to_highlight);
         self
     }
+
     pub fn with_highlight_pre_tag<'b>(
         &'b mut self,
         highlight_pre_tag: &'a str,
@@ -594,6 +596,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.highlight_pre_tag = Some(highlight_pre_tag);
         self
     }
+
     pub fn with_highlight_post_tag<'b>(
         &'b mut self,
         highlight_post_tag: &'a str,
@@ -601,6 +604,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.highlight_post_tag = Some(highlight_post_tag);
         self
     }
+
     pub fn with_show_matches_position<'b>(
         &'b mut self,
         show_matches_position: bool,
@@ -632,10 +636,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.matching_strategy = Some(matching_strategy);
         self
     }
+
     pub fn with_index_uid<'b>(&'b mut self) -> &'b mut SearchQuery<'a, Http> {
         self.index_uid = Some(&self.index.uid);
         self
     }
+
     /// Defines whether to utilise previously defined embedders for semantic searching
     pub fn with_hybrid<'b>(
         &'b mut self,
@@ -648,15 +654,18 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         });
         self
     }
+
     /// Defines what vectors an userprovided embedder has gotten for semantic searching
     pub fn with_vector<'b>(&'b mut self, vector: &'a [f32]) -> &'b mut SearchQuery<'a, Http> {
         self.vector = Some(vector);
         self
     }
+
     pub fn with_distinct<'b>(&'b mut self, distinct: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.distinct = Some(distinct);
         self
     }
+
     pub fn with_ranking_score_threshold<'b>(
         &'b mut self,
         ranking_score_threshold: f64,
@@ -664,13 +673,16 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.ranking_score_threshold = Some(ranking_score_threshold);
         self
     }
+
     pub fn with_locales<'b>(&'b mut self, locales: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
         self.locales = Some(locales);
         self
     }
+
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
     }
+
     /// Execute the query and fetch the results.
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
