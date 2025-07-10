@@ -230,7 +230,7 @@
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
-/// Module containing the [`Client`] struct.
+/// Module containing the [`Client`](client::Client) struct.
 pub mod client;
 /// Module representing the [documents] structures.
 pub mod documents;
@@ -242,18 +242,18 @@ pub mod errors;
 pub mod features;
 /// Module containing the Index struct.
 pub mod indexes;
-/// Module containing the [`Key`] struct.
+/// Module containing the [`Key`](key::Key) struct.
 pub mod key;
 pub mod request;
 /// Module related to search queries and results.
 pub mod search;
-/// Module containing [`Settings`].
+/// Module containing [`Settings`](settings::Settings).
 pub mod settings;
-/// Module containing the [snapshots] trait.
+/// Module containing the [snapshots](snapshots::create_snapshot)-feature.
 pub mod snapshots;
-/// Module representing the [`TaskInfo`]s.
+/// Module representing the [`TaskInfo`](task_info::TaskInfo)s.
 pub mod task_info;
-/// Module representing the [`Task`]s.
+/// Module representing the [`Task`](tasks::Task)s.
 pub mod tasks;
 /// Module that generates tenant tokens.
 #[cfg(not(target_arch = "wasm32"))]

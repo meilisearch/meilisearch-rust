@@ -8,7 +8,7 @@ use thiserror::Error;
 pub enum Error {
     /// The exhaustive list of Meilisearch errors: <https://github.com/meilisearch/specifications/blob/main/text/0061-error-format-and-definitions.md>
     ///
-    /// Also check out: <https://github.com/meilisearch/Meilisearch/blob/main/meilisearch-error/src/lib.rs>
+    /// Also check out: <https://github.com/meilisearch/meilisearch/blob/main/crates/meilisearch-types/src/error.rs>
     #[error(transparent)]
     Meilisearch(#[from] MeilisearchError),
 
@@ -17,6 +17,7 @@ pub enum Error {
     /// The Meilisearch server returned an invalid JSON for a request.
     #[error("Error parsing response JSON: {}", .0)]
     ParseError(#[from] serde_json::Error),
+
     /// A timeout happened while waiting for an update to complete.
     #[error("A task did not succeed in time.")]
     Timeout,
@@ -48,16 +49,16 @@ pub enum Error {
     #[error("HTTP request failed: {}", .0)]
     HttpError(#[from] reqwest::Error),
 
-    // The library formatting the query parameters encountered an error.
+    /// The library formatting the query parameters encountered an error.
     #[error("Internal Error: could not parse the query parameters: {}", .0)]
     Yaup(#[from] yaup::Error),
 
-    // The library validating the format of an uuid.
+    /// The library validating the format of an uuid.
     #[cfg(not(target_arch = "wasm32"))]
     #[error("The uid of the token has bit an uuid4 format: {}", .0)]
     Uuid(#[from] uuid::Error),
 
-    // Error thrown in case the version of the Uuid is not v4.
+    /// Error thrown in case the version of the Uuid is not v4.
     #[error("The uid provided to the token is not of version uuidv4")]
     InvalidUuid4Version,
 
@@ -67,7 +68,6 @@ pub enum Error {
 
 #[derive(Debug, Clone, Deserialize, Error)]
 #[serde(rename_all = "camelCase")]
-
 pub struct MeilisearchCommunicationError {
     pub status_code: u16,
     pub message: Option<String>,

@@ -10,6 +10,17 @@ use std::collections::HashMap;
 pub struct MatchRange {
     pub start: usize,
     pub length: usize,
+
+    /// If the match is somewhere inside a (potentially nested) array, this
+    /// field is set to the index/indices of the matched element(s).
+    ///
+    /// In the simple case, if the field has the value `["foo", "bar"]`, then
+    /// searching for `ba` will return `indices: Some([1])`. If the value
+    /// contains multiple nested arrays, the first index describes the most
+    /// top-level array, and descending from there. For example, if the value is
+    /// `[{ x: "cat" }, "bear", { y: ["dog", "fox"] }]`, searching for `dog`
+    /// will return `indices: Some([2, 0])`.
+    pub indices: Option<Vec<usize>>,
 }
 
 #[derive(Serialize, Debug, Eq, PartialEq, Clone)]
@@ -21,7 +32,7 @@ pub struct Filter<'a> {
 
 impl<'a> Filter<'a> {
     #[must_use]
-    pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter {
+    pub fn new(inner: Either<&'a str, Vec<&'a str>>) -> Filter<'a> {
         Filter { inner }
     }
 }
@@ -32,6 +43,8 @@ pub enum MatchingStrategies {
     ALL,
     #[serde(rename = "last")]
     LAST,
+    #[serde(rename = "frequency")]
+    FREQUENCY,
 }
 
 /// A single result.
@@ -51,6 +64,8 @@ pub struct SearchResult<T> {
     /// The relevancy score of the match.
     #[serde(rename = "_rankingScore")]
     pub ranking_score: Option<f64>,
+    #[serde(rename = "_rankingScoreDetails")]
+    pub ranking_score_details: Option<Map<String, Value>>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -72,13 +87,13 @@ pub struct SearchResults<T> {
     pub limit: Option<usize>,
     /// Estimated total number of matches.
     pub estimated_total_hits: Option<usize>,
-    // Current page number
+    /// Current page number
     pub page: Option<usize>,
-    // Maximum number of hits in a page.
+    /// Maximum number of hits in a page.
     pub hits_per_page: Option<usize>,
-    // Exhaustive number of matches.
+    /// Exhaustive number of matches.
     pub total_hits: Option<usize>,
-    // Exhaustive number of pages.
+    /// Exhaustive number of pages.
     pub total_pages: Option<usize>,
     /// Distribution of the given facets.
     pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
@@ -322,9 +337,27 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_ranking_score: Option<bool>,
 
+    ///Adds a detailed global ranking score field to each document.
+    ///
+    /// **Default: `false`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_ranking_score_details: Option<bool>,
+
     /// Defines the strategy on how to handle queries containing multiple words.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matching_strategy: Option<MatchingStrategies>,
+
+    ///Defines one attribute in the filterableAttributes list as a distinct attribute.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distinct: Option<&'a str>,
+
+    ///Excludes results below the specified ranking score.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ranking_score_threshold: Option<f64>,
+
+    /// Defines the language of the search query.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub locales: Option<&'a [&'a str]>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
@@ -354,8 +387,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             highlight_post_tag: None,
             show_matches_position: None,
             show_ranking_score: None,
+            show_ranking_score_details: None,
             matching_strategy: None,
             index_uid: None,
+            distinct: None,
+            ranking_score_threshold: None,
+            locales: None,
         }
     }
     pub fn with_query<'b>(&'b mut self, query: &'a str) -> &'b mut SearchQuery<'a, Http> {
@@ -528,6 +565,15 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self.show_ranking_score = Some(show_ranking_score);
         self
     }
+
+    pub fn with_show_ranking_score_details<'b>(
+        &'b mut self,
+        show_ranking_score_details: bool,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.show_ranking_score_details = Some(show_ranking_score_details);
+        self
+    }
+
     pub fn with_matching_strategy<'b>(
         &'b mut self,
         matching_strategy: MatchingStrategies,
@@ -537,6 +583,21 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
     pub fn with_index_uid<'b>(&'b mut self) -> &'b mut SearchQuery<'a, Http> {
         self.index_uid = Some(&self.index.uid);
+        self
+    }
+    pub fn with_distinct<'b>(&'b mut self, distinct: &'a str) -> &'b mut SearchQuery<'a, Http> {
+        self.distinct = Some(distinct);
+        self
+    }
+    pub fn with_ranking_score_threshold<'b>(
+        &'b mut self,
+        ranking_score_threshold: f64,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.ranking_score_threshold = Some(ranking_score_threshold);
+        self
+    }
+    pub fn with_locales<'b>(&'b mut self, locales: &'a [&'a str]) -> &'b mut SearchQuery<'a, Http> {
+        self.locales = Some(locales);
         self
     }
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
@@ -560,7 +621,7 @@ pub struct MultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
     pub queries: Vec<SearchQuery<'b, Http>>,
 }
 
-impl<'a, 'b, Http: HttpClient> Serialize for MultiSearchQuery<'a, 'b, Http> {
+impl<Http: HttpClient> Serialize for MultiSearchQuery<'_, '_, Http> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -1219,7 +1280,8 @@ mod tests {
                 .unwrap(),
             &vec![MatchRange {
                 start: 0,
-                length: 5
+                length: 5,
+                indices: None,
             }]
         );
         Ok(())
@@ -1234,6 +1296,48 @@ mod tests {
         query.with_show_ranking_score(true);
         let results: SearchResults<Document> = index.execute_query(&query).await?;
         assert!(results.hits[0].ranking_score.is_some());
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_show_ranking_score_details(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("dolor text");
+        query.with_show_ranking_score_details(true);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert!(results.hits[0].ranking_score_details.is_some());
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_show_ranking_score_threshold(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("dolor text");
+        query.with_ranking_score_threshold(1.0);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert!(results.hits.is_empty());
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_locales(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        query.with_query("Harry Styles");
+        query.with_locales(&["eng"]);
+        let results: SearchResults<Document> = index.execute_query(&query).await.unwrap();
+        assert_eq!(results.hits.len(), 7);
         Ok(())
     }
 
@@ -1265,7 +1369,7 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_matching_strategy_left(client: Client, index: Index) -> Result<(), Error> {
+    async fn test_matching_strategy_last(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let results = SearchQuery::new(&index)
@@ -1276,6 +1380,35 @@ mod tests {
             .unwrap();
 
         assert_eq!(results.hits.len(), 7);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_matching_strategy_frequency(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results = SearchQuery::new(&index)
+            .with_query("Harry Styles")
+            .with_matching_strategy(MatchingStrategies::FREQUENCY)
+            .execute::<Document>()
+            .await
+            .unwrap();
+
+        assert_eq!(results.hits.len(), 7);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_distinct(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let results = SearchQuery::new(&index)
+            .with_distinct("kind")
+            .execute::<Document>()
+            .await
+            .unwrap();
+
+        assert_eq!(results.hits.len(), 2);
         Ok(())
     }
 
