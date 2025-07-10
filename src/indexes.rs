@@ -299,7 +299,7 @@ impl<Http: HttpClient> Index<Http> {
     /// }
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
-    /// let movies = client.index("execute_query");
+    /// let movies = client.index("execute_query2");
     ///
     /// // add some documents
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -1846,8 +1846,25 @@ impl<'a, Http: HttpClient> AsRef<IndexUpdater<'a, Http>> for IndexUpdater<'a, Ht
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStats {
+    /// Total number of documents in an index
     pub number_of_documents: usize,
+
+    /// Total number of documents with at least one embedding
+    pub number_of_embedded_documents: usize,
+
+    /// Total number of embeddings in an index
+    pub number_of_embeddings: usize,
+
+    /// Storage space claimed by all documents in the index in bytes
+    pub raw_document_db_size: usize,
+
+    /// Total size of the documents stored in an index divided by the number of documents in that same index
+    pub avg_document_size: usize,
+
+    /// If `true`, the index is still processing documents and attempts to search will yield impredictable results
     pub is_indexing: bool,
+
+    /// Shows every field in the index along with the total number of documents containing that field in said index
     pub field_distribution: HashMap<String, usize>,
 }
 
