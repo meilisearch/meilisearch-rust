@@ -979,17 +979,14 @@ impl<Http: HttpClient> Index<Http> {
     /// # client.create_index("get_embedders", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let index = client.index("get_embedders");
     /// #
-    /// # let t = index.set_settings(&Settings{
-    /// #     embedders: Some(HashMap::from([(
+    /// # let t = index.set_embedders(&HashMap::from([(
     /// #         String::from("default"),
     /// #         Embedder {
     /// #             source: EmbedderSource::UserProvided,
     /// #             dimensions: Some(1),
     /// #             ..Embedder::default()
     /// #         }
-    /// #     )])),
-    /// #     ..Settings::default()
-    /// # }).await.unwrap();
+    /// #     )])).await.unwrap();
     /// # t.wait_for_completion(&client, None, None).await.unwrap();
     /// let embedders = index.get_embedders().await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -1008,6 +1005,54 @@ impl<Http: HttpClient> Index<Http> {
             )
             .await
             .map(|r| r.unwrap_or_default())
+    }
+
+    /// Set [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    ///
+    /// ```
+    /// # use std::collections::HashMap;
+    /// # use std::string::String;
+    /// # use meilisearch_sdk::{indexes::*,settings::Embedder,settings::EmbedderSource,settings::Settings,client::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # client.create_index("set_embedders", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let index = client.index("set_embedders");
+    /// #
+    /// let t = index.set_embedders(&HashMap::from([(
+    ///         String::from("default"),
+    ///         Embedder {
+    ///             source: EmbedderSource::UserProvided,
+    ///             dimensions: Some(1),
+    ///             ..Embedder::default()
+    ///         }
+    ///     )])).await.unwrap();
+    /// # t.wait_for_completion(&client, None, None).await.unwrap();
+    /// # let embedders = index.get_embedders().await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn set_embedders(
+        &self,
+        embedders: &HashMap<String, Embedder>,
+    ) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), &HashMap<String, Embedder>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/embedders",
+                    self.client.host, self.uid
+                ),
+                Method::Patch {
+                    query: (),
+                    body: embedders,
+                },
+                202,
+            )
+            .await
     }
 
     /// Get [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
@@ -2860,15 +2905,14 @@ mod tests {
             dimensions: Some(2),
             ..Default::default()
         };
-        let embeddings = HashMap::from([("default".into(), custom_embedder)]);
-        let settings = Settings::new().with_embedders(embeddings.clone());
+        let embedders = HashMap::from([("default".into(), custom_embedder)]);
 
-        let task_info = index.set_settings(&settings).await.unwrap();
+        let task_info = index.set_embedders(&embedders).await.unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
 
         let res = index.get_embedders().await.unwrap();
 
-        assert_eq!(embeddings, res);
+        assert_eq!(embedders, res);
     }
 
     #[meilisearch_test]
