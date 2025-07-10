@@ -1118,9 +1118,17 @@ impl<Http: HttpClient> Client<Http> {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ClientStats {
+    /// Storage space claimed by Meilisearch and LMDB in bytes
     pub database_size: usize,
+
+    /// Storage space used by the database in bytes, excluding unused space claimed by LMDB
+    pub used_database_size: usize,
+
+    /// When the last update was made to the database in the `RFC 3339` format
     #[serde(with = "time::serde::rfc3339::option")]
     pub last_update: Option<OffsetDateTime>,
+
+    /// The statistics for each index found in the database
     pub indexes: HashMap<String, IndexStats>,
 }
 
