@@ -1664,7 +1664,6 @@ reset_proximity_precision_settings_1: |-
     .await
     .unwrap();
 facet_search_1: |-
-  let client = client::new("http://localhost:7700", Some("apiKey"));
   let res = client.index("books")
     .facet_search("genres")
     .with_facet_query("fiction")
@@ -1673,7 +1672,6 @@ facet_search_1: |-
     .await
     .unwrap();
 facet_search_3: |-
-  let client = client::new("http://localhost:7700", Some("apiKey"));
   let res = client.index("books")
     .facet_search("genres")
     .with_facet_query("c")
