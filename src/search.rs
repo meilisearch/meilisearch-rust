@@ -652,6 +652,11 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
 
     /// Use a custom vector to perform a search query
+    /// 
+    /// `vector` is mandatory when performing searches with `userProvided` embedders.
+    /// You may also use `vector` to override an embedder’s automatic vector generation.
+    /// 
+    /// `vector` dimensions must match the dimensions of the embedder.
     pub fn with_vector<'b>(&'b mut self, vector: &'a [f32]) -> &'b mut SearchQuery<'a, Http> {
         self.vector = Some(vector);
         self
@@ -953,12 +958,13 @@ mod tests {
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Vectors(HashMap<String, Vector>);
 
-    impl From<&[f32; 1]> for Vectors {
-        fn from(value: &[f32; 1]) -> Self {
+    impl<T: Into<Vec<f32>>> From<T> for Vectors {
+        fn from(value: T) -> Self {
+            let vec: Vec<f32> = value.into();
             Vectors(HashMap::from([(
                 S("default"),
                 Vector {
-                    embeddings: SingleOrMultipleVectors::Multiple(Vec::from([value.to_vec()])),
+                    embeddings: SingleOrMultipleVectors::Multiple(Vec::from([vec])),
                     regenerate: false,
                 },
             )]))
@@ -974,18 +980,25 @@ mod tests {
         }
     }
 
+    fn vectorize(is_harry_potter: bool, id: usize) -> Vec<f32> {
+        let mut vector: Vec<f32> = vec![0.; 11];
+        vector[0] = if is_harry_potter { 1. } else { 0. };
+        vector[id + 1] = 1.;
+        vector
+    }
+
     async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
         let t0 = index.add_documents(&[
-            Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") }, _vectors: Some(Vectors::from(&[1000.0]))},
-            Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") }, _vectors: Some(Vectors::from(&[2000.0]))  },
-            Document { id: 2, kind: "title".into(), number: 20, value: S("The Social Network"), nested: Nested { child: S("third") }, _vectors: Some(Vectors::from(&[3000.0]))  },
-            Document { id: 3, kind: "title".into(), number: 30, value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") }, _vectors: Some(Vectors::from(&[4000.0]))  },
-            Document { id: 4, kind: "title".into(), number: 40, value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") }, _vectors: Some(Vectors::from(&[5000.0]))  },
-            Document { id: 5, kind: "title".into(), number: 50, value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") }, _vectors: Some(Vectors::from(&[6000.0]))  },
-            Document { id: 6, kind: "title".into(), number: 60, value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") }, _vectors: Some(Vectors::from(&[7000.0]))  },
-            Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") }, _vectors: Some(Vectors::from(&[8000.0]))  },
-            Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") }, _vectors: Some(Vectors::from(&[9000.0]))  },
-            Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") }, _vectors: Some(Vectors::from(&[10000.0]))  },
+            Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") }, _vectors: Some(Vectors::from(vectorize(false, 0))) },
+            Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") }, _vectors: Some(Vectors::from(vectorize(false, 1))) },
+            Document { id: 2, kind: "title".into(), number: 20, value: S("The Social Network"), nested: Nested { child: S("third") }, _vectors: Some(Vectors::from(vectorize(false, 2))) },
+            Document { id: 3, kind: "title".into(), number: 30, value: S("Harry Potter and the Sorcerer's Stone"), nested: Nested { child: S("fourth") }, _vectors: Some(Vectors::from(vectorize(true, 3))) },
+            Document { id: 4, kind: "title".into(), number: 40, value: S("Harry Potter and the Chamber of Secrets"), nested: Nested { child: S("fift") }, _vectors: Some(Vectors::from(vectorize(true, 4))) },
+            Document { id: 5, kind: "title".into(), number: 50, value: S("Harry Potter and the Prisoner of Azkaban"), nested: Nested { child: S("sixth") }, _vectors: Some(Vectors::from(vectorize(true, 5))) },
+            Document { id: 6, kind: "title".into(), number: 60, value: S("Harry Potter and the Goblet of Fire"), nested: Nested { child: S("seventh") }, _vectors: Some(Vectors::from(vectorize(true, 6))) },
+            Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") }, _vectors: Some(Vectors::from(vectorize(true, 7))) },
+            Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") }, _vectors: Some(Vectors::from(vectorize(true, 8))) },
+            Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") }, _vectors: Some(Vectors::from(vectorize(true, 9))) },
         ], None).await?;
         let t1 = index
             .set_filterable_attributes(["kind", "value", "number"])
@@ -996,6 +1009,21 @@ mod tests {
         t1.wait_for_completion(client, None, None).await?;
         t0.wait_for_completion(client, None, None).await?;
 
+        Ok(())
+    }
+
+    async fn setup_hybrid_searching(client: &Client, index: &Index) -> Result<(), Error> {
+        use crate::settings::{Embedder, UserProvidedEmbedderSettings};
+        let embedder_setting =
+            Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 11 });
+        index
+            .set_settings(&crate::settings::Settings {
+                embedders: Some(HashMap::from([("default".to_string(), embedder_setting)])),
+                ..crate::settings::Settings::default()
+            })
+            .await?
+            .wait_for_completion(client, None, None)
+            .await?;
         Ok(())
     }
 
@@ -1594,22 +1622,6 @@ mod tests {
         Ok(())
     }
 
-    /// Enable vector searching and configure an userProvided embedder
-    async fn setup_hybrid_searching(client: &Client, index: &Index) -> Result<(), Error> {
-        use crate::settings::{Embedder, UserProvidedEmbedderSettings};
-        let embedder_setting =
-            Embedder::UserProvided(UserProvidedEmbedderSettings { dimensions: 1 });
-        index
-            .set_settings(&crate::settings::Settings {
-                embedders: Some(HashMap::from([("default".to_string(), embedder_setting)])),
-                ..crate::settings::Settings::default()
-            })
-            .await?
-            .wait_for_completion(client, None, None)
-            .await?;
-        Ok(())
-    }
-
     #[meilisearch_test]
     async fn test_facet_search_base(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
@@ -1684,8 +1696,8 @@ mod tests {
             .execute()
             .await?;
         assert_eq!(results.hits.len(), 1);
-        let expected = Vectors::from(&[1000.0]);
-        assert_eq!(results.hits[0].result._vectors, Some(expected));
+        let expected = Some(Vectors::from(vectorize(false, 0)));
+        assert_eq!(results.hits[0].result._vectors, expected);
 
         let results: SearchResults<Document> = index
             .search()
@@ -1699,33 +1711,21 @@ mod tests {
     }
 
     #[meilisearch_test]
-    async fn test_hybrid() -> Result<(), Error> {
-        // this is mocked as I could not get the hybrid searching to work
-        // See https://github.com/meilisearch/meilisearch-rust/pull/554 for further context
-        let mut s = mockito::Server::new_async().await;
-        let mock_server_url = s.url();
-        let client = Client::new(mock_server_url, None::<String>)?;
-        let index = client.index("mocked_index");
+    async fn test_hybrid(client: Client, index: Index) -> Result<(), Error> {
+        setup_hybrid_searching(&client, &index).await?;
+        setup_test_index(&client, &index).await?;
 
-        let req = r#"{"q":"hello hybrid searching","hybrid":{"embedder":"default","semanticRatio":0.0},"vector":[1000.0]}"#.to_string();
-        let response = r#"{"hits":[],"offset":null,"limit":null,"estimatedTotalHits":null,"page":null,"hitsPerPage":null,"totalHits":null,"totalPages":null,"facetDistribution":null,"facetStats":null,"processingTimeMs":0,"query":"","indexUid":null}"#.to_string();
-        let mock_res = s
-            .mock("POST", "/indexes/mocked_index/search")
-            .with_status(200)
-            .match_body(mockito::Matcher::Exact(req))
-            .with_body(&response)
-            .expect(1)
-            .create_async()
-            .await;
-        let results: Result<SearchResults<Document>, Error> = index
+        // Search for an Harry Potter that but with lorem ipsum's id
+        // Will yield lorem ipsum first, them harry potter documents, then the rest
+        let results: SearchResults<Document> = index
             .search()
-            .with_query("hello hybrid searching")
-            .with_hybrid("default", 0.0)
-            .with_vector(&[1000.0])
+            .with_hybrid("default", 1.0)
+            .with_vector(&vectorize(true, 0))
             .execute()
-            .await;
-        mock_res.assert_async().await;
-        results?; // purposely not done above to have better debugging output
+            .await?;
+        let ids = results.hits.iter().map(|hit| hit.result.id).collect::<Vec<_>>();
+        assert_eq!(ids, vec![0, 3, 4, 5, 6, 7, 8, 9, 1, 2]);
+
         Ok(())
     }
 
