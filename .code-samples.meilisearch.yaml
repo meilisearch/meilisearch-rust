@@ -2,6 +2,7 @@
 # Every example written here will be automatically fetched by
 # the documentation on build
 # You can read more on https://github.com/meilisearch/documentation/tree/main/learn
+# See the original at https://github.com/meilisearch/documentation/blob/main/.code-samples.meilisearch.yaml
 ---
 synonyms_guide_1: |-
   let mut synonyms = std::collections::HashMap::new();
@@ -1682,11 +1683,10 @@ facet_search_2: |-
   let mut facet_sort_setting = BTreeMap::new();
   facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
   let faceting = FacetingSettings {
-    max_values_per_facet: 5,
+    max_values_per_facet: 100,
     sort_facet_values_by: Some(facet_sort_setting),
   };
 
-  let client = client::new("http://localhost:7700", Some("apiKey"));
   let res = client.index("books")
     .set_faceting(&faceting)
     .execute()
