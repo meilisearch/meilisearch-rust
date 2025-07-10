@@ -41,7 +41,9 @@ pub enum FacetSortValue {
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetingSettings {
+    /// Maximum number of facet values returned for each facet. Values are sorted in ascending lexicographical order
     pub max_values_per_facet: usize,
+    /// Customize facet order to sort by descending value count (count) or ascending alphanumeric order (alpha)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sort_facet_values_by: Option<BTreeMap<String, FacetSortValue>>,
 }
