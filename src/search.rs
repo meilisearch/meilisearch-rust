@@ -1690,7 +1690,7 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
+    #[meilisearch_test]
     async fn test_hybrid() -> Result<(), Error> {
         // this is mocked as I could not get the hybrid searching to work
         // See https://github.com/meilisearch/meilisearch-rust/pull/554 for further context
@@ -1721,6 +1721,7 @@ mod tests {
         Ok(())
     }
   
+    #[meilisearch_test]
     async fn test_facet_search_with_search_query(
         client: Client,
         index: Index,
