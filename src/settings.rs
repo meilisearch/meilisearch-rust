@@ -297,10 +297,7 @@ impl Settings {
     }
 
     #[must_use]
-    pub fn with_max_values_per_facet(
-        mut self,
-        max_values_per_facet: usize,
-    ) -> Settings {
+    pub fn with_max_values_per_facet(mut self, max_values_per_facet: usize) -> Settings {
         let mut faceting = self.faceting.take().unwrap_or_default();
         faceting.max_values_per_facet = max_values_per_facet;
         Settings {
