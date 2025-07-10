@@ -102,8 +102,8 @@ pub struct Embedder {
     pub document_template_max_bytes: Option<usize>,
 
     /// Number of dimensions in the chosen model.
-    #[serde(skip_serializing_if = "Option::is_none")]
     /// If not supplied, Meilisearch tries to infer this value
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub dimensions: Option<usize>,
 
     /// Describes the natural distribution of search results.
