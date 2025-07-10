@@ -682,8 +682,8 @@ pub struct MultiSearchResponse<T> {
 ///     name: String,
 ///     genre: String,
 /// }
-/// # futures::executor::block_on(async move {
-/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+/// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 /// let movies = client.index("execute_query");
 ///
 /// // add some documents
@@ -699,12 +699,12 @@ pub struct MultiSearchResponse<T> {
 /// ```
 ///
 /// ```
-/// # use meilisearch_sdk::{Client, SearchQuery, Index};
+/// # use meilisearch_sdk::{client::*, indexes::*, search::*};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
-/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+/// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 /// # let index = client.index("facet_search_query_builder_build");
 /// let query = index.facet_search("kind")
 ///     .with_facet_query("space")

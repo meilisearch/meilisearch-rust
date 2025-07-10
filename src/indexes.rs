@@ -297,8 +297,8 @@ impl<Http: HttpClient> Index<Http> {
     ///     name: String,
     ///     genre: String,
     /// }
-    /// # futures::executor::block_on(async move {
-    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movies = client.index("execute_query");
     ///
     /// // add some documents
