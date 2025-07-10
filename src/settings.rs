@@ -302,6 +302,32 @@ impl Settings {
     }
 
     #[must_use]
+    pub fn with_max_values_per_facet(
+        mut self,
+        max_values_per_facet: usize,
+    ) -> Settings {
+        let mut faceting = self.faceting.take().unwrap_or_default();
+        faceting.max_values_per_facet = max_values_per_facet;
+        Settings {
+            faceting: Some(faceting),
+            ..self
+        }
+    }
+
+    #[must_use]
+    pub fn with_sort_facet_values_by(
+        mut self,
+        sort_facet_values_by: BTreeMap<String, FacetSortValue>,
+    ) -> Settings {
+        let mut faceting = self.faceting.take().unwrap_or_default();
+        faceting.sort_facet_values_by = Some(sort_facet_values_by);
+        Settings {
+            faceting: Some(faceting),
+            ..self
+        }
+    }
+
+    #[must_use]
     pub fn with_dictionary(
         self,
         dictionary: impl IntoIterator<Item = impl AsRef<str>>,
