@@ -55,19 +55,25 @@ pub struct SearchResult<T> {
     /// The full result.
     #[serde(flatten)]
     pub result: T,
+
     /// The formatted result.
-    #[serde(rename = "_formatted")]
+    #[serde(rename = "_formatted", skip_serializing_if = "Option::is_none")]
     pub formatted_result: Option<Map<String, Value>>,
+
     /// The object that contains information about the matches.
-    #[serde(rename = "_matchesPosition")]
+    #[serde(rename = "_matchesPosition", skip_serializing_if = "Option::is_none")]
     pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
+
     /// The relevancy score of the match.
-    #[serde(rename = "_rankingScore")]
+    #[serde(rename = "_rankingScore", skip_serializing_if = "Option::is_none")]
     pub ranking_score: Option<f64>,
-    #[serde(rename = "_rankingScoreDetails")]
+
+    /// A detailed global ranking score field
+    #[serde(rename = "_rankingScoreDetails", skip_serializing_if = "Option::is_none")]
     pub ranking_score_details: Option<Map<String, Value>>,
+
     /// Only returned for federated multi search.
-    #[serde(rename = "_federation")]
+    #[serde(rename = "_federation", skip_serializing_if = "Option::is_none")]
     pub federation: Option<FederationHitInfo>,
 }
 
@@ -832,7 +838,7 @@ pub struct FederatedMultiSearchResponse<T> {
 }
 
 /// Returned for each hit in `_federation` when doing federated multi search.
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FederationHitInfo {
     pub index_uid: String,
@@ -1243,6 +1249,7 @@ mod tests {
                 number: 90,
                 value: S("Harry Potter and the Deathly Hallows"),
                 nested: Nested { child: S("tenth") },
+                _vectors: None,
             })
         );
         assert_eq!(
