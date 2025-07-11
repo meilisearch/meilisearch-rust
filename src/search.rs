@@ -1,8 +1,12 @@
 use crate::{
-    client::Client, errors::Error, indexes::Index, request::HttpClient, DefaultHttpClient,
+    client::Client,
+    errors::{Error, MeilisearchError},
+    indexes::Index,
+    request::HttpClient,
+    DefaultHttpClient,
 };
 use either::Either;
-use serde::{de::DeserializeOwned, ser::SerializeStruct, Deserialize, Serialize, Serializer};
+use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
@@ -55,17 +59,29 @@ pub struct SearchResult<T> {
     /// The full result.
     #[serde(flatten)]
     pub result: T,
+
     /// The formatted result.
-    #[serde(rename = "_formatted")]
+    #[serde(rename = "_formatted", skip_serializing_if = "Option::is_none")]
     pub formatted_result: Option<Map<String, Value>>,
+
     /// The object that contains information about the matches.
-    #[serde(rename = "_matchesPosition")]
+    #[serde(rename = "_matchesPosition", skip_serializing_if = "Option::is_none")]
     pub matches_position: Option<HashMap<String, Vec<MatchRange>>>,
+
     /// The relevancy score of the match.
-    #[serde(rename = "_rankingScore")]
+    #[serde(rename = "_rankingScore", skip_serializing_if = "Option::is_none")]
     pub ranking_score: Option<f64>,
-    #[serde(rename = "_rankingScoreDetails")]
+
+    /// A detailed global ranking score field
+    #[serde(
+        rename = "_rankingScoreDetails",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub ranking_score_details: Option<Map<String, Value>>,
+
+    /// Only returned for federated multi search.
+    #[serde(rename = "_federation", skip_serializing_if = "Option::is_none")]
+    pub federation: Option<FederationHitInfo>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -385,6 +401,16 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     /// Defines whether document embeddings are returned with search results.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retrieve_vectors: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) federation_options: Option<QueryFederationOptions>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryFederationOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weight: Option<f32>,
 }
 
 #[allow(missing_docs)]
@@ -420,6 +446,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             distinct: None,
             ranking_score_threshold: None,
             locales: None,
+            federation_options: None,
         }
     }
 
@@ -692,25 +719,17 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
 }
 
-// TODO: Make it works with the serde derive macro
-// #[derive(Debug, Serialize, Clone)]
-// #[serde(rename_all = "camelCase")]
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
-    // #[serde(skip_serializing)]
+    #[serde(skip_serializing)]
     client: &'a Client<Http>,
+    // The weird `serialize = ""` is actually useful: without it, serde adds the
+    // bound `Http: Serialize` to the `Serialize` impl block, but that's not
+    // necessary. `SearchQuery` always implements `Serialize` (regardless of
+    // type parameter), so no bound is fine.
+    #[serde(bound(serialize = ""))]
     pub queries: Vec<SearchQuery<'b, Http>>,
-}
-
-impl<Http: HttpClient> Serialize for MultiSearchQuery<'_, '_, Http> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut strukt = serializer.serialize_struct("MultiSearchQuery", 1)?;
-        strukt.serialize_field("queries", &self.queries)?;
-        strukt.end()
-    }
 }
 
 #[allow(missing_docs)]
@@ -722,6 +741,7 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
             queries: Vec::new(),
         }
     }
+
     pub fn with_search_query(
         &mut self,
         mut search_query: SearchQuery<'b, Http>,
@@ -731,6 +751,42 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
         self
     }
 
+    pub fn with_search_query_and_weight(
+        &mut self,
+        search_query: SearchQuery<'b, Http>,
+        weight: f32,
+    ) -> &mut MultiSearchQuery<'a, 'b, Http> {
+        self.with_search_query_and_options(
+            search_query,
+            QueryFederationOptions {
+                weight: Some(weight),
+            },
+        )
+    }
+
+    pub fn with_search_query_and_options(
+        &mut self,
+        mut search_query: SearchQuery<'b, Http>,
+        options: QueryFederationOptions,
+    ) -> &mut MultiSearchQuery<'a, 'b, Http> {
+        search_query.with_index_uid();
+        search_query.federation_options = Some(options);
+        self.queries.push(search_query);
+        self
+    }
+
+    /// Adds the `federation` parameter, turning the search into a federated search.
+    pub fn with_federation(
+        self,
+        federation: FederationOptions,
+    ) -> FederatedMultiSearchQuery<'a, 'b, Http> {
+        FederatedMultiSearchQuery {
+            client: self.client,
+            queries: self.queries,
+            federation: Some(federation),
+        }
+    }
+
     /// Execute the query and fetch the results.
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
@@ -738,9 +794,116 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
         self.client.execute_multi_search_query::<T>(self).await
     }
 }
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MultiSearchResponse<T> {
     pub results: Vec<SearchResults<T>>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FederatedMultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClient> {
+    #[serde(skip_serializing)]
+    client: &'a Client<Http>,
+    #[serde(bound(serialize = ""))]
+    pub queries: Vec<SearchQuery<'b, Http>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub federation: Option<FederationOptions>,
+}
+
+#[derive(Debug, Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MergeFacets {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_values_per_facet: Option<usize>,
+}
+
+/// The `federation` field of the multi search API.
+/// See [the docs](https://www.meilisearch.com/docs/reference/api/multi_search#federation).
+#[derive(Debug, Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct FederationOptions {
+    /// Number of documents to skip
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub offset: Option<usize>,
+
+    /// Maximum number of documents returned
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<usize>,
+
+    /// Display facet information for the specified indexes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub facets_by_index: Option<HashMap<String, Vec<String>>>,
+
+    /// Request to merge the facets to enforce a maximum number of values per facet.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub merge_facets: Option<MergeFacets>,
+}
+
+impl<'a, Http: HttpClient> FederatedMultiSearchQuery<'a, '_, Http> {
+    /// Execute the query and fetch the results.
+    pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
+        &'a self,
+    ) -> Result<FederatedMultiSearchResponse<T>, Error> {
+        self.client
+            .execute_federated_multi_search_query::<T>(self)
+            .await
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ComputedFacets {
+    pub distribution: HashMap<String, HashMap<String, u64>>,
+    pub stats: HashMap<String, FacetStats>,
+}
+
+/// Returned by federated multi search.
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FederatedMultiSearchResponse<T> {
+    /// Merged results of the query.
+    pub hits: Vec<SearchResult<T>>,
+
+    /// Number of documents skipped.
+    pub offset: usize,
+
+    /// Number of results returned.
+    pub limit: usize,
+
+    /// Estimated total number of matches.
+    pub estimated_total_hits: usize,
+
+    /// Processing time of the query.
+    pub processing_time_ms: usize,
+
+    /// [Data for facets present in the search results](https://www.meilisearch.com/docs/reference/api/multi_search#facetsbyindex)
+    pub facets_by_index: Option<ComputedFacets>,
+
+    /// [Distribution of the given facets](https://www.meilisearch.com/docs/reference/api/multi_search#mergefacets)
+    pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
+
+    /// [The numeric `min` and `max` values per facet](https://www.meilisearch.com/docs/reference/api/multi_search#mergefacets)
+    pub facet_stats: Option<HashMap<String, FacetStats>>,
+
+    /// Indicates which remote requests failed and why
+    pub remote_errors: Option<HashMap<String, MeilisearchError>>,
+}
+
+/// Returned for each hit in `_federation` when doing federated multi search.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FederationHitInfo {
+    /// Index of origin for this document
+    pub index_uid: String,
+
+    /// Array index number of the query in the request’s queries array
+    pub queries_position: usize,
+
+    /// Remote instance of origin for this document
+    pub remote: Option<String>,
+
+    /// The product of the _rankingScore of the hit and the weight of the query of origin.
+    pub weighted_ranking_score: f32,
 }
 
 /// A struct representing a facet-search query.
@@ -1013,6 +1176,55 @@ mod tests {
         Ok(())
     }
 
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct VideoDocument {
+        id: usize,
+        title: String,
+        description: Option<String>,
+        duration: u32,
+    }
+
+    async fn setup_test_video_index(client: &Client, index: &Index) -> Result<(), Error> {
+        let t0 = index
+            .add_documents(
+                &[
+                    VideoDocument {
+                        id: 0,
+                        title: S("Spring"),
+                        description: Some(S("A Blender Open movie")),
+                        duration: 123,
+                    },
+                    VideoDocument {
+                        id: 1,
+                        title: S("Wing It!"),
+                        description: None,
+                        duration: 234,
+                    },
+                    VideoDocument {
+                        id: 2,
+                        title: S("Coffee Run"),
+                        description: Some(S("Directed by Hjalti Hjalmarsson")),
+                        duration: 345,
+                    },
+                    VideoDocument {
+                        id: 3,
+                        title: S("Harry Potter and the Deathly Hallows"),
+                        description: None,
+                        duration: 7654,
+                    },
+                ],
+                None,
+            )
+            .await?;
+        let t1 = index.set_filterable_attributes(["duration"]).await?;
+        let t2 = index.set_sortable_attributes(["title"]).await?;
+
+        t2.wait_for_completion(client, None, None).await?;
+        t1.wait_for_completion(client, None, None).await?;
+        t0.wait_for_completion(client, None, None).await?;
+        Ok(())
+    }
+
     async fn setup_hybrid_searching(client: &Client, index: &Index) -> Result<(), Error> {
         use crate::settings::Embedder;
         let embedder_setting = Embedder {
@@ -1050,6 +1262,102 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.results.len(), 2);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_federated_multi_search(
+        client: Client,
+        test_index: Index,
+        video_index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &test_index).await?;
+        setup_test_video_index(&client, &video_index).await?;
+
+        let query_test_index = SearchQuery::new(&test_index).with_query("death").build();
+        let query_video_index = SearchQuery::new(&video_index).with_query("death").build();
+
+        #[derive(Debug, Serialize, Deserialize, PartialEq)]
+        #[serde(untagged)]
+        enum AnyDocument {
+            Document(Document),
+            VideoDocument(VideoDocument),
+        }
+
+        // Search with big weight on the test index
+        let mut multi_query = client.multi_search();
+        multi_query.with_search_query_and_weight(query_test_index.clone(), 999.0);
+        multi_query.with_search_query(query_video_index.clone());
+        let response = multi_query
+            .with_federation(FederationOptions::default())
+            .execute::<AnyDocument>()
+            .await?;
+        assert_eq!(response.hits.len(), 2);
+        assert_eq!(
+            response.hits[0].result,
+            AnyDocument::Document(Document {
+                id: 9,
+                kind: "title".into(),
+                number: 90,
+                value: S("Harry Potter and the Deathly Hallows"),
+                nested: Nested { child: S("tenth") },
+                _vectors: None,
+            })
+        );
+        assert_eq!(
+            response.hits[1].result,
+            AnyDocument::VideoDocument(VideoDocument {
+                id: 3,
+                title: S("Harry Potter and the Deathly Hallows"),
+                description: None,
+                duration: 7654,
+            })
+        );
+
+        // Search with big weight on the video index
+        let mut multi_query = client.multi_search();
+        multi_query.with_search_query(query_test_index.clone());
+        multi_query.with_search_query_and_weight(query_video_index.clone(), 999.0);
+        let response = multi_query
+            .with_federation(FederationOptions::default())
+            .execute::<AnyDocument>()
+            .await?;
+        assert_eq!(response.hits.len(), 2);
+        assert_eq!(
+            response.hits[0].result,
+            AnyDocument::VideoDocument(VideoDocument {
+                id: 3,
+                title: S("Harry Potter and the Deathly Hallows"),
+                description: None,
+                duration: 7654,
+            })
+        );
+        assert_eq!(
+            response.hits[1].result,
+            AnyDocument::Document(Document {
+                id: 9,
+                kind: "title".into(),
+                number: 90,
+                value: S("Harry Potter and the Deathly Hallows"),
+                nested: Nested { child: S("tenth") },
+                _vectors: None,
+            })
+        );
+
+        // Make sure federation options are applied
+        let mut multi_query = client.multi_search();
+        multi_query.with_search_query(query_test_index.clone());
+        multi_query.with_search_query(query_video_index.clone());
+        let response = multi_query
+            .with_federation(FederationOptions {
+                limit: Some(1),
+                ..Default::default()
+            })
+            .execute::<AnyDocument>()
+            .await?;
+
+        assert_eq!(response.hits.len(), 1);
+
         Ok(())
     }
 
