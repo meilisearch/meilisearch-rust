@@ -811,7 +811,6 @@ pub struct FederationOptions {
     pub merge_facets: Option<bool>,
 }
 
-#[allow(missing_docs)]
 impl<'a, Http: HttpClient> FederatedMultiSearchQuery<'a, '_, Http> {
     /// Execute the query and fetch the results.
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
