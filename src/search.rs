@@ -751,6 +751,19 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
         self
     }
 
+    pub fn with_search_query_and_weight(
+        &mut self,
+        mut search_query: SearchQuery<'b, Http>,
+        weight: f32,
+    ) -> &mut MultiSearchQuery<'a, 'b, Http> {
+        search_query.with_index_uid();
+        search_query.federation_options = Some(QueryFederationOptions {
+            weight: Some(weight),
+        });
+        self.queries.push(search_query);
+        self
+    }
+
     pub fn with_search_query_and_options(
         &mut self,
         mut search_query: SearchQuery<'b, Http>,
@@ -1248,41 +1261,34 @@ mod tests {
     #[meilisearch_test]
     async fn test_federated_multi_search(
         client: Client,
-        index_a: Index,
-        index_b: Index,
+        test_index: Index,
+        video_index: Index,
     ) -> Result<(), Error> {
-        setup_test_index(&client, &index_a).await?;
-        setup_test_video_index(&client, &index_b).await?;
+        setup_test_index(&client, &test_index).await?;
+        setup_test_video_index(&client, &video_index).await?;
 
-        let query_death_a = SearchQuery::new(&index_a).with_query("death").build();
-        let query_death_b = SearchQuery::new(&index_b).with_query("death").build();
+        let query_test_index = SearchQuery::new(&test_index).with_query("death").build();
+        let query_video_index = SearchQuery::new(&video_index).with_query("death").build();
 
         #[derive(Debug, Serialize, Deserialize, PartialEq)]
         #[serde(untagged)]
         enum AnyDocument {
-            IndexA(Document),
-            IndexB(VideoDocument),
+            Document(Document),
+            VideoDocument(VideoDocument),
         }
 
+        // Search with big weight on the test index
         let mut multi_query = client.multi_search();
-        multi_query.with_search_query(query_death_a.clone());
-        multi_query.with_search_query(query_death_b.clone());
+        multi_query.with_search_query_and_weight(query_test_index.clone(), 999.0);
+        multi_query.with_search_query(query_video_index.clone());
         let response = multi_query
             .with_federation(FederationOptions::default())
             .execute::<AnyDocument>()
             .await?;
-
         assert_eq!(response.hits.len(), 2);
-        let pos_a = response
-            .hits
-            .iter()
-            .position(|hit| hit.federation.as_ref().unwrap().index_uid == index_a.uid)
-            .expect("No hit of index_a found");
-        let hit_a = &response.hits[pos_a];
-        let hit_b = &response.hits[if pos_a == 0 { 1 } else { 0 }];
         assert_eq!(
-            hit_a.result,
-            AnyDocument::IndexA(Document {
+            response.hits[0].result,
+            AnyDocument::Document(Document {
                 id: 9,
                 kind: "title".into(),
                 number: 90,
@@ -1292,8 +1298,8 @@ mod tests {
             })
         );
         assert_eq!(
-            hit_b.result,
-            AnyDocument::IndexB(VideoDocument {
+            response.hits[1].result,
+            AnyDocument::VideoDocument(VideoDocument {
                 id: 3,
                 title: S("Harry Potter and the Deathly Hallows"),
                 description: None,
@@ -1301,10 +1307,40 @@ mod tests {
             })
         );
 
+        // Search with big weight on the video index
+        let mut multi_query = client.multi_search();
+        multi_query.with_search_query(query_test_index.clone());
+        multi_query.with_search_query_and_weight(query_video_index.clone(), 999.0);
+        let response = multi_query
+            .with_federation(FederationOptions::default())
+            .execute::<AnyDocument>()
+            .await?;
+        assert_eq!(response.hits.len(), 2);
+        assert_eq!(
+            response.hits[0].result,
+            AnyDocument::VideoDocument(VideoDocument {
+                id: 3,
+                title: S("Harry Potter and the Deathly Hallows"),
+                description: None,
+                duration: 7654,
+            })
+        );
+        assert_eq!(
+            response.hits[1].result,
+            AnyDocument::Document(Document {
+                id: 9,
+                kind: "title".into(),
+                number: 90,
+                value: S("Harry Potter and the Deathly Hallows"),
+                nested: Nested { child: S("tenth") },
+                _vectors: None,
+            })
+        );
+
         // Make sure federation options are applied
         let mut multi_query = client.multi_search();
-        multi_query.with_search_query(query_death_a.clone());
-        multi_query.with_search_query(query_death_b.clone());
+        multi_query.with_search_query(query_test_index.clone());
+        multi_query.with_search_query(query_video_index.clone());
         let response = multi_query
             .with_federation(FederationOptions {
                 limit: Some(1),
