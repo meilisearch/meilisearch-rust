@@ -1,5 +1,5 @@
 use crate::{
-    client::Client, errors::Error, indexes::Index, request::HttpClient, DefaultHttpClient,
+    client::Client, errors::{Error, MeilisearchError}, indexes::Index, request::HttpClient, DefaultHttpClient,
 };
 use either::Either;
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
@@ -822,6 +822,12 @@ impl<'a, Http: HttpClient> FederatedMultiSearchQuery<'a, '_, Http> {
     }
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ComputedFacets {
+    pub distribution: HashMap<String, HashMap<String, u64>>,
+    pub stats: HashMap<String, FacetStats>,
+}
+
 /// Returned by federated multi search.
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -829,30 +835,45 @@ pub struct FederatedMultiSearchResponse<T> {
     /// Merged results of the query.
     pub hits: Vec<SearchResult<T>>,
 
-    // TODO: are offset, limit and estimated_total_hits really non-optional? In
-    // my tests they are always returned, but that's not a proof.
     /// Number of documents skipped.
     pub offset: usize,
+
     /// Number of results returned.
     pub limit: usize,
+
     /// Estimated total number of matches.
     pub estimated_total_hits: usize,
 
-    /// Distribution of the given facets.
-    pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
-    /// facet stats of the numerical facets requested in the `facet` search parameter.
-    pub facet_stats: Option<HashMap<String, FacetStats>>,
     /// Processing time of the query.
     pub processing_time_ms: usize,
+
+    /// [Data for facets present in the search results](https://www.meilisearch.com/docs/reference/api/multi_search#facetsbyindex)
+    pub facets_by_index: Option<ComputedFacets>,
+
+    /// [Distribution of the given facets](https://www.meilisearch.com/docs/reference/api/multi_search#mergefacets)
+    pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
+
+    /// [The numeric `min` and `max` values per facet](https://www.meilisearch.com/docs/reference/api/multi_search#mergefacets)
+    pub facet_stats: Option<HashMap<String, FacetStats>>,
+
+    /// Indicates which remote requests failed and why
+    pub remote_errors: Option<HashMap<String, MeilisearchError>>,
 }
 
 /// Returned for each hit in `_federation` when doing federated multi search.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FederationHitInfo {
+    /// Index of origin for this document
     pub index_uid: String,
+
+    /// Array index number of the query in the request’s queries array
     pub queries_position: usize,
-    // TOOD: not mentioned in the docs, is that optional?
+
+    /// Remote instance of origin for this document
+    pub remote: Option<String>,
+
+    /// The product of the _rankingScore of the hit and the weight of the query of origin.
     pub weighted_ranking_score: f32,
 }
   
