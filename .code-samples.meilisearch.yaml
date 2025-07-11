@@ -1690,7 +1690,7 @@ reset_facet_search_settings_1: |-
     .await
     .unwrap();
 get_prefix_search_settings_1: |-
-  let prefix_search: String = client
+  let prefix_search: PrefixSearchSettings = client
     .index(INDEX_UID)
     .get_prefix_search()
     .await
@@ -1698,7 +1698,7 @@ get_prefix_search_settings_1: |-
 update_prefix_search_settings_1: |-
   let task: TaskInfo = client
     .index(INDEX_UID)
-    .set_prefix_search("disabled".to_string())
+    .set_prefix_search(PrefixSearchSettings::Disabled)
     .await
     .unwrap();
 reset_prefix_search_settings_1: |-

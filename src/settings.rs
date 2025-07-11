@@ -37,6 +37,23 @@ pub enum FacetSortValue {
     Count,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum PrefixSearchSettings {
+    /// Calculate prefix search during indexing.
+    /// This is the default behavior
+    IndexingTime,
+
+    /// Do not calculate prefix search.
+    /// May speed up indexing, but will severely impact search result relevancy
+    Disabled,
+
+    /// Any other value that might be added to Meilisearch in the future but that is not supported by this SDK.
+    /// If you see one, please open a PR
+    #[serde(untagged)]
+    Unknown(String),
+}
+
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FacetingSettings {
@@ -985,10 +1002,10 @@ impl<Http: HttpClient> Index<Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_prefix_search(&self) -> Result<String, Error> {
+    pub async fn get_prefix_search(&self) -> Result<PrefixSearchSettings, Error> {
         self.client
             .http_client
-            .request::<(), (), String>(
+            .request::<(), (), PrefixSearchSettings>(
                 &format!(
                     "{}/indexes/{}/settings/prefix-search",
                     self.client.host, self.uid
@@ -1966,7 +1983,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # Example
     ///
     /// ```
-    /// # use meilisearch_sdk::{client::*, indexes::*, settings::Settings};
+    /// # use meilisearch_sdk::{client::*, indexes::*, settings::{Settings, PrefixSearchSettings}};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -1976,14 +1993,17 @@ impl<Http: HttpClient> Index<Http> {
     /// # client.create_index("set_prefix_search", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// let mut index = client.index("set_prefix_search");
     ///
-    /// let task = index.set_prefix_search("disabled".to_string()).await.unwrap();
+    /// let task = index.set_prefix_search(PrefixSearchSettings::Disabled).await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn set_prefix_search(&self, prefix_search: String) -> Result<TaskInfo, Error> {
+    pub async fn set_prefix_search(
+        &self,
+        prefix_search: PrefixSearchSettings,
+    ) -> Result<TaskInfo, Error> {
         self.client
             .http_client
-            .request::<(), String, TaskInfo>(
+            .request::<(), PrefixSearchSettings, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/prefix-search",
                     self.client.host, self.uid
@@ -3175,7 +3195,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_get_prefix_search(index: Index) {
-        let expected = "indexingTime".to_string();
+        let expected = PrefixSearchSettings::IndexingTime;
 
         let res = index.get_prefix_search().await.unwrap();
 
@@ -3184,10 +3204,10 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_set_prefix_search(client: Client, index: Index) {
-        let expected = "disabled".to_string();
+        let expected = PrefixSearchSettings::Disabled;
 
         let task_info = index
-            .set_prefix_search("disabled".to_string())
+            .set_prefix_search(PrefixSearchSettings::Disabled)
             .await
             .unwrap();
         client.wait_for_task(task_info, None, None).await.unwrap();
@@ -3199,10 +3219,10 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_reset_prefix_search(index: Index) {
-        let expected = "indexingTime".to_string();
+        let expected = PrefixSearchSettings::IndexingTime;
 
         let task = index
-            .set_prefix_search("disabled".to_string())
+            .set_prefix_search(PrefixSearchSettings::Disabled)
             .await
             .unwrap();
         index.wait_for_task(task, None, None).await.unwrap();
