@@ -1,5 +1,9 @@
 use crate::{
-    client::Client, errors::{Error, MeilisearchError}, indexes::Index, request::HttpClient, DefaultHttpClient,
+    client::Client,
+    errors::{Error, MeilisearchError},
+    indexes::Index,
+    request::HttpClient,
+    DefaultHttpClient,
 };
 use either::Either;
 use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
@@ -69,7 +73,10 @@ pub struct SearchResult<T> {
     pub ranking_score: Option<f64>,
 
     /// A detailed global ranking score field
-    #[serde(rename = "_rankingScoreDetails", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "_rankingScoreDetails",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub ranking_score_details: Option<Map<String, Value>>,
 
     /// Only returned for federated multi search.
@@ -382,7 +389,7 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) index_uid: Option<&'a str>,
-  
+
     /// Configures Meilisearch to return search results based on a query’s meaning and context.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hybrid: Option<HybridSearch<'a>>,
@@ -744,7 +751,7 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
         self
     }
 
-     pub fn with_search_query_and_options(
+    pub fn with_search_query_and_options(
         &mut self,
         mut search_query: SearchQuery<'b, Http>,
         options: QueryFederationOptions,
@@ -807,7 +814,7 @@ pub struct FederationOptions {
     /// Display facet information for the specified indexes
     #[serde(skip_serializing_if = "Option::is_none")]
     pub facets_by_index: Option<HashMap<String, Vec<String>>>,
-    
+
     /// Display facet information for the specified indexes
     #[serde(skip_serializing_if = "Option::is_none")]
     pub merge_facets: Option<bool>,
@@ -878,7 +885,7 @@ pub struct FederationHitInfo {
     /// The product of the _rankingScore of the hit and the weight of the query of origin.
     pub weighted_ranking_score: f32,
 }
-  
+
 /// A struct representing a facet-search query.
 ///
 /// You can add search parameters using the builder syntax.
