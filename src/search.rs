@@ -700,15 +700,6 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self
     }
 
-    /// Only usable in federated multi search queries.
-    pub fn with_federation_options<'b>(
-        &'b mut self,
-        federation_options: QueryFederationOptions,
-    ) -> &'b mut SearchQuery<'a, Http> {
-        self.federation_options = Some(federation_options);
-        self
-    }
-
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
     }
@@ -753,7 +744,18 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
         self
     }
 
-    /// Adds the `federation` parameter, making the search a federated search.
+     pub fn with_search_query_and_options(
+        &mut self,
+        mut search_query: SearchQuery<'b, Http>,
+        options: QueryFederationOptions,
+    ) -> &mut MultiSearchQuery<'a, 'b, Http> {
+        search_query.with_index_uid();
+        search_query.federation_options = Some(options);
+        self.queries.push(search_query);
+        self
+    }
+
+    /// Adds the `federation` parameter, turning the search into a federated search.
     pub fn with_federation(
         self,
         federation: FederationOptions,
