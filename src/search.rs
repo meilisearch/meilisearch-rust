@@ -743,6 +743,7 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
             queries: Vec::new(),
         }
     }
+
     pub fn with_search_query(
         &mut self,
         mut search_query: SearchQuery<'b, Http>,
@@ -751,6 +752,7 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
         self.queries.push(search_query);
         self
     }
+
     /// Adds the `federation` parameter, making the search a federated search.
     pub fn with_federation(
         self,
@@ -770,6 +772,7 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
         self.client.execute_multi_search_query::<T>(self).await
     }
 }
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MultiSearchResponse<T> {
     pub results: Vec<SearchResults<T>>,
@@ -791,12 +794,19 @@ pub struct FederatedMultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClien
 #[derive(Debug, Serialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FederationOptions {
+    /// Number of documents to skip
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<usize>,
+
+    /// Maximum number of documents returned
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
+
+    /// Display facet information for the specified indexes
     #[serde(skip_serializing_if = "Option::is_none")]
     pub facets_by_index: Option<HashMap<String, Vec<String>>>,
+    
+    /// Display facet information for the specified indexes
     #[serde(skip_serializing_if = "Option::is_none")]
     pub merge_facets: Option<bool>,
 }
