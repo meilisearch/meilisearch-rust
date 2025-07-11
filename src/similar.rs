@@ -83,10 +83,13 @@ pub struct SimilarResults<T> {
 pub struct SimilarQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
     index: &'a Index<Http>,
+    
     /// Document id
     pub id: &'a str,
+
     /// embedder name
     pub embedder: &'a str,
+    
     /// The number of documents to skip.
     /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
     /// This is helpful for pagination.
@@ -94,6 +97,7 @@ pub struct SimilarQuery<'a, Http: HttpClient> {
     /// Example: If you want to skip the first document, set offset to `1`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<usize>,
+
     /// The maximum number of documents returned.
     ///
     /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.
@@ -104,11 +108,13 @@ pub struct SimilarQuery<'a, Http: HttpClient> {
     /// **Default: `20`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
+
     /// Filter applied to documents.
     ///
     /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/advanced/filtering) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
+
     /// Attributes to display in the returned documents.
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
@@ -162,14 +168,17 @@ impl<'a, Http: HttpClient> SimilarQuery<'a, Http> {
         self.offset = Some(offset);
         self
     }
+
     pub fn with_limit<'b>(&'b mut self, limit: usize) -> &'b mut SimilarQuery<'a, Http> {
         self.limit = Some(limit);
         self
     }
+
     pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut SimilarQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Left(filter)));
         self
     }
+    
     pub fn with_array_filter<'b>(
         &'b mut self,
         filter: Vec<&'a str>,
@@ -177,6 +186,7 @@ impl<'a, Http: HttpClient> SimilarQuery<'a, Http> {
         self.filter = Some(Filter::new(Either::Right(filter)));
         self
     }
+
     pub fn with_attributes_to_retrieve<'b>(
         &'b mut self,
         attributes_to_retrieve: Selectors<&'a [&'a str]>,
@@ -208,9 +218,11 @@ impl<'a, Http: HttpClient> SimilarQuery<'a, Http> {
         self.ranking_score_threshold = Some(ranking_score_threshold);
         self
     }
+
     pub fn build(&mut self) -> SimilarQuery<'a, Http> {
         self.clone()
     }
+
     /// Execute the query and fetch the results.
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
@@ -219,212 +231,209 @@ impl<'a, Http: HttpClient> SimilarQuery<'a, Http> {
     }
 }
 
-// TODO: set UserProvided EembdderConfig
-// Embedder have not been implemented
-// But Now It does't work
-// #[cfg(test)]
-// mod tests {
-//     use std::vec;
+#[cfg(test)]
+mod tests {
+    use std::vec;
 
-//     use super::*;
-//     use crate::{client::*, search::*};
-//     use meilisearch_test_macro::meilisearch_test;
-//     use serde::{Deserialize, Serialize};
-//     use std::collections::HashMap;
+    use super::*;
+    use crate::{client::*, search::*};
+    use meilisearch_test_macro::meilisearch_test;
+    use serde::{Deserialize, Serialize};
+    use std::collections::HashMap;
 
-//     #[derive(Debug, Serialize, Deserialize, PartialEq)]
-//     struct Nested {
-//         child: String,
-//     }
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Nested {
+        child: String,
+    }
 
-//     #[derive(Debug, Serialize, Deserialize, PartialEq)]
-//     struct Document {
-//         id: usize,
-//         title: String,
-//         _vectors: HashMap<String, Vec<f64>>,
-//     }
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Document {
+        id: usize,
+        title: String,
+        _vectors: HashMap<String, Vec<f64>>,
+    }
 
-//     async fn setup_test_vector_index(client: &Client, index: &Index) -> Result<(), Error> {
-//         let v = vec![0.5, 0.5];
-//         let mut vectors = HashMap::new();
+    async fn setup_test_vector_index(client: &Client, index: &Index) -> Result<(), Error> {
+        let v = vec![0.5, 0.5];
+        let mut vectors = HashMap::new();
 
-//         vectors.insert("default".to_string(), v.clone());
+        vectors.insert("default".to_string(), v.clone());
 
-//         let t0 = index
-//             .add_documents(
-//                 &[
-//                     Document {
-//                         id: 0,
-//                         title: "text".into(),
-//                         _vectors: vectors.clone(),
-//                     },
-//                     Document {
-//                         id: 1,
-//                         title: "text".into(),
-//                         _vectors: vectors.clone(),
-//                     },
-//                     Document {
-//                         id: 2,
-//                         title: "title".into(),
-//                         _vectors: vectors.clone(),
-//                     },
-//                     Document {
-//                         id: 3,
-//                         title: "title".into(),
-//                         _vectors: vectors.clone(),
-//                     },
-//                     Document {
-//                         id: 4,
-//                         title: "title".into(),
-//                         _vectors: vectors.clone(),
-//                     },
-//                     Document {
-//                         id: 5,
-//                         title: "title".into(),
-//                         _vectors: vectors.clone(),
-//                     },
-//                     Document {
-//                         id: 6,
-//                         title: "title".into(),
-//                         _vectors: vectors.clone(),
-//                     },
-//                     Document {
-//                         id: 7,
-//                         title: "title".into(),
-//                         _vectors: vectors.clone(),
-//                     },
-//                     Document {
-//                         id: 8,
-//                         title: "title".into(),
-//                         _vectors: vectors.clone(),
-//                     },
-//                     Document {
-//                         id: 9,
-//                         title: "title".into(),
-//                         _vectors: vectors.clone(),
-//                     },
-//                 ],
-//                 None,
-//             )
-//             .await?;
+        let t0 = index
+            .add_documents(
+                &[
+                    Document {
+                        id: 0,
+                        title: "text".into(),
+                        _vectors: vectors.clone(),
+                    },
+                    Document {
+                        id: 1,
+                        title: "text".into(),
+                        _vectors: vectors.clone(),
+                    },
+                    Document {
+                        id: 2,
+                        title: "title".into(),
+                        _vectors: vectors.clone(),
+                    },
+                    Document {
+                        id: 3,
+                        title: "title".into(),
+                        _vectors: vectors.clone(),
+                    },
+                    Document {
+                        id: 4,
+                        title: "title".into(),
+                        _vectors: vectors.clone(),
+                    },
+                    Document {
+                        id: 5,
+                        title: "title".into(),
+                        _vectors: vectors.clone(),
+                    },
+                    Document {
+                        id: 6,
+                        title: "title".into(),
+                        _vectors: vectors.clone(),
+                    },
+                    Document {
+                        id: 7,
+                        title: "title".into(),
+                        _vectors: vectors.clone(),
+                    },
+                    Document {
+                        id: 8,
+                        title: "title".into(),
+                        _vectors: vectors.clone(),
+                    },
+                    Document {
+                        id: 9,
+                        title: "title".into(),
+                        _vectors: vectors.clone(),
+                    },
+                ],
+                None,
+            )
+            .await?;
 
-//         let t1 = index.set_filterable_attributes(["title"]).await?;
-//         t1.wait_for_completion(client, None, None).await?;
-//         t0.wait_for_completion(client, None, None).await?;
-//         Ok(())
-//     }
+        let t1 = index.set_filterable_attributes(["title"]).await?;
+        t1.wait_for_completion(client, None, None).await?;
+        t0.wait_for_completion(client, None, None).await?;
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_similar_builder(_client: Client, index: Index) -> Result<(), Error> {
-//         let mut query = SimilarQuery::new(&index, "1", "default");
-//         query.with_offset(1).with_limit(1);
+    #[meilisearch_test]
+    async fn test_similar_builder(_client: Client, index: Index) -> Result<(), Error> {
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        query.with_offset(1).with_limit(1);
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_query_limit(client: Client, index: Index) -> Result<(), Error> {
-//         setup_test_vector_index(&client, &index).await?;
+    #[meilisearch_test]
+    async fn test_query_limit(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_vector_index(&client, &index).await?;
 
-//         let mut query = SimilarQuery::new(&index, "1", "default");
-//         query.with_limit(5);
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        query.with_limit(5);
 
-//         let results: SimilarResults<Document> = query.execute().await?;
-//         assert_eq!(results.hits.len(), 5);
-//         Ok(())
-//     }
+        let results: SimilarResults<Document> = query.execute().await?;
+        assert_eq!(results.hits.len(), 5);
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_query_offset(client: Client, index: Index) -> Result<(), Error> {
-//         setup_test_vector_index(&client, &index).await?;
-//         let mut query = SimilarQuery::new(&index, "1", "default");
-//         query.with_offset(6);
+    #[meilisearch_test]
+    async fn test_query_offset(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_vector_index(&client, &index).await?;
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        query.with_offset(6);
 
-//         let results: SimilarResults<Document> = query.execute().await?;
-//         assert_eq!(results.hits.len(), 3);
-//         Ok(())
-//     }
+        let results: SimilarResults<Document> = query.execute().await?;
+        assert_eq!(results.hits.len(), 3);
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_query_filter(client: Client, index: Index) -> Result<(), Error> {
-//         setup_test_vector_index(&client, &index).await?;
+    #[meilisearch_test]
+    async fn test_query_filter(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_vector_index(&client, &index).await?;
 
-//         let mut query = SimilarQuery::new(&index, "1", "default");
+        let mut query = SimilarQuery::new(&index, "1", "default");
 
-//         let results: SimilarResults<Document> =
-//             query.with_filter("title = \"title\"").execute().await?;
-//         assert_eq!(results.hits.len(), 8);
+        let results: SimilarResults<Document> =
+            query.with_filter("title = \"title\"").execute().await?;
+        assert_eq!(results.hits.len(), 8);
 
-//         let results: SimilarResults<Document> =
-//             query.with_filter("NOT title = \"title\"").execute().await?;
-//         assert_eq!(results.hits.len(), 2);
-//         Ok(())
-//     }
+        let results: SimilarResults<Document> =
+            query.with_filter("NOT title = \"title\"").execute().await?;
+        assert_eq!(results.hits.len(), 2);
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_query_filter_with_array(client: Client, index: Index) -> Result<(), Error> {
-//         setup_test_vector_index(&client, &index).await?;
-//         let mut query = SimilarQuery::new(&index, "1", "default");
-//         let results: SimilarResults<Document> = query
-//             .with_array_filter(vec!["title = \"title\"", "title = \"text\""])
-//             .execute()
-//             .await?;
-//         assert_eq!(results.hits.len(), 10);
+    #[meilisearch_test]
+    async fn test_query_filter_with_array(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_vector_index(&client, &index).await?;
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        let results: SimilarResults<Document> = query
+            .with_array_filter(vec!["title = \"title\"", "title = \"text\""])
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 10);
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_query_attributes_to_retrieve(client: Client, index: Index) -> Result<(), Error> {
-//         setup_test_vector_index(&client, &index).await?;
-//         let mut query = SimilarQuery::new(&index, "1", "default");
-//         let results: SimilarResults<Document> = query
-//             .with_attributes_to_retrieve(Selectors::All)
-//             .execute()
-//             .await?;
-//         assert_eq!(results.hits.len(), 10);
+    #[meilisearch_test]
+    async fn test_query_attributes_to_retrieve(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_vector_index(&client, &index).await?;
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        let results: SimilarResults<Document> = query
+            .with_attributes_to_retrieve(Selectors::All)
+            .execute()
+            .await?;
+        assert_eq!(results.hits.len(), 10);
 
-//         let mut query = SimilarQuery::new(&index, "1", "default");
-//         query.with_attributes_to_retrieve(Selectors::Some(&["title", "id"])); // omit the "value" field
-//         assert!(query.execute::<Document>().await.is_err()); // error: missing "value" field
-//         Ok(())
-//     }
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        query.with_attributes_to_retrieve(Selectors::Some(&["title", "id"])); // omit the "value" field
+        assert!(query.execute::<Document>().await.is_err()); // error: missing "value" field
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_query_show_ranking_score(client: Client, index: Index) -> Result<(), Error> {
-//         setup_test_vector_index(&client, &index).await?;
+    #[meilisearch_test]
+    async fn test_query_show_ranking_score(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_vector_index(&client, &index).await?;
 
-//         let mut query = SimilarQuery::new(&index, "1", "default");
-//         query.with_show_ranking_score(true);
-//         let results: SimilarResults<Document> = query.execute().await?;
-//         assert!(results.hits[0].ranking_score.is_some());
-//         Ok(())
-//     }
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        query.with_show_ranking_score(true);
+        let results: SimilarResults<Document> = query.execute().await?;
+        assert!(results.hits[0].ranking_score.is_some());
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_query_show_ranking_score_details(
-//         client: Client,
-//         index: Index,
-//     ) -> Result<(), Error> {
-//         setup_test_vector_index(&client, &index).await?;
+    #[meilisearch_test]
+    async fn test_query_show_ranking_score_details(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_vector_index(&client, &index).await?;
 
-//         let mut query = SimilarQuery::new(&index, "1", "default");
-//         query.with_show_ranking_score_details(true);
-//         let results: SimilarResults<Document> = query.execute().await?;
-//         assert!(results.hits[0].ranking_score_details.is_some());
-//         Ok(())
-//     }
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        query.with_show_ranking_score_details(true);
+        let results: SimilarResults<Document> = query.execute().await?;
+        assert!(results.hits[0].ranking_score_details.is_some());
+        Ok(())
+    }
 
-//     #[meilisearch_test]
-//     async fn test_query_show_ranking_score_threshold(
-//         client: Client,
-//         index: Index,
-//     ) -> Result<(), Error> {
-//         setup_test_vector_index(&client, &index).await?;
-//         let mut query = SimilarQuery::new(&index, "1", "default");
-//         query.with_ranking_score_threshold(1.0);
-//         let results: SimilarResults<Document> = query.execute().await?;
-//         assert!(results.hits.is_empty());
-//         Ok(())
-//     }
-// }
+    #[meilisearch_test]
+    async fn test_query_show_ranking_score_threshold(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_vector_index(&client, &index).await?;
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        query.with_ranking_score_threshold(1.0);
+        let results: SimilarResults<Document> = query.execute().await?;
+        assert!(results.hits.is_empty());
+        Ok(())
+    }
+}
