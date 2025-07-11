@@ -77,7 +77,6 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
         let use_name = params
             .iter()
             .any(|param| matches!(param, Param::String | Param::Index));
-        let use_index = params.contains(&Param::Index);
 
         // Now we are going to build the body of the outer function
         let mut outer_block: Vec<Stmt> = Vec::new();
@@ -106,59 +105,77 @@ pub fn meilisearch_test(params: TokenStream, input: TokenStream) -> TokenStream 
             ));
         }
 
-        // And finally if an index was asked, we delete it, and we (re)create it and wait until meilisearch confirm its creation.
-        if use_index {
-            outer_block.push(parse_quote!({
-                let res = client
-                    .delete_index(&name)
-                    .await
-                    .expect("Network issue while sending the delete index task")
-                    .wait_for_completion(&client, None, None)
-                    .await
-                    .expect("Network issue while waiting for the index deletion");
-                if res.is_failure() {
-                    let error = res.unwrap_failure();
-                    assert_eq!(
-                        error.error_code,
-                        crate::errors::ErrorCode::IndexNotFound,
-                        "{:?}",
-                        error
-                    );
-                }
-            }));
+        let index_var = |idx: usize| Ident::new(&format!("index_{idx}"), Span::call_site());
 
+        // And finally if an index was asked, we delete it, and we (re)create it and wait until meilisearch confirm its creation.
+        for (i, param) in params.iter().enumerate() {
+            if !matches!(param, Param::Index) {
+                continue;
+            }
+
+            let var_name = index_var(i);
             outer_block.push(parse_quote!(
-                let index = client
-                    .create_index(&name, None)
-                    .await
-                    .expect("Network issue while sending the create index task")
-                    .wait_for_completion(&client, None, None)
-                    .await
-                    .expect("Network issue while waiting for the index creation")
-                    .try_make_index(&client)
-                    .expect("Could not create the index out of the create index task");
+                let #var_name = {
+                    let index_uid = format!("{name}_{}", #i);
+                    let res = client
+                        .delete_index(&index_uid)
+                        .await
+                        .expect("Network issue while sending the delete index task")
+                        .wait_for_completion(&client, None, None)
+                        .await
+                        .expect("Network issue while waiting for the index deletion");
+
+                    if res.is_failure() {
+                        let error = res.unwrap_failure();
+                        assert_eq!(
+                            error.error_code,
+                            crate::errors::ErrorCode::IndexNotFound,
+                            "{:?}",
+                            error
+                        );
+                    }
+
+                    client
+                        .create_index(&index_uid, None)
+                        .await
+                        .expect("Network issue while sending the create index task")
+                        .wait_for_completion(&client, None, None)
+                        .await
+                        .expect("Network issue while waiting for the index creation")
+                        .try_make_index(&client)
+                        .expect("Could not create the index out of the create index task")
+                };
             ));
         }
 
         // Create a list of params separated by comma with the name we defined previously.
-        let params: Vec<Expr> = params
-            .into_iter()
-            .map(|param| match param {
+        let args: Vec<Expr> = params
+            .iter()
+            .enumerate()
+            .map(|(i, param)| match param {
                 Param::Client => parse_quote!(client),
-                Param::Index => parse_quote!(index),
+                Param::Index => {
+                    let var = index_var(i);
+                    parse_quote!(#var)
+                }
                 Param::String => parse_quote!(name),
             })
             .collect();
 
         // Now we can call the user code with our parameters :tada:
         outer_block.push(parse_quote!(
-            let result = #inner_ident(#(#params.clone()),*).await;
+            let result = #inner_ident(#(#args.clone()),*).await;
         ));
 
         // And right before the end, if an index was created and the tests successfully executed we delete it.
-        if use_index {
+        for (i, param) in params.iter().enumerate() {
+            if !matches!(param, Param::Index) {
+                continue;
+            }
+
+            let var_name = index_var(i);
             outer_block.push(parse_quote!(
-                index
+                #var_name
                     .delete()
                     .await
                     .expect("Network issue while sending the last delete index task");
