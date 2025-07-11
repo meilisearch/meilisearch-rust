@@ -107,8 +107,8 @@ jobs:
         # Generate separate reports for tests and doctests, and combine them.
         run: |
           set -euo pipefail
-          cargo llvm-cov --no-report --all-features --workspace
-          cargo llvm-cov --no-report --doc --all-features --workspace
+          cargo llvm-cov --no-report --all-features --workspace --exclude 'meilisearch-test-macro'
+          cargo llvm-cov --no-report --doc --all-features --workspace --exclude 'meilisearch-test-macro'
           cargo llvm-cov report --doctests --codecov --output-path codecov.json
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5

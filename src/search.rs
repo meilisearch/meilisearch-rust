@@ -753,15 +753,15 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
 
     pub fn with_search_query_and_weight(
         &mut self,
-        mut search_query: SearchQuery<'b, Http>,
+        search_query: SearchQuery<'b, Http>,
         weight: f32,
     ) -> &mut MultiSearchQuery<'a, 'b, Http> {
-        search_query.with_index_uid();
-        search_query.federation_options = Some(QueryFederationOptions {
-            weight: Some(weight),
-        });
-        self.queries.push(search_query);
-        self
+        self.with_search_query_and_options(
+            search_query,
+            QueryFederationOptions {
+                weight: Some(weight),
+            },
+        )
     }
 
     pub fn with_search_query_and_options(
