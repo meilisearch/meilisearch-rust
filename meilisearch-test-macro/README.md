@@ -68,7 +68,7 @@ There are a few rules, though:
 - `String`: It returns the name of the test.
 - `Client`: It creates a client like that: `Client::new("http://localhost:7700", "masterKey")`.
 - `Index`: It creates and deletes an index, as we've seen before.
-  You can include multiple `Index` parameter to automatically create multiple indices.
+  You can include multiple `Index` parameter to automatically create multiple indexes.
 
 2. You only get what you asked for. That means if you don't ask for an index, no index will be created in meilisearch.
    So, if you are testing the creation of indexes, you can ask for a `Client` and a `String` and then create it yourself.
