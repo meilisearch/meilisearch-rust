@@ -811,6 +811,13 @@ pub struct FederatedMultiSearchQuery<'a, 'b, Http: HttpClient = DefaultHttpClien
     pub federation: Option<FederationOptions>,
 }
 
+#[derive(Debug, Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MergeFacets {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_values_per_facet: Option<usize>,
+}
+
 /// The `federation` field of the multi search API.
 /// See [the docs](https://www.meilisearch.com/docs/reference/api/multi_search#federation).
 #[derive(Debug, Serialize, Clone, Default)]
@@ -828,9 +835,9 @@ pub struct FederationOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub facets_by_index: Option<HashMap<String, Vec<String>>>,
 
-    /// Display facet information for the specified indexes
+    /// Request to merge the facets to enforce a maximum number of values per facet.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub merge_facets: Option<bool>,
+    pub merge_facets: Option<MergeFacets>,
 }
 
 impl<'a, Http: HttpClient> FederatedMultiSearchQuery<'a, '_, Http> {
