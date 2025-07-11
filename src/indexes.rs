@@ -280,6 +280,57 @@ impl<Http: HttpClient> Index<Http> {
         SearchQuery::new(self)
     }
 
+    /// Returns the facet stats matching a specific query in the index.
+    ///
+    /// See also [`Index::facet_search`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, search::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Movie {
+    ///     name: String,
+    ///     genre: String,
+    /// }
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let movies = client.index("execute_query2");
+    ///
+    /// // add some documents
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.set_filterable_attributes(["genre"]).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    ///
+    /// let query = FacetSearchQuery::new(&movies, "genre").with_facet_query("scifi").build();
+    /// let res = movies.execute_facet_query(&query).await.unwrap();
+    ///
+    /// assert!(res.facet_hits.len() > 0);
+    /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn execute_facet_query(
+        &self,
+        body: &FacetSearchQuery<'_, Http>,
+    ) -> Result<FacetSearchResponse, Error> {
+        self.client
+            .http_client
+            .request::<(), &FacetSearchQuery<Http>, FacetSearchResponse>(
+                &format!("{}/indexes/{}/facet-search", self.client.host, self.uid),
+                Method::Post { body, query: () },
+                200,
+            )
+            .await
+    }
+
+    pub fn facet_search<'a>(&'a self, facet_name: &'a str) -> FacetSearchQuery<'a, Http> {
+        FacetSearchQuery::new(self, facet_name)
+    }
+
     /// Get one document using its unique id.
     ///
     /// Serde is needed. Add `serde = {version="1.0", features=["derive"]}` in the dependencies section of your Cargo.toml.
@@ -485,7 +536,7 @@ impl<Http: HttpClient> Index<Http> {
                         Error::MeilisearchCommunication(MeilisearchCommunicationError {
                             status_code: error.status_code,
                             url: error.url,
-                            message: Some(format!("{}.", MEILISEARCH_VERSION_HINT)),
+                            message: Some(format!("{MEILISEARCH_VERSION_HINT}.")),
                         })
                     }
                     Error::Meilisearch(error) => Error::Meilisearch(MeilisearchError {
@@ -669,7 +720,7 @@ impl<Http: HttpClient> Index<Http> {
         self.add_or_replace(documents, primary_key).await
     }
 
-    /// Add a raw ndjson payload and update them if they already.
+    /// Add a raw ndjson payload and update them if they already exist.
     ///
     /// It configures the correct content type for ndjson data.
     ///
@@ -761,7 +812,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Add a raw csv payload and update them if they already.
+    /// Add a raw csv payload and update them if they already exist.
     ///
     /// It configures the correct content type for csv data.
     ///
@@ -851,7 +902,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Add a list of documents and update them if they already.
+    /// Add a list of documents and update them if they already exist.
     ///
     /// If you send an already existing document (same id) the old document will be only partially updated according to the fields of the new document.
     /// Thus, any fields not present in the new document are kept and remained unchanged.
@@ -1840,8 +1891,25 @@ impl<'a, Http: HttpClient> AsRef<IndexUpdater<'a, Http>> for IndexUpdater<'a, Ht
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStats {
+    /// Total number of documents in an index
     pub number_of_documents: usize,
+
+    /// Total number of documents with at least one embedding
+    pub number_of_embedded_documents: usize,
+
+    /// Total number of embeddings in an index
+    pub number_of_embeddings: usize,
+
+    /// Storage space claimed by all documents in the index in bytes
+    pub raw_document_db_size: usize,
+
+    /// Total size of the documents stored in an index divided by the number of documents in that same index
+    pub avg_document_size: usize,
+
+    /// If `true`, the index is still processing documents and attempts to search will yield impredictable results
     pub is_indexing: bool,
+
+    /// Shows every field in the index along with the total number of documents containing that field in said index
     pub field_distribution: HashMap<String, usize>,
 }
 

@@ -12,8 +12,8 @@ repository = "https://github.com/meilisearch/meilisearch-rust"
 proc-macro = true
 
 [dependencies]
-syn = { version = "2.0.48", features = ["extra-traits"] }
-quote = "1.0.21"
-proc-macro2 = "1.0.46"
-convert_case = "0.6.0"
+syn = { version = "2.0.104", features = ["extra-traits"] }
+quote = "1.0.40"
+proc-macro2 = "1.0.95"
+convert_case = "0.8.0"
 structmeta = "0.3"

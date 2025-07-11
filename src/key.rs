@@ -651,7 +651,7 @@ impl AsRef<KeyBuilder> for KeyBuilder {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Action {
     /// Provides access to everything.
     #[serde(rename = "*")]
@@ -713,6 +713,13 @@ pub enum Action {
     /// Provides access to the [delete key](https://www.meilisearch.com/docs/reference/api/keys#delete-a-key) endpoint.
     #[serde(rename = "keys.delete")]
     KeyDelete,
+    /// Provides access to chat completions endpoints.
+    #[serde(rename = "chatCompletions")]
+    ChatCompletions,
+    /// Any other value that might be added to Meilisearch in the future but that is not supported by this SDK.
+    /// If you see one, please open a PR
+    #[serde(untagged)]
+    Unknown(String),
 }
 
 #[derive(Debug, Clone, Deserialize)]
