@@ -1695,7 +1695,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # let movies = client.index("similar_query");
     /// #
-    /// let query = SimilarQuery::new(&movies, "1", "default").build();
+    /// let query = SimilarQuery::new(&movies, "1", "default");
     /// let results = movies.similar_query::<Movie>(&query).await.unwrap();
     ///
     /// assert!(results.hits.len() > 0);
