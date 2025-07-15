@@ -249,6 +249,8 @@ pub mod request;
 pub mod search;
 /// Module containing [`Settings`](settings::Settings).
 pub mod settings;
+/// Module related to [similar queries](https://www.meilisearch.com/docs/learn/ai_powered_search/retrieve_related_search_results#return-similar-documents).
+pub mod similar;
 /// Module containing the [snapshots](snapshots::create_snapshot)-feature.
 pub mod snapshots;
 /// Module representing the [`TaskInfo`](task_info::TaskInfo)s.

@@ -108,7 +108,7 @@ pub struct IndexSwap {
 #[serde(rename_all = "camelCase")]
 pub struct TaskCancelation {
     pub matched_tasks: usize,
-    pub canceled_tasks: usize,
+    pub canceled_tasks: Option<usize>,
     pub original_filter: String,
 }
 
@@ -116,7 +116,7 @@ pub struct TaskCancelation {
 #[serde(rename_all = "camelCase")]
 pub struct TaskDeletion {
     pub matched_tasks: usize,
-    pub deleted_tasks: usize,
+    pub deleted_tasks: Option<usize>,
     pub original_filter: String,
 }
 

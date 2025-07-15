@@ -2,6 +2,7 @@
 # Every example written here will be automatically fetched by
 # the documentation on build
 # You can read more on https://github.com/meilisearch/documentation/tree/main/learn
+# See the original at https://github.com/meilisearch/documentation/blob/main/.code-samples.meilisearch.yaml
 ---
 synonyms_guide_1: |-
   let mut synonyms = std::collections::HashMap::new();
@@ -197,7 +198,7 @@ search_post_1: |-
   let results: SearchResults<Movie> = client
     .index("movies")
     .search()
-    .with_query("American ninja")
+    .with_query("american ninja")
     .execute()
     .await
     .unwrap();
@@ -254,6 +255,13 @@ async_guide_filter_by_ids_1: |-
     .await
     .unwrap();
 async_guide_filter_by_statuses_1: |-
+  let mut query = TasksQuery::new(&client);
+  let tasks = query
+    .with_statuses(["failed"])
+    .execute()
+    .await
+    .unwrap();
+async_guide_filter_by_statuses_2: |-
   let mut query = TasksQuery::new(&client);
   let tasks = query
     .with_statuses(["failed", "canceled"])
@@ -581,8 +589,12 @@ get_faceting_settings_1: |-
     .await
     .unwrap();
 update_faceting_settings_1: |-
+  let mut facet_sort_setting = BTreeMap::new();
+  facet_sort_setting.insert(String::from("*"), FacetSortValue::Alpha);
+  facet_sort_setting.insert(String::from("genres"), FacetSortValue::Count);
   let mut faceting = FacetingSettings {
     max_values_per_facet: 2,
+    sort_facet_values_by: Some(facet_sort_setting),
   };
 
   let task: TaskInfo = client
@@ -1265,8 +1277,11 @@ getting_started_sorting: |-
     .await
     .unwrap();
 getting_started_faceting: |-
+  let mut facet_sort_setting = BTreeMap::new();
+  facet_sort_setting.insert("*".to_string(), FacetSortValue::Count);
   let mut faceting = FacetingSettings {
     max_values_per_facet: 2,
+    sort_facet_values_by: Some(facet_sort_setting),
   };
 
   let task: TaskInfo = client
@@ -1663,6 +1678,69 @@ reset_proximity_precision_settings_1: |-
     .reset_proximity_precision()
     .await
     .unwrap();
+get_facet_search_settings_1: |-
+  let facet_search: bool = client
+    .index(INDEX_UID)
+    .get_facet_search()
+    .await
+    .unwrap();
+update_facet_search_settings_1: |-
+  let task: TaskInfo = client
+    .index(INDEX_UID)
+    .set_facet_search(false)
+    .await
+    .unwrap();
+reset_facet_search_settings_1: |-
+  let task: TaskInfo = client
+    .index(INDEX_UID)
+    .reset_facet_search()
+    .await
+    .unwrap();
+get_prefix_search_settings_1: |-
+  let prefix_search: PrefixSearchSettings = client
+    .index(INDEX_UID)
+    .get_prefix_search()
+    .await
+    .unwrap();
+update_prefix_search_settings_1: |-
+  let task: TaskInfo = client
+    .index(INDEX_UID)
+    .set_prefix_search(PrefixSearchSettings::Disabled)
+    .await
+    .unwrap();
+reset_prefix_search_settings_1: |-
+  let task: TaskInfo = client
+    .index(INDEX_UID)
+    .reset_prefix_search()
+    .await
+    .unwrap();
+facet_search_1: |-
+  let res = client.index("books")
+    .facet_search("genres")
+    .with_facet_query("fiction")
+    .with_filter("rating > 3")
+    .execute()
+    .await
+    .unwrap();
+facet_search_2: |-
+  let mut facet_sort_setting = BTreeMap::new();
+  facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
+  let faceting = FacetingSettings {
+    max_values_per_facet: 100,
+    sort_facet_values_by: Some(facet_sort_setting),
+  };
+
+  let res = client.index("books")
+    .set_faceting(&faceting)
+    .await
+    .unwrap();
+facet_search_3: |-
+  let res = client.index("books")
+    .facet_search("genres")
+    .with_facet_query("c")
+    .execute()
+    .await
+    .unwrap();
 get_search_cutoff_1: |-
   let search_cutoff_ms: String = client
     .index("movies")
@@ -1750,5 +1828,126 @@ reset_localized_attribute_settings_1: |-
   let task: TaskInfo = client
     .index("books")
     .reset_localized_attributes()
+    .await
+    .unwrap();
+basic_security_tutorial_listing_1: |-
+  let client = Client::new("http://localhost:7700", Some("MASTER_KEY"));
+  client
+    .get_keys()
+    .await
+    .unwrap();
+basic_security_tutorial_admin_1: |-
+  let client = Client::new("http://localhost:7700", Some("DEFAULT_ADMIN_API_KEY"));
+  let task = client
+    .create_index("medical_records", Some("id"))
+    .await
+    .unwrap();
+basic_security_tutorial_search_1: |-
+  let client = Client::new("http://localhost:7700", Some("DEFAULT_SEARCH_API_KEY"));
+  let index = client.index("medical_records");
+  index
+    .search()
+    .with_query("appointments")
+    .execute::<MedicalRecord>()
+    .await
+    .unwrap();
+get_embedders_1: |-
+  let embedders = index.get_embedders().await.unwrap();
+reset_embedders_1: |-
+  index.reset_embedders().await.unwrap();
+get_similar_post_1: |-
+  let results = index
+    .similar_search("TARGET_DOCUMENT_ID", "EMBEDDER_NAME")
+    .execute()
+    .await
+    .unwrap();
+index_settings_tutorial_api_get_setting_1: |-
+  let searchable_attributes: Vec<String> = index
+    .get_searchable_attributes()
+    .await
+    .unwrap();
+index_settings_tutorial_api_put_setting_1: |-
+  let task = index
+    .set_searchable_attributes(["title", "overview"])
+    .await
+    .unwrap();
+index_settings_tutorial_api_task_1: |-
+  let task_status = index.get_task(&task).await.unwrap();
+negative_search_1: |-
+  let results = index.search()
+    .with_query("-escape")
+    .execute()
+    .await
+    .unwrap();
+negative_search_2: |-
+  let results = index.search()
+    .with_query("-\"escape room\"")
+    .execute()
+    .await
+    .unwrap();
+related_results_embedder_1: |-
+  let embedders = HashMap::from([(
+    String::from("movies-text"),
+    Embedder {
+      source: EmbedderSource::OpenAi,
+      api_key: Some(String::from("OPENAI_API_KEY")),
+      model: Some(String::from("text-embedding-3-small")),
+      document_template: Some(String::from("A movie titled '{{doc.title}}' released in {{ doc.release_date }}. The movie genres are: {{doc.genres}}. The story is about: {{doc.overview|truncatewords: 20}}")),
+      ..Embedder::default()
+    }
+  )]);
+  movies.set_embedders(&embedders)
+    .await
+    .unwrap();
+related_results_search_1: |-
+  let results = movies.search()
+    .with_query("batman")
+    .with_hybrid("EMBEDDER_NAME", 0.5)
+    .execute()
+    .await
+    .unwrap();
+related_results_similar_1: |-
+  let results = movies.similar_search("192", "EMBEDDER_NAME")
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_hybrid_1: |-
+  let results = index
+    .search()
+    .with_query("kitchen utensils")
+    .with_hybrid("EMBEDDER_NAME", 0.9)
+    .execute()
+    .await
+    .unwrap();
+search_parameter_guide_vector_1: |-
+  let results = index
+    .search()
+    .with_vector(&[0.0, 1.0, 2.0])
+    .with_hybrid("EMBEDDER_NAME", 1.0)
+    .execute()
+    .await
+    .unwrap();
+search_parameter_reference_retrieve_vectors_1: |-
+  let results = index
+    .search()
+    .with_query("kitchen utensils")
+    .with_retrieve_vectors(true)
+    .with_hybrid("EMBEDDER_NAME", 0.5)
+    .execute()
+    .await
+    .unwrap();
+update_embedders_1: |-
+  let embedders = HashMap::from([(
+    String::from("default"),
+    Embedder {
+      source: EmbedderSource::OpenAi,
+      api_key: Some(String::from("OPEN_AI_API_KEY")),
+      model: Some(String::from("text-embedding-3-small")),
+      document_template: Some(String::from("A document titled '{{doc.title}}' whose description starts with {{doc.overview|truncatewords: 20}}")),
+      ..Embedder::default()
+    }
+  )]);
+  let task = index
+    .set_embedders(&embedders)
     .await
     .unwrap();

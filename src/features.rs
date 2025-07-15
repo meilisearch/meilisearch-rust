@@ -69,10 +69,10 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
-    /// tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-    ///     let features = ExperimentalFeatures::new(&client);
-    ///     features.get().await.unwrap();
-    /// });
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// let features = ExperimentalFeatures::new(&client);
+    /// features.get().await.unwrap();
+    /// # });
     /// ```
     pub async fn get(&self) -> Result<ExperimentalFeaturesResult, Error> {
         self.client
@@ -148,52 +148,20 @@ mod tests {
     use meilisearch_test_macro::meilisearch_test;
 
     #[meilisearch_test]
-    async fn test_experimental_features_set_metrics(client: Client) {
+    async fn test_experimental_features(client: Client) {
         let mut features = ExperimentalFeatures::new(&client);
         features.set_metrics(true);
-        let _ = features.update().await.unwrap();
-
-        let res = features.get().await.unwrap();
-        assert!(res.metrics)
-    }
-
-    #[meilisearch_test]
-    async fn test_experimental_features_set_logs_route(client: Client) {
-        let mut features = ExperimentalFeatures::new(&client);
         features.set_logs_route(true);
-        let _ = features.update().await.unwrap();
-
-        let res = features.get().await.unwrap();
-        assert!(res.logs_route)
-    }
-
-    #[meilisearch_test]
-    async fn test_experimental_features_set_contains_filter(client: Client) {
-        let mut features = ExperimentalFeatures::new(&client);
         features.set_contains_filter(true);
-        let _ = features.update().await.unwrap();
-
-        let res = features.get().await.unwrap();
-        assert!(res.contains_filter)
-    }
-
-    #[meilisearch_test]
-    async fn test_experimental_features_set_network(client: Client) {
-        let mut features = ExperimentalFeatures::new(&client);
         features.set_network(true);
-        let _ = features.update().await.unwrap();
-
-        let res = features.get().await.unwrap();
-        assert!(res.network)
-    }
-
-    #[meilisearch_test]
-    async fn test_experimental_features_set_edit_documents_by_function(client: Client) {
-        let mut features = ExperimentalFeatures::new(&client);
         features.set_edit_documents_by_function(true);
         let _ = features.update().await.unwrap();
 
         let res = features.get().await.unwrap();
-        assert!(res.edit_documents_by_function)
+        assert!(res.metrics);
+        assert!(res.logs_route);
+        assert!(res.contains_filter);
+        assert!(res.network);
+        assert!(res.edit_documents_by_function);
     }
 }
