@@ -1696,7 +1696,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let movies = client.index("similar_query");
     /// #
     /// let query = SimilarQuery::new(&movies, "1", "default");
-    /// let results = movies.similar_query::<Movie>(&query).await.unwrap();
+    /// let results = movies.execute_similar_query::<Movie>(&query).await.unwrap();
     ///
     /// assert!(results.hits.len() > 0);
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -1716,7 +1716,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    pub fn similar_search<'a, T: 'static + DeserializeOwned + Send + Sync>(
+    pub fn similar_search<'a>(
         &'a self,
         document_id: &'a str,
         index_name: &'a str,
