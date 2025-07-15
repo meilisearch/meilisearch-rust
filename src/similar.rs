@@ -219,6 +219,14 @@ impl<'a, Http: HttpClient> SimilarQuery<'a, Http> {
         self
     }
 
+    pub fn with_retrieve_vectors<'b>(
+        &'b mut self,
+        retrieve_vectors: bool,
+    ) -> &'b mut SimilarQuery<'a, Http> {
+        self.retrieve_vectors = Some(retrieve_vectors);
+        self
+    }
+
     pub fn build(&mut self) -> SimilarQuery<'a, Http> {
         self.clone()
     }
@@ -244,6 +252,28 @@ mod tests {
         },
     };
     use meilisearch_test_macro::meilisearch_test;
+
+    #[meilisearch_test]
+    async fn test_similar_results(client: Client, index: Index) -> Result<(), Error> {
+        setup_embedder(&client, &index).await?;
+        setup_test_index(&client, &index).await?;
+
+        // Test on a non-harry-potter document
+        let mut query = SimilarQuery::new(&index, "0", "default");
+        query.with_limit(1);
+        let results: SimilarResults<Document> = query.execute().await?;
+        let result = results.hits.first().unwrap();
+        assert_eq!(result.result.id, 1);
+
+        // Test on a harry-potter document
+        let mut query = SimilarQuery::new(&index, "3", "default");
+        query.with_limit(1);
+        let results: SimilarResults<Document> = query.execute().await?;
+        let result = results.hits.first().unwrap();
+        assert_eq!(result.result.id, 4);
+
+        Ok(())
+    }
 
     #[meilisearch_test]
     async fn test_query_limit(client: Client, index: Index) -> Result<(), Error> {
