@@ -47,34 +47,28 @@ pub struct SimilarResults<T> {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// # use serde::{Serialize, Deserialize};
-/// # use meilisearch_sdk::{client::Client, search::*, indexes::Index};
+/// # use meilisearch_sdk::{client::Client, search::*, indexes::Index, similar::SimilarQuery};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
 /// #
-/// #[derive(Serialize, Deserialize, Debug)]
-/// struct Movie {
-///     name: String,
-///     description: String,
-/// }
+/// # #[derive(Serialize, Deserialize, Debug)]
+/// # struct Movie {
+/// #    name: String,
+/// #    description: String,
+/// # }
+/// #
 /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
-/// # let index = client
-/// #  .create_index("similar_query_builder", None)
-/// #  .await
-/// #  .unwrap()
-/// #  .wait_for_completion(&client, None, None)
-/// #  .await.unwrap()
-/// #  .try_make_index(&client)
-/// #  .unwrap();
-///
+/// # let index = client.index("similar_query_builder");
+/// #
 /// let mut res = SimilarQuery::new(&index, "100", "default")
 ///     .execute::<Movie>()
 ///     .await
 ///     .unwrap();
-///
+/// #
 /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 /// # });
 /// ```

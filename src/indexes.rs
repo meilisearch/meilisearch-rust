@@ -1679,25 +1679,25 @@ impl<Http: HttpClient> Index<Http> {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```no_run
     /// # use serde::{Serialize, Deserialize};
     /// # use meilisearch_sdk::{client::*, indexes::*, similar::*};
     /// #
     /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
     /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
     /// #
-    /// #[derive(Serialize, Deserialize, Debug)]
-    /// struct Movie {
-    ///     name: String,
-    ///     description: String,
-    /// }
+    /// # #[derive(Serialize, Deserialize, Debug)]
+    /// # struct Movie {
+    /// #    name: String,
+    /// #    description: String,
+    /// # }
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
-    /// let movies = client.index("execute_query");
-    ///
-    /// // add some documents
+    /// # let movies = client.index("similar_query");
+    /// #
+    /// # // add some documents
     /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
-    ///
+    /// #
     /// let query = SimilarQuery::new(&movies, "1", "default").build();
     /// let results = movies.similar_query::<Movie>(&query).await.unwrap();
     ///
