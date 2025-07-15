@@ -158,7 +158,7 @@ pub enum Selectors<T> {
     All,
 }
 
-impl Serialize for Selectors<&[&str]> {
+impl<T: Serialize> Serialize for Selectors<T> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         match self {
             Selectors::Some(data) => data.serialize(s),
