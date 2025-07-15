@@ -78,32 +78,21 @@ pub struct SimilarQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
     index: &'a Index<Http>,
 
-    /// Document id
+    /// Identifier of the target document
     pub id: &'a str,
 
-    /// embedder name
+    /// Embedder to use when computing recommendations
     pub embedder: &'a str,
 
-    /// The number of documents to skip.
-    /// If the value of the parameter `offset` is `n`, the `n` first documents (ordered by relevance) will not be returned.
-    /// This is helpful for pagination.
-    ///
-    /// Example: If you want to skip the first document, set offset to `1`.
+    /// Number of documents to skip
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<usize>,
 
-    /// The maximum number of documents returned.
-    ///
-    /// If the value of the parameter `limit` is `n`, there will never be more than `n` documents in the response.
-    /// This is helpful for pagination.
-    ///
-    /// Example: If you don't want to get more than two documents, set limit to `2`.
-    ///
-    /// **Default: `20`**
+    /// Maximum number of documents returned
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
 
-    /// Filter applied to documents.
+    /// Filter queries by an attribute’s value
     ///
     /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -118,22 +107,26 @@ pub struct SimilarQuery<'a, Http: HttpClient> {
     #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
 
-    /// Defines whether to show the relevancy score of the match.
+    /// Defines whether to display the global ranking score of a document
     ///
     /// **Default: `false`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_ranking_score: Option<bool>,
 
-    ///Adds a detailed global ranking score field to each document.
+    /// Defines whether to display the detailed ranking score information
     ///
     /// **Default: `false`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_ranking_score_details: Option<bool>,
 
-    ///Excludes results below the specified ranking score.
+    /// Defines whether to exclude results with low ranking scores
+    ///
+    /// **Default: `None`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_score_threshold: Option<f64>,
 
+    /// Defines whether to return document vector data
+    ///
     /// **Default: `false`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retrieve_vectors: Option<bool>,
