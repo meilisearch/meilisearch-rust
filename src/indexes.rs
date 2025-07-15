@@ -1702,7 +1702,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn similar_query<T: 'static + DeserializeOwned + Send + Sync>(
+    pub async fn execute_similar_query<T: 'static + DeserializeOwned + Send + Sync>(
         &self,
         body: &SimilarQuery<'_, Http>,
     ) -> Result<SimilarResults<T>, Error> {
@@ -1714,6 +1714,14 @@ impl<Http: HttpClient> Index<Http> {
                 200,
             )
             .await
+    }
+
+    pub fn similar_search<'a, T: 'static + DeserializeOwned + Send + Sync>(
+        &'a self,
+        document_id: &'a str,
+        index_name: &'a str,
+    ) -> SimilarQuery<'a, Http> {
+        SimilarQuery::new(self, document_id, index_name)
     }
 }
 

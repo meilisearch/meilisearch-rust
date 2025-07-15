@@ -45,7 +45,7 @@ pub struct SimilarResults<T> {
 ///
 /// ```no_run
 /// # use serde::{Serialize, Deserialize};
-/// # use meilisearch_sdk::{client::Client, search::*, indexes::Index, similar::SimilarQuery};
+/// # use meilisearch_sdk::{client::Client, search::*, indexes::Index};
 /// #
 /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
 /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
@@ -60,7 +60,7 @@ pub struct SimilarResults<T> {
 /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
 /// # let index = client.index("similar_query_builder");
 /// #
-/// let mut res = SimilarQuery::new(&index, "100", "default")
+/// let mut res = index.similar_search("100", "default")
 ///     .execute::<Movie>()
 ///     .await
 ///     .unwrap();
@@ -213,7 +213,7 @@ impl<'a, Http: HttpClient> SimilarQuery<'a, Http> {
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
     ) -> Result<SimilarResults<T>, Error> {
-        self.index.similar_query::<T>(self).await
+        self.index.execute_similar_query::<T>(self).await
     }
 }
 
