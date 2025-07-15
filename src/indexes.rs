@@ -1694,7 +1694,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # let movies = client.index("similar_query");
-    /// # 
+    /// #
     /// let query = SimilarQuery::new(&movies, "1", "default").build();
     /// let results = movies.similar_query::<Movie>(&query).await.unwrap();
     ///
