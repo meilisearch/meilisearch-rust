@@ -399,4 +399,16 @@ mod tests {
         assert!(results.hits.is_empty());
         Ok(())
     }
+
+    #[meilisearch_test]
+    async fn test_query_retrieve_vectors(client: Client, index: Index) -> Result<(), Error> {
+        setup_embedder(&client, &index).await?;
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        query.with_retrieve_vectors(true);
+        let results: SimilarResults<Document> = query.execute().await?;
+        assert!(results.hits[0].result._vectors.is_some());
+        Ok(())
+    }
 }
