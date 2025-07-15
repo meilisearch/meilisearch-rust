@@ -210,10 +210,6 @@ impl<'a, Http: HttpClient> SimilarQuery<'a, Http> {
         self
     }
 
-    pub fn build(&mut self) -> SimilarQuery<'a, Http> {
-        self.clone()
-    }
-
     /// Execute the query and fetch the results.
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
