@@ -8,13 +8,10 @@ use either::Either;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-/// A single result.
 #[derive(Deserialize, Debug, Clone)]
 pub struct SimilarResult<T> {
-    /// The full result.
     #[serde(flatten)]
     pub result: T,
-    /// The relevancy score of the match.
     #[serde(rename = "_rankingScore")]
     pub ranking_score: Option<f64>,
     #[serde(rename = "_rankingScoreDetails")]
@@ -23,19 +20,18 @@ pub struct SimilarResult<T> {
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-/// A struct containing search results and other information about the search.
 pub struct SimilarResults<T> {
-    /// Results of the query.
+    /// Results of the query
     pub hits: Vec<SimilarResult<T>>,
-    /// Number of documents skipped.
+    /// Number of documents skipped
     pub offset: Option<usize>,
-    /// Number of results returned.
+    /// Number of results returned
     pub limit: Option<usize>,
-    /// Estimated total number of matches.
+    /// Estimated total number of matches
     pub estimated_total_hits: Option<usize>,
-    /// Processing time of the query.
+    /// Processing time of the query
     pub processing_time_ms: usize,
-    /// Search Doc ID
+    /// Identifier of the target document
     pub id: String,
 }
 
