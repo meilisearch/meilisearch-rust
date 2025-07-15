@@ -123,17 +123,6 @@ pub struct SearchResults<T> {
     pub index_uid: Option<String>,
 }
 
-pub(crate) fn serialize_with_wildcard<S: Serializer, T: Serialize>(
-    data: &Option<Selectors<T>>,
-    s: S,
-) -> Result<S::Ok, S::Error> {
-    match data {
-        Some(Selectors::All) => ["*"].serialize(s),
-        Some(Selectors::Some(data)) => data.serialize(s),
-        None => s.serialize_none(),
-    }
-}
-
 fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
     data: &Option<Selectors<&[AttributeToCrop]>>,
     s: S,
@@ -167,6 +156,15 @@ pub enum Selectors<T> {
     Some(T),
     /// The wildcard.
     All,
+}
+
+impl Serialize for Selectors<&[&str]> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Selectors::Some(data) => data.serialize(s),
+            Selectors::All => ["*"].serialize(s),
+        }
+    }
 }
 
 /// Configures Meilisearch to return search results based on a query’s meaning and context
@@ -291,7 +289,6 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     ///
     /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_with_wildcard")]
     pub facets: Option<Selectors<&'a [&'a str]>>,
     /// Attributes to sort.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -309,7 +306,6 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     ///
     /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
     /// Attributes whose values have to be cropped.
     ///
@@ -337,7 +333,6 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     ///
     /// Can be set to a [wildcard value](enum.Selectors.html#variant.All) that will select all existing attributes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_highlight: Option<Selectors<&'a [&'a str]>>,
     /// Tag in front of a highlighted term.
     ///

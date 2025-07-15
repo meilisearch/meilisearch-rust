@@ -2,7 +2,7 @@ use crate::{
     errors::Error,
     indexes::Index,
     request::HttpClient,
-    search::{serialize_with_wildcard, Filter, Selectors},
+    search::{Filter, Selectors},
 };
 use either::Either;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -100,7 +100,6 @@ pub struct SimilarQuery<'a, Http: HttpClient> {
     ///
     /// **Default: all attributes found in the documents.**
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(serialize_with = "serialize_with_wildcard")]
     pub attributes_to_retrieve: Option<Selectors<&'a [&'a str]>>,
 
     /// Defines whether to display the global ranking score of a document
