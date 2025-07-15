@@ -282,7 +282,7 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     pub hits_per_page: Option<usize>,
     /// Filter applied to documents.
     ///
-    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/advanced/filtering) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
     /// Facets for which to retrieve the matching count.
@@ -971,7 +971,7 @@ pub struct FacetSearchQuery<'a, Http: HttpClient = DefaultHttpClient> {
     pub search_query: Option<&'a str>,
     /// Filter applied to documents.
     ///
-    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/advanced/filtering) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
     /// Defines the strategy on how to handle search queries containing multiple words.
@@ -1078,7 +1078,7 @@ pub struct FacetSearchResponse {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use crate::{
         client::*,
         key::{Action, KeyBuilder},
@@ -1091,19 +1091,19 @@ mod tests {
     use serde_json::{json, Map, Value};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
-    struct Nested {
+    pub struct Nested {
         child: String,
     }
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
-    struct Document {
-        id: usize,
-        value: String,
-        kind: String,
-        number: i32,
-        nested: Nested,
+    pub struct Document {
+        pub id: usize,
+        pub value: String,
+        pub kind: String,
+        pub number: i32,
+        pub nested: Nested,
         #[serde(skip_serializing_if = "Option::is_none", default)]
-        _vectors: Option<Vectors>,
+        pub _vectors: Option<Vectors>,
     }
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -1120,7 +1120,7 @@ mod tests {
     }
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
-    struct Vectors(HashMap<String, Vector>);
+    pub struct Vectors(HashMap<String, Vector>);
 
     impl<T: Into<Vec<f32>>> From<T> for Vectors {
         fn from(value: T) -> Self {
@@ -1151,7 +1151,7 @@ mod tests {
         vector
     }
 
-    async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
+    pub(crate) async fn setup_test_index(client: &Client, index: &Index) -> Result<(), Error> {
         let t0 = index.add_documents(&[
             Document { id: 0, kind: "text".into(), number: 0, value: S("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), nested: Nested { child: S("first") }, _vectors: Some(Vectors::from(vectorize(false, 0))) },
             Document { id: 1, kind: "text".into(), number: 10, value: S("dolor sit amet, consectetur adipiscing elit"), nested: Nested { child: S("second") }, _vectors: Some(Vectors::from(vectorize(false, 1))) },
@@ -1225,7 +1225,7 @@ mod tests {
         Ok(())
     }
 
-    async fn setup_hybrid_searching(client: &Client, index: &Index) -> Result<(), Error> {
+    pub(crate) async fn setup_embedder(client: &Client, index: &Index) -> Result<(), Error> {
         use crate::settings::Embedder;
         let embedder_setting = Embedder {
             source: EmbedderSource::UserProvided,
@@ -1998,7 +1998,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_with_vectors(client: Client, index: Index) -> Result<(), Error> {
-        setup_hybrid_searching(&client, &index).await?;
+        setup_embedder(&client, &index).await?;
         setup_test_index(&client, &index).await?;
 
         let results: SearchResults<Document> = index
@@ -2024,7 +2024,7 @@ mod tests {
 
     #[meilisearch_test]
     async fn test_hybrid(client: Client, index: Index) -> Result<(), Error> {
-        setup_hybrid_searching(&client, &index).await?;
+        setup_embedder(&client, &index).await?;
         setup_test_index(&client, &index).await?;
 
         // Search for an Harry Potter but with lorem ipsum's id
