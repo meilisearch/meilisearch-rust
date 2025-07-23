@@ -5,7 +5,8 @@ use std::{
 
 use async_trait::async_trait;
 use bytes::{Bytes, BytesMut};
-use futures::{AsyncRead, Stream};
+use futures_core::Stream;
+use futures_io::AsyncRead;
 use pin_project_lite::pin_project;
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -90,10 +91,10 @@ impl HttpClient for ReqwestClient {
             }
             #[cfg(target_arch = "wasm32")]
             {
-                use futures::{pin_mut, AsyncReadExt};
+                use futures_util::AsyncReadExt;
 
                 let mut buf = Vec::new();
-                pin_mut!(body);
+                let mut body = std::pin::pin!(body);
                 body.read_to_end(&mut buf)
                     .await
                     .map_err(|err| Error::Other(Box::new(err)))?;

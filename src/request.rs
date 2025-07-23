@@ -79,7 +79,7 @@ pub trait HttpClient: Clone + Send + Sync {
         Body: Serialize + Send + Sync,
         Output: DeserializeOwned + 'static + Send,
     {
-        use futures::io::Cursor;
+        use futures_util::io::Cursor;
 
         self.stream_request(
             url,

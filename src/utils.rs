@@ -2,7 +2,7 @@ use std::time::Duration;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) async fn async_sleep(interval: Duration) {
-    let (sender, receiver) = futures::channel::oneshot::channel::<()>();
+    let (sender, receiver) = futures_channel::oneshot::channel::<()>();
     std::thread::spawn(move || {
         std::thread::sleep(interval);
         let _ = sender.send(());

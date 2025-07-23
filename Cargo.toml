@@ -27,8 +27,10 @@ pin-project-lite = { version = "0.2.16", optional = true }
 reqwest = { version = "0.12.22", optional = true, default-features = false, features = ["rustls-tls", "http2", "stream"] }
 bytes = { version = "1.10.1", optional = true }
 uuid = { version = "1.17.0", features = ["v4"] }
+futures-core = "0.3.31"
 futures-io = "0.3.31"
-futures = "0.3.31"
+futures-channel = "0.3.31"
+futures-util = { version = "0.3.31", default-features = false, features = ["io"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 jsonwebtoken = { version = "9.3.1", default-features = false }
