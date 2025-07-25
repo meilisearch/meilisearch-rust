@@ -12,7 +12,7 @@ use crate::{
     search::*,
     task_info::TaskInfo,
     tasks::{Task, TasksCancelQuery, TasksDeleteQuery, TasksResults, TasksSearchQuery},
-    utils::async_sleep,
+    utils::SleepBackend,
     DefaultHttpClient,
 };
 
@@ -933,7 +933,7 @@ impl<Http: HttpClient> Client<Http> {
                     }
                     Task::Enqueued { .. } | Task::Processing { .. } => {
                         elapsed_time += interval;
-                        async_sleep(interval).await;
+                        self.sleep_backend().sleep(interval).await;
                     }
                 },
                 Err(error) => return Err(error),
@@ -1143,6 +1143,10 @@ impl<Http: HttpClient> Client<Http> {
         };
 
         crate::tenant_tokens::generate_tenant_token(api_key_uid, search_rules, api_key, expires_at)
+    }
+
+    fn sleep_backend(&self) -> SleepBackend {
+        SleepBackend::infer()
     }
 }
 

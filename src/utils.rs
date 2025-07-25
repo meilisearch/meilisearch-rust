@@ -1,31 +1,52 @@
 use std::time::Duration;
 
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) async fn async_sleep(interval: Duration) {
-    let (sender, receiver) = futures_channel::oneshot::channel::<()>();
-    std::thread::spawn(move || {
-        std::thread::sleep(interval);
-        let _ = sender.send(());
-    });
-    let _ = receiver.await;
+#[derive(Debug, Copy, Clone)]
+pub(crate) enum SleepBackend {
+    #[cfg(not(target_arch = "wasm32"))]
+    Thread,
+    #[cfg(target_arch = "wasm32")]
+    Javascript,
 }
 
-#[cfg(target_arch = "wasm32")]
-pub(crate) async fn async_sleep(interval: Duration) {
-    use std::convert::TryInto;
-    use wasm_bindgen_futures::JsFuture;
+impl SleepBackend {
+    pub(crate) fn infer() -> Self {
+        #[cfg(not(target_arch = "wasm32"))]
+        return Self::Thread;
 
-    JsFuture::from(web_sys::js_sys::Promise::new(&mut |yes, _| {
-        web_sys::window()
-            .unwrap()
-            .set_timeout_with_callback_and_timeout_and_arguments_0(
-                &yes,
-                interval.as_millis().try_into().unwrap(),
-            )
-            .unwrap();
-    }))
-    .await
-    .unwrap();
+        #[cfg(target_arch = "wasm32")]
+        return Self::Javascript;
+    }
+
+    pub(crate) async fn sleep(self, interval: Duration) {
+        match self {
+            #[cfg(not(target_arch = "wasm32"))]
+            Self::Thread => {
+                let (sender, receiver) = futures_channel::oneshot::channel::<()>();
+                std::thread::spawn(move || {
+                    std::thread::sleep(interval);
+                    let _ = sender.send(());
+                });
+                let _ = receiver.await;
+            }
+            #[cfg(target_arch = "wasm32")]
+            Self::Javascript => {
+                use std::convert::TryInto;
+                use wasm_bindgen_futures::JsFuture;
+
+                JsFuture::from(web_sys::js_sys::Promise::new(&mut |yes, _| {
+                    web_sys::window()
+                        .unwrap()
+                        .set_timeout_with_callback_and_timeout_and_arguments_0(
+                            &yes,
+                            interval.as_millis().try_into().unwrap(),
+                        )
+                        .unwrap();
+                }))
+                .await
+                .unwrap();
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -33,12 +54,24 @@ mod test {
     use super::*;
     use meilisearch_test_macro::meilisearch_test;
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[meilisearch_test]
-    async fn test_async_sleep() {
+    async fn sleep_thread() {
         let sleep_duration = Duration::from_millis(10);
         let now = std::time::Instant::now();
 
-        async_sleep(sleep_duration).await;
+        SleepBackend::Thread.sleep(sleep_duration).await;
+
+        assert!(now.elapsed() >= sleep_duration);
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    #[meilisearch_test]
+    async fn sleep_javascript() {
+        let sleep_duration = Duration::from_millis(10);
+        let now = std::time::Instant::now();
+
+        SleepBackend::Javascript.sleep(sleep_duration).await;
 
         assert!(now.elapsed() >= sleep_duration);
     }
