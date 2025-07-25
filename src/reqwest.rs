@@ -112,6 +112,10 @@ impl HttpClient for ReqwestClient {
 
         parse_response(status, expected_status_code, &body, url.to_string())
     }
+
+    fn is_tokio(&self) -> bool {
+        true
+    }
 }
 
 fn verb<Q, B>(method: &Method<Q, B>) -> reqwest::Method {
