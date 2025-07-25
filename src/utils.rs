@@ -2,6 +2,8 @@ use std::time::Duration;
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum SleepBackend {
+    #[cfg(all(not(target_arch = "wasm32"), feature = "reqwest"))]
+    Tokio,
     #[cfg(not(target_arch = "wasm32"))]
     Thread,
     #[cfg(target_arch = "wasm32")]
@@ -9,7 +11,14 @@ pub(crate) enum SleepBackend {
 }
 
 impl SleepBackend {
-    pub(crate) fn infer() -> Self {
+    pub(crate) fn infer(is_tokio: bool) -> Self {
+        #[cfg(all(not(target_arch = "wasm32"), feature = "reqwest"))]
+        if is_tokio {
+            return Self::Tokio;
+        }
+        #[cfg(any(target_arch = "wasm32", not(feature = "reqwest")))]
+        let _ = is_tokio;
+
         #[cfg(not(target_arch = "wasm32"))]
         return Self::Thread;
 
@@ -19,6 +28,10 @@ impl SleepBackend {
 
     pub(crate) async fn sleep(self, interval: Duration) {
         match self {
+            #[cfg(all(not(target_arch = "wasm32"), feature = "reqwest"))]
+            Self::Tokio => {
+                tokio::time::sleep(interval).await;
+            }
             #[cfg(not(target_arch = "wasm32"))]
             Self::Thread => {
                 let (sender, receiver) = futures_channel::oneshot::channel::<()>();
@@ -53,6 +66,17 @@ impl SleepBackend {
 mod test {
     use super::*;
     use meilisearch_test_macro::meilisearch_test;
+
+    #[cfg(all(not(target_arch = "wasm32"), feature = "reqwest"))]
+    #[meilisearch_test]
+    async fn sleep_tokio() {
+        let sleep_duration = Duration::from_millis(10);
+        let now = std::time::Instant::now();
+
+        SleepBackend::Tokio.sleep(sleep_duration).await;
+
+        assert!(now.elapsed() >= sleep_duration);
+    }
 
     #[cfg(not(target_arch = "wasm32"))]
     #[meilisearch_test]
