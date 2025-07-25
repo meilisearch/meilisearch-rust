@@ -1146,7 +1146,7 @@ impl<Http: HttpClient> Client<Http> {
     }
 
     fn sleep_backend(&self) -> SleepBackend {
-        SleepBackend::infer()
+        SleepBackend::infer(self.http_client.is_tokio())
     }
 }
 

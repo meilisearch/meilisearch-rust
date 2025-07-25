@@ -34,6 +34,7 @@ futures-util = { version = "0.3.31", default-features = false, features = ["io"]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 jsonwebtoken = { version = "9.3.1", default-features = false }
+tokio = { version = "1.38", optional = true, features = ["time"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 uuid = { version = "1.17.0", default-features = false, features = ["v4", "js"] }
@@ -42,7 +43,7 @@ wasm-bindgen-futures = "0.4"
 
 [features]
 default = ["reqwest"]
-reqwest = ["dep:reqwest", "pin-project-lite", "bytes"]
+reqwest = ["dep:reqwest", "dep:tokio", "pin-project-lite", "bytes"]
 futures-unsend = []
 
 [dev-dependencies]
