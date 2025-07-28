@@ -1900,10 +1900,14 @@ pub struct IndexStats {
     pub number_of_documents: usize,
 
     /// Total number of documents with at least one embedding
-    pub number_of_embedded_documents: usize,
+    /// Is `None` for Meilisearch servers older than 1.13.
+    #[serde(default)]
+    pub number_of_embedded_documents: Option<usize>,
 
     /// Total number of embeddings in an index
-    pub number_of_embeddings: usize,
+    /// Is `None` for Meilisearch servers older than 1.13.
+    #[serde(default)]
+    pub number_of_embeddings: Option<usize>,
 
     /// Storage space claimed by all documents in the index in bytes
     pub raw_document_db_size: usize,

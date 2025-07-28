@@ -1152,8 +1152,10 @@ pub struct ClientStats {
     /// Storage space claimed by Meilisearch and LMDB in bytes
     pub database_size: usize,
 
-    /// Storage space used by the database in bytes, excluding unused space claimed by LMDB
-    pub used_database_size: usize,
+    /// Storage space used by the database in bytes, excluding unused space claimed by LMDB.
+    /// Is `None` for Meilisearch servers older than 1.13.
+    #[serde(default)]
+    pub used_database_size: Option<usize>,
 
     /// When the last update was made to the database in the `RFC 3339` format
     #[serde(with = "time::serde::rfc3339::option")]
