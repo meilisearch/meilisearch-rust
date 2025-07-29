@@ -101,6 +101,10 @@ pub trait HttpClient: Clone + Send + Sync {
         content_type: &str,
         expected_status_code: u16,
     ) -> Result<Output, Error>;
+
+    fn is_tokio(&self) -> bool {
+        false
+    }
 }
 
 pub fn parse_response<Output: DeserializeOwned>(
