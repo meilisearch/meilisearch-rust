@@ -27,6 +27,8 @@ pub struct Client<Http: HttpClient = DefaultHttpClient> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SwapIndexes {
     pub indexes: (String, String),
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rename: Option<bool>,
 }
 
 #[cfg(feature = "reqwest")]
@@ -202,7 +204,7 @@ impl<Http: HttpClient> Client<Http> {
     ///
     /// [1]: https://www.meilisearch.com/docs/learn/multi_search/multi_search_vs_federated_search#what-is-federated-search
     #[must_use]
-    pub fn multi_search(&self) -> MultiSearchQuery<Http> {
+    pub fn multi_search(&self) -> MultiSearchQuery<'_, '_, Http> {
         MultiSearchQuery::new(self)
     }
 
@@ -532,6 +534,7 @@ impl<Http: HttpClient> Client<Http> {
     ///             "swap_index_1".to_string(),
     ///             "swap_index_2".to_string(),
     ///         ),
+    ///         rename: None,
     ///     }])
     ///     .await
     ///     .unwrap();
@@ -1249,6 +1252,7 @@ mod tests {
                     "test_swapping_two_indexes_1".to_string(),
                     "test_swapping_two_indexes_2".to_string(),
                 ),
+                rename: None,
             }])
             .await
             .unwrap();
@@ -1349,6 +1353,37 @@ mod tests {
     async fn test_get_tasks(client: Client) {
         let tasks = client.get_tasks().await.unwrap();
         assert_eq!(tasks.limit, 20);
+    }
+
+    #[meilisearch_test]
+    async fn test_rename_index_via_swap(client: Client, name: String) -> Result<(), Error> {
+        let from = format!("{name}_from");
+        let to = format!("{name}_to");
+
+        client
+            .create_index(&from, None)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let task = client
+            .swap_indexes([&SwapIndexes {
+                indexes: (from.clone(), to.clone()),
+                rename: Some(true),
+            }])
+            .await?;
+        task.wait_for_completion(&client, None, None).await?;
+
+        let new_index = client.get_index(&to).await?;
+        assert_eq!(new_index.uid, to);
+
+        new_index
+            .delete()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        Ok(())
     }
 
     #[meilisearch_test]

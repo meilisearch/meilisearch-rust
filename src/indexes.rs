@@ -276,7 +276,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     #[must_use]
-    pub fn search(&self) -> SearchQuery<Http> {
+    pub fn search(&self) -> SearchQuery<'_, Http> {
         SearchQuery::new(self)
     }
 
@@ -1773,15 +1773,19 @@ pub struct IndexUpdater<'a, Http: HttpClient> {
     pub client: &'a Client<Http>,
     #[serde(skip_serializing)]
     pub uid: String,
+    /// New uid to rename the index to
+    #[serde(rename = "uid", skip_serializing_if = "Option::is_none")]
+    pub new_uid: Option<String>,
     pub primary_key: Option<String>,
 }
 
 impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
-    pub fn new(uid: impl AsRef<str>, client: &Client<Http>) -> IndexUpdater<Http> {
+    pub fn new(uid: impl AsRef<str>, client: &Client<Http>) -> IndexUpdater<'_, Http> {
         IndexUpdater {
             client,
             primary_key: None,
             uid: uid.as_ref().to_string(),
+            new_uid: None,
         }
     }
     /// Define the new `primary_key` to set on the [Index].
@@ -1826,6 +1830,12 @@ impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
         primary_key: impl AsRef<str>,
     ) -> &mut IndexUpdater<'a, Http> {
         self.primary_key = Some(primary_key.as_ref().to_string());
+        self
+    }
+
+    /// Define a new `uid` to rename the index.
+    pub fn with_uid(&mut self, new_uid: impl AsRef<str>) -> &mut IndexUpdater<'a, Http> {
+        self.new_uid = Some(new_uid.as_ref().to_string());
         self
     }
 
@@ -1976,7 +1986,7 @@ pub struct IndexesQuery<'a, Http: HttpClient> {
 
 impl<'a, Http: HttpClient> IndexesQuery<'a, Http> {
     #[must_use]
-    pub fn new(client: &Client<Http>) -> IndexesQuery<Http> {
+    pub fn new(client: &Client<Http>) -> IndexesQuery<'_, Http> {
         IndexesQuery {
             client,
             offset: None,
@@ -2219,6 +2229,40 @@ mod tests {
         ];
 
         assert_eq!(elements.results, expected_result);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_rename_index_via_update(client: Client, name: String) -> Result<(), Error> {
+        let from = format!("{name}_from");
+        let to = format!("{name}_to");
+
+        // Create source index
+        client
+            .create_index(&from, None)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        // Rename using index update
+        IndexUpdater::new(&from, &client)
+            .with_uid(&to)
+            .execute()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        // New index should exist
+        let new_index = client.get_index(&to).await?;
+        assert_eq!(new_index.uid, to);
+
+        // cleanup
+        new_index
+            .delete()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
 
         Ok(())
     }

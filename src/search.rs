@@ -121,6 +121,16 @@ pub struct SearchResults<T> {
     pub query: String,
     /// Index uid on which the search was made.
     pub index_uid: Option<String>,
+    /// The query vector returned when `retrieveVectors` is enabled.
+    /// Accept multiple possible field names to be forward/backward compatible with server variations.
+    #[serde(
+        rename = "queryVector",
+        alias = "query_vector",
+        alias = "queryEmbedding",
+        alias = "query_embedding",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub query_vector: Option<Vec<f32>>,
 }
 
 fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
@@ -2014,6 +2024,44 @@ pub(crate) mod tests {
             .await?;
         assert_eq!(results.hits.len(), 1);
         assert_eq!(results.hits[0].result._vectors, None);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_vector_in_response(client: Client, index: Index) -> Result<(), Error> {
+        setup_embedder(&client, &index).await?;
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SearchQuery::new(&index);
+        let qv = vectorize(false, 0);
+        query
+            .with_hybrid("default", 1.0)
+            .with_vector(&qv)
+            .with_retrieve_vectors(true);
+
+        let results: SearchResults<Document> = index.execute_query(&query).await?;
+
+        if results.query_vector.is_none() {
+            use crate::request::Method;
+            let url = format!("{}/indexes/{}/search", index.client.get_host(), index.uid);
+            let raw: serde_json::Value = index
+                .client
+                .http_client
+                .request::<(), &SearchQuery<_>, serde_json::Value>(
+                    &url,
+                    Method::Post {
+                        body: &query,
+                        query: (),
+                    },
+                    200,
+                )
+                .await
+                .unwrap();
+            eprintln!("DEBUG raw search response: {}", raw);
+        }
+
+        assert!(results.query_vector.is_some());
+        assert_eq!(results.query_vector.as_ref().unwrap().len(), 11);
         Ok(())
     }
 

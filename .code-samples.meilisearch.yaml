@@ -94,6 +94,11 @@ update_an_index_1: |-
     .execute()
     .await
     .unwrap();
+rename_an_index_1: |-
+  curl \
+    -X PATCH 'MEILISEARCH_URL/indexes/INDEX_A' \
+    -H 'Content-Type: application/json' \
+    --data-binary '{ "uid": "INDEX_B" }'
 delete_an_index_1: |-
   client.index("movies")
     .delete()
