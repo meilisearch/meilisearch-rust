@@ -1376,6 +1376,8 @@ mod tests {
 
         let new_index = client.get_index(&to).await?;
         assert_eq!(new_index.uid, to);
+        // Optional: old uid should no longer resolve
+        assert!(client.get_raw_index(&from).await.is_err());
 
         new_index
             .delete()

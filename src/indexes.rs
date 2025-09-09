@@ -1839,6 +1839,11 @@ impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
         self
     }
 
+    /// Alias for `with_uid` with clearer intent.
+    pub fn with_new_uid(&mut self, new_uid: impl AsRef<str>) -> &mut IndexUpdater<'a, Http> {
+        self.with_uid(new_uid)
+    }
+
     /// Execute the update of an [Index] using the [`IndexUpdater`].
     ///
     /// # Example
@@ -2257,12 +2262,24 @@ mod tests {
         let new_index = client.get_index(&to).await?;
         assert_eq!(new_index.uid, to);
 
+        // Old index should no longer exist
+        let old_index = client.get_index(&from).await;
+        assert!(old_index.is_err(), "old uid still resolves after rename");
+
         // cleanup
         new_index
             .delete()
             .await?
             .wait_for_completion(&client, None, None)
             .await?;
+
+        // defensive cleanup if rename semantics change
+        if let Ok(idx) = client.get_index(&from).await {
+            idx.delete()
+                .await?
+                .wait_for_completion(&client, None, None)
+                .await?;
+        }
 
         Ok(())
     }

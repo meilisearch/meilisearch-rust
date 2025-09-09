@@ -128,6 +128,7 @@ pub struct SearchResults<T> {
         alias = "query_vector",
         alias = "queryEmbedding",
         alias = "query_embedding",
+        alias = "vector",
         skip_serializing_if = "Option::is_none"
     )]
     pub query_vector: Option<Vec<f32>>,
@@ -2041,7 +2042,9 @@ pub(crate) mod tests {
 
         let results: SearchResults<Document> = index.execute_query(&query).await?;
 
-        if results.query_vector.is_none() {
+        if std::env::var("MSDK_DEBUG_RAW_SEARCH").ok().as_deref() == Some("1")
+            && results.query_vector.is_none()
+        {
             use crate::request::Method;
             let url = format!("{}/indexes/{}/search", index.client.get_host(), index.uid);
             let raw: serde_json::Value = index
