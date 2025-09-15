@@ -42,7 +42,7 @@ web-sys = "0.3.77"
 wasm-bindgen-futures = "0.4"
 
 [features]
-default = ["reqwest"]
+default = ["reqwest", "tls"]
 reqwest = ["dep:reqwest", "dep:tokio", "pin-project-lite", "bytes"]
 tls = ["reqwest/rustls-tls"]
 futures-unsend = []
