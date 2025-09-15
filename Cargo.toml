@@ -24,7 +24,7 @@ either = { version = "1.15.0", features = ["serde"] }
 thiserror = "2.0.12"
 meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", version = "0.29.1" }
 pin-project-lite = { version = "0.2.16", optional = true }
-reqwest = { version = "0.12.22", optional = true, default-features = false, features = ["rustls-tls", "http2", "stream"] }
+reqwest = { version = "0.12.22", optional = true, default-features = false, features = ["http2", "stream"] }
 bytes = { version = "1.10.1", optional = true }
 uuid = { version = "1.17.0", features = ["v4"] }
 futures-core = "0.3.31"
@@ -44,6 +44,7 @@ wasm-bindgen-futures = "0.4"
 [features]
 default = ["reqwest"]
 reqwest = ["dep:reqwest", "dep:tokio", "pin-project-lite", "bytes"]
+tls = ["reqwest/rustls-tls"]
 futures-unsend = []
 
 [dev-dependencies]
