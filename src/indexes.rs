@@ -276,7 +276,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     #[must_use]
-    pub fn search(&self) -> SearchQuery<Http> {
+    pub fn search(&self) -> SearchQuery<'_, Http> {
         SearchQuery::new(self)
     }
 
@@ -1777,7 +1777,7 @@ pub struct IndexUpdater<'a, Http: HttpClient> {
 }
 
 impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
-    pub fn new(uid: impl AsRef<str>, client: &Client<Http>) -> IndexUpdater<Http> {
+    pub fn new(uid: impl AsRef<str>, client: &Client<Http>) -> IndexUpdater<'_, Http> {
         IndexUpdater {
             client,
             primary_key: None,
@@ -1976,7 +1976,7 @@ pub struct IndexesQuery<'a, Http: HttpClient> {
 
 impl<'a, Http: HttpClient> IndexesQuery<'a, Http> {
     #[must_use]
-    pub fn new(client: &Client<Http>) -> IndexesQuery<Http> {
+    pub fn new(client: &Client<Http>) -> IndexesQuery<'_, Http> {
         IndexesQuery {
             client,
             offset: None,

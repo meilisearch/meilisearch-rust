@@ -86,7 +86,7 @@ pub struct DocumentQuery<'a, Http: HttpClient> {
 
 impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
     #[must_use]
-    pub fn new(index: &Index<Http>) -> DocumentQuery<Http> {
+    pub fn new(index: &Index<Http>) -> DocumentQuery<'_, Http> {
         DocumentQuery {
             index,
             fields: None,
@@ -200,7 +200,7 @@ pub struct DocumentsQuery<'a, Http: HttpClient> {
 
 impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
     #[must_use]
-    pub fn new(index: &Index<Http>) -> DocumentsQuery<Http> {
+    pub fn new(index: &Index<Http>) -> DocumentsQuery<'_, Http> {
         DocumentsQuery {
             index,
             offset: None,
@@ -332,7 +332,7 @@ pub struct DocumentDeletionQuery<'a, Http: HttpClient> {
 
 impl<'a, Http: HttpClient> DocumentDeletionQuery<'a, Http> {
     #[must_use]
-    pub fn new(index: &Index<Http>) -> DocumentDeletionQuery<Http> {
+    pub fn new(index: &Index<Http>) -> DocumentDeletionQuery<'_, Http> {
         DocumentDeletionQuery {
             index,
             filter: None,

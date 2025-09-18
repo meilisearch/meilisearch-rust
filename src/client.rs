@@ -202,7 +202,7 @@ impl<Http: HttpClient> Client<Http> {
     ///
     /// [1]: https://www.meilisearch.com/docs/learn/multi_search/multi_search_vs_federated_search#what-is-federated-search
     #[must_use]
-    pub fn multi_search(&self) -> MultiSearchQuery<Http> {
+    pub fn multi_search(&self) -> MultiSearchQuery<'_, '_, Http> {
         MultiSearchQuery::new(self)
     }
 
