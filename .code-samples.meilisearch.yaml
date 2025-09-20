@@ -1065,7 +1065,7 @@ primary_field_guide_add_document_primary_key: |-
 getting_started_add_documents: |-
   // In your .toml file:
     [dependencies]
-    meilisearch-sdk = "0.29.1"
+    meilisearch-sdk = "0.30.0"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
