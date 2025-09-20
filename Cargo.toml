@@ -1,6 +1,6 @@
 [package]
 name = "meilisearch-sdk"
-version = "0.29.1"
+version = "0.30.0"
 authors = ["Mubelotix <mubelotix@gmail.com>"]
 edition = "2018"
 description = "Rust wrapper for the Meilisearch API. Meilisearch is a powerful, fast, open-source, easy to use and deploy search engine."
@@ -22,7 +22,7 @@ time = { version = "0.3.41", features = ["serde-well-known", "formatting", "pars
 yaup = "0.3.1"
 either = { version = "1.15.0", features = ["serde"] }
 thiserror = "2.0.12"
-meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", version = "0.29.1" }
+meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", version = "0.30.0" }
 pin-project-lite = { version = "0.2.16", optional = true }
 reqwest = { version = "0.12.22", optional = true, default-features = false, features = ["http2", "stream"] }
 bytes = { version = "1.10.1", optional = true }
