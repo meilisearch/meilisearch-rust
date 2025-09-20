@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     name: integration-tests
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build
         run: cargo build --verbose
       - name: Meilisearch (latest version) setup with Docker
@@ -42,7 +42,7 @@ jobs:
     name: clippy-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install clippy
         run: rustup component add clippy
       - name: Run linter (clippy)
@@ -53,7 +53,7 @@ jobs:
     name: rust-format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run formatter
         run: cargo fmt --all -- --check
 
@@ -61,7 +61,7 @@ jobs:
     name: readme-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check the README.md file is up-to-date
         run: sh scripts/check-readme.sh
 
@@ -69,7 +69,7 @@ jobs:
     name: wasm-build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build
         run: |
           rustup target add wasm32-unknown-unknown
@@ -78,7 +78,7 @@ jobs:
     name: Yaml linting check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Yaml lint check
         uses: ibiqlik/action-yamllint@v3
         with:
@@ -90,7 +90,7 @@ jobs:
     needs: integration_tests
     name: Code Coverage
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Meilisearch (latest version) setup with Docker
         run: docker run -d -p 7700:7700 getmeili/meilisearch:latest meilisearch --no-analytics --master-key=masterKey
       - name: Install cargo-llvm-cov
