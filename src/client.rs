@@ -8,6 +8,7 @@ use crate::{
     errors::*,
     indexes::*,
     key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
+    network::{NetworkState, NetworkUpdate},
     request::*,
     search::*,
     task_info::TaskInfo,
@@ -1148,6 +1149,46 @@ impl<Http: HttpClient> Client<Http> {
         crate::tenant_tokens::generate_tenant_token(api_key_uid, search_rules, api_key, expires_at)
     }
 
+    /// Get the current network state (/network)
+    pub async fn get_network_state(&self) -> Result<NetworkState, Error> {
+        self.http_client
+            .request::<(), (), NetworkState>(
+                &format!("{}/network", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Partially update the network state (/network)
+    pub async fn update_network_state(&self, body: &NetworkUpdate) -> Result<NetworkState, Error> {
+        self.http_client
+            .request::<(), &NetworkUpdate, NetworkState>(
+                &format!("{}/network", self.host),
+                Method::Patch { query: (), body },
+                200,
+            )
+            .await
+    }
+
+    /// Convenience: set sharding=true/false
+    pub async fn set_sharding(&self, enabled: bool) -> Result<NetworkState, Error> {
+        let update = NetworkUpdate {
+            sharding: Some(enabled),
+            ..NetworkUpdate::default()
+        };
+        self.update_network_state(&update).await
+    }
+
+    /// Convenience: set self to a remote name
+    pub async fn set_self_remote(&self, name: &str) -> Result<NetworkState, Error> {
+        let update = NetworkUpdate {
+            self_name: Some(name.to_string()),
+            ..NetworkUpdate::default()
+        };
+        self.update_network_state(&update).await
+    }
+
     fn sleep_backend(&self) -> SleepBackend {
         SleepBackend::infer(self.http_client.is_tokio())
     }
@@ -1207,6 +1248,49 @@ pub struct Version {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use mockito::Matcher;
+
+    #[tokio::test]
+    async fn test_network_update_and_deserialize_remotes() {
+        let mut s = mockito::Server::new_async().await;
+        let base = s.url();
+
+        let response_body = serde_json::json!({
+            "remotes": {
+                "ms-00": {
+                    "url": "http://ms-00",
+                    "searchApiKey": "SEARCH",
+                    "writeApiKey": "WRITE"
+                }
+            },
+            "self": "ms-00",
+            "sharding": true
+        })
+        .to_string();
+
+        let _m = s
+            .mock("PATCH", "/network")
+            .match_body(Matcher::Regex(
+                r#"\{.*"sharding"\s*:\s*true.*\}"#.to_string(),
+            ))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(response_body)
+            .create_async()
+            .await;
+
+        let client = Client::new(base, None::<String>).unwrap();
+        let updated = client
+            .set_sharding(true)
+            .await
+            .expect("update_network_state failed");
+        assert_eq!(updated.sharding, Some(true));
+        let remotes = updated.remotes.expect("remotes should be present");
+        let ms00 = remotes.get("ms-00").expect("ms-00 should exist");
+        assert_eq!(ms00.write_api_key.as_deref(), Some("WRITE"));
+    }
+
     use big_s::S;
     use time::OffsetDateTime;
 
