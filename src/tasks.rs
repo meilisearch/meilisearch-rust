@@ -753,13 +753,13 @@ mod test {
     #[test]
     fn test_deserialize_enqueued_task_with_remotes() {
         let json = r#"{
-  "enqueuedAt": "2022-02-03T13:02:38.369634Z",
-  "indexUid": "movies",
-  "status": "enqueued",
-  "type": "indexUpdate",
-  "uid": 12,
-  "remotes": { "ms-00": { "status": "ok" } }
-}"#;
+          "enqueuedAt": "2022-02-03T13:02:38.369634Z",
+          "indexUid": "movies",
+          "status": "enqueued",
+          "type": "indexUpdate",
+          "uid": 12,
+          "remotes": { "ms-00": { "status": "ok" } }
+        }"#;
         let task: Task = serde_json::from_str(json).unwrap();
         match task {
             Task::Enqueued { content } => {
@@ -773,20 +773,20 @@ mod test {
     #[test]
     fn test_deserialize_processing_task_with_remotes() {
         let json = r#"{
-  "details": {
-    "indexedDocuments": null,
-    "receivedDocuments": 10
-  },
-  "duration": null,
-  "enqueuedAt": "2022-02-03T15:17:02.801341Z",
-  "finishedAt": null,
-  "indexUid": "movies",
-  "startedAt": "2022-02-03T15:17:02.812338Z",
-  "status": "processing",
-  "type": "documentAdditionOrUpdate",
-  "uid": 14,
-  "remotes": { "ms-00": { "status": "ok" } }
-}"#;
+          "details": {
+            "indexedDocuments": null,
+            "receivedDocuments": 10
+          },
+          "duration": null,
+          "enqueuedAt": "2022-02-03T15:17:02.801341Z",
+          "finishedAt": null,
+          "indexUid": "movies",
+          "startedAt": "2022-02-03T15:17:02.812338Z",
+          "status": "processing",
+          "type": "documentAdditionOrUpdate",
+          "uid": 14,
+          "remotes": { "ms-00": { "status": "ok" } }
+        }"#;
         let task: Task = serde_json::from_str(json).unwrap();
         match task {
             Task::Processing { content } => {
