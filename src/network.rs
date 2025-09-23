@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteConfig {
     pub url: String,
@@ -15,7 +15,7 @@ pub struct RemoteConfig {
 pub type RemotesMap = HashMap<String, RemoteConfig>;
 
 /// Full network state returned by GET /network
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkState {
     pub remotes: Option<RemotesMap>,
@@ -25,7 +25,7 @@ pub struct NetworkState {
 }
 
 /// Partial update body for PATCH /network
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
