@@ -1,4 +1,5 @@
 use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::{Map, Value};
 use std::time::Duration;
 use time::OffsetDateTime;
 
@@ -157,6 +158,9 @@ pub struct SucceededTask {
     pub canceled_by: Option<usize>,
     pub index_uid: Option<String>,
     pub error: Option<MeilisearchError>,
+    /// Remotes object returned by the server for this task (present since Meilisearch 1.19)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remotes: Option<Map<String, Value>>,
     #[serde(flatten)]
     pub update_type: TaskType,
     pub uid: u32,
@@ -174,6 +178,9 @@ pub struct EnqueuedTask {
     #[serde(with = "time::serde::rfc3339")]
     pub enqueued_at: OffsetDateTime,
     pub index_uid: Option<String>,
+    /// Remotes object returned by the server for this enqueued task
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remotes: Option<Map<String, Value>>,
     #[serde(flatten)]
     pub update_type: TaskType,
     pub uid: u32,
@@ -193,6 +200,9 @@ pub struct ProcessingTask {
     #[serde(with = "time::serde::rfc3339")]
     pub started_at: OffsetDateTime,
     pub index_uid: Option<String>,
+    /// Remotes object returned by the server for this processing task
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remotes: Option<Map<String, Value>>,
     #[serde(flatten)]
     pub update_type: TaskType,
     pub uid: u32,
@@ -738,6 +748,54 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksPaginationFilters, Http> {
 
 #[cfg(test)]
 mod test {
+
+    #[test]
+    fn test_deserialize_enqueued_task_with_remotes() {
+        let json = r#"{
+          "enqueuedAt": "2022-02-03T13:02:38.369634Z",
+          "indexUid": "movies",
+          "status": "enqueued",
+          "type": "indexUpdate",
+          "uid": 12,
+          "remotes": { "ms-00": { "status": "ok" } }
+        }"#;
+        let task: Task = serde_json::from_str(json).unwrap();
+        match task {
+            Task::Enqueued { content } => {
+                let remotes = content.remotes.expect("remotes should be present");
+                assert!(remotes.contains_key("ms-00"));
+            }
+            _ => panic!("expected enqueued task"),
+        }
+    }
+
+    #[test]
+    fn test_deserialize_processing_task_with_remotes() {
+        let json = r#"{
+          "details": {
+            "indexedDocuments": null,
+            "receivedDocuments": 10
+          },
+          "duration": null,
+          "enqueuedAt": "2022-02-03T15:17:02.801341Z",
+          "finishedAt": null,
+          "indexUid": "movies",
+          "startedAt": "2022-02-03T15:17:02.812338Z",
+          "status": "processing",
+          "type": "documentAdditionOrUpdate",
+          "uid": 14,
+          "remotes": { "ms-00": { "status": "ok" } }
+        }"#;
+        let task: Task = serde_json::from_str(json).unwrap();
+        match task {
+            Task::Processing { content } => {
+                let remotes = content.remotes.expect("remotes should be present");
+                assert!(remotes.contains_key("ms-00"));
+            }
+            _ => panic!("expected processing task"),
+        }
+    }
+
     use super::*;
     use crate::{
         client::*,
@@ -782,8 +840,7 @@ mod test {
                     enqueued_at,
                     index_uid: Some(index_uid),
                     update_type: TaskType::DocumentAdditionOrUpdate { details: None },
-                    uid: 12,
-                }
+                    uid: 12, .. }
             }
         if enqueued_at == datetime && index_uid == "meili"));
 
