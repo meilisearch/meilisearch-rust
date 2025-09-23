@@ -748,7 +748,6 @@ impl<'a, Http: HttpClient> TasksQuery<'a, TasksPaginationFilters, Http> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
 
     #[test]
     fn test_deserialize_enqueued_task_with_remotes() {
