@@ -190,6 +190,12 @@ pub struct DocumentsQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<Vec<&'a str>>,
 
+    /// Attributes used to sort the returned documents.
+    ///
+    /// Available since v1.16 of Meilisearch.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sort: Option<Vec<&'a str>>,
+
     /// Filters to apply.
     ///
     /// Available since v1.2 of Meilisearch
@@ -206,6 +212,7 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
             offset: None,
             limit: None,
             fields: None,
+            sort: None,
             filter: None,
         }
     }
@@ -274,6 +281,31 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
         fields: impl IntoIterator<Item = &'a str>,
     ) -> &mut DocumentsQuery<'a, Http> {
         self.fields = Some(fields.into_iter().collect());
+        self
+    }
+
+    /// Specify the sort order of the returned documents.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let index = client.index("documents_with_sort");
+    ///
+    /// let mut documents_query = DocumentsQuery::new(&index);
+    ///
+    /// documents_query.with_sort(["release_date:desc"]);
+    /// ```
+    pub fn with_sort(
+        &mut self,
+        sort: impl IntoIterator<Item = &'a str>,
+    ) -> &mut DocumentsQuery<'a, Http> {
+        self.sort = Some(sort.into_iter().collect());
         self
     }
 
@@ -534,6 +566,33 @@ mod tests {
             .await?;
 
         assert_eq!(documents.results.len(), 1);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_documents_with_sort(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        index
+            .set_sortable_attributes(["id"])
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let documents = DocumentsQuery::new(&index)
+            .with_sort(["id:desc"])
+            .execute::<MyObject>()
+            .await?;
+
+        assert_eq!(
+            documents.results.first().and_then(|document| document.id),
+            Some(3)
+        );
+        assert_eq!(
+            documents.results.last().and_then(|document| document.id),
+            Some(0)
+        );
 
         Ok(())
     }
