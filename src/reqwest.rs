@@ -49,10 +49,6 @@ impl ReqwestClient {
 
         Ok(ReqwestClient { client })
     }
-
-    pub(crate) fn inner(&self) -> &reqwest::Client {
-        &self.client
-    }
 }
 
 #[cfg_attr(feature = "futures-unsend", async_trait(?Send))]

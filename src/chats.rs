@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{to_vec, Value};
 
 use crate::{
     client::Client,
@@ -275,13 +275,34 @@ impl Client<crate::reqwest::ReqwestClient> {
         uid: impl AsRef<str>,
         body: &S,
     ) -> Result<reqwest::Response, Error> {
-        use reqwest::header::{HeaderValue, ACCEPT, CONTENT_TYPE};
+        use reqwest::{
+            header::{self, HeaderValue, ACCEPT, CONTENT_TYPE},
+            Client as HttpClient,
+        };
 
-        let payload = serde_json::to_vec(body).map_err(Error::ParseError)?;
+        let payload = to_vec(body).map_err(Error::ParseError)?;
 
-        let response = self
-            .http_client
-            .inner()
+        let mut headers = header::HeaderMap::new();
+        #[cfg(not(target_arch = "wasm32"))]
+        headers.insert(
+            header::USER_AGENT,
+            header::HeaderValue::from_str(&crate::reqwest::qualified_version()).unwrap(),
+        );
+        #[cfg(target_arch = "wasm32")]
+        headers.insert(
+            header::HeaderName::from_static("x-meilisearch-client"),
+            header::HeaderValue::from_str(&crate::reqwest::qualified_version()).unwrap(),
+        );
+        if let Some(api_key) = self.api_key.as_deref() {
+            headers.insert(
+                header::AUTHORIZATION,
+                header::HeaderValue::from_str(&format!("Bearer {api_key}")).unwrap(),
+            );
+        }
+
+        let http = HttpClient::builder().default_headers(headers).build()?;
+
+        let response = http
             .post(format!(
                 "{}/chats/{}/chat/completions",
                 self.host,
@@ -315,14 +336,22 @@ impl Client<crate::reqwest::ReqwestClient> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::ExperimentalFeatures;
     use meilisearch_test_macro::meilisearch_test;
+    use serde_json::json;
 
     #[meilisearch_test]
     async fn chat_workspace_lifecycle(client: Client, name: String) -> Result<(), Error> {
-        let mut features = ExperimentalFeatures::new(&client);
-        features.set_chat_completions(true);
-        let _ = features.update().await?;
+        let _: serde_json::Value = client
+            .http_client
+            .request(
+                &format!("{}/experimental-features", client.host),
+                Method::Patch {
+                    query: (),
+                    body: &json!({ "chatCompletions": true }),
+                },
+                200,
+            )
+            .await?;
 
         let workspace = format!("{name}-workspace");
 
