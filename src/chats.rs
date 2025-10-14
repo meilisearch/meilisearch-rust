@@ -141,8 +141,8 @@ impl ChatWorkspaceSettings {
         self
     }
 
-    pub fn set_prompts(&mut self, prompts: ChatPrompts) -> &mut Self {
-        self.prompts = Some(prompts);
+    pub fn set_prompts(&mut self, prompts: impl Into<ChatPrompts>) -> &mut Self {
+        self.prompts = Some(prompts.into());
         self
     }
 }
@@ -275,34 +275,13 @@ impl Client<crate::reqwest::ReqwestClient> {
         uid: impl AsRef<str>,
         body: &S,
     ) -> Result<reqwest::Response, Error> {
-        use reqwest::{
-            header::{self, HeaderValue, ACCEPT, CONTENT_TYPE},
-            Client as HttpClient,
-        };
+        use reqwest::header::{HeaderValue, ACCEPT, CONTENT_TYPE};
 
         let payload = to_vec(body).map_err(Error::ParseError)?;
 
-        let mut headers = header::HeaderMap::new();
-        #[cfg(not(target_arch = "wasm32"))]
-        headers.insert(
-            header::USER_AGENT,
-            header::HeaderValue::from_str(&crate::reqwest::qualified_version()).unwrap(),
-        );
-        #[cfg(target_arch = "wasm32")]
-        headers.insert(
-            header::HeaderName::from_static("x-meilisearch-client"),
-            header::HeaderValue::from_str(&crate::reqwest::qualified_version()).unwrap(),
-        );
-        if let Some(api_key) = self.api_key.as_deref() {
-            headers.insert(
-                header::AUTHORIZATION,
-                header::HeaderValue::from_str(&format!("Bearer {api_key}")).unwrap(),
-            );
-        }
-
-        let http = HttpClient::builder().default_headers(headers).build()?;
-
-        let response = http
+        let response = self
+            .http_client
+            .inner()
             .post(format!(
                 "{}/chats/{}/chat/completions",
                 self.host,
