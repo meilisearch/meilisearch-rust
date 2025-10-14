@@ -275,23 +275,9 @@ impl Client<crate::reqwest::ReqwestClient> {
         uid: impl AsRef<str>,
         body: &S,
     ) -> Result<reqwest::Response, Error> {
-        use reqwest::header::{HeaderValue, ACCEPT, CONTENT_TYPE};
+        let request = self.build_stream_chat_request(uid.as_ref(), body)?;
 
-        let payload = to_vec(body).map_err(Error::ParseError)?;
-
-        let response = self
-            .http_client
-            .inner()
-            .post(format!(
-                "{}/chats/{}/chat/completions",
-                self.host,
-                uid.as_ref()
-            ))
-            .header(ACCEPT, HeaderValue::from_static("text/event-stream"))
-            .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
-            .body(payload)
-            .send()
-            .await?;
+        let response = self.http_client.inner().execute(request).await?;
 
         let status = response.status();
         if !status.is_success() {
@@ -310,6 +296,34 @@ impl Client<crate::reqwest::ReqwestClient> {
 
         Ok(response)
     }
+
+    fn build_stream_chat_request<S: Serialize + ?Sized>(
+        &self,
+        uid: &str,
+        body: &S,
+    ) -> Result<reqwest::Request, Error> {
+        use reqwest::header::{HeaderValue, ACCEPT, AUTHORIZATION, CONTENT_TYPE};
+
+        let payload = to_vec(body).map_err(Error::ParseError)?;
+
+        let mut request = self
+            .http_client
+            .inner()
+            .post(format!("{}/chats/{}/chat/completions", self.host, uid))
+            .header(ACCEPT, HeaderValue::from_static("text/event-stream"))
+            .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
+            .body(payload)
+            .build()?;
+
+        if let Some(key) = self.api_key.as_deref() {
+            request.headers_mut().insert(
+                AUTHORIZATION,
+                HeaderValue::from_str(&format!("Bearer {key}")).unwrap(),
+            );
+        }
+
+        Ok(request)
+    }
 }
 
 #[cfg(test)]
@@ -317,7 +331,6 @@ mod tests {
     use super::*;
     use meilisearch_test_macro::meilisearch_test;
     use serde_json::json;
-
     #[meilisearch_test]
     async fn chat_workspace_lifecycle(client: Client, name: String) -> Result<(), Error> {
         let _: serde_json::Value = client
@@ -388,5 +401,101 @@ mod tests {
         let _ = client.reset_chat_workspace_settings(&workspace).await?;
 
         Ok(())
+    }
+
+    #[test]
+    fn chat_prompts_builder_helpers() {
+        let mut prompts = ChatPrompts::new();
+        prompts
+            .set_system("system")
+            .set_search_description("desc")
+            .set_search_q_param("q")
+            .set_search_index_uid_param("idx")
+            .insert("custom", "value");
+
+        assert_eq!(prompts.system.as_deref(), Some("system"));
+        assert_eq!(prompts.search_description.as_deref(), Some("desc"));
+        assert_eq!(prompts.search_q_param.as_deref(), Some("q"));
+        assert_eq!(prompts.search_index_uid_param.as_deref(), Some("idx"));
+        assert_eq!(
+            prompts.extra.get("custom").map(String::as_str),
+            Some("value")
+        );
+    }
+
+    #[test]
+    fn chat_workspace_settings_builder_helpers() {
+        let mut settings = ChatWorkspaceSettings::new();
+        settings
+            .set_source("openAi")
+            .set_org_id("org")
+            .set_project_id("project")
+            .set_api_version("2024-01-01")
+            .set_deployment_id("deployment")
+            .set_base_url("http://example.com")
+            .set_api_key("secret")
+            .set_prompts({
+                let mut prompts = ChatPrompts::new();
+                prompts.set_system("hi");
+                prompts
+            });
+
+        assert_eq!(settings.source.as_deref(), Some("openAi"));
+        assert_eq!(settings.org_id.as_deref(), Some("org"));
+        assert_eq!(settings.project_id.as_deref(), Some("project"));
+        assert_eq!(settings.api_version.as_deref(), Some("2024-01-01"));
+        assert_eq!(settings.deployment_id.as_deref(), Some("deployment"));
+        assert_eq!(settings.base_url.as_deref(), Some("http://example.com"));
+        assert_eq!(settings.api_key.as_deref(), Some("secret"));
+        assert_eq!(
+            settings.prompts.and_then(|p| p.system).as_deref(),
+            Some("hi")
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "reqwest")]
+    fn stream_chat_completion_request_includes_expected_headers() {
+        use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
+
+        let client = Client::new("http://localhost:7700", Some("secret")).unwrap();
+        let body = json!({
+            "model": "gpt-3.5-turbo",
+            "messages": [{ "role": "user", "content": "Hello" }],
+            "stream": true
+        });
+
+        let request = client
+            .build_stream_chat_request("workspace", &body)
+            .expect("request should be built");
+
+        assert_eq!(request.method(), reqwest::Method::POST);
+        assert_eq!(
+            request.url().as_str(),
+            "http://localhost:7700/chats/workspace/chat/completions"
+        );
+
+        let headers = request.headers();
+        assert_eq!(
+            headers
+                .get(reqwest::header::ACCEPT)
+                .map(|h| h.to_str().unwrap()),
+            Some("text/event-stream")
+        );
+        assert_eq!(
+            headers.get(CONTENT_TYPE).map(|h| h.to_str().unwrap()),
+            Some("application/json")
+        );
+        assert_eq!(
+            headers.get(AUTHORIZATION).map(|h| h.to_str().unwrap()),
+            Some("Bearer secret")
+        );
+
+        let expected_body = body.to_string();
+        let request_body = request
+            .body()
+            .and_then(|b| b.as_bytes())
+            .expect("request has body");
+        assert_eq!(request_body, expected_body.as_bytes());
     }
 }
