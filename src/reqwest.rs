@@ -21,6 +21,30 @@ pub struct ReqwestClient {
 }
 
 impl ReqwestClient {
+    /// Creates a new `ReqwestClient` with optional API key and default headers.
+    ///
+    /// If `api_key` is provided, an `Authorization: Bearer <api_key>` header is added.
+    /// The client is configured with a client-identifying header set to the crate version:
+    /// - non-wasm targets: `User-Agent`
+    /// - wasm targets: `x-meilisearch-client`
+    ///
+    /// # Parameters
+    ///
+    /// - `api_key`: Optional API key to include in the `Authorization` header.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(ReqwestClient)` on success, `Err(Error)` if building the underlying reqwest client fails.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // create a client without an API key
+    /// let client = ReqwestClient::new(None).unwrap();
+    ///
+    /// // create a client with an API key
+    /// let client_with_key = ReqwestClient::new(Some("my-secret")).unwrap();
+    /// ```
     pub fn new(api_key: Option<&str>) -> Result<Self, Error> {
         use reqwest::{header, ClientBuilder};
 
@@ -48,6 +72,20 @@ impl ReqwestClient {
         let client = builder.build()?;
 
         Ok(ReqwestClient { client })
+    }
+
+    /// Provides access to the underlying `reqwest::Client`.
+    ///
+    /// Returns a reference to the internal `reqwest::Client` held by this wrapper.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let rc = crate::reqwest::ReqwestClient::new(None).unwrap();
+    /// let inner: &reqwest::Client = rc.inner();
+    /// ```
+    pub(crate) fn inner(&self) -> &reqwest::Client {
+        &self.client
     }
 }
 
