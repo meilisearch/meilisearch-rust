@@ -419,8 +419,12 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryFederationOptions {
+    /// Weight multiplier for this query when merging federated results
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weight: Option<f32>,
+    /// Remote instance name to target when sharding; corresponds to a key in network.remotes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remote: Option<String>,
 }
 
 #[allow(missing_docs)]
@@ -777,6 +781,7 @@ impl<'a, 'b, Http: HttpClient> MultiSearchQuery<'a, 'b, Http> {
             search_query,
             QueryFederationOptions {
                 weight: Some(weight),
+                remote: None,
             },
         )
     }
