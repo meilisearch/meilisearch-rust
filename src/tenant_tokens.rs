@@ -6,6 +6,7 @@ use time::OffsetDateTime;
 #[cfg(not(target_arch = "wasm32"))]
 use uuid::Uuid;
 
+#[cfg_attr(test, derive(Clone))]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct TenantTokenClaim {
