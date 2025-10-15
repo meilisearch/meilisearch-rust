@@ -14,6 +14,8 @@ pub struct ExperimentalFeaturesResult {
     pub contains_filter: bool,
     pub network: bool,
     pub edit_documents_by_function: bool,
+    #[serde(default)]
+    pub multimodal: bool,
 }
 
 /// Struct representing the experimental features request.
@@ -45,6 +47,8 @@ pub struct ExperimentalFeatures<'a, Http: HttpClient> {
     pub network: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub edit_documents_by_function: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub multimodal: Option<bool>,
 }
 
 impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
@@ -57,6 +61,7 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
             network: None,
             contains_filter: None,
             edit_documents_by_function: None,
+            multimodal: None,
         }
     }
 
@@ -140,6 +145,11 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
         self.network = Some(network);
         self
     }
+
+    pub fn set_multimodal(&mut self, multimodal: bool) -> &mut Self {
+        self.multimodal = Some(multimodal);
+        self
+    }
 }
 
 #[cfg(test)]
@@ -155,6 +165,7 @@ mod tests {
         features.set_contains_filter(true);
         features.set_network(true);
         features.set_edit_documents_by_function(true);
+        features.set_multimodal(true);
         let _ = features.update().await.unwrap();
 
         let res = features.get().await.unwrap();
@@ -163,5 +174,6 @@ mod tests {
         assert!(res.contains_filter);
         assert!(res.network);
         assert!(res.edit_documents_by_function);
+        assert!(res.multimodal);
     }
 }
