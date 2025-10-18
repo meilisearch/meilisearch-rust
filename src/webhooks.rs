@@ -1,6 +1,5 @@
 use serde::Deserialize;
 use serde::{ser::SerializeMap, Serialize, Serializer};
-use serde_json::Value;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
@@ -93,6 +92,12 @@ impl WebhookUpdate {
         Self::default()
     }
 
+    #[must_use]
+    pub fn with_url_owned(mut self, url: impl Into<String>) -> Self {
+        self.url = Some(url.into());
+        self
+    }
+
     /// Updates the webhook target URL.
     pub fn with_url(&mut self, url: impl Into<String>) -> &mut Self {
         self.url = Some(url.into());
@@ -156,7 +161,8 @@ impl Serialize for WebhookUpdate {
         match &self.headers {
             HeadersUpdate::NotSet => {}
             HeadersUpdate::Reset => {
-                map.serialize_entry("headers", &Value::Null)?;
+                let none: Option<()> = None;
+                map.serialize_entry("headers", &none)?;
             }
             HeadersUpdate::Set(values) => {
                 map.serialize_entry("headers", values)?;
@@ -227,6 +233,13 @@ mod test {
             updated.webhook.headers.get("x-extra"),
             Some(&"value".to_string())
         );
+
+        let mut clear = WebhookUpdate::new();
+        clear.reset_headers();
+        let cleared = client
+            .update_webhook(&created.uuid.to_string(), &clear)
+            .await?;
+        assert!(cleared.webhook.headers.is_empty());
 
         client.delete_webhook(&created.uuid.to_string()).await?;
 
