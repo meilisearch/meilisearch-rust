@@ -26,7 +26,7 @@ meilisearch-index-setting-macro = { path = "meilisearch-index-setting-macro", ve
 pin-project-lite = { version = "0.2.16", optional = true }
 reqwest = { version = "0.12.22", optional = true, default-features = false, features = ["http2", "stream"] }
 bytes = { version = "1.10.1", optional = true }
-uuid = { version = "1.17.0", features = ["v4"] }
+uuid = { version = "1.17.0", features = ["v4", "serde"] }
 futures-core = "0.3.31"
 futures-io = "0.3.31"
 futures-channel = "0.3.31"
@@ -37,7 +37,7 @@ jsonwebtoken = { version = "9.3.1", default-features = false }
 tokio = { version = "1.38", optional = true, features = ["time"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-uuid = { version = "1.17.0", default-features = false, features = ["v4", "js"] }
+uuid = { version = "1.17.0", default-features = false, features = ["v4", "js", "serde"] }
 web-sys = "0.3.77"
 wasm-bindgen-futures = "0.4"
 

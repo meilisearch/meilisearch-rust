@@ -264,6 +264,8 @@ pub mod tasks;
 mod tenant_tokens;
 /// Module containing utilizes functions.
 mod utils;
+/// Module to manage webhooks.
+pub mod webhooks;
 
 #[cfg(feature = "reqwest")]
 pub mod reqwest;
