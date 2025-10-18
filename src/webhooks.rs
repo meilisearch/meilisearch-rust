@@ -92,12 +92,6 @@ impl WebhookUpdate {
         Self::default()
     }
 
-    #[must_use]
-    pub fn with_url_owned(mut self, url: impl Into<String>) -> Self {
-        self.url = Some(url.into());
-        self
-    }
-
     /// Updates the webhook target URL.
     pub fn with_url(&mut self, url: impl Into<String>) -> &mut Self {
         self.url = Some(url.into());
