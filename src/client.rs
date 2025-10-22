@@ -14,6 +14,7 @@ use crate::{
     task_info::TaskInfo,
     tasks::{Task, TasksCancelQuery, TasksDeleteQuery, TasksResults, TasksSearchQuery},
     utils::SleepBackend,
+    webhooks::{WebhookCreate, WebhookInfo, WebhookList, WebhookUpdate},
     DefaultHttpClient,
 };
 
@@ -1187,6 +1188,168 @@ impl<Http: HttpClient> Client<Http> {
             ..NetworkUpdate::default()
         };
         self.update_network_state(&update).await
+    }
+
+    /// List all webhooks registered on the Meilisearch instance.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, webhooks::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// if let Ok(webhooks) = client.get_webhooks().await {
+    ///     println!("{}", webhooks.results.len());
+    /// }
+    /// # });
+    /// ```
+    pub async fn get_webhooks(&self) -> Result<WebhookList, Error> {
+        self.http_client
+            .request::<(), (), WebhookList>(
+                &format!("{}/webhooks", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Retrieve a single webhook by its UUID.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, webhooks::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # if let Ok(created) = client.create_webhook(&WebhookCreate::new("https://example.com")).await {
+    /// if let Ok(webhook) = client.get_webhook(&created.uuid.to_string()).await {
+    ///     println!("{}", webhook.webhook.url);
+    /// #   let _ = client.delete_webhook(&webhook.uuid.to_string()).await;
+    /// }
+    /// # }
+    /// # });
+    /// ```
+    pub async fn get_webhook(&self, uuid: impl AsRef<str>) -> Result<WebhookInfo, Error> {
+        self.http_client
+            .request::<(), (), WebhookInfo>(
+                &format!("{}/webhooks/{}", self.host, uuid.as_ref()),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Create a new webhook.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, webhooks::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// if let Ok(webhook) = client
+    ///     .create_webhook(&WebhookCreate::new("https://example.com/webhook"))
+    ///     .await
+    /// {
+    ///     assert!(webhook.is_editable);
+    /// #   let _ = client.delete_webhook(&webhook.uuid.to_string()).await;
+    /// }
+    /// # });
+    /// ```
+    pub async fn create_webhook(&self, webhook: &WebhookCreate) -> Result<WebhookInfo, Error> {
+        self.http_client
+            .request::<(), &WebhookCreate, WebhookInfo>(
+                &format!("{}/webhooks", self.host),
+                Method::Post {
+                    query: (),
+                    body: webhook,
+                },
+                201,
+            )
+            .await
+    }
+
+    /// Update an existing webhook.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, webhooks::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// if let Ok(webhook) = client.create_webhook(&WebhookCreate::new("https://example.com")).await {
+    ///     let mut update = WebhookUpdate::new();
+    ///     update.set_header("authorization", "SECURITY_KEY");
+    ///     let _ = client
+    ///         .update_webhook(&webhook.uuid.to_string(), &update)
+    ///         .await;
+    /// #   let _ = client.delete_webhook(&webhook.uuid.to_string()).await;
+    /// }
+    /// # });
+    /// ```
+    pub async fn update_webhook(
+        &self,
+        uuid: impl AsRef<str>,
+        webhook: &WebhookUpdate,
+    ) -> Result<WebhookInfo, Error> {
+        self.http_client
+            .request::<(), &WebhookUpdate, WebhookInfo>(
+                &format!("{}/webhooks/{}", self.host, uuid.as_ref()),
+                Method::Patch {
+                    query: (),
+                    body: webhook,
+                },
+                200,
+            )
+            .await
+    }
+
+    /// Delete a webhook by its UUID.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, webhooks::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// if let Ok(webhook) = client.create_webhook(&WebhookCreate::new("https://example.com")).await {
+    ///     let _ = client.delete_webhook(&webhook.uuid.to_string()).await;
+    /// }
+    /// # });
+    /// ```
+    pub async fn delete_webhook(&self, uuid: impl AsRef<str>) -> Result<(), Error> {
+        self.http_client
+            .request::<(), (), ()>(
+                &format!("{}/webhooks/{}", self.host, uuid.as_ref()),
+                Method::Delete { query: () },
+                204,
+            )
+            .await
     }
 
     fn sleep_backend(&self) -> SleepBackend {

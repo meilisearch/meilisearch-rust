@@ -1956,3 +1956,22 @@ update_embedders_1: |-
     .set_embedders(&embedders)
     .await
     .unwrap();
+webhooks_get_1: |-
+  let webhooks = client.get_webhooks().await.unwrap();
+webhooks_get_single_1: |-
+  let webhook = client.get_webhook("WEBHOOK_UUID").await.unwrap();
+webhooks_post_1: |-
+  let mut payload = meilisearch_sdk::webhooks::WebhookCreate::new("WEBHOOK_TARGET_URL");
+  payload
+    .insert_header("authorization", "SECURITY_KEY")
+    .insert_header("referer", "https://example.com");
+  let webhook = client.create_webhook(&payload).await.unwrap();
+webhooks_patch_1: |-
+  let mut update = meilisearch_sdk::webhooks::WebhookUpdate::new();
+  update.remove_header("referer");
+  let webhook = client
+    .update_webhook("WEBHOOK_UUID", &update)
+    .await
+    .unwrap();
+webhooks_delete_1: |-
+  client.delete_webhook("WEBHOOK_UUID").await.unwrap();
