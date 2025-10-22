@@ -33,7 +33,7 @@ futures-channel = "0.3.31"
 futures-util = { version = "0.3.31", default-features = false, features = ["io"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-jsonwebtoken = { version = "9.3.1", default-features = false }
+jsonwebtoken = { version = "10.0.0", default-features = false, features = ["aws_lc_rs"]}
 tokio = { version = "1.38", optional = true, features = ["time"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
