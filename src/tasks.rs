@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
-use std::time::Duration;
+use std::{collections::BTreeMap, time::Duration};
 use time::OffsetDateTime;
 
 use crate::{
@@ -44,6 +44,9 @@ pub enum TaskType {
     },
     SnapshotCreation {
         details: Option<SnapshotCreation>,
+    },
+    Export {
+        details: Option<ExportTaskDetails>,
     },
 }
 
@@ -97,6 +100,24 @@ pub struct SnapshotCreation {}
 #[serde(rename_all = "camelCase")]
 pub struct DumpCreation {
     pub dump_uid: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportTaskDetails {
+    pub url: Option<String>,
+    pub api_key: Option<String>,
+    pub payload_size: Option<String>,
+    pub indexes: Option<BTreeMap<String, ExportTaskIndexDetails>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportTaskIndexDetails {
+    pub filter: Option<Value>,
+    #[serde(default)]
+    pub override_settings: bool,
+    pub matched_documents: Option<u64>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

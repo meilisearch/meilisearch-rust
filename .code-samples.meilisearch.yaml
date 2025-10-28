@@ -1345,6 +1345,16 @@ post_dump_1: |-
     .create_dump()
     .await
     .unwrap();
+export_post_1: |-
+  let task: TaskInfo = client
+    .create_export(
+      ExportPayload::new("https://ms-cloud.example.com")
+        .with_api_key("integration_api_key")
+        .with_payload_size("32MiB")
+        .with_index("*", ExportIndexOptions::new().with_override_settings(true)),
+    )
+    .await
+    .unwrap();
 phrase_search_1: |-
   let results: SearchResults<Movie> = client
     .index("movies")
