@@ -10,7 +10,6 @@ use crate::{client::Client, errors::Error, request::HttpClient};
 #[serde(rename_all = "camelCase")]
 pub struct Batch {
     /// Unique identifier of the batch.
-    #[serde(default)]
     pub uid: u32,
     /// When the batch was enqueued.
     #[serde(default, with = "time::serde::rfc3339::option")]
