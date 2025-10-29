@@ -30,17 +30,29 @@ pub struct Batch {
     ///
     /// Introduced in Meilisearch v1.15.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub batch_strategy: Option<String>,
+    pub batch_strategy: Option<BatchStrategy>,
+}
+
+/// Reason why the autobatcher stopped batching tasks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum BatchStrategy {
+    /// The batch reached its configured size threshold.
+    SizeLimitReached,
+    /// The batch reached its configured time window threshold.
+    TimeLimitReached,
+    /// Unknown strategy (forward-compatibility).
+    #[serde(other)]
+    Unknown,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BatchesResults {
     pub results: Vec<Batch>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub total: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub limit: Option<u32>,
+    pub total: u32,
+    pub limit: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub from: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -91,6 +103,7 @@ impl<'a, Http: HttpClient> BatchesQuery<'a, Http> {
 
 #[cfg(test)]
 mod tests {
+    use crate::batches::BatchStrategy;
     use crate::client::Client;
 
     #[tokio::test]
@@ -130,7 +143,7 @@ mod tests {
         assert_eq!(batches.results.len(), 1);
         let b = &batches.results[0];
         assert_eq!(b.uid, 42);
-        assert_eq!(b.batch_strategy.as_deref(), Some("time_limit_reached"));
+        assert_eq!(b.batch_strategy, Some(BatchStrategy::TimeLimitReached));
     }
 
     #[tokio::test]
@@ -156,6 +169,31 @@ mod tests {
         let client = Client::new(base, None::<String>).unwrap();
         let batch = client.get_batch(99).await.expect("get batch failed");
         assert_eq!(batch.uid, 99);
-        assert_eq!(batch.batch_strategy.as_deref(), Some("size_limit_reached"));
+        assert_eq!(batch.batch_strategy, Some(BatchStrategy::SizeLimitReached));
+    }
+
+    #[tokio::test]
+    async fn test_query_serialization_for_batches() {
+        use mockito::Matcher;
+        let mut s = mockito::Server::new_async().await;
+        let base = s.url();
+
+        let _m = s
+            .mock("GET", "/batches")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("limit".into(), "2".into()),
+                Matcher::UrlEncoded("from".into(), "40".into()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"results":[],"limit":2,"total":0}"#)
+            .create_async()
+            .await;
+
+        let client = Client::new(base, None::<String>).unwrap();
+        let mut q = crate::batches::BatchesQuery::new(&client);
+        let _ = q.with_limit(2).with_from(40);
+        let res = client.get_batches_with(&q).await.expect("request failed");
+        assert_eq!(res.limit, 2);
     }
 }

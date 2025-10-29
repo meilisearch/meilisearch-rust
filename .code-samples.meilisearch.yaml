@@ -450,15 +450,22 @@ reset_typo_tolerance_1: |-
     .await
     .unwrap();
 get_all_batches_1: |-
-  let batches: BatchesResults = client
-    .get_batches()
-    .await
-    .unwrap();
+  let mut query = meilisearch_sdk::batches::BatchesQuery::new(&client);
+  query.with_limit(20);
+  let batches: meilisearch_sdk::batches::BatchesResults =
+    client.get_batches_with(&query).await.unwrap();
 get_batch_1: |-
-  let batch: Batch = client
-    .get_batch(42)
+  let uid: u32 = 42;
+  let batch: meilisearch_sdk::batches::Batch = client
+    .get_batch(uid)
     .await
     .unwrap();
+get_all_batches_paginating_1: |-
+  let mut query = meilisearch_sdk::batches::BatchesQuery::new(&client);
+  query.with_limit(2);
+  query.with_from(40);
+  let batches: meilisearch_sdk::batches::BatchesResults =
+    client.get_batches_with(&query).await.unwrap();
 get_stop_words_1: |-
   let stop_words: Vec<String> = client
     .index("movies")

@@ -1115,6 +1115,19 @@ impl<Http: HttpClient> Client<Http> {
     /// List batches using the Batches API.
     ///
     /// See: https://www.meilisearch.com/docs/reference/api/batches
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::client::Client;
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let batches = client.get_batches().await.unwrap();
+    /// # let _ = batches;
+    /// # });
+    /// ```
     pub async fn get_batches(&self) -> Result<crate::batches::BatchesResults, Error> {
         let res = self
             .http_client
@@ -1128,6 +1141,21 @@ impl<Http: HttpClient> Client<Http> {
     }
 
     /// List batches with pagination filters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::Client, batches::BatchesQuery};
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let mut query = BatchesQuery::new(&client);
+    /// query.with_limit(1);
+    /// let batches = client.get_batches_with(&query).await.unwrap();
+    /// # let _ = batches;
+    /// # });
+    /// ```
     pub async fn get_batches_with(
         &self,
         query: &crate::batches::BatchesQuery<'_, Http>,
@@ -1144,6 +1172,20 @@ impl<Http: HttpClient> Client<Http> {
     }
 
     /// Get a single batch by its uid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::client::Client;
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let uid: u32 = 42;
+    /// let batch = client.get_batch(uid).await.unwrap();
+    /// # let _ = batch;
+    /// # });
+    /// ```
     pub async fn get_batch(&self, uid: u32) -> Result<crate::batches::Batch, Error> {
         let res = self
             .http_client
