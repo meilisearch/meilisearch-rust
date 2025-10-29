@@ -1112,6 +1112,50 @@ impl<Http: HttpClient> Client<Http> {
         Ok(tasks)
     }
 
+    /// List batches using the Batches API.
+    ///
+    /// See: https://www.meilisearch.com/docs/reference/api/batches
+    pub async fn get_batches(&self) -> Result<crate::batches::BatchesResults, Error> {
+        let res = self
+            .http_client
+            .request::<(), (), crate::batches::BatchesResults>(
+                &format!("{}/batches", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
+        Ok(res)
+    }
+
+    /// List batches with pagination filters.
+    pub async fn get_batches_with(
+        &self,
+        query: &crate::batches::BatchesQuery<'_, Http>,
+    ) -> Result<crate::batches::BatchesResults, Error> {
+        let res = self
+            .http_client
+            .request::<&crate::batches::BatchesQuery<'_, Http>, (), crate::batches::BatchesResults>(
+                &format!("{}/batches", self.host),
+                Method::Get { query },
+                200,
+            )
+            .await?;
+        Ok(res)
+    }
+
+    /// Get a single batch by its uid.
+    pub async fn get_batch(&self, uid: u32) -> Result<crate::batches::Batch, Error> {
+        let res = self
+            .http_client
+            .request::<(), (), crate::batches::Batch>(
+                &format!("{}/batches/{}", self.host, uid),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
+        Ok(res)
+    }
+
     /// Generates a new tenant token.
     ///
     /// # Example
