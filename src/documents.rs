@@ -202,6 +202,15 @@ pub struct DocumentsQuery<'a, Http: HttpClient> {
     /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<&'a str>,
+
+    /// Retrieve documents by their IDs.
+    ///
+    /// When `ids` is provided, the SDK will call the `/documents/fetch` endpoint with a POST request.
+    ///
+    /// Note: IDs are represented as strings to keep consistency with [`Index::get_document`]. If your IDs
+    /// are numeric, pass them as strings (e.g., `"1"`, `"2"`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ids: Option<Vec<&'a str>>,
 }
 
 impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
@@ -214,6 +223,7 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
             fields: None,
             sort: None,
             filter: None,
+            ids: None,
         }
     }
 
@@ -311,6 +321,29 @@ impl<'a, Http: HttpClient> DocumentsQuery<'a, Http> {
 
     pub fn with_filter<'b>(&'b mut self, filter: &'a str) -> &'b mut DocumentsQuery<'a, Http> {
         self.filter = Some(filter);
+        self
+    }
+
+    /// Specify a list of document IDs to retrieve.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, documents::*};
+    /// # use serde::{Deserialize, Serialize};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let index = client.index("get_documents_by_ids_example");
+    /// let mut query = DocumentsQuery::new(&index);
+    /// query.with_ids(["1", "2"]);
+    /// ```
+    pub fn with_ids(
+        &mut self,
+        ids: impl IntoIterator<Item = &'a str>,
+    ) -> &mut DocumentsQuery<'a, Http> {
+        self.ids = Some(ids.into_iter().collect());
         self
     }
 
@@ -465,6 +498,19 @@ mod tests {
         assert_eq!(documents.offset, 1);
         assert_eq!(documents.results.len(), 1);
 
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_documents_by_ids(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let documents = DocumentsQuery::new(&index)
+            .with_ids(["1", "3"]) // retrieve by IDs
+            .execute::<MyObject>()
+            .await?;
+
+        assert_eq!(documents.results.len(), 2);
         Ok(())
     }
 

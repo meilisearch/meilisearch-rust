@@ -142,6 +142,13 @@ get_documents_post_1: |-
     .execute::<Movies>()
     .await
     .unwrap();
+get_documents_by_ids_1: |-
+  let index = client.index("books");
+  let documents: DocumentsResults = DocumentsQuery::new(&index)
+    .with_ids(["1", "2"]) // retrieve documents by IDs
+    .execute::<Movies>()
+    .await
+    .unwrap();
 add_or_replace_documents_1: |-
   let task: TaskInfo = client
     .index("movies")
