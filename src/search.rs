@@ -1110,13 +1110,13 @@ pub struct FacetSearchResponse {
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use crate::errors::{ErrorCode, MeilisearchError};
     use crate::{
         client::*,
         key::{Action, KeyBuilder},
         search::*,
         settings::EmbedderSource,
     };
-    use crate::errors::{ErrorCode, MeilisearchError};
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
