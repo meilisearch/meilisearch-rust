@@ -115,6 +115,9 @@ pub struct SearchResults<T> {
     pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
     /// facet stats of the numerical facets requested in the `facet` search parameter.
     pub facet_stats: Option<HashMap<String, FacetStats>>,
+    /// Indicates whether facet counts are exhaustive (exact) rather than estimated.
+    /// Present when the `exhaustiveFacetsCount` search parameter is used.
+    pub exhaustive_facets_count: Option<bool>,
     /// Processing time of the query.
     pub processing_time_ms: usize,
     /// Query originating the response.
@@ -408,6 +411,13 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retrieve_vectors: Option<bool>,
 
+    /// Return an exhaustive count of facets, up to the limit defined by `maxTotalHits`.
+    ///
+    /// When set to `true`, Meilisearch computes exact facet counts instead of approximate ones.
+    /// Default is `false`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exhaustive_facets_count: Option<bool>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) federation_options: Option<QueryFederationOptions>,
 }
@@ -453,6 +463,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             hybrid: None,
             vector: None,
             retrieve_vectors: None,
+            exhaustive_facets_count: None,
             distinct: None,
             ranking_score_threshold: None,
             locales: None,
@@ -719,6 +730,15 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
 
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
+    }
+
+    /// Request exhaustive facet counts in the response.
+    pub fn with_exhaustive_facets_count<'b>(
+        &'b mut self,
+        exhaustive: bool,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.exhaustive_facets_count = Some(exhaustive);
+        self
     }
 
     /// Execute the query and fetch the results.
