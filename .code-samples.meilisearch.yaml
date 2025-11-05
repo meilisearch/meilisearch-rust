@@ -704,7 +704,7 @@ compact_index_1: |-
 field_properties_guide_searchable_1: |-
   let searchable_attributes = [
     "title",
-    "overvieww",
+    "overview",
     "genres"
   ];
 
@@ -716,7 +716,7 @@ field_properties_guide_searchable_1: |-
 field_properties_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
-    "overvieww",
+    "overview",
     "genres",
     "release_date"
   ];
