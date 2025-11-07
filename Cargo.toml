@@ -33,7 +33,7 @@ futures-channel = "0.3.31"
 futures-util = { version = "0.3.31", default-features = false, features = ["io"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-jsonwebtoken = { version = "10.2.0", default-features = false, features = ["aws_lc_rs"]}
+jsonwebtoken = { version = "10.2.0", default-features = false }
 tokio = { version = "1.38", optional = true, features = ["time"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -42,10 +42,12 @@ web-sys = "0.3.77"
 wasm-bindgen-futures = "0.4"
 
 [features]
-default = ["reqwest", "tls"]
+default = ["reqwest", "tls", "jwt_aws_lc_rs"]
 reqwest = ["dep:reqwest", "dep:tokio", "pin-project-lite", "bytes"]
 tls = ["reqwest/rustls-tls"]
 futures-unsend = []
+jwt_aws_lc_rs = ["jsonwebtoken/aws_lc_rs"]
+jwt_rust_crypto = ["jsonwebtoken/rust_crypto"]
 
 [dev-dependencies]
 futures-await-test = "0.3"
