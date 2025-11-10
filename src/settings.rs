@@ -2904,6 +2904,113 @@ mod tests {
 
     use crate::client::*;
     use meilisearch_test_macro::meilisearch_test;
+    use serde_json::{json, to_string};
+
+    #[test]
+    fn test_settings_with_filterable_attributes_advanced_builder() {
+        let attrs = vec![
+            FilterableAttribute::from("author"),
+            FilterableAttribute::Settings(FilterableAttributesSettings {
+                attribute_patterns: vec!["genre".to_string()],
+                features: FilterFeatures {
+                    facet_search: true,
+                    filter: FilterFeatureModes {
+                        equality: true,
+                        comparison: false,
+                    },
+                },
+            }),
+        ];
+
+        let settings = Settings::new().with_filterable_attributes_advanced(attrs.clone());
+        assert_eq!(settings.filterable_attributes, Some(attrs));
+    }
+
+    #[meilisearch_test]
+    async fn test_set_filterable_attributes_advanced_request_body() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
+
+        let index = client.index("test_filterable");
+
+        let payload = vec![
+            FilterableAttribute::from("author"),
+            FilterableAttribute::Settings(FilterableAttributesSettings {
+                attribute_patterns: vec!["genre".to_string()],
+                features: FilterFeatures {
+                    facet_search: true,
+                    filter: FilterFeatureModes {
+                        equality: true,
+                        comparison: false,
+                    },
+                },
+            }),
+        ];
+
+        let expected_body = to_string(&payload).unwrap();
+        let path = "/indexes/test_filterable/settings/filterable-attributes";
+        let mock_res = s
+            .mock("PUT", path)
+            .match_header("content-type", "application/json")
+            .match_body(expected_body.as_str())
+            .with_status(202)
+            .create_async()
+            .await;
+
+        let _ = index.set_filterable_attributes_advanced(payload).await;
+        mock_res.assert_async().await;
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_filterable_attributes_advanced_response() -> Result<(), Error> {
+        let mut s = mockito::Server::new_async().await;
+        let mock_server_url = s.url();
+        let client = Client::new(mock_server_url, Some("masterKey")).unwrap();
+        let index = client.index("test_filterable");
+
+        let body = json!([
+            "author",
+            {
+                "attributePatterns": ["genre"],
+                "features": {
+                    "facetSearch": true,
+                    "filter": { "equality": true, "comparison": false }
+                }
+            }
+        ]);
+
+        let path = "/indexes/test_filterable/settings/filterable-attributes";
+        let mock_res = s
+            .mock("GET", path)
+            .with_status(200)
+            .with_body(body.to_string())
+            .create_async()
+            .await;
+
+        let attrs = index.get_filterable_attributes_advanced().await.unwrap();
+        mock_res.assert_async().await;
+
+        assert_eq!(
+            attrs,
+            vec![
+                FilterableAttribute::Attribute("author".to_string()),
+                FilterableAttribute::Settings(FilterableAttributesSettings {
+                    attribute_patterns: vec!["genre".to_string()],
+                    features: FilterFeatures {
+                        facet_search: true,
+                        filter: FilterFeatureModes {
+                            equality: true,
+                            comparison: false,
+                        },
+                    },
+                }),
+            ]
+        );
+
+        Ok(())
+    }
 
     #[meilisearch_test]
     async fn test_set_faceting_settings(client: Client, index: Index) {
