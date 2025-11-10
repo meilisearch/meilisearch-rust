@@ -546,14 +546,30 @@ get_filterable_attributes_1: |-
     .await
     .unwrap();
 update_filterable_attributes_1: |-
-  let filterable_attributes = [
-    "genres",
-    "director"
+  use meilisearch_sdk::settings::{
+    FilterableAttribute,
+    FilterableAttributesSettings,
+    FilterFeatures,
+    FilterFeatureModes,
+  };
+
+  // Mixed legacy + new syntax
+  let filterable_attributes: Vec<FilterableAttribute> = vec![
+    // legacy: plain attribute name
+    "author".into(),
+    // new syntax: settings object
+    FilterableAttribute::Settings(FilterableAttributesSettings {
+      attribute_patterns: vec!["genre".to_string()],
+      features: FilterFeatures {
+        facet_search: true,
+        filter: FilterFeatureModes { equality: true, comparison: false },
+      },
+    }),
   ];
 
   let task: TaskInfo = client
     .index("movies")
-    .set_filterable_attributes(&filterable_attributes)
+    .set_filterable_attributes_advanced(&filterable_attributes)
     .await
     .unwrap();
 reset_filterable_attributes_1: |-

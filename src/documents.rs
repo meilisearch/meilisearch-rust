@@ -703,9 +703,13 @@ Hint: It might not be working because you're not up to date with the Meilisearch
         );
         assert!(video_settings.displayed_attributes.unwrap().is_empty());
 
+        use crate::settings::FilterableAttribute;
         assert_eq!(
             movie_settings.filterable_attributes.unwrap(),
-            ["release_date", "genres"]
+            vec![
+                FilterableAttribute::Attribute("release_date".to_string()),
+                FilterableAttribute::Attribute("genres".to_string()),
+            ]
         );
         assert!(video_settings.filterable_attributes.unwrap().is_empty());
 

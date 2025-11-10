@@ -64,6 +64,55 @@ pub struct FacetingSettings {
     pub sort_facet_values_by: Option<BTreeMap<String, FacetSortValue>>,
 }
 
+/// Filterable attribute settings.
+///
+/// Meilisearch supports a mixed syntax: either a plain attribute name
+/// (string) or an object describing patterns and feature flags. This SDK
+/// models it with `FilterableAttribute` (untagged enum) and associated
+/// settings structs.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterFeatureModes {
+    pub equality: bool,
+    pub comparison: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterFeatures {
+    pub facet_search: bool,
+    pub filter: FilterFeatureModes,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterableAttributesSettings {
+    #[serde(rename = "attributePatterns")]
+    pub attribute_patterns: Vec<String>,
+    pub features: FilterFeatures,
+}
+
+/// A filterable attribute definition, either a plain attribute name or a
+/// settings object.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[serde(untagged)]
+pub enum FilterableAttribute {
+    Attribute(String),
+    Settings(FilterableAttributesSettings),
+}
+
+impl From<String> for FilterableAttribute {
+    fn from(value: String) -> Self {
+        FilterableAttribute::Attribute(value)
+    }
+}
+
+impl From<&str> for FilterableAttribute {
+    fn from(value: &str) -> Self {
+        FilterableAttribute::Attribute(value.to_string())
+    }
+}
+
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum EmbedderSource {
@@ -193,8 +242,10 @@ pub struct Settings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_rules: Option<Vec<String>>,
     /// Attributes to use for [filtering](https://www.meilisearch.com/docs/learn/advanced/filtering).
+    ///
+    /// Supports both plain attribute names and settings objects.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub filterable_attributes: Option<Vec<String>>,
+    pub filterable_attributes: Option<Vec<FilterableAttribute>>,
     /// Attributes to sort.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sortable_attributes: Option<Vec<String>>,
@@ -324,12 +375,25 @@ impl Settings {
         filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Settings {
         Settings {
+            // Legacy helper accepting a list of attribute names.
             filterable_attributes: Some(
                 filterable_attributes
                     .into_iter()
-                    .map(|v| v.as_ref().to_string())
+                    .map(|v| FilterableAttribute::Attribute(v.as_ref().to_string()))
                     .collect(),
             ),
+            ..self
+        }
+    }
+
+    /// Set filterable attributes using mixed syntax.
+    #[must_use]
+    pub fn with_filterable_attributes_advanced(
+        self,
+        filterable_attributes: impl IntoIterator<Item = FilterableAttribute>,
+    ) -> Settings {
+        Settings {
+            filterable_attributes: Some(filterable_attributes.into_iter().collect()),
             ..self
         }
     }
@@ -704,6 +768,26 @@ impl<Http: HttpClient> Index<Http> {
         self.client
             .http_client
             .request::<(), (), Vec<String>>(
+                &format!(
+                    "{}/indexes/{}/settings/filterable-attributes",
+                    self.client.host, self.uid
+                ),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Get filterable attributes using mixed syntax.
+    ///
+    /// Returns a list that can contain plain attribute names (strings) and/or
+    /// settings objects.
+    pub async fn get_filterable_attributes_advanced(
+        &self,
+    ) -> Result<Vec<FilterableAttribute>, Error> {
+        self.client
+            .http_client
+            .request::<(), (), Vec<FilterableAttribute>>(
                 &format!(
                     "{}/indexes/{}/settings/filterable-attributes",
                     self.client.host, self.uid
@@ -1507,9 +1591,10 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         filterable_attributes: impl IntoIterator<Item = impl AsRef<str>>,
     ) -> Result<TaskInfo, Error> {
+        // Backward-compatible helper: accept a list of attribute names.
         self.client
             .http_client
-            .request::<(), Vec<String>, TaskInfo>(
+            .request::<(), Vec<FilterableAttribute>, TaskInfo>(
                 &format!(
                     "{}/indexes/{}/settings/filterable-attributes",
                     self.client.host, self.uid
@@ -1518,8 +1603,29 @@ impl<Http: HttpClient> Index<Http> {
                     query: (),
                     body: filterable_attributes
                         .into_iter()
-                        .map(|v| v.as_ref().to_string())
+                        .map(|v| FilterableAttribute::Attribute(v.as_ref().to_string()))
                         .collect(),
+                },
+                202,
+            )
+            .await
+    }
+
+    /// Update filterable attributes using mixed syntax.
+    pub async fn set_filterable_attributes_advanced(
+        &self,
+        filterable_attributes: impl IntoIterator<Item = FilterableAttribute>,
+    ) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), Vec<FilterableAttribute>, TaskInfo>(
+                &format!(
+                    "{}/indexes/{}/settings/filterable-attributes",
+                    self.client.host, self.uid
+                ),
+                Method::Put {
+                    query: (),
+                    body: filterable_attributes.into_iter().collect(),
                 },
                 202,
             )
