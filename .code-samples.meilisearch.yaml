@@ -569,7 +569,7 @@ update_filterable_attributes_1: |-
 
   let task: TaskInfo = client
     .index("movies")
-    .set_filterable_attributes_advanced(&filterable_attributes)
+    .set_filterable_attributes_advanced(filterable_attributes)
     .await
     .unwrap();
 reset_filterable_attributes_1: |-
