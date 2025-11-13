@@ -66,17 +66,12 @@ impl WebhookCreate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 enum HeadersUpdate {
+    #[default]
     NotSet,
     Reset,
     Set(BTreeMap<String, Option<String>>),
-}
-
-impl Default for HeadersUpdate {
-    fn default() -> Self {
-        Self::NotSet
-    }
 }
 
 /// Payload used to update or delete settings of an existing webhook.
