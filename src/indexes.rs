@@ -517,7 +517,7 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents_query: &DocumentsQuery<'_, Http>,
     ) -> Result<DocumentsResults<T>, Error> {
-        if documents_query.filter.is_some() {
+        if documents_query.filter.is_some() || documents_query.ids.is_some() {
             let url = format!("{}/indexes/{}/documents/fetch", self.client.host, self.uid);
             return self
                 .client
