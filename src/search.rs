@@ -414,7 +414,7 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     /// Provides multimodal data for search queries.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub media: Option<Value>,
-  
+
     /// Request exhaustive facet counts up to the limit defined by `maxTotalHits`.
     ///
     /// When set to `true`, Meilisearch computes exact facet counts instead of approximate ones.
