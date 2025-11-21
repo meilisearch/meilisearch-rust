@@ -142,6 +142,13 @@ get_documents_post_1: |-
     .execute::<Movies>()
     .await
     .unwrap();
+get_documents_by_ids_1: |-
+  let index = client.index("books");
+  let documents: DocumentsResults = DocumentsQuery::new(&index)
+    .with_ids(["1", "2"]) // retrieve documents by IDs
+    .execute::<Movies>()
+    .await
+    .unwrap();
 add_or_replace_documents_1: |-
   let task: TaskInfo = client
     .index("movies")
@@ -449,6 +456,23 @@ reset_typo_tolerance_1: |-
     .reset_typo_tolerance()
     .await
     .unwrap();
+get_all_batches_1: |-
+  let mut query = meilisearch_sdk::batches::BatchesQuery::new(&client);
+  query.with_limit(20);
+  let batches: meilisearch_sdk::batches::BatchesResults =
+    client.get_batches_with(&query).await.unwrap();
+get_batch_1: |-
+  let uid: u32 = 42;
+  let batch: meilisearch_sdk::batches::Batch = client
+    .get_batch(uid)
+    .await
+    .unwrap();
+get_all_batches_paginating_1: |-
+  let mut query = meilisearch_sdk::batches::BatchesQuery::new(&client);
+  query.with_limit(2);
+  query.with_from(40);
+  let batches: meilisearch_sdk::batches::BatchesResults =
+    client.get_batches_with(&query).await.unwrap();
 get_stop_words_1: |-
   let stop_words: Vec<String> = client
     .index("movies")
@@ -695,10 +719,16 @@ distinct_attribute_guide_1: |-
     .set_distinct_attribute("product_id")
     .await
     .unwrap();
+compact_index_1: |-
+  let task: TaskInfo = client
+    .index("INDEX_UID")
+    .compact()
+    .await
+    .unwrap();
 field_properties_guide_searchable_1: |-
   let searchable_attributes = [
     "title",
-    "overvieww",
+    "overview",
     "genres"
   ];
 
@@ -710,7 +740,7 @@ field_properties_guide_searchable_1: |-
 field_properties_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
-    "overvieww",
+    "overview",
     "genres",
     "release_date"
   ];
@@ -1941,6 +1971,20 @@ search_parameter_reference_retrieve_vectors_1: |-
     .execute()
     .await
     .unwrap();
+search_parameter_reference_media_1: |-
+  let results = index
+    .search()
+    .with_hybrid("EMBEDDER_NAME", 0.5)
+    .with_media(json!({
+      "FIELD_A": "VALUE_A",
+      "FIELD_B": {
+        "FIELD_C": "VALUE_B",
+        "FIELD_D": "VALUE_C"
+      }
+    }))
+    .execute()
+    .await
+    .unwrap();
 update_embedders_1: |-
   let embedders = HashMap::from([(
     String::from("default"),
@@ -1956,3 +2000,22 @@ update_embedders_1: |-
     .set_embedders(&embedders)
     .await
     .unwrap();
+webhooks_get_1: |-
+  let webhooks = client.get_webhooks().await.unwrap();
+webhooks_get_single_1: |-
+  let webhook = client.get_webhook("WEBHOOK_UUID").await.unwrap();
+webhooks_post_1: |-
+  let mut payload = meilisearch_sdk::webhooks::WebhookCreate::new("WEBHOOK_TARGET_URL");
+  payload
+    .insert_header("authorization", "SECURITY_KEY")
+    .insert_header("referer", "https://example.com");
+  let webhook = client.create_webhook(&payload).await.unwrap();
+webhooks_patch_1: |-
+  let mut update = meilisearch_sdk::webhooks::WebhookUpdate::new();
+  update.remove_header("referer");
+  let webhook = client
+    .update_webhook("WEBHOOK_UUID", &update)
+    .await
+    .unwrap();
+webhooks_delete_1: |-
+  client.delete_webhook("WEBHOOK_UUID").await.unwrap();
