@@ -719,10 +719,16 @@ distinct_attribute_guide_1: |-
     .set_distinct_attribute("product_id")
     .await
     .unwrap();
+compact_index_1: |-
+  let task: TaskInfo = client
+    .index("INDEX_UID")
+    .compact()
+    .await
+    .unwrap();
 field_properties_guide_searchable_1: |-
   let searchable_attributes = [
     "title",
-    "overvieww",
+    "overview",
     "genres"
   ];
 
@@ -734,7 +740,7 @@ field_properties_guide_searchable_1: |-
 field_properties_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
-    "overvieww",
+    "overview",
     "genres",
     "release_date"
   ];

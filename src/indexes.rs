@@ -1325,6 +1325,55 @@ impl<Http: HttpClient> Index<Http> {
         Ok(self.primary_key.as_deref())
     }
 
+    /// Compact this index to reduce disk usage.
+    ///
+    /// Triggers a compaction task for the current index. Once completed, the
+    /// index data is compacted on disk.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let index = client
+    /// #   .create_index("compact_example", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///
+    /// let task = index
+    ///     .compact()
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
+    ///
+    /// assert!(matches!(task, Task::Succeeded { .. }));
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn compact(&self) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), (), TaskInfo>(
+                &format!("{}/indexes/{}/compact", self.client.host, self.uid),
+                Method::Post {
+                    query: (),
+                    body: (),
+                },
+                202,
+            )
+            .await
+    }
+
     /// Get a [Task] from a specific [Index] to keep track of [asynchronous operations](https://www.meilisearch.com/docs/learn/advanced/asynchronous_operations).
     ///
     /// # Example
@@ -2439,6 +2488,18 @@ mod tests {
                 task
             ),
         }
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_compact_index_succeeds(client: Client, index: Index) -> Result<(), Error> {
+        let task = index
+            .compact()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        assert!(task.is_success());
         Ok(())
     }
 }
