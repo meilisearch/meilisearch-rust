@@ -45,6 +45,9 @@ pub enum TaskType {
     SnapshotCreation {
         details: Option<SnapshotCreation>,
     },
+    IndexCompaction {
+        details: Option<IndexCompaction>,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -92,6 +95,10 @@ pub struct IndexDeletion {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SnapshotCreation {}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexCompaction {}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]

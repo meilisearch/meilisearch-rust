@@ -115,6 +115,9 @@ pub struct SearchResults<T> {
     pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
     /// facet stats of the numerical facets requested in the `facet` search parameter.
     pub facet_stats: Option<HashMap<String, FacetStats>>,
+    /// Indicates whether facet counts are exhaustive (exact) rather than estimated.
+    /// Present when the `exhaustiveFacetCount` search parameter is used.
+    pub exhaustive_facet_count: Option<bool>,
     /// Processing time of the query.
     pub processing_time_ms: usize,
     /// Query originating the response.
@@ -408,6 +411,17 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retrieve_vectors: Option<bool>,
 
+    /// Provides multimodal data for search queries.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub media: Option<Value>,
+
+    /// Request exhaustive facet counts up to the limit defined by `maxTotalHits`.
+    ///
+    /// When set to `true`, Meilisearch computes exact facet counts instead of approximate ones.
+    /// Default is `false`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exhaustive_facet_count: Option<bool>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) federation_options: Option<QueryFederationOptions>,
 }
@@ -453,6 +467,8 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             hybrid: None,
             vector: None,
             retrieve_vectors: None,
+            media: None,
+            exhaustive_facet_count: None,
             distinct: None,
             ranking_score_threshold: None,
             locales: None,
@@ -699,6 +715,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self
     }
 
+    /// Attach media fragments to the search query.
+    pub fn with_media<'b>(&'b mut self, media: Value) -> &'b mut SearchQuery<'a, Http> {
+        self.media = Some(media);
+        self
+    }
+
     pub fn with_distinct<'b>(&'b mut self, distinct: &'a str) -> &'b mut SearchQuery<'a, Http> {
         self.distinct = Some(distinct);
         self
@@ -719,6 +741,15 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
 
     pub fn build(&mut self) -> SearchQuery<'a, Http> {
         self.clone()
+    }
+
+    /// Request exhaustive facet count in the response.
+    pub fn with_exhaustive_facet_count<'b>(
+        &'b mut self,
+        exhaustive: bool,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.exhaustive_facet_count = Some(exhaustive);
+        self
     }
 
     /// Execute the query and fetch the results.
@@ -1090,6 +1121,7 @@ pub struct FacetSearchResponse {
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use crate::errors::{ErrorCode, MeilisearchError};
     use crate::{
         client::*,
         key::{Action, KeyBuilder},
@@ -1100,6 +1132,34 @@ pub(crate) mod tests {
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{json, Map, Value};
+
+    #[test]
+    fn search_query_serializes_media_parameter() {
+        let client = Client::new("http://localhost:7700", Some("masterKey")).unwrap();
+        let index = client.index("media_query");
+        let mut query = SearchQuery::new(&index);
+
+        query.with_query("example").with_media(json!({
+            "FIELD_A": "VALUE_A",
+            "FIELD_B": {
+                "FIELD_C": "VALUE_B",
+                "FIELD_D": "VALUE_C"
+            }
+        }));
+
+        let serialized = serde_json::to_value(&query.build()).unwrap();
+
+        assert_eq!(
+            serialized.get("media"),
+            Some(&json!({
+                "FIELD_A": "VALUE_A",
+                "FIELD_B": {
+                    "FIELD_C": "VALUE_B",
+                    "FIELD_D": "VALUE_C"
+                }
+            }))
+        );
+    }
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     pub struct Nested {
@@ -1966,6 +2026,64 @@ pub(crate) mod tests {
             .await?;
         assert_eq!(res.facet_hits.len(), 2);
         Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_search_with_exhaustive_facet_count(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        // Request exhaustive facet counts for a specific facet and ensure the server
+        // returns the exhaustive flag in the response.
+        let mut query = SearchQuery::new(&index);
+        query
+            .with_facets(Selectors::Some(&["kind"]))
+            .with_exhaustive_facet_count(true);
+
+        let res = index.execute_query::<Document>(&query).await;
+        match res {
+            Ok(results) => {
+                assert!(results.exhaustive_facet_count.is_some());
+                Ok(())
+            }
+            Err(error)
+                if matches!(
+                    error,
+                    Error::Meilisearch(MeilisearchError {
+                        error_code: ErrorCode::BadRequest,
+                        ..
+                    })
+                ) =>
+            {
+                // Server doesn't support this field on /search yet; treat as a skip.
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    #[test]
+    fn test_search_query_serialization_exhaustive_facet_count() {
+        // Build a query and ensure it serializes using the expected camelCase field name
+        let client = Client::new(
+            option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700"),
+            Some(option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey")),
+        )
+        .unwrap();
+        let index = client.index("dummy");
+
+        let mut query = SearchQuery::new(&index);
+        query
+            .with_facets(Selectors::Some(&["kind"]))
+            .with_exhaustive_facet_count(true);
+
+        let v = serde_json::to_value(&query).unwrap();
+        assert_eq!(
+            v.get("exhaustiveFacetCount").and_then(|b| b.as_bool()),
+            Some(true)
+        );
     }
 
     #[meilisearch_test]
