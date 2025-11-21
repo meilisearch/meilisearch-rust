@@ -411,6 +411,10 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retrieve_vectors: Option<bool>,
 
+    /// Provides multimodal data for search queries.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub media: Option<Value>,
+
     /// Request exhaustive facet counts up to the limit defined by `maxTotalHits`.
     ///
     /// When set to `true`, Meilisearch computes exact facet counts instead of approximate ones.
@@ -463,6 +467,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             hybrid: None,
             vector: None,
             retrieve_vectors: None,
+            media: None,
             exhaustive_facet_count: None,
             distinct: None,
             ranking_score_threshold: None,
@@ -707,6 +712,12 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     /// `vector` dimensions must match the dimensions of the embedder.
     pub fn with_vector<'b>(&'b mut self, vector: &'a [f32]) -> &'b mut SearchQuery<'a, Http> {
         self.vector = Some(vector);
+        self
+    }
+
+    /// Attach media fragments to the search query.
+    pub fn with_media<'b>(&'b mut self, media: Value) -> &'b mut SearchQuery<'a, Http> {
+        self.media = Some(media);
         self
     }
 
@@ -1121,6 +1132,34 @@ pub(crate) mod tests {
     use meilisearch_test_macro::meilisearch_test;
     use serde::{Deserialize, Serialize};
     use serde_json::{json, Map, Value};
+
+    #[test]
+    fn search_query_serializes_media_parameter() {
+        let client = Client::new("http://localhost:7700", Some("masterKey")).unwrap();
+        let index = client.index("media_query");
+        let mut query = SearchQuery::new(&index);
+
+        query.with_query("example").with_media(json!({
+            "FIELD_A": "VALUE_A",
+            "FIELD_B": {
+                "FIELD_C": "VALUE_B",
+                "FIELD_D": "VALUE_C"
+            }
+        }));
+
+        let serialized = serde_json::to_value(&query.build()).unwrap();
+
+        assert_eq!(
+            serialized.get("media"),
+            Some(&json!({
+                "FIELD_A": "VALUE_A",
+                "FIELD_B": {
+                    "FIELD_C": "VALUE_B",
+                    "FIELD_D": "VALUE_C"
+                }
+            }))
+        );
+    }
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     pub struct Nested {

@@ -1971,6 +1971,20 @@ search_parameter_reference_retrieve_vectors_1: |-
     .execute()
     .await
     .unwrap();
+search_parameter_reference_media_1: |-
+  let results = index
+    .search()
+    .with_hybrid("EMBEDDER_NAME", 0.5)
+    .with_media(json!({
+      "FIELD_A": "VALUE_A",
+      "FIELD_B": {
+        "FIELD_C": "VALUE_B",
+        "FIELD_D": "VALUE_C"
+      }
+    }))
+    .execute()
+    .await
+    .unwrap();
 update_embedders_1: |-
   let embedders = HashMap::from([(
     String::from("default"),
