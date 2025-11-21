@@ -970,12 +970,6 @@ typo_tolerance_guide_5: |-
     .set_typo_tolerance(&typo_tolerance)
     .await
     .unwrap();
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_typo_tolerance(&typo_tolerance)
-    .await
-    .unwrap();
 typo_tolerance_guide_3: |-
   let min_word_size_for_typos = MinWordSizeForTypos {
     one_typo: Some(5),
