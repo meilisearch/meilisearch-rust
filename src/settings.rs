@@ -149,6 +149,20 @@ pub struct Embedder {
     /// Configures embedder to vectorize search queries (composite embedders only)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_embedder: Option<Box<Embedder>>,
+
+    /// Configures multimodal embedding generation at indexing time.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub indexing_fragments: Option<HashMap<String, EmbedderFragment>>,
+
+    /// Configures incoming media fragments for multimodal search queries.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_fragments: Option<HashMap<String, EmbedderFragment>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct EmbedderFragment {
+    pub value: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -2802,6 +2816,7 @@ mod tests {
 
     use crate::client::*;
     use meilisearch_test_macro::meilisearch_test;
+    use serde_json::json;
 
     #[meilisearch_test]
     async fn test_set_faceting_settings(client: Client, index: Index) {
@@ -3167,6 +3182,92 @@ mod tests {
         let res = index.get_embedders().await.unwrap();
 
         assert_eq!(embedders, res);
+    }
+
+    #[test]
+    fn embedder_with_fragments_serializes() {
+        let embedder = Embedder {
+            source: EmbedderSource::Rest,
+            url: Some(String::from("https://example.com/embeddings")),
+            indexing_fragments: Some(HashMap::from([(
+                String::from("default"),
+                EmbedderFragment {
+                    value: json!({
+                        "content": [
+                            { "type": "text", "text": "{{ doc.description }}" }
+                        ]
+                    }),
+                },
+            )])),
+            search_fragments: Some(HashMap::from([(
+                String::from("default"),
+                EmbedderFragment {
+                    value: json!({
+                        "content": [
+                            { "type": "text", "text": "{{ query.q }}" }
+                        ]
+                    }),
+                },
+            )])),
+            request: Some(json!({
+                "input": [
+                    "{{fragment}}",
+                    "{{..}}"
+                ],
+                "model": "example-model"
+            })),
+            response: Some(json!({
+                "data": [
+                    {
+                        "embedding": "{{embedding}}"
+                    },
+                    "{{..}}"
+                ]
+            })),
+            ..Default::default()
+        };
+
+        let serialized = serde_json::to_value(&embedder).unwrap();
+
+        assert_eq!(
+            serialized
+                .get("indexingFragments")
+                .and_then(|value| value.get("default"))
+                .and_then(|value| value.get("value"))
+                .and_then(|value| value.get("content"))
+                .and_then(|value| value.get(0))
+                .and_then(|value| value.get("text")),
+            Some(&json!("{{ doc.description }}"))
+        );
+
+        assert_eq!(
+            serialized
+                .get("searchFragments")
+                .and_then(|value| value.get("default"))
+                .and_then(|value| value.get("value"))
+                .and_then(|value| value.get("content"))
+                .and_then(|value| value.get(0))
+                .and_then(|value| value.get("text")),
+            Some(&json!("{{ query.q }}"))
+        );
+
+        assert_eq!(
+            serialized.get("request"),
+            Some(&json!({
+                "input": ["{{fragment}}", "{{..}}"],
+                "model": "example-model"
+            }))
+        );
+
+        assert_eq!(
+            serialized.get("response"),
+            Some(&json!({
+                "data": [
+                    { "embedding": "{{embedding}}" },
+                    "{{..}}"
+                ]
+            }))
+        );
     }
 
     #[meilisearch_test]
