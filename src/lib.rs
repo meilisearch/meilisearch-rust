@@ -230,6 +230,8 @@
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
+/// Module for chat workspaces and completions.
+pub mod chats;
 /// Module to interact with the Batches API.
 pub mod batches;
 /// Module containing the [`Client`](client::Client) struct.
