@@ -232,6 +232,8 @@
 
 /// Module to interact with the Batches API.
 pub mod batches;
+/// Module for chat workspaces and completions.
+pub mod chats;
 /// Module containing the [`Client`](client::Client) struct.
 pub mod client;
 /// Module representing the [documents] structures.
