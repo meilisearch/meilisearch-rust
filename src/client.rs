@@ -1545,7 +1545,7 @@ mod tests {
 
     use meilisearch_test_macro::meilisearch_test;
 
-    use crate::{client::*, key::Action, reqwest::qualified_version};
+    use crate::{key::Action, reqwest::qualified_version};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
