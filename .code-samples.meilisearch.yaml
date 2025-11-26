@@ -1095,7 +1095,7 @@ primary_field_guide_add_document_primary_key: |-
 getting_started_add_documents: |-
   // In your .toml file:
     [dependencies]
-    meilisearch-sdk = "0.30.0"
+    meilisearch-sdk = "0.31.0"
     # futures: because we want to block on futures
     futures = "0.3"
     # serde: required if you are going to use documents
@@ -1968,6 +1968,20 @@ search_parameter_reference_retrieve_vectors_1: |-
     .with_query("kitchen utensils")
     .with_retrieve_vectors(true)
     .with_hybrid("EMBEDDER_NAME", 0.5)
+    .execute()
+    .await
+    .unwrap();
+search_parameter_reference_media_1: |-
+  let results = index
+    .search()
+    .with_hybrid("EMBEDDER_NAME", 0.5)
+    .with_media(json!({
+      "FIELD_A": "VALUE_A",
+      "FIELD_B": {
+        "FIELD_C": "VALUE_B",
+        "FIELD_D": "VALUE_C"
+      }
+    }))
     .execute()
     .await
     .unwrap();
