@@ -34,7 +34,7 @@
 //!         Movie { id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()] },
 //!         Movie { id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()] },
 //!         Movie { id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()] },
-//!     ], Some("id")).await.unwrap();
+//!     ], Some("id"), None).await.unwrap();
 //! #   index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 //! }
 //! ```
@@ -186,7 +186,7 @@
 //! #     Movie { id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()] },
 //! #     Movie { id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()] },
 //! #     Movie { id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()] },
-//! # ], Some("id")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+//! # ], Some("id"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 //! let search_result = client.index("movies_5")
 //!   .search()
 //!   .with_query("wonder")
