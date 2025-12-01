@@ -8,11 +8,13 @@ use crate::{
     errors::*,
     indexes::*,
     key::{Key, KeyBuilder, KeyUpdater, KeysQuery, KeysResults},
+    network::{NetworkState, NetworkUpdate},
     request::*,
     search::*,
     task_info::TaskInfo,
     tasks::{Task, TasksCancelQuery, TasksDeleteQuery, TasksResults, TasksSearchQuery},
     utils::SleepBackend,
+    webhooks::{WebhookCreate, WebhookInfo, WebhookList, WebhookUpdate},
     DefaultHttpClient,
 };
 
@@ -27,6 +29,8 @@ pub struct Client<Http: HttpClient = DefaultHttpClient> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SwapIndexes {
     pub indexes: (String, String),
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rename: Option<bool>,
 }
 
 #[cfg(feature = "reqwest")]
@@ -532,6 +536,7 @@ impl<Http: HttpClient> Client<Http> {
     ///             "swap_index_1".to_string(),
     ///             "swap_index_2".to_string(),
     ///         ),
+    ///         rename: None,
     ///     }])
     ///     .await
     ///     .unwrap();
@@ -1107,6 +1112,92 @@ impl<Http: HttpClient> Client<Http> {
         Ok(tasks)
     }
 
+    /// List batches using the Batches API.
+    ///
+    /// See: https://www.meilisearch.com/docs/reference/api/batches
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::client::Client;
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let batches = client.get_batches().await.unwrap();
+    /// # let _ = batches;
+    /// # });
+    /// ```
+    pub async fn get_batches(&self) -> Result<crate::batches::BatchesResults, Error> {
+        let res = self
+            .http_client
+            .request::<(), (), crate::batches::BatchesResults>(
+                &format!("{}/batches", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
+        Ok(res)
+    }
+
+    /// List batches with pagination filters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::Client, batches::BatchesQuery};
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let mut query = BatchesQuery::new(&client);
+    /// query.with_limit(1);
+    /// let batches = client.get_batches_with(&query).await.unwrap();
+    /// # let _ = batches;
+    /// # });
+    /// ```
+    pub async fn get_batches_with(
+        &self,
+        query: &crate::batches::BatchesQuery<'_, Http>,
+    ) -> Result<crate::batches::BatchesResults, Error> {
+        let res = self
+            .http_client
+            .request::<&crate::batches::BatchesQuery<'_, Http>, (), crate::batches::BatchesResults>(
+                &format!("{}/batches", self.host),
+                Method::Get { query },
+                200,
+            )
+            .await?;
+        Ok(res)
+    }
+
+    /// Get a single batch by its uid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::client::Client;
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let uid: u32 = 42;
+    /// let batch = client.get_batch(uid).await.unwrap();
+    /// # let _ = batch;
+    /// # });
+    /// ```
+    pub async fn get_batch(&self, uid: u32) -> Result<crate::batches::Batch, Error> {
+        let res = self
+            .http_client
+            .request::<(), (), crate::batches::Batch>(
+                &format!("{}/batches/{}", self.host, uid),
+                Method::Get { query: () },
+                200,
+            )
+            .await?;
+        Ok(res)
+    }
+
     /// Generates a new tenant token.
     ///
     /// # Example
@@ -1143,6 +1234,208 @@ impl<Http: HttpClient> Client<Http> {
         };
 
         crate::tenant_tokens::generate_tenant_token(api_key_uid, search_rules, api_key, expires_at)
+    }
+
+    /// Get the current network state (/network)
+    pub async fn get_network_state(&self) -> Result<NetworkState, Error> {
+        self.http_client
+            .request::<(), (), NetworkState>(
+                &format!("{}/network", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Partially update the network state (/network)
+    pub async fn update_network_state(&self, body: &NetworkUpdate) -> Result<NetworkState, Error> {
+        self.http_client
+            .request::<(), &NetworkUpdate, NetworkState>(
+                &format!("{}/network", self.host),
+                Method::Patch { query: (), body },
+                200,
+            )
+            .await
+    }
+
+    /// Convenience: set sharding=true/false
+    pub async fn set_sharding(&self, enabled: bool) -> Result<NetworkState, Error> {
+        let update = NetworkUpdate {
+            sharding: Some(enabled),
+            ..NetworkUpdate::default()
+        };
+        self.update_network_state(&update).await
+    }
+
+    /// Convenience: set self to a remote name
+    pub async fn set_self_remote(&self, name: &str) -> Result<NetworkState, Error> {
+        let update = NetworkUpdate {
+            self_name: Some(name.to_string()),
+            ..NetworkUpdate::default()
+        };
+        self.update_network_state(&update).await
+    }
+
+    /// List all webhooks registered on the Meilisearch instance.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, webhooks::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// if let Ok(webhooks) = client.get_webhooks().await {
+    ///     println!("{}", webhooks.results.len());
+    /// }
+    /// # });
+    /// ```
+    pub async fn get_webhooks(&self) -> Result<WebhookList, Error> {
+        self.http_client
+            .request::<(), (), WebhookList>(
+                &format!("{}/webhooks", self.host),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Retrieve a single webhook by its UUID.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, webhooks::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # if let Ok(created) = client.create_webhook(&WebhookCreate::new("https://example.com")).await {
+    /// if let Ok(webhook) = client.get_webhook(&created.uuid.to_string()).await {
+    ///     println!("{}", webhook.webhook.url);
+    /// #   let _ = client.delete_webhook(&webhook.uuid.to_string()).await;
+    /// }
+    /// # }
+    /// # });
+    /// ```
+    pub async fn get_webhook(&self, uuid: impl AsRef<str>) -> Result<WebhookInfo, Error> {
+        self.http_client
+            .request::<(), (), WebhookInfo>(
+                &format!("{}/webhooks/{}", self.host, uuid.as_ref()),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Create a new webhook.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, webhooks::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// if let Ok(webhook) = client
+    ///     .create_webhook(&WebhookCreate::new("https://example.com/webhook"))
+    ///     .await
+    /// {
+    ///     assert!(webhook.is_editable);
+    /// #   let _ = client.delete_webhook(&webhook.uuid.to_string()).await;
+    /// }
+    /// # });
+    /// ```
+    pub async fn create_webhook(&self, webhook: &WebhookCreate) -> Result<WebhookInfo, Error> {
+        self.http_client
+            .request::<(), &WebhookCreate, WebhookInfo>(
+                &format!("{}/webhooks", self.host),
+                Method::Post {
+                    query: (),
+                    body: webhook,
+                },
+                201,
+            )
+            .await
+    }
+
+    /// Update an existing webhook.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, webhooks::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// if let Ok(webhook) = client.create_webhook(&WebhookCreate::new("https://example.com")).await {
+    ///     let mut update = WebhookUpdate::new();
+    ///     update.set_header("authorization", "SECURITY_KEY");
+    ///     let _ = client
+    ///         .update_webhook(&webhook.uuid.to_string(), &update)
+    ///         .await;
+    /// #   let _ = client.delete_webhook(&webhook.uuid.to_string()).await;
+    /// }
+    /// # });
+    /// ```
+    pub async fn update_webhook(
+        &self,
+        uuid: impl AsRef<str>,
+        webhook: &WebhookUpdate,
+    ) -> Result<WebhookInfo, Error> {
+        self.http_client
+            .request::<(), &WebhookUpdate, WebhookInfo>(
+                &format!("{}/webhooks/{}", self.host, uuid.as_ref()),
+                Method::Patch {
+                    query: (),
+                    body: webhook,
+                },
+                200,
+            )
+            .await
+    }
+
+    /// Delete a webhook by its UUID.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, webhooks::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// if let Ok(webhook) = client.create_webhook(&WebhookCreate::new("https://example.com")).await {
+    ///     let _ = client.delete_webhook(&webhook.uuid.to_string()).await;
+    /// }
+    /// # });
+    /// ```
+    pub async fn delete_webhook(&self, uuid: impl AsRef<str>) -> Result<(), Error> {
+        self.http_client
+            .request::<(), (), ()>(
+                &format!("{}/webhooks/{}", self.host, uuid.as_ref()),
+                Method::Delete { query: () },
+                204,
+            )
+            .await
     }
 
     fn sleep_backend(&self) -> SleepBackend {
@@ -1204,12 +1497,55 @@ pub struct Version {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use mockito::Matcher;
+
+    #[tokio::test]
+    async fn test_network_update_and_deserialize_remotes() {
+        let mut s = mockito::Server::new_async().await;
+        let base = s.url();
+
+        let response_body = serde_json::json!({
+            "remotes": {
+                "ms-00": {
+                    "url": "http://ms-00",
+                    "searchApiKey": "SEARCH",
+                    "writeApiKey": "WRITE"
+                }
+            },
+            "self": "ms-00",
+            "sharding": true
+        })
+        .to_string();
+
+        let _m = s
+            .mock("PATCH", "/network")
+            .match_body(Matcher::Regex(
+                r#"\{.*"sharding"\s*:\s*true.*\}"#.to_string(),
+            ))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(response_body)
+            .create_async()
+            .await;
+
+        let client = Client::new(base, None::<String>).unwrap();
+        let updated = client
+            .set_sharding(true)
+            .await
+            .expect("update_network_state failed");
+        assert_eq!(updated.sharding, Some(true));
+        let remotes = updated.remotes.expect("remotes should be present");
+        let ms00 = remotes.get("ms-00").expect("ms-00 should exist");
+        assert_eq!(ms00.write_api_key.as_deref(), Some("WRITE"));
+    }
+
     use big_s::S;
     use time::OffsetDateTime;
 
     use meilisearch_test_macro::meilisearch_test;
 
-    use crate::{client::*, key::Action, reqwest::qualified_version};
+    use crate::{key::Action, reqwest::qualified_version};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Document {
@@ -1249,6 +1585,7 @@ mod tests {
                     "test_swapping_two_indexes_1".to_string(),
                     "test_swapping_two_indexes_2".to_string(),
                 ),
+                rename: None,
             }])
             .await
             .unwrap();
@@ -1349,6 +1686,39 @@ mod tests {
     async fn test_get_tasks(client: Client) {
         let tasks = client.get_tasks().await.unwrap();
         assert_eq!(tasks.limit, 20);
+    }
+
+    #[meilisearch_test]
+    async fn test_rename_index_via_swap(client: Client, name: String) -> Result<(), Error> {
+        let from = format!("{name}_from");
+        let to = format!("{name}_to");
+
+        client
+            .create_index(&from, None)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let task = client
+            .swap_indexes([&SwapIndexes {
+                indexes: (from.clone(), to.clone()),
+                rename: Some(true),
+            }])
+            .await?;
+        task.wait_for_completion(&client, None, None).await?;
+
+        let new_index = client.get_index(&to).await?;
+        assert_eq!(new_index.uid, to);
+        // Optional: old uid should no longer resolve
+        assert!(client.get_raw_index(&from).await.is_err());
+
+        new_index
+            .delete()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        Ok(())
     }
 
     #[meilisearch_test]

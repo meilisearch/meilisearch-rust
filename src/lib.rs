@@ -230,6 +230,10 @@
 #![warn(clippy::all)]
 #![allow(clippy::needless_doctest_main)]
 
+/// Module to interact with the Batches API.
+pub mod batches;
+/// Module for chat workspaces and completions.
+pub mod chats;
 /// Module containing the [`Client`](client::Client) struct.
 pub mod client;
 /// Module representing the [documents] structures.
@@ -244,6 +248,8 @@ pub mod features;
 pub mod indexes;
 /// Module containing the [`Key`](key::Key) struct.
 pub mod key;
+/// Module for Network configuration API (sharding/remotes).
+pub mod network;
 pub mod request;
 /// Module related to search queries and results.
 pub mod search;
@@ -262,6 +268,8 @@ pub mod tasks;
 mod tenant_tokens;
 /// Module containing utilizes functions.
 mod utils;
+/// Module to manage webhooks.
+pub mod webhooks;
 
 #[cfg(feature = "reqwest")]
 pub mod reqwest;

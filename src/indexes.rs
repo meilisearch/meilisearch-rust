@@ -517,7 +517,7 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents_query: &DocumentsQuery<'_, Http>,
     ) -> Result<DocumentsResults<T>, Error> {
-        if documents_query.filter.is_some() {
+        if documents_query.filter.is_some() || documents_query.ids.is_some() {
             let url = format!("{}/indexes/{}/documents/fetch", self.client.host, self.uid);
             return self
                 .client
@@ -1325,6 +1325,55 @@ impl<Http: HttpClient> Index<Http> {
         Ok(self.primary_key.as_deref())
     }
 
+    /// Compact this index to reduce disk usage.
+    ///
+    /// Triggers a compaction task for the current index. Once completed, the
+    /// index data is compacted on disk.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*, tasks::Task};
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let index = client
+    /// #   .create_index("compact_example", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    ///
+    /// let task = index
+    ///     .compact()
+    ///     .await
+    ///     .unwrap()
+    ///     .wait_for_completion(&client, None, None)
+    ///     .await
+    ///     .unwrap();
+    ///
+    /// assert!(matches!(task, Task::Succeeded { .. }));
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn compact(&self) -> Result<TaskInfo, Error> {
+        self.client
+            .http_client
+            .request::<(), (), TaskInfo>(
+                &format!("{}/indexes/{}/compact", self.client.host, self.uid),
+                Method::Post {
+                    query: (),
+                    body: (),
+                },
+                202,
+            )
+            .await
+    }
+
     /// Get a [Task] from a specific [Index] to keep track of [asynchronous operations](https://www.meilisearch.com/docs/learn/advanced/asynchronous_operations).
     ///
     /// # Example
@@ -1773,6 +1822,9 @@ pub struct IndexUpdater<'a, Http: HttpClient> {
     pub client: &'a Client<Http>,
     #[serde(skip_serializing)]
     pub uid: String,
+    /// New uid to rename the index to
+    #[serde(rename = "uid", skip_serializing_if = "Option::is_none")]
+    pub new_uid: Option<String>,
     pub primary_key: Option<String>,
 }
 
@@ -1782,6 +1834,7 @@ impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
             client,
             primary_key: None,
             uid: uid.as_ref().to_string(),
+            new_uid: None,
         }
     }
     /// Define the new `primary_key` to set on the [Index].
@@ -1827,6 +1880,17 @@ impl<'a, Http: HttpClient> IndexUpdater<'a, Http> {
     ) -> &mut IndexUpdater<'a, Http> {
         self.primary_key = Some(primary_key.as_ref().to_string());
         self
+    }
+
+    /// Define a new `uid` to rename the index.
+    pub fn with_uid(&mut self, new_uid: impl AsRef<str>) -> &mut IndexUpdater<'a, Http> {
+        self.new_uid = Some(new_uid.as_ref().to_string());
+        self
+    }
+
+    /// Alias for `with_uid` with clearer intent.
+    pub fn with_new_uid(&mut self, new_uid: impl AsRef<str>) -> &mut IndexUpdater<'a, Http> {
+        self.with_uid(new_uid)
     }
 
     /// Execute the update of an [Index] using the [`IndexUpdater`].
@@ -2224,6 +2288,52 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_rename_index_via_update(client: Client, name: String) -> Result<(), Error> {
+        let from = format!("{name}_from");
+        let to = format!("{name}_to");
+
+        // Create source index
+        client
+            .create_index(&from, None)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        // Rename using index update
+        IndexUpdater::new(&from, &client)
+            .with_uid(&to)
+            .execute()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        // New index should exist
+        let new_index = client.get_index(&to).await?;
+        assert_eq!(new_index.uid, to);
+
+        // Old index should no longer exist
+        let old_index = client.get_index(&from).await;
+        assert!(old_index.is_err(), "old uid still resolves after rename");
+
+        // cleanup
+        new_index
+            .delete()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        // defensive cleanup if rename semantics change
+        if let Ok(idx) = client.get_index(&from).await {
+            idx.delete()
+                .await?
+                .wait_for_completion(&client, None, None)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
     async fn test_add_documents_ndjson(client: Client, index: Index) -> Result<(), Error> {
         let ndjson = r#"{ "id": 1, "body": "doggo" }{ "id": 2, "body": "catto" }"#.as_bytes();
 
@@ -2378,6 +2488,18 @@ mod tests {
                 task
             ),
         }
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_compact_index_succeeds(client: Client, index: Index) -> Result<(), Error> {
+        let task = index
+            .compact()
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        assert!(task.is_success());
         Ok(())
     }
 }

@@ -18,6 +18,7 @@ categories:
     label: 'security'
   - title: '⚙️ Maintenance/misc'
     label:
+      - 'dependencies'
       - 'maintenance'
       - 'documentation'
 template: |
