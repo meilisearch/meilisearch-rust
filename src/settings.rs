@@ -28,6 +28,9 @@ pub struct TypoToleranceSettings {
     pub disable_on_attributes: Option<Vec<String>>,
     pub disable_on_words: Option<Vec<String>>,
     pub min_word_size_for_typos: Option<MinWordSizeForTypos>,
+    /// Deactivate typo tolerance on high entropy words such as numbers
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disable_on_numbers: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Serialize)]
@@ -1809,6 +1812,7 @@ impl<Http: HttpClient> Index<Http> {
     ///     disable_on_attributes: Some(vec!["title".to_string()]),
     ///     disable_on_words: Some(vec![]),
     ///     min_word_size_for_typos: Some(MinWordSizeForTypos::default()),
+    ///     ..Default::default()
     /// };
     ///
     /// let task = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
@@ -3053,6 +3057,8 @@ mod tests {
                 one_typo: Some(5),
                 two_typos: Some(9),
             }),
+            // The server may return `false` explicitly for this new setting
+            disable_on_numbers: Some(false),
         };
 
         let res = index.get_typo_tolerance().await.unwrap();
@@ -3070,6 +3076,7 @@ mod tests {
                 one_typo: Some(5),
                 two_typos: Some(9),
             }),
+            disable_on_numbers: Some(false),
         };
 
         let typo_tolerance = TypoToleranceSettings {
@@ -3095,6 +3102,7 @@ mod tests {
                 one_typo: Some(5),
                 two_typos: Some(9),
             }),
+            disable_on_numbers: Some(false),
         };
 
         let typo_tolerance = TypoToleranceSettings {
@@ -3111,6 +3119,28 @@ mod tests {
         let default = index.get_typo_tolerance().await.unwrap();
 
         assert_eq!(expected, default);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_disable_on_numbers(client: Client, index: Index) {
+        // Set disable_on_numbers to true
+        let typo_tolerance = TypoToleranceSettings {
+            disable_on_numbers: Some(true),
+            ..Default::default()
+        };
+
+        let task_info = index.set_typo_tolerance(&typo_tolerance).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        // Fetch and assert it is set
+        let res = index.get_typo_tolerance().await.unwrap();
+        assert_eq!(res.disable_on_numbers, Some(true));
+
+        // Reset and ensure it goes back to default false
+        let reset_task = index.reset_typo_tolerance().await.unwrap();
+        client.wait_for_task(reset_task, None, None).await.unwrap();
+        let default = index.get_typo_tolerance().await.unwrap();
+        assert_eq!(default.disable_on_numbers, Some(false));
     }
 
     #[meilisearch_test]

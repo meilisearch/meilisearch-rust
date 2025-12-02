@@ -989,7 +989,6 @@ typo_tolerance_guide_2: |-
     disable_on_words: None,
     min_word_size_for_typos: None,
   };
-
   let task: TaskInfo = client
     .index("movies")
     .set_typo_tolerance(&typo_tolerance)
@@ -1022,6 +1021,18 @@ typo_tolerance_guide_4: |-
     disable_on_attributes: Some(vec![]),
     disable_on_words: Some(vec!["title".to_string()]),
     min_word_size_for_typos: Some(min_word_size_for_typos),
+  };
+
+  let task: TaskInfo = client
+    .index("movies")
+    .set_typo_tolerance(&typo_tolerance)
+    .await
+    .unwrap();
+typo_tolerance_guide_5: |-
+  // Deactivate typo tolerance on numbers and other high entropy words
+  let typo_tolerance = TypoToleranceSettings {
+    disable_on_numbers: Some(true),
+    ..Default::default()
   };
 
   let task: TaskInfo = client
