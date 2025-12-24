@@ -715,6 +715,31 @@ get_version_1: |-
     .get_version()
     .await
     .unwrap();
+get_network_1: |-
+  let network = client
+    .get_network_state()
+    .await
+    .unwrap();
+update_network_1: |-
+  let mut remotes = std::collections::HashMap::new();
+  remotes.insert(String::from("ms-01"), Some(meilisearch_sdk::network::RemoteConfig {
+    url: "https://ms-01.enterprise.meilisearch.com".to_string(),
+    search_api_key: "SEARCH_API_KEY".to_string(),
+    write_api_key: Some("WRITE_API_KEY".to_string()),
+  }));
+  // Remove ms-00 from the topology
+  remotes.insert(String::from("ms-00"), None);
+
+  let update = meilisearch_sdk::network::NetworkUpdate {
+    leader: Some("ms-01".to_string()),
+    remotes: Some(remotes),
+    ..meilisearch_sdk::network::NetworkUpdate::default()
+  };
+
+  let task: TaskInfo = client
+    .update_network_state(&update)
+    .await
+    .unwrap();
 distinct_attribute_guide_1: |-
   let task: TaskInfo = client
     .index("jackets")
