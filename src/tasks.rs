@@ -36,6 +36,10 @@ pub enum TaskType {
     IndexSwap {
         details: Option<IndexSwap>,
     },
+    NetworkTopologyChange {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        details: Option<NetworkTopologyChangeDetails>,
+    },
     TaskCancelation {
         details: Option<TaskCancelation>,
     },
@@ -99,6 +103,13 @@ pub struct SnapshotCreation {}
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexCompaction {}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NetworkTopologyChangeDetails {
+    #[serde(flatten)]
+    pub info: Map<String, Value>,
+}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]

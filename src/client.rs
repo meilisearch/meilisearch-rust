@@ -1236,7 +1236,9 @@ impl<Http: HttpClient> Client<Http> {
         crate::tenant_tokens::generate_tenant_token(api_key_uid, search_rules, api_key, expires_at)
     }
 
-    /// Get the current network state (/network)
+    /// Get the current network state (/network).
+    ///
+    /// Includes the `leader` and `version` fields introduced in Meilisearch v1.30.
     pub async fn get_network_state(&self) -> Result<NetworkState, Error> {
         self.http_client
             .request::<(), (), NetworkState>(
@@ -1247,30 +1249,34 @@ impl<Http: HttpClient> Client<Http> {
             .await
     }
 
-    /// Partially update the network state (/network)
-    pub async fn update_network_state(&self, body: &NetworkUpdate) -> Result<NetworkState, Error> {
+    /// Partially update the network state (/network).
+    ///
+    /// Returns a `networkTopologyChange` task that can be awaited for completion.
+    pub async fn update_network_state(&self, body: &NetworkUpdate) -> Result<TaskInfo, Error> {
         self.http_client
-            .request::<(), &NetworkUpdate, NetworkState>(
+            .request::<(), &NetworkUpdate, TaskInfo>(
                 &format!("{}/network", self.host),
                 Method::Patch { query: (), body },
-                200,
+                202,
             )
             .await
     }
 
-    /// Convenience: set sharding=true/false
-    pub async fn set_sharding(&self, enabled: bool) -> Result<NetworkState, Error> {
+    /// Convenience: set self to a remote name.
+    pub async fn set_self_remote(&self, name: &str) -> Result<TaskInfo, Error> {
         let update = NetworkUpdate {
-            sharding: Some(enabled),
+            self_name: Some(name.to_string()),
             ..NetworkUpdate::default()
         };
         self.update_network_state(&update).await
     }
 
-    /// Convenience: set self to a remote name
-    pub async fn set_self_remote(&self, name: &str) -> Result<NetworkState, Error> {
+    /// Convenience: set the leader value in the network configuration.
+    ///
+    /// This is required when enabling sharding in Meilisearch v1.30+.
+    pub async fn set_network_leader(&self, leader: &str) -> Result<TaskInfo, Error> {
         let update = NetworkUpdate {
-            self_name: Some(name.to_string()),
+            leader: Some(leader.to_string()),
             ..NetworkUpdate::default()
         };
         self.update_network_state(&update).await
@@ -1498,10 +1504,11 @@ pub struct Version {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mockito::Matcher;
+    use crate::network::RemoteConfig;
+    use crate::tasks::TaskType;
 
     #[tokio::test]
-    async fn test_network_update_and_deserialize_remotes() {
+    async fn test_get_network_state_parses_leader_and_version() {
         let mut s = mockito::Server::new_async().await;
         let base = s.url();
 
@@ -1511,18 +1518,20 @@ mod tests {
                     "url": "http://ms-00",
                     "searchApiKey": "SEARCH",
                     "writeApiKey": "WRITE"
+                },
+                "ms-01": {
+                    "url": "http://ms-01",
+                    "searchApiKey": "SEARCH-1"
                 }
             },
             "self": "ms-00",
-            "sharding": true
+            "leader": "ms-00",
+            "version": "00000000-0000-0000-0000-000000000000"
         })
         .to_string();
 
         let _m = s
-            .mock("PATCH", "/network")
-            .match_body(Matcher::Regex(
-                r#"\{.*"sharding"\s*:\s*true.*\}"#.to_string(),
-            ))
+            .mock("GET", "/network")
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(response_body)
@@ -1530,14 +1539,74 @@ mod tests {
             .await;
 
         let client = Client::new(base, None::<String>).unwrap();
-        let updated = client
-            .set_sharding(true)
-            .await
-            .expect("update_network_state failed");
-        assert_eq!(updated.sharding, Some(true));
-        let remotes = updated.remotes.expect("remotes should be present");
+        let state = client.get_network_state().await.unwrap();
+        assert_eq!(state.leader.as_deref(), Some("ms-00"));
+        assert_eq!(
+            state
+                .version
+                .expect("version should be present")
+                .to_string(),
+            "00000000-0000-0000-0000-000000000000"
+        );
+        let remotes = state.remotes.expect("remotes should be present");
         let ms00 = remotes.get("ms-00").expect("ms-00 should exist");
         assert_eq!(ms00.write_api_key.as_deref(), Some("WRITE"));
+        let ms01 = remotes.get("ms-01").expect("ms-01 should exist");
+        assert_eq!(ms01.write_api_key, None);
+    }
+
+    #[tokio::test]
+    async fn test_update_network_returns_task() {
+        let mut s = mockito::Server::new_async().await;
+        let base = s.url();
+
+        let response_body = serde_json::json!({
+            "taskUid": 42,
+            "indexUid": null,
+            "status": "enqueued",
+            "type": "networkTopologyChange",
+            "enqueuedAt": "2024-10-11T11:49:53.000Z",
+            "details": {
+                "oldVersion": "00000000-0000-0000-0000-000000000000",
+                "newVersion": "11111111-1111-1111-1111-111111111111"
+            }
+        })
+        .to_string();
+
+        let _m = s
+            .mock("PATCH", "/network")
+            .with_status(202)
+            .with_header("content-type", "application/json")
+            .with_body(response_body)
+            .create_async()
+            .await;
+
+        let client = Client::new(base, None::<String>).unwrap();
+        let update = NetworkUpdate {
+            leader: Some("ms-01".to_string()),
+            remotes: Some(std::iter::once(("ms-02".to_string(), None::<RemoteConfig>)).collect()),
+            ..NetworkUpdate::default()
+        };
+
+        let task = client
+            .update_network_state(&update)
+            .await
+            .expect("update_network_state failed");
+        assert_eq!(task.task_uid, 42);
+        match task.update_type {
+            TaskType::NetworkTopologyChange { details } => {
+                let details = details.expect("details should be present");
+                assert_eq!(
+                    details
+                        .info
+                        .get("newVersion")
+                        .and_then(|v| v.as_str())
+                        .unwrap(),
+                    "11111111-1111-1111-1111-111111111111"
+                );
+            }
+            _ => panic!("expected NetworkTopologyChange task"),
+        }
     }
 
     use big_s::S;

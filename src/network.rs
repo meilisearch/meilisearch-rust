@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -13,6 +14,7 @@ pub struct RemoteConfig {
 }
 
 pub type RemotesMap = HashMap<String, RemoteConfig>;
+pub type RemotesUpdateMap = HashMap<String, Option<RemoteConfig>>;
 
 /// Full network state returned by GET /network
 #[derive(Clone, Serialize, Deserialize)]
@@ -21,7 +23,8 @@ pub struct NetworkState {
     pub remotes: Option<RemotesMap>,
     #[serde(rename = "self")]
     pub self_name: Option<String>,
-    pub sharding: Option<bool>,
+    pub leader: Option<String>,
+    pub version: Option<Uuid>,
 }
 
 /// Partial update body for PATCH /network
@@ -29,9 +32,11 @@ pub struct NetworkState {
 #[serde(rename_all = "camelCase")]
 pub struct NetworkUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub remotes: Option<RemotesMap>,
+    pub remotes: Option<RemotesUpdateMap>,
     #[serde(rename = "self", skip_serializing_if = "Option::is_none")]
     pub self_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sharding: Option<bool>,
+    pub leader: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<Uuid>,
 }
