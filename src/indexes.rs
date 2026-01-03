@@ -13,6 +13,30 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
 use time::OffsetDateTime;
 
+/// Builds the URL for document addition/update endpoints with optional query parameters.
+fn build_documents_url(
+    host: &str,
+    index_uid: &str,
+    primary_key: Option<&str>,
+    skip_creation: Option<bool>,
+) -> String {
+    let base_url = format!("{}/indexes/{}/documents", host, index_uid);
+    let mut query_params = Vec::new();
+
+    if let Some(pk) = primary_key {
+        query_params.push(format!("primaryKey={}", pk));
+    }
+    if skip_creation == Some(true) {
+        query_params.push("skipCreation=true".to_string());
+    }
+
+    if query_params.is_empty() {
+        base_url
+    } else {
+        format!("{}?{}", base_url, query_params.join("&"))
+    }
+}
+
 /// A Meilisearch [index](https://www.meilisearch.com/docs/learn/core_concepts/indexes).
 ///
 /// # Example
@@ -622,15 +646,9 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
+        skip_creation: Option<bool>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = build_documents_url(&self.client.host, &self.uid, primary_key, skip_creation);
         self.client
             .http_client
             .request::<(), &[T], TaskInfo>(
@@ -688,15 +706,9 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
+        skip_creation: Option<bool>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = build_documents_url(&self.client.host, &self.uid, primary_key, skip_creation);
         self.client
             .http_client
             .stream_request::<(), T, TaskInfo>(
@@ -717,7 +729,7 @@ impl<Http: HttpClient> Index<Http> {
         documents: &[T],
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_replace(documents, primary_key).await
+        self.add_or_replace(documents, primary_key, None).await
     }
 
     /// Add a raw ndjson payload and update them if they already exist.
@@ -762,7 +774,7 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_update_unchecked_payload(payload, "application/x-ndjson", primary_key)
+        self.add_or_update_unchecked_payload(payload, "application/x-ndjson", primary_key, None)
             .await
     }
 
@@ -808,7 +820,7 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_replace_unchecked_payload(payload, "application/x-ndjson", primary_key)
+        self.add_or_replace_unchecked_payload(payload, "application/x-ndjson", primary_key, None)
             .await
     }
 
@@ -853,7 +865,7 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_update_unchecked_payload(payload, "text/csv", primary_key)
+        self.add_or_update_unchecked_payload(payload, "text/csv", primary_key, None)
             .await
     }
 
@@ -898,7 +910,7 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_replace_unchecked_payload(payload, "text/csv", primary_key)
+        self.add_or_replace_unchecked_payload(payload, "text/csv", primary_key, None)
             .await
     }
 
@@ -958,15 +970,9 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
+        skip_creation: Option<bool>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = build_documents_url(&self.client.host, &self.uid, primary_key, skip_creation);
         self.client
             .http_client
             .request::<(), &[T], TaskInfo>(
@@ -1026,15 +1032,9 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
+        skip_creation: Option<bool>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = build_documents_url(&self.client.host, &self.uid, primary_key, skip_creation);
         self.client
             .http_client
             .stream_request::<(), T, TaskInfo>(
@@ -1719,7 +1719,10 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<Vec<TaskInfo>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
-            task.push(self.add_or_update(document_batch, primary_key).await?);
+            task.push(
+                self.add_or_update(document_batch, primary_key, None)
+                    .await?,
+            );
         }
         Ok(task)
     }
@@ -2264,7 +2267,7 @@ mod tests {
         let _ = index.get_task(task).await?;
 
         let task = index
-            .add_or_update(&updated_json, None)
+            .add_or_update(&updated_json, None, None)
             .await
             .unwrap()
             .wait_for_completion(&client, None, None)
@@ -2283,6 +2286,81 @@ mod tests {
         ];
 
         assert_eq!(elements.results, expected_result);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_add_or_replace_with_skip_creation(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        // First, add one document
+        let initial_doc = [json!({ "id": 1, "body": "original" })];
+        index
+            .add_or_replace(&initial_doc, Some("id"), None)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        // Now try to add two documents with skip_creation=true
+        // Only the existing document (id: 1) should be updated
+        let docs_to_add = [
+            json!({ "id": 1, "body": "updated" }),
+            json!({ "id": 2, "body": "should_not_exist" }),
+        ];
+        let task = index
+            .add_or_replace(&docs_to_add, Some("id"), Some(true))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        assert!(matches!(status, Task::Succeeded { .. }));
+
+        // Verify only document id=1 exists and is updated
+        let elements = index.get_documents::<serde_json::Value>().await?;
+        assert_eq!(elements.results.len(), 1);
+        assert_eq!(elements.results[0]["id"], 1);
+        assert_eq!(elements.results[0]["body"], "updated");
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_add_or_update_with_skip_creation(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        // First, add one document
+        let initial_doc = [json!({ "id": 1, "body": "original", "extra": "field" })];
+        index
+            .add_or_replace(&initial_doc, Some("id"), None)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        // Now try to update two documents with skip_creation=true
+        // Only the existing document (id: 1) should be updated (partial update)
+        let docs_to_update = [
+            json!({ "id": 1, "body": "updated" }),
+            json!({ "id": 2, "body": "should_not_exist" }),
+        ];
+        let task = index
+            .add_or_update(&docs_to_update, Some("id"), Some(true))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        assert!(matches!(status, Task::Succeeded { .. }));
+
+        // Verify only document id=1 exists with partial update (extra field preserved)
+        let elements = index.get_documents::<serde_json::Value>().await?;
+        assert_eq!(elements.results.len(), 1);
+        assert_eq!(elements.results[0]["id"], 1);
+        assert_eq!(elements.results[0]["body"], "updated");
+        assert_eq!(elements.results[0]["extra"], "field");
 
         Ok(())
     }
