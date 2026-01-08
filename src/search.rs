@@ -973,7 +973,7 @@ pub struct FederationHitInfo {
 /// let movies = client.index("execute_query3");
 ///
 /// // add some documents
-/// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+/// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 /// # movies.set_filterable_attributes(["genre"]).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 ///
 /// let query = FacetSearchQuery::new(&movies, "genre").with_facet_query("scifi").build();
