@@ -814,9 +814,6 @@ pub enum Action {
     /// Provides access to the delete webhooks endpoint.
     #[serde(rename = "webhooks.delete")]
     WebhooksDelete,
-    /// Provides access to the fields post endpoint.
-    #[serde(rename = "fields.post")]
-    FieldsPost,
     /// Any other value that might be added to Meilisearch in the future but that is not supported by this SDK.
     /// If you see one, please open a PR
     #[serde(untagged)]
