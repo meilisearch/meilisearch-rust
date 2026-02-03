@@ -2,7 +2,7 @@ use crate::{
     client::Client,
     documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
     errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
-    fields::{FieldInfo, FieldsQuery},
+    fields::{FieldsQuery, FieldsResult},
     request::*,
     search::*,
     similar::*,
@@ -1793,10 +1793,10 @@ impl<Http: HttpClient> Index<Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn get_fields(&self) -> Result<Vec<FieldInfo>, Error> {
+    pub async fn get_fields(&self) -> Result<FieldsResult, Error> {
         self.client
             .http_client
-            .request::<(), serde_json::Value, Vec<FieldInfo>>(
+            .request::<(), serde_json::Value, FieldsResult>(
                 &format!("{}/indexes/{}/fields", self.client.host, self.uid),
                 Method::Post {
                     body: serde_json::json!({}),
@@ -1845,10 +1845,10 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn get_fields_with(
         &self,
         body: &FieldsQuery<'_, Http>,
-    ) -> Result<Vec<FieldInfo>, Error> {
+    ) -> Result<FieldsResult, Error> {
         self.client
             .http_client
-            .request::<(), &FieldsQuery<Http>, Vec<FieldInfo>>(
+            .request::<(), &FieldsQuery<Http>, FieldsResult>(
                 &format!("{}/indexes/{}/fields", self.client.host, self.uid),
                 Method::Post { body, query: () },
                 200,
@@ -2608,7 +2608,7 @@ mod tests {
         let query = query.with_limit(4);
         let fields_result = index.get_fields_with(query).await;
 
-        assert!(fields_result.is_ok_and(|fields| fields.len() == 4));
+        assert!(fields_result.is_ok_and(|fields| fields.results.len() == 4));
 
         Ok(())
     }

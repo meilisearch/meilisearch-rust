@@ -5,6 +5,50 @@ use std::collections::HashMap;
 
 use crate::{indexes::Index, request::HttpClient};
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FieldResult {
+    /// The name of the field
+    pub name: String,
+
+    /// contains `enabled` key indicating if field is displayed
+    pub displayed: HashMap<String, bool>,
+
+    /// contains `enabled` key indicating if this field is searchable
+    pub searchable: HashMap<String, bool>,
+
+    /// contains `enabled` key indicating if this field is sortable
+    pub sortable: HashMap<String, bool>,
+
+    /// contains `enabled` key indicating if this field is distinct
+    pub distinct: HashMap<String, bool>,
+
+    /// contains `enabled` key indicating if this field is used in ranking rules.
+    /// If enabled, also contains 'order' with value 'asc' or 'desc'
+    pub ranking_rule: Map<String, Value>,
+
+    /// contains `enabled` key indicating if field is filterable,
+    /// and the following filter settings:
+    /// - sortBy: Sort order for facet values (e.g., 'alpha')
+    /// - facetSearch: Whether facet search is enabled
+    /// - equality: Whether equality filtering is enabled
+    /// - comparison: Whether comparison filtering is enabled
+    pub filterable: Map<String, Value>,
+
+    /// Contains 'locales' key with locales array
+    /// e.g. `{"locales": ["en", "fr"]}`
+    pub localized: HashMap<String, Vec<String>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FieldsResult {
+    pub results: Vec<FieldResult>,
+    pub offset: u32,
+    pub limit: u32,
+    pub total: u32,
+}
+
 /// An [`FieldsQuery`] containing filter and pagination parameters when looking up an index's fields.
 ///
 /// # Example
@@ -40,7 +84,7 @@ use crate::{indexes::Index, request::HttpClient};
 ///     .execute()
 ///     .await
 ///     .unwrap();
-/// assert_eq!(fields.len(), 1);
+/// assert_eq!(fields.results.len(), 1);
 /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 /// # });
 /// ```
@@ -162,7 +206,7 @@ impl<'a, Http: HttpClient> FieldsQuery<'a, Http> {
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn execute(&self) -> Result<Vec<FieldInfo>, Error> {
+    pub async fn execute(&self) -> Result<FieldsResult, Error> {
         self.index.get_fields_with(self).await
     }
 }
@@ -270,41 +314,6 @@ impl FieldsQueryFilter {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FieldInfo {
-    /// The name of the field
-    pub name: String,
-
-    /// contains `enabled` key indicating if field is displayed
-    pub displayed: HashMap<String, bool>,
-
-    /// contains `enabled` key indicating if this field is searchable
-    pub searchable: HashMap<String, bool>,
-
-    /// contains `enabled` key indicating if this field is sortable
-    pub sortable: HashMap<String, bool>,
-
-    /// contains `enabled` key indicating if this field is distinct
-    pub distinct: HashMap<String, bool>,
-
-    /// contains `enabled` key indicating if this field is used in ranking rules.
-    /// If enabled, also contains 'order' with value 'asc' or 'desc'
-    pub ranking_rule: Map<String, Value>,
-
-    /// contains `enabled` key indicating if field is filterable,
-    /// and the following filter settings:
-    /// - sortBy: Sort order for facet values (e.g., 'alpha')
-    /// - facetSearch: Whether facet search is enabled
-    /// - equality: Whether equality filtering is enabled
-    /// - comparison: Whether comparison filtering is enabled
-    pub filterable: Map<String, Value>,
-
-    /// Contains 'locales' key with locales array
-    /// e.g. `{"locales": ["en", "fr"]}`
-    pub localized: HashMap<String, Vec<String>>,
-}
-
 #[cfg(test)]
 mod tests {
     use crate::client::Client;
@@ -334,7 +343,7 @@ mod tests {
 
         let fields_result = index.get_fields().await;
 
-        assert!(fields_result.is_ok_and(|fields| fields.len() == 5));
+        assert!(fields_result.is_ok_and(|fields| fields.results.len() == 5));
 
         Ok(())
     }
@@ -376,7 +385,7 @@ mod tests {
             .await;
 
         //skipped 1/6 fields with offset = 1
-        assert!(fields_result.is_ok_and(|fields| fields.len() == 5));
+        assert!(fields_result.is_ok_and(|fields| fields.results.len() == 5));
 
         Ok(())
     }
