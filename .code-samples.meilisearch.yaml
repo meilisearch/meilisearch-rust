@@ -142,13 +142,6 @@ get_documents_post_1: |-
     .execute::<Movies>()
     .await
     .unwrap();
-get_documents_by_ids_1: |-
-  let index = client.index("books");
-  let documents: DocumentsResults = DocumentsQuery::new(&index)
-    .with_ids(["1", "2"]) // retrieve documents by IDs
-    .execute::<Movies>()
-    .await
-    .unwrap();
 add_or_replace_documents_1: |-
   let task: TaskInfo = client
     .index("movies")
@@ -240,31 +233,12 @@ get_task_1: |-
     .get_task(1)
     .await
     .unwrap();
-async_guide_filter_by_date_1: |-
-  let date = OffsetDateTime::parse(
-      "2020-10-11T11:49:53.000Z",
-      &::time::format_description::well_known::Rfc3339,
-  )
-
-  let mut query = TasksQuery::new(&client);
-  let tasks = query
-    .with_after_enqueued_at(&date)
-    .execute()
-    .await
-    .unwrap();
 async_guide_multiple_filters_1: |-
   let mut query = TasksQuery::new(&client);
   let tasks = query
     .with_index_uids(["movies"])
     .with_types(["documentAdditionOrUpdate","documentDeletion"])
     .with_statuses(["processing"])
-    .execute()
-    .await
-    .unwrap();
-async_guide_filter_by_ids_1: |-
-  let mut query = TasksQuery::new(&client);
-  let tasks = query
-    .with_uids([5, 10, 13])
     .execute()
     .await
     .unwrap();
@@ -279,27 +253,6 @@ async_guide_filter_by_statuses_2: |-
   let mut query = TasksQuery::new(&client);
   let tasks = query
     .with_statuses(["failed", "canceled"])
-    .execute()
-    .await
-    .unwrap();
-async_guide_filter_by_types_1: |-
-  let mut query = TasksQuery::new(&client);
-  let tasks = query
-    .with_types(["dumpCreation", "indexSwap"])
-    .execute()
-    .await
-    .unwrap();
-async_guide_filter_by_index_uids_1: |-
-  let mut query = TasksQuery::new(&client);
-  let tasks = query
-    .with_index_uids(["movies"])
-    .execute()
-    .await
-    .unwrap();
-async_guide_canceled_by_1: |-
-  let mut query = TasksQuery::new(&client);
-  let tasks = query
-    .with_canceled_by([9, 15])
     .execute()
     .await
     .unwrap();
@@ -416,23 +369,6 @@ reset_pagination_settings_1: |-
     .reset_pagination()
     .await
     .unwrap();
-getting_started_typo_tolerance: |-
-  let min_word_size_for_typos = MinWordSizeForTypos {
-    one_typo: Some(5),
-    two_typos: Some(4)
-  }
-  let typo_tolerance = TypoToleranceSettings {
-    enabled: Some(true),
-    disable_on_attributes: Some(vec![]),
-    disable_on_words: Some(vec!["title".to_string()]),
-    min_word_size_for_typos: Some(min_word_size_for_typos),
-  };
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_typo_tolerance(&typo_tolerance)
-    .await
-    .unwrap();
 get_typo_tolerance_1: |-
   let typo_tolerance: TypoToleranceSettings = client
     .index("books")
@@ -469,12 +405,6 @@ get_batch_1: |-
     .get_batch(uid)
     .await
     .unwrap();
-get_all_batches_paginating_1: |-
-  let mut query = meilisearch_sdk::batches::BatchesQuery::new(&client);
-  query.with_limit(2);
-  query.with_from(40);
-  let batches: meilisearch_sdk::batches::BatchesResults =
-    client.get_batches_with(&query).await.unwrap();
 get_stop_words_1: |-
   let stop_words: Vec<String> = client
     .index("movies")
@@ -1069,18 +999,6 @@ typo_tolerance_guide_4: |-
     .set_typo_tolerance(&typo_tolerance)
     .await
     .unwrap();
-typo_tolerance_guide_5: |-
-  // Deactivate typo tolerance on numbers and other high entropy words
-  let typo_tolerance = TypoToleranceSettings {
-    disable_on_numbers: Some(true),
-    ..Default::default()
-  };
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_typo_tolerance(&typo_tolerance)
-    .await
-    .unwrap();
 add_movies_json_1: |-
   use meilisearch_sdk::{
     indexes::*,
@@ -1237,161 +1155,9 @@ getting_started_search: |-
     .execute()
     .await
     .unwrap();
-getting_started_update_ranking_rules: |-
-  let ranking_rules = [
-    "exactness",
-    "words",
-    "typo",
-    "proximity",
-    "attribute",
-    "sort",
-    "release_date:asc",
-    "rank:desc"
-  ];
-
-  client
-    .index("movies")
-    .set_ranking_rules(&ranking_rules)
-    .await
-    .unwrap();
-getting_started_update_searchable_attributes: |-
-  let searchable_attributes = [
-    "title"
-  ];
-
-  client
-    .index("movies")
-    .set_searchable_attributes(&searchable_attributes)
-    .await
-    .unwrap();
-getting_started_update_stop_words: |-
-  let stop_words = ["the"];
-  client
-    .index("movies")
-    .set_stop_words(&stop_words)
-    .await
-    .unwrap();
 getting_started_check_task_status: |-
   client
     .get_task(0)
-    .await
-    .unwrap();
-getting_started_synonyms: |-
-  let mut synonyms = std::collections::HashMap::new();
-  synonyms.insert(String::from("winnie"), vec![String::from("piglet")]);
-  synonyms.insert(String::from("piglet"), vec![String::from("winnie")]);
-
-  client
-    .index("movies")
-    .set_synonyms(&synonyms)
-    .await
-    .unwrap();
-getting_started_update_displayed_attributes: |-
-  let displayed_attributes = [
-    "title",
-    "overview",
-    "poster",
-  ];
-
-  client
-    .index("movies")
-    .set_displayed_attributes(&displayed_attributes)
-    .await
-    .unwrap();
-getting_started_add_meteorites: |-
-  use serde::{Serialize, Deserialize};
-  use std::fs::File;
-
-  #[derive(Serialize, Deserialize)]
-  struct Geo {
-    lat: f64,
-    lon: f64
-  }
-
-  struct Meteorite {
-    name: String,
-    id: String,
-    nametype: String,
-    recclass: String,
-    mass: i64,
-    fall: String,
-    _geo: Geo
-  }
-
-  let mut file = File::open("meteorites.json")?;
-  let meteorites: Vec<Meteorite> = serde_json::from_reader(file)?;
-
-  client
-    .index("meteorites")
-    .add_documents(&meteorites, None)
-    .await?;
-getting_started_configure_settings: |-
-  let settings = Settings::new()
-    .with_filterable_attributes([
-      "mass",
-      "_geo"
-    ])
-    .with_sortable_attributes([
-      "mass",
-      "_geo"
-    ])
-  let task: TaskInfo = client
-    .index("meteorites")
-    .set_settings(&settings)
-    .await
-    .unwrap();
-getting_started_geo_radius: |-
-  let results: SearchResults<Meteorite> = client
-    .index("meteorites")
-    .search()
-    .with_filter("_geoRadius(46.9480, 7.4474, 210000)")
-    .execute()
-    .await
-    .unwrap();
-getting_started_geo_point: |-
-  let results: SearchResults<Meteorite> = client
-    .index("meteorites")
-    .search()
-    .with_sort(&["_geoPoint(48.8583701, 2.2922926):asc"])
-    .execute()
-    .await
-    .unwrap();
-getting_started_sorting: |-
-  let results: SearchResults<Meteorite> = client
-    .index("meteorites")
-    .search()
-    .with_filter("mass < 200")
-    .with_sort(&["mass:asc"])
-    .execute()
-    .await
-    .unwrap();
-getting_started_faceting: |-
-  let mut facet_sort_setting = BTreeMap::new();
-  facet_sort_setting.insert("*".to_string(), FacetSortValue::Count);
-  let mut faceting = FacetingSettings {
-    max_values_per_facet: 2,
-    sort_facet_values_by: Some(facet_sort_setting),
-  };
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_faceting(&faceting)
-    .await
-    .unwrap();
-getting_started_pagination: |-
-  let pagination = PaginationSetting {max_total_hits:500};
-
-  let task: TaskInfo = client
-    .index("books")
-    .set_pagination(pagination)
-    .await
-    .unwrap();
-getting_started_filtering: |-
-  let results: SearchResults<Meteorite> = client
-    .index("meteorites")
-    .search()
-    .with_filter("mass < 200")
-    .execute()
     .await
     .unwrap();
 filtering_update_settings_1: |-
@@ -1621,87 +1387,6 @@ authorization_header_1:
   .get_keys()
   .await
   .unwrap();
-security_guide_search_key_1: |-
-  let client = Client::new("http://localhost:7700", Some("apiKey"));
-  let result = client.index("patient_medical_records")
-    .search()
-    .execute()
-    .await
-    .unwrap();
-security_guide_update_key_1: |-
-  let client = Client::new("http://localhost:7700", Some("masterKey"));
-  let mut key = client
-    .get_key("74c9c733-3368-4738-bbe5-1d18a5fecb37")
-    .await
-    .unwrap();
-  key
-    .with_description("Default Search API key".to_string())
-    .update(&client);
-security_guide_create_key_1: |-
-  let client = Client::new("http://localhost:7700", Some("masterKey"));
-  let mut key_options = KeyBuilder::new();
-  key_options
-    .with_name("Search patient records key")
-    .with_action(Action::Search)
-    .with_expires_at(time::macros::datetime!(2023 - 01 - 01 00:00:00 UTC))
-    .with_index("patient_medical_records");
-  let new_key = client
-    .create_key(key_options)
-    .await
-    .unwrap();
-security_guide_list_keys_1: |-
-  let client = Client::new("http://localhost:7700", Some("masterKey"));
-  let keys = client
-    .get_keys()
-    .await
-    .unwrap();
-security_guide_delete_key_1: |-
-  let client = Client::new("http://localhost:7700", Some("masterKey"));
-  let key = client
-    .get_key("ac5cd97d-5a4b-4226-a868-2d0eb6d197ab")
-    .await
-    .unwrap();
-  client
-    .delete_key(&key)
-    .await?;
-landing_getting_started_1: |-
-  let client = Client::new("http://localhost:7700", Some("masterKey"));
-
-  #[derive(Serialize, Deserialize)]
-  struct Movie {
-    id: String,
-    title: String
-  }
-
-  client.index("movies")
-    .add_documents(&[
-      Movie { id: "1".to_string(), title: "Carol".to_string() },
-      Movie { id: "2".to_string(), title: "Wonder Woman".to_string() },
-      Movie { id: "3".to_string(), title: "Life of Pi".to_string() },
-      Movie { id: "4".to_string(), title: "Mad Max: Fury Road".to_string() },
-      Movie { id: "5".to_string(), title: "Moana".to_string() },
-      Movie { id: "6".to_string(), title: "Philadelphia".to_string() }
-    ], Some("reference_number"))
-    .await
-    .unwrap();
-tenant_token_guide_generate_sdk_1: |-
-  let api_key = "B5KdX2MY2jV6EXfUs6scSfmC...";
-  let api_key_uid = "6062abda-a5aa-4414-ac91-ecd7944c0f8d";
-  let expires_at = time::macros::datetime!(2025 - 12 - 20 00:00:00 UTC);
-  let search_rules = json!({ "patient_medical_records": { "filter": "user_id = 1" } });
-
-  let token = client
-    .generate_tenant_token(api_key_uid, search_rules, api_key, expires_at)
-    .unwrap();
-tenant_token_guide_search_sdk_1: |-
-  let front_end_client = Client::new("http://localhost:7700", Some(token));
-  let results: SearchResults<Patient> = front_end_client
-    .index("patient_medical_records")
-    .search()
-    .with_query("blood test")
-    .execute()
-    .await
-    .unwrap();
 multi_search_1: |-
   let movie = client.index("movie");
   let movie_ratings = client.index("movie_ratings");
@@ -1974,32 +1659,6 @@ negative_search_2: |-
     .execute()
     .await
     .unwrap();
-related_results_embedder_1: |-
-  let embedders = HashMap::from([(
-    String::from("movies-text"),
-    Embedder {
-      source: EmbedderSource::OpenAi,
-      api_key: Some(String::from("OPENAI_API_KEY")),
-      model: Some(String::from("text-embedding-3-small")),
-      document_template: Some(String::from("A movie titled '{{doc.title}}' released in {{ doc.release_date }}. The movie genres are: {{doc.genres}}. The story is about: {{doc.overview|truncatewords: 20}}")),
-      ..Embedder::default()
-    }
-  )]);
-  movies.set_embedders(&embedders)
-    .await
-    .unwrap();
-related_results_search_1: |-
-  let results = movies.search()
-    .with_query("batman")
-    .with_hybrid("EMBEDDER_NAME", 0.5)
-    .execute()
-    .await
-    .unwrap();
-related_results_similar_1: |-
-  let results = movies.similar_search("192", "EMBEDDER_NAME")
-    .execute()
-    .await
-    .unwrap();
 search_parameter_guide_hybrid_1: |-
   let results = index
     .search()
@@ -2022,20 +1681,6 @@ search_parameter_reference_retrieve_vectors_1: |-
     .with_query("kitchen utensils")
     .with_retrieve_vectors(true)
     .with_hybrid("EMBEDDER_NAME", 0.5)
-    .execute()
-    .await
-    .unwrap();
-search_parameter_reference_media_1: |-
-  let results = index
-    .search()
-    .with_hybrid("EMBEDDER_NAME", 0.5)
-    .with_media(json!({
-      "FIELD_A": "VALUE_A",
-      "FIELD_B": {
-        "FIELD_C": "VALUE_B",
-        "FIELD_D": "VALUE_C"
-      }
-    }))
     .execute()
     .await
     .unwrap();
