@@ -972,6 +972,46 @@ mod test {
             }
             if duration == Duration::from_millis(10_848)
         ));
+
+        let task: Task = serde_json::from_str(
+            r#"
+{
+  "uid": 1514,
+  "batchUid": 1356,
+  "indexUid": "cHO2YK7kFraa5pEcNaAyWshXNABgbf2r",
+  "status": "canceled",
+  "type": "indexCreation",
+  "canceledBy": 1523,
+  "details": {"primaryKey": "id"},
+  "error": null,
+  "duration": "PT0.000327555S",
+  "enqueuedAt": "2026-02-11T17:29:36.046525492Z",
+  "startedAt": "2026-02-11T17:29:36.101581858Z",
+  "finishedAt": "2026-02-11T17:29:36.101909413Z"
+}
+        "#,
+        )
+        .unwrap();
+
+        assert!(matches!(
+            task,
+            Task::Canceled {
+                content: CanceledTask {
+                    update_type: TaskType::IndexCreation {
+                        details: Some(IndexCreation {
+                            primary_key: Some(primary_key),
+                        })
+                    },
+                    uid: 1514,
+                    canceled_by: 1523,
+                    error: None,
+                    remotes: None,
+                    index_uid: Some(index_uid),
+                    ..
+                }
+            }
+            if primary_key == "id" && index_uid == "cHO2YK7kFraa5pEcNaAyWshXNABgbf2r"
+        ));
     }
 
     #[meilisearch_test]
