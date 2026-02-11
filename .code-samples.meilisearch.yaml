@@ -1387,6 +1387,24 @@ authorization_header_1:
   .get_keys()
   .await
   .unwrap();
+tenant_token_guide_generate_sdk_1: |-
+  let api_key = "B5KdX2MY2jV6EXfUs6scSfmC...";
+  let api_key_uid = "6062abda-a5aa-4414-ac91-ecd7944c0f8d";
+  let expires_at = time::macros::datetime!(2025 - 12 - 20 00:00:00 UTC);
+  let search_rules = json!({ "patient_medical_records": { "filter": "user_id = 1" } });
+
+  let token = client
+    .generate_tenant_token(api_key_uid, search_rules, api_key, expires_at)
+    .unwrap();
+tenant_token_guide_search_sdk_1: |-
+  let front_end_client = Client::new("http://localhost:7700", Some(token));
+  let results: SearchResults<Patient> = front_end_client
+    .index("patient_medical_records")
+    .search()
+    .with_query("blood test")
+    .execute()
+    .await
+    .unwrap();
 multi_search_1: |-
   let movie = client.index("movie");
   let movie_ratings = client.index("movie_ratings");
