@@ -232,6 +232,34 @@ impl AsRef<u32> for ProcessingTask {
     }
 }
 
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CanceledTask {
+    #[serde(deserialize_with = "deserialize_duration")]
+    pub duration: Duration,
+    #[serde(with = "time::serde::rfc3339")]
+    pub enqueued_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub started_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub finished_at: OffsetDateTime,
+    pub canceled_by: usize,
+    pub index_uid: Option<String>,
+    pub error: Option<MeilisearchError>,
+    /// Remotes object returned by the server for this task (present since Meilisearch 1.19)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remotes: Option<Map<String, Value>>,
+    #[serde(flatten)]
+    pub update_type: TaskType,
+    pub uid: u32,
+}
+
+impl AsRef<u32> for CanceledTask {
+    fn as_ref(&self) -> &u32 {
+        &self.uid
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "status")]
 pub enum Task {
@@ -251,6 +279,10 @@ pub enum Task {
         #[serde(flatten)]
         content: SucceededTask,
     },
+    Canceled {
+        #[serde(flatten)]
+        content: CanceledTask,
+    },
 }
 
 impl Task {
@@ -261,6 +293,7 @@ impl Task {
             Self::Processing { content } => *content.as_ref(),
             Self::Failed { content } => *content.as_ref(),
             Self::Succeeded { content } => *content.as_ref(),
+            Self::Canceled { content } => *content.as_ref(),
         }
     }
 
@@ -496,6 +529,7 @@ impl AsRef<u32> for Task {
             Self::Processing { content } => content.as_ref(),
             Self::Succeeded { content } => content.as_ref(),
             Self::Failed { content } => content.as_ref(),
+            Self::Canceled { content } => content.as_ref(),
         }
     }
 }
