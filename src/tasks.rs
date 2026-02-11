@@ -175,6 +175,7 @@ pub struct SucceededTask {
     pub finished_at: OffsetDateTime,
     pub canceled_by: Option<usize>,
     pub index_uid: Option<String>,
+    pub custom_metadata: Option<String>,
     pub error: Option<MeilisearchError>,
     /// Remotes object returned by the server for this task (present since Meilisearch 1.19)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -196,6 +197,7 @@ pub struct EnqueuedTask {
     #[serde(with = "time::serde::rfc3339")]
     pub enqueued_at: OffsetDateTime,
     pub index_uid: Option<String>,
+    pub custom_metadata: Option<String>,
     /// Remotes object returned by the server for this enqueued task
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remotes: Option<Map<String, Value>>,
@@ -218,6 +220,7 @@ pub struct ProcessingTask {
     #[serde(with = "time::serde::rfc3339")]
     pub started_at: OffsetDateTime,
     pub index_uid: Option<String>,
+    pub custom_metadata: Option<String>,
     /// Remotes object returned by the server for this processing task
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remotes: Option<Map<String, Value>>,
@@ -298,7 +301,7 @@ impl Task {
     /// let status = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
-    /// ], None)
+    /// ], None, None)
     ///     .await
     ///     .unwrap()
     ///     .wait_for_completion(&client, None, None)
@@ -956,6 +959,7 @@ mod test {
                         value: S("Harry Potter and the Sorcerer's Stone"),
                     },
                 ],
+                None,
                 None,
             )
             .await?
