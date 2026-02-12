@@ -242,6 +242,8 @@ pub mod documents;
 pub mod dumps;
 /// Module containing the [`errors::Error`] struct.
 pub mod errors;
+/// Module containing [ExportQuery](export::ExportQuery).
+pub mod export;
 /// Module related to runtime and instance features.
 pub mod features;
 /// Module containing the Index struct.

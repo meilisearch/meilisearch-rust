@@ -52,6 +52,9 @@ pub enum TaskType {
     IndexCompaction {
         details: Option<IndexCompaction>,
     },
+    Export {
+        details: Option<Export>,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -116,6 +119,10 @@ pub struct NetworkTopologyChangeDetails {
 pub struct DumpCreation {
     pub dump_uid: Option<String>,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Export {}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
