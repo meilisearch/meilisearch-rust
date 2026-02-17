@@ -29,6 +29,8 @@ pub struct SimilarResults<T> {
     pub limit: Option<usize>,
     /// Estimated total number of matches
     pub estimated_total_hits: Option<usize>,
+    /// Performance trace of the query
+    pub performance_details: Option<Value>,
     /// Processing time of the query
     pub processing_time_ms: usize,
     /// Identifier of the target document
@@ -125,6 +127,12 @@ pub struct SimilarQuery<'a, Http: HttpClient> {
     /// **Default: `false`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retrieve_vectors: Option<bool>,
+
+    /// Defines whether to return performance trace
+    ///
+    /// **Default: `false`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_performance_details: Option<bool>,
 }
 
 #[allow(missing_docs)]
@@ -143,6 +151,7 @@ impl<'a, Http: HttpClient> SimilarQuery<'a, Http> {
             show_ranking_score_details: None,
             ranking_score_threshold: None,
             retrieve_vectors: None,
+            show_performance_details: None,
         }
     }
 
@@ -206,6 +215,15 @@ impl<'a, Http: HttpClient> SimilarQuery<'a, Http> {
         retrieve_vectors: bool,
     ) -> &'b mut SimilarQuery<'a, Http> {
         self.retrieve_vectors = Some(retrieve_vectors);
+        self
+    }
+
+    /// Request performance trace in the response.
+    pub fn with_show_performance_details<'b>(
+        &'b mut self,
+        show_performance_details: bool,
+    ) -> &'b mut SimilarQuery<'a, Http> {
+        self.show_performance_details = Some(show_performance_details);
         self
     }
 
@@ -387,6 +405,21 @@ mod tests {
         query.with_retrieve_vectors(true);
         let results: SimilarResults<Document> = query.execute().await?;
         assert!(results.hits[0].result._vectors.is_some());
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_query_show_performance_details(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_embedder(&client, &index).await?;
+        setup_test_index(&client, &index).await?;
+
+        let mut query = SimilarQuery::new(&index, "1", "default");
+        query.with_show_performance_details(true);
+        let results: SimilarResults<Document> = query.execute().await?;
+        assert!(results.performance_details.is_some());
         Ok(())
     }
 }
