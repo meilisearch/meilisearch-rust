@@ -77,6 +77,31 @@ pub struct Index<Http: HttpClient = DefaultHttpClient> {
     pub primary_key: Option<String>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DocumentTaskQuery<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    primary_key: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    custom_metadata: Option<&'a str>,
+}
+
+impl<'a> DocumentTaskQuery<'a> {
+    fn new(primary_key: Option<&'a str>, custom_metadata: Option<&'a str>) -> Self {
+        Self {
+            primary_key,
+            custom_metadata,
+        }
+    }
+
+    fn with_metadata(custom_metadata: Option<&'a str>) -> Self {
+        Self {
+            primary_key: None,
+            custom_metadata,
+        }
+    }
+}
+
 impl<Http: HttpClient> Index<Http> {
     pub fn new(uid: impl Into<String>, client: Client<Http>) -> Index<Http> {
         Index {
@@ -115,7 +140,6 @@ impl<Http: HttpClient> Index<Http> {
     }
 
     /// Update an [Index].
-    ///
     /// # Example
     ///
     /// ```
@@ -216,7 +240,7 @@ impl<Http: HttpClient> Index<Http> {
     /// let movies = client.index("execute_query");
     ///
     /// // add some documents
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let query = SearchQuery::new(&movies).with_query("Interstellar").with_limit(5).build();
     /// let results = movies.execute_query::<Movie>(&query).await.unwrap();
@@ -262,7 +286,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut movies = client.index("search");
     /// # // add some documents
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let results = movies.search()
     ///     .with_query("Interstellar")
@@ -303,7 +327,7 @@ impl<Http: HttpClient> Index<Http> {
     /// let movies = client.index("execute_query2");
     ///
     /// // add some documents
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # movies.set_filterable_attributes(["genre"]).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let query = FacetSearchQuery::new(&movies, "genre").with_facet_query("scifi").build();
@@ -353,7 +377,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movies = client.index("get_document");
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// // retrieve a document (you have to put the document in the index before)
     /// let interstellar = movies.get_document::<Movie>("Interstellar").await.unwrap();
@@ -403,7 +427,7 @@ impl<Http: HttpClient> Index<Http> {
     ///     id: String,
     /// }
     /// # let index = client.index("document_query_execute");
-    /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None, None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let mut document_query = DocumentQuery::new(&index);
     /// document_query.with_fields(["id"]);
@@ -457,7 +481,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movie_index = client.index("get_documents");
-    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// // retrieve movies (you have to put some movies in the index before)
     /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
@@ -501,7 +525,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     ///
     /// let movie_index = client.index("get_documents_with");
-    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let mut query = DocumentsQuery::new(&movie_index);
     /// query.with_limit(1);
@@ -573,6 +597,8 @@ impl<Http: HttpClient> Index<Http> {
     /// For a partial update of the document see [`Index::add_or_update`].
     ///
     /// You can use the alias [`Index::add_documents`] if you prefer.
+    /// Use the `custom_metadata` parameter to attach an arbitrary string to the resulting task
+    /// (visible through `/tasks` or webhooks).
     ///
     /// # Example
     ///
@@ -609,7 +635,7 @@ impl<Http: HttpClient> Index<Http> {
     ///         name: String::from("Apollo13"),
     ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
     ///     },
-    /// ], Some("name")).await.unwrap();
+    /// ], Some("name"), None).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
@@ -622,21 +648,16 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
+        let query = DocumentTaskQuery::new(primary_key, custom_metadata);
         self.client
             .http_client
-            .request::<(), &[T], TaskInfo>(
+            .request(
                 &url,
                 Method::Post {
-                    query: (),
+                    query,
                     body: documents,
                 },
                 202,
@@ -672,6 +693,7 @@ impl<Http: HttpClient> Index<Http> {
     ///     { "id": 2, "body": "catto" }"#.as_bytes(),
     ///     "application/x-ndjson",
     ///     Some("id"),
+    ///     None,
     ///   ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -688,21 +710,16 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
+        let query = DocumentTaskQuery::new(primary_key, custom_metadata);
         self.client
             .http_client
-            .stream_request::<(), T, TaskInfo>(
+            .stream_request(
                 &url,
                 Method::Post {
-                    query: (),
+                    query,
                     body: payload,
                 },
                 content_type,
@@ -716,8 +733,10 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_replace(documents, primary_key).await
+        self.add_or_replace(documents, primary_key, custom_metadata)
+            .await
     }
 
     /// Add a raw ndjson payload and update them if they already exist.
@@ -747,6 +766,7 @@ impl<Http: HttpClient> Index<Http> {
     ///     r#"{ "id": 1, "body": "doggo" }
     ///     { "id": 2, "body": "catto" }"#.as_bytes(),
     ///     Some("id"),
+    ///     None,
     ///   ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -761,9 +781,15 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         payload: T,
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_update_unchecked_payload(payload, "application/x-ndjson", primary_key)
-            .await
+        self.add_or_update_unchecked_payload(
+            payload,
+            "application/x-ndjson",
+            primary_key,
+            custom_metadata,
+        )
+        .await
     }
 
     /// Add a raw ndjson payload to meilisearch.
@@ -793,6 +819,7 @@ impl<Http: HttpClient> Index<Http> {
     ///     r#"{ "id": 1, "body": "doggo" }
     ///     { "id": 2, "body": "catto" }"#.as_bytes(),
     ///     Some("id"),
+    ///     None,
     ///   ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -807,9 +834,15 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         payload: T,
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_replace_unchecked_payload(payload, "application/x-ndjson", primary_key)
-            .await
+        self.add_or_replace_unchecked_payload(
+            payload,
+            "application/x-ndjson",
+            primary_key,
+            custom_metadata,
+        )
+        .await
     }
 
     /// Add a raw csv payload and update them if they already exist.
@@ -838,6 +871,7 @@ impl<Http: HttpClient> Index<Http> {
     /// let task = movie_index.update_documents_csv(
     ///     "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes(),
     ///     Some("id"),
+    ///     None,
     ///   ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -852,8 +886,9 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         payload: T,
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_update_unchecked_payload(payload, "text/csv", primary_key)
+        self.add_or_update_unchecked_payload(payload, "text/csv", primary_key, custom_metadata)
             .await
     }
 
@@ -883,6 +918,7 @@ impl<Http: HttpClient> Index<Http> {
     /// let task = movie_index.add_documents_csv(
     ///     "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes(),
     ///     Some("id"),
+    ///     None,
     ///   ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -897,8 +933,9 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         payload: T,
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_replace_unchecked_payload(payload, "text/csv", primary_key)
+        self.add_or_replace_unchecked_payload(payload, "text/csv", primary_key, custom_metadata)
             .await
     }
 
@@ -944,7 +981,7 @@ impl<Http: HttpClient> Index<Http> {
     ///         name: String::from("Apollo13"),
     ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
     ///     },
-    /// ], Some("name")).await.unwrap();
+    /// ], Some("name"), None).await.unwrap();
     ///
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -958,21 +995,16 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
+        let query = DocumentTaskQuery::new(primary_key, custom_metadata);
         self.client
             .http_client
-            .request::<(), &[T], TaskInfo>(
+            .request(
                 &url,
                 Method::Put {
-                    query: (),
+                    query,
                     body: documents,
                 },
                 202,
@@ -1008,6 +1040,7 @@ impl<Http: HttpClient> Index<Http> {
     ///     { "id": 2, "body": "catto" }"#.as_bytes(),
     ///     "application/x-ndjson",
     ///     Some("id"),
+    ///     None,
     /// ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -1026,21 +1059,16 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = format!("{}/indexes/{}/documents", self.client.host, self.uid);
+        let query = DocumentTaskQuery::new(primary_key, custom_metadata);
         self.client
             .http_client
-            .stream_request::<(), T, TaskInfo>(
+            .stream_request(
                 &url,
                 Method::Put {
-                    query: (),
+                    query,
                     body: payload,
                 },
                 content_type,
@@ -1050,6 +1078,8 @@ impl<Http: HttpClient> Index<Http> {
     }
 
     /// Delete all documents in the [Index].
+    ///
+    /// Use the `custom_metadata` parameter to attach an arbitrary string to the resulting task.
     ///
     /// # Example
     ///
@@ -1072,9 +1102,9 @@ impl<Http: HttpClient> Index<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movie_index = client.index("delete_all_documents");
     /// #
-    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// #
-    /// movie_index.delete_all_documents()
+    /// movie_index.delete_all_documents(None)
     ///     .await
     ///     .unwrap()
     ///     .wait_for_completion(&client, None, None)
@@ -1085,18 +1115,24 @@ impl<Http: HttpClient> Index<Http> {
     /// # movie_index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_all_documents(&self) -> Result<TaskInfo, Error> {
+    pub async fn delete_all_documents(
+        &self,
+        custom_metadata: Option<&str>,
+    ) -> Result<TaskInfo, Error> {
+        let query = DocumentTaskQuery::with_metadata(custom_metadata);
         self.client
             .http_client
-            .request::<(), (), TaskInfo>(
+            .request(
                 &format!("{}/indexes/{}/documents", self.client.host, self.uid),
-                Method::Delete { query: () },
+                Method::<_, ()>::Delete { query },
                 202,
             )
             .await
     }
 
     /// Delete one document based on its unique id.
+    ///
+    /// Use the `custom_metadata` parameter to attach an arbitrary string to the resulting task.
     ///
     /// # Example
     ///
@@ -1118,9 +1154,9 @@ impl<Http: HttpClient> Index<Http> {
     /// #
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut movies = client.index("delete_document");
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// // add a document with id = Interstellar
-    /// movies.delete_document("Interstellar")
+    /// movies.delete_document("Interstellar", None)
     ///     .await
     ///     .unwrap()
     ///     .wait_for_completion(&client, None, None)
@@ -1129,21 +1165,28 @@ impl<Http: HttpClient> Index<Http> {
     /// # movies.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # });
     /// ```
-    pub async fn delete_document<T: Display>(&self, uid: T) -> Result<TaskInfo, Error> {
+    pub async fn delete_document<T: Display>(
+        &self,
+        uid: T,
+        custom_metadata: Option<&str>,
+    ) -> Result<TaskInfo, Error> {
+        let query = DocumentTaskQuery::with_metadata(custom_metadata);
         self.client
             .http_client
-            .request::<(), (), TaskInfo>(
+            .request(
                 &format!(
                     "{}/indexes/{}/documents/{}",
                     self.client.host, self.uid, uid
                 ),
-                Method::Delete { query: () },
+                Method::<_, ()>::Delete { query },
                 202,
             )
             .await
     }
 
     /// Delete a selection of documents based on array of document id's.
+    ///
+    /// Use the `custom_metadata` parameter to attach an arbitrary string to the resulting task.
     ///
     /// # Example
     ///
@@ -1167,10 +1210,10 @@ impl<Http: HttpClient> Index<Http> {
     /// let movies = client.index("delete_documents");
     /// #
     /// # // add some documents
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// #
     /// // delete some documents
-    /// movies.delete_documents(&["Interstellar", "Unknown"])
+    /// movies.delete_documents(&["Interstellar", "Unknown"], None)
     ///     .await
     ///     .unwrap()
     ///     .wait_for_completion(&client, None, None)
@@ -1182,24 +1225,25 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn delete_documents<T: Display + Serialize + std::fmt::Debug + Send + Sync>(
         &self,
         uids: &[T],
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
+        let query = DocumentTaskQuery::with_metadata(custom_metadata);
         self.client
             .http_client
-            .request::<(), &[T], TaskInfo>(
+            .request(
                 &format!(
                     "{}/indexes/{}/documents/delete-batch",
                     self.client.host, self.uid
                 ),
-                Method::Post {
-                    query: (),
-                    body: uids,
-                },
+                Method::Post { query, body: uids },
                 202,
             )
             .await
     }
 
     /// Delete a selection of documents with filters.
+    ///
+    /// Use the `custom_metadata` parameter to attach an arbitrary string to the resulting task.
     ///
     /// # Example
     ///
@@ -1224,12 +1268,12 @@ impl<Http: HttpClient> Index<Http> {
     /// #
     /// # index.set_filterable_attributes(["id"]);
     /// # // add some documents
-    /// # index.add_or_replace(&[Movie{id:String::from("1"), name: String::from("First movie") }, Movie{id:String::from("1"), name: String::from("First movie") }], Some("id")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # index.add_or_replace(&[Movie{id:String::from("1"), name: String::from("First movie") }, Movie{id:String::from("1"), name: String::from("First movie") }], Some("id"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let mut query = DocumentDeletionQuery::new(&index);
     /// query.with_filter("id = 1");
     /// // delete some documents
-    /// index.delete_documents_with(&query)
+    /// index.delete_documents_with(&query, None)
     ///     .await
     ///     .unwrap()
     ///     .wait_for_completion(&client, None, None)
@@ -1241,13 +1285,15 @@ impl<Http: HttpClient> Index<Http> {
     pub async fn delete_documents_with(
         &self,
         query: &DocumentDeletionQuery<'_, Http>,
+        custom_metadata: Option<&str>,
     ) -> Result<TaskInfo, Error> {
+        let query_params = DocumentTaskQuery::with_metadata(custom_metadata);
         self.client
             .http_client
-            .request::<(), &DocumentDeletionQuery<Http>, TaskInfo>(
+            .request(
                 &format!("{}/indexes/{}/documents/delete", self.client.host, self.uid),
                 Method::Post {
-                    query: (),
+                    query: query_params,
                     body: query,
                 },
                 202,
@@ -1401,7 +1447,7 @@ impl<Http: HttpClient> Index<Http> {
     ///
     /// let task = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() }
-    /// ], None).await.unwrap();
+    /// ], None, None).await.unwrap();
     /// # task.clone().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// // Get task status from the index, using `uid`
@@ -1553,7 +1599,7 @@ impl<Http: HttpClient> Index<Http> {
     /// let task = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
-    /// ], None).await.unwrap();
+    /// ], None, None).await.unwrap();
     ///
     /// let status = movies.wait_for_task(task, None, None).await.unwrap();
     ///
@@ -1611,7 +1657,8 @@ impl<Http: HttpClient> Index<Http> {
     ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
     ///     }],
     ///     Some(1),
-    ///     Some("name")
+    ///     Some("name"),
+    ///     None
     /// ).await.unwrap();
     ///
     /// client.wait_for_task(tasks.last().unwrap(), None, None).await.unwrap();
@@ -1623,15 +1670,20 @@ impl<Http: HttpClient> Index<Http> {
     /// # None).await.unwrap();
     /// # });
     /// ```
+    /// `custom_metadata` lets you tag every task produced for a batch.
     pub async fn add_documents_in_batches<T: Serialize + Send + Sync>(
         &self,
         documents: &[T],
         batch_size: Option<usize>,
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<Vec<TaskInfo>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
-            task.push(self.add_documents(document_batch, primary_key).await?);
+            task.push(
+                self.add_documents(document_batch, primary_key, custom_metadata)
+                    .await?,
+            );
         }
         Ok(task)
     }
@@ -1677,7 +1729,8 @@ impl<Http: HttpClient> Index<Http> {
     ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
     ///     }],
     ///     Some(1),
-    ///     Some("name")
+    ///     Some("name"),
+    ///     None
     /// ).await.unwrap();
     ///
     /// client.wait_for_task(tasks.last().unwrap(), None, None).await.unwrap();
@@ -1700,7 +1753,10 @@ impl<Http: HttpClient> Index<Http> {
     ///         description: String::from("Updated!")
     /// }];
     ///
-    /// let tasks = movie_index.update_documents_in_batches(&updated_movies, Some(1), None).await.unwrap();
+    /// let tasks = movie_index
+    ///     .update_documents_in_batches(&updated_movies, Some(1), None, None)
+    ///     .await
+    ///     .unwrap();
     ///
     /// client.wait_for_task(tasks.last().unwrap(), None, None).await.unwrap();
     ///
@@ -1711,15 +1767,20 @@ impl<Http: HttpClient> Index<Http> {
     /// # None).await.unwrap();
     /// # });
     /// ```
+    /// `custom_metadata` lets you tag every task produced for a batch.
     pub async fn update_documents_in_batches<T: Serialize + Send + Sync>(
         &self,
         documents: &[T],
         batch_size: Option<usize>,
         primary_key: Option<&str>,
+        custom_metadata: Option<&str>,
     ) -> Result<Vec<TaskInfo>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
-            task.push(self.add_or_update(document_batch, primary_key).await?);
+            task.push(
+                self.add_or_update(document_batch, primary_key, custom_metadata)
+                    .await?,
+            );
         }
         Ok(task)
     }
@@ -2168,6 +2229,18 @@ mod tests {
     use meilisearch_test_macro::meilisearch_test;
     use serde_json::json;
 
+    fn expect_task_metadata(task: Task, expected: &str) {
+        match task {
+            Task::Succeeded { content } => {
+                assert_eq!(content.custom_metadata.as_deref(), Some(expected));
+            }
+            other => panic!(
+                "expected succeeded task with metadata {expected}, got {:?}",
+                other
+            ),
+        }
+    }
+
     #[meilisearch_test]
     async fn test_from_value(client: Client) {
         let t = OffsetDateTime::now_utc();
@@ -2255,7 +2328,7 @@ mod tests {
         ];
 
         let task = index
-            .add_documents(&old_json, Some("id"))
+            .add_documents(&old_json, Some("id"), None)
             .await
             .unwrap()
             .wait_for_completion(&client, None, None)
@@ -2264,7 +2337,7 @@ mod tests {
         let _ = index.get_task(task).await?;
 
         let task = index
-            .add_or_update(&updated_json, None)
+            .add_or_update(&updated_json, None, None)
             .await
             .unwrap()
             .wait_for_completion(&client, None, None)
@@ -2337,12 +2410,12 @@ mod tests {
     async fn test_add_documents_ndjson(client: Client, index: Index) -> Result<(), Error> {
         let ndjson = r#"{ "id": 1, "body": "doggo" }{ "id": 2, "body": "catto" }"#.as_bytes();
 
-        let task = index
-            .add_documents_ndjson(ndjson, Some("id"))
-            .await?
-            .wait_for_completion(&client, None, None)
+        let task_info = index
+            .add_documents_ndjson(ndjson, Some("id"), Some("ndjson-add"))
             .await?;
-
+        assert_eq!(task_info.custom_metadata.as_deref(), Some("ndjson-add"));
+        let task = task_info.wait_for_completion(&client, None, None).await?;
+        expect_task_metadata(task.clone(), "ndjson-add");
         let status = index.get_task(task).await?;
         let elements = index.get_documents::<serde_json::Value>().await.unwrap();
         assert!(matches!(status, Task::Succeeded { .. }));
@@ -2358,19 +2431,19 @@ mod tests {
             r#"{ "id": 1, "second_body": "second_doggo" }{ "id": 2, "second_body": "second_catto" }"#.as_bytes();
         // Add first njdson document
         let task = index
-            .add_documents_ndjson(old_ndjson, Some("id"))
+            .add_documents_ndjson(old_ndjson, Some("id"), None)
             .await?
             .wait_for_completion(&client, None, None)
             .await?;
         let _ = index.get_task(task).await?;
 
         // Update via njdson document
-        let task = index
-            .update_documents_ndjson(updated_ndjson, Some("id"))
-            .await?
-            .wait_for_completion(&client, None, None)
+        let task_info = index
+            .update_documents_ndjson(updated_ndjson, Some("id"), Some("ndjson-update"))
             .await?;
-
+        assert_eq!(task_info.custom_metadata.as_deref(), Some("ndjson-update"));
+        let task = task_info.wait_for_completion(&client, None, None).await?;
+        expect_task_metadata(task.clone(), "ndjson-update");
         let status = index.get_task(task).await?;
         let elements = index.get_documents::<serde_json::Value>().await.unwrap();
 
@@ -2391,12 +2464,12 @@ mod tests {
     async fn test_add_documents_csv(client: Client, index: Index) -> Result<(), Error> {
         let csv_input = "id,body\n1,\"doggo\"\n2,\"catto\"".as_bytes();
 
-        let task = index
-            .add_documents_csv(csv_input, Some("id"))
-            .await?
-            .wait_for_completion(&client, None, None)
+        let task_info = index
+            .add_documents_csv(csv_input, Some("id"), Some("csv-add"))
             .await?;
-
+        assert_eq!(task_info.custom_metadata.as_deref(), Some("csv-add"));
+        let task = task_info.wait_for_completion(&client, None, None).await?;
+        expect_task_metadata(task.clone(), "csv-add");
         let status = index.get_task(task).await?;
         let elements = index.get_documents::<serde_json::Value>().await.unwrap();
         assert!(matches!(status, Task::Succeeded { .. }));
@@ -2411,19 +2484,19 @@ mod tests {
         let updated_csv = "id,body\n1,\"new_doggo\"\n2,\"new_catto\"".as_bytes();
         // Add first njdson document
         let task = index
-            .add_documents_csv(old_csv, Some("id"))
+            .add_documents_csv(old_csv, Some("id"), None)
             .await?
             .wait_for_completion(&client, None, None)
             .await?;
         let _ = index.get_task(task).await?;
 
         // Update via njdson document
-        let task = index
-            .update_documents_csv(updated_csv, Some("id"))
-            .await?
-            .wait_for_completion(&client, None, None)
+        let task_info = index
+            .update_documents_csv(updated_csv, Some("id"), Some("csv-update"))
             .await?;
-
+        assert_eq!(task_info.custom_metadata.as_deref(), Some("csv-update"));
+        let task = task_info.wait_for_completion(&client, None, None).await?;
+        expect_task_metadata(task.clone(), "csv-update");
         let status = index.get_task(task).await?;
         let elements = index.get_documents::<serde_json::Value>().await.unwrap();
 
@@ -2443,7 +2516,7 @@ mod tests {
 
     async fn test_get_one_task(client: Client, index: Index) -> Result<(), Error> {
         let task = index
-            .delete_all_documents()
+            .delete_all_documents(None)
             .await?
             .wait_for_completion(&client, None, None)
             .await?;
@@ -2500,6 +2573,121 @@ mod tests {
             .await?;
 
         assert!(task.is_success());
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_document_tasks_custom_metadata(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        #[derive(Debug, Serialize, Deserialize)]
+        struct SimpleDocument {
+            id: u32,
+            name: &'static str,
+        }
+
+        let addition = index
+            .add_documents(
+                &[SimpleDocument {
+                    id: 1,
+                    name: "first",
+                }],
+                Some("id"),
+                Some("add-meta"),
+            )
+            .await?;
+        assert_eq!(addition.custom_metadata.as_deref(), Some("add-meta"));
+
+        let addition_task = addition.wait_for_completion(&client, None, None).await?;
+        expect_task_metadata(addition_task, "add-meta");
+
+        let delete_one = index.delete_document(1, Some("delete-one")).await?;
+        assert_eq!(delete_one.custom_metadata.as_deref(), Some("delete-one"));
+        let delete_one_task = delete_one.wait_for_completion(&client, None, None).await?;
+        expect_task_metadata(delete_one_task, "delete-one");
+
+        let update = index
+            .add_or_update(
+                &[SimpleDocument {
+                    id: 1,
+                    name: "first-updated",
+                }],
+                Some("id"),
+                Some("update-meta"),
+            )
+            .await?;
+        assert_eq!(update.custom_metadata.as_deref(), Some("update-meta"));
+        let update_task = update.wait_for_completion(&client, None, None).await?;
+        expect_task_metadata(update_task, "update-meta");
+
+        let _ = index
+            .add_documents(
+                &[
+                    SimpleDocument {
+                        id: 1,
+                        name: "again",
+                    },
+                    SimpleDocument { id: 2, name: "two" },
+                ],
+                Some("id"),
+                Some("batch-add"),
+            )
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let delete_batch = index
+            .delete_documents(&[1, 2], Some("delete-batch"))
+            .await?;
+        assert_eq!(
+            delete_batch.custom_metadata.as_deref(),
+            Some("delete-batch")
+        );
+        let delete_batch_task = delete_batch
+            .wait_for_completion(&client, None, None)
+            .await?;
+        expect_task_metadata(delete_batch_task, "delete-batch");
+
+        let _ = index
+            .add_documents(
+                &[
+                    SimpleDocument {
+                        id: 7,
+                        name: "seven",
+                    },
+                    SimpleDocument {
+                        id: 8,
+                        name: "eight",
+                    },
+                ],
+                Some("id"),
+                Some("filter-add"),
+            )
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        index
+            .set_filterable_attributes(["id"])
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let mut query = DocumentDeletionQuery::new(&index);
+        query.with_filter("id = 7");
+        let filtered = index
+            .delete_documents_with(&query, Some("delete-filter"))
+            .await?;
+        assert_eq!(filtered.custom_metadata.as_deref(), Some("delete-filter"));
+        let filtered_task = filtered.wait_for_completion(&client, None, None).await?;
+        expect_task_metadata(filtered_task, "delete-filter");
+
+        let delete_all = index.delete_all_documents(Some("delete-all")).await?;
+        assert_eq!(delete_all.custom_metadata.as_deref(), Some("delete-all"));
+        let delete_all_task = delete_all.wait_for_completion(&client, None, None).await?;
+        expect_task_metadata(delete_all_task, "delete-all");
+
         Ok(())
     }
 }
