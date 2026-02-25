@@ -1736,3 +1736,23 @@ webhooks_patch_1: |-
     .unwrap();
 webhooks_delete_1: |-
   client.delete_webhook("WEBHOOK_UUID").await.unwrap();
+customize_log_levels_1: |-
+  let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+  let new_log_level =  NewLogLevel { target:"info".to_string() };
+  client.customize_log_levels(new_log_level).await.unwrap();
+open_log_stream_1: |-
+  use futures::StreamExt;
+  let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+  let logs_config = LogStreamRequest {
+    target: "info".to_string(),
+    mode: LogMode::Human
+  };
+  let byte_stream = client.open_log_stream(logs_config).await.unwrap();
+  byte_s.for_each(|chunk| async {
+      if let Ok(chunk) = chunk {
+        println!("{}", String::from_utf8_lossy(&chunk));
+      }
+  }).await;
+interrupt_log_stream_1: |-
+  let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+  client.interrupt_log_stream().await.unwrap();
