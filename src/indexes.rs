@@ -13,6 +13,30 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display, time::Duration};
 use time::OffsetDateTime;
 
+/// Builds the URL for document addition/update endpoints with optional query parameters.
+fn build_documents_url(
+    host: &str,
+    index_uid: &str,
+    primary_key: Option<&str>,
+    skip_creation: Option<bool>,
+) -> String {
+    let base_url = format!("{}/indexes/{}/documents", host, index_uid);
+    let mut query_params = Vec::new();
+
+    if let Some(pk) = primary_key {
+        query_params.push(format!("primaryKey={}", pk));
+    }
+    if skip_creation == Some(true) {
+        query_params.push("skipCreation=true".to_string());
+    }
+
+    if query_params.is_empty() {
+        base_url
+    } else {
+        format!("{}?{}", base_url, query_params.join("&"))
+    }
+}
+
 /// A Meilisearch [index](https://www.meilisearch.com/docs/learn/core_concepts/indexes).
 ///
 /// # Example
@@ -216,7 +240,7 @@ impl<Http: HttpClient> Index<Http> {
     /// let movies = client.index("execute_query");
     ///
     /// // add some documents
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let query = SearchQuery::new(&movies).with_query("Interstellar").with_limit(5).build();
     /// let results = movies.execute_query::<Movie>(&query).await.unwrap();
@@ -262,7 +286,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut movies = client.index("search");
     /// # // add some documents
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let results = movies.search()
     ///     .with_query("Interstellar")
@@ -303,7 +327,7 @@ impl<Http: HttpClient> Index<Http> {
     /// let movies = client.index("execute_query2");
     ///
     /// // add some documents
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// # movies.set_filterable_attributes(["genre"]).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let query = FacetSearchQuery::new(&movies, "genre").with_facet_query("scifi").build();
@@ -353,7 +377,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movies = client.index("get_document");
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// // retrieve a document (you have to put the document in the index before)
     /// let interstellar = movies.get_document::<Movie>("Interstellar").await.unwrap();
@@ -403,7 +427,7 @@ impl<Http: HttpClient> Index<Http> {
     ///     id: String,
     /// }
     /// # let index = client.index("document_query_execute");
-    /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None, None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let mut document_query = DocumentQuery::new(&index);
     /// document_query.with_fields(["id"]);
@@ -457,7 +481,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movie_index = client.index("get_documents");
-    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// // retrieve movies (you have to put some movies in the index before)
     /// let movies = movie_index.get_documents::<Movie>().await.unwrap();
@@ -501,7 +525,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     ///
     /// let movie_index = client.index("get_documents_with");
-    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let mut query = DocumentsQuery::new(&movie_index);
     /// query.with_limit(1);
@@ -609,7 +633,7 @@ impl<Http: HttpClient> Index<Http> {
     ///         name: String::from("Apollo13"),
     ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
     ///     },
-    /// ], Some("name")).await.unwrap();
+    /// ], Some("name"), None).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
@@ -622,15 +646,9 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
+        skip_creation: Option<bool>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = build_documents_url(&self.client.host, &self.uid, primary_key, skip_creation);
         self.client
             .http_client
             .request::<(), &[T], TaskInfo>(
@@ -672,6 +690,7 @@ impl<Http: HttpClient> Index<Http> {
     ///     { "id": 2, "body": "catto" }"#.as_bytes(),
     ///     "application/x-ndjson",
     ///     Some("id"),
+    ///     None,
     ///   ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -688,15 +707,9 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
+        skip_creation: Option<bool>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = build_documents_url(&self.client.host, &self.uid, primary_key, skip_creation);
         self.client
             .http_client
             .stream_request::<(), T, TaskInfo>(
@@ -717,7 +730,7 @@ impl<Http: HttpClient> Index<Http> {
         documents: &[T],
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_replace(documents, primary_key).await
+        self.add_or_replace(documents, primary_key, None).await
     }
 
     /// Add a raw ndjson payload and update them if they already exist.
@@ -762,7 +775,7 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_update_unchecked_payload(payload, "application/x-ndjson", primary_key)
+        self.add_or_update_unchecked_payload(payload, "application/x-ndjson", primary_key, None)
             .await
     }
 
@@ -808,7 +821,7 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_replace_unchecked_payload(payload, "application/x-ndjson", primary_key)
+        self.add_or_replace_unchecked_payload(payload, "application/x-ndjson", primary_key, None)
             .await
     }
 
@@ -853,7 +866,7 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_update_unchecked_payload(payload, "text/csv", primary_key)
+        self.add_or_update_unchecked_payload(payload, "text/csv", primary_key, None)
             .await
     }
 
@@ -898,7 +911,7 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         primary_key: Option<&str>,
     ) -> Result<TaskInfo, Error> {
-        self.add_or_replace_unchecked_payload(payload, "text/csv", primary_key)
+        self.add_or_replace_unchecked_payload(payload, "text/csv", primary_key, None)
             .await
     }
 
@@ -944,7 +957,7 @@ impl<Http: HttpClient> Index<Http> {
     ///         name: String::from("Apollo13"),
     ///         description: String::from("The true story of technical troubles that scuttle the Apollo 13 lunar mission in 1971, risking the lives of astronaut Jim Lovell and his crew, with the failed journey turning into a thrilling saga of heroism. Drifting more than 200,000 miles from Earth, the astronauts work furiously with the ground crew to avert tragedy.")
     ///     },
-    /// ], Some("name")).await.unwrap();
+    /// ], Some("name"), None).await.unwrap();
     ///
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -958,15 +971,9 @@ impl<Http: HttpClient> Index<Http> {
         &self,
         documents: &[T],
         primary_key: Option<&str>,
+        skip_creation: Option<bool>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = build_documents_url(&self.client.host, &self.uid, primary_key, skip_creation);
         self.client
             .http_client
             .request::<(), &[T], TaskInfo>(
@@ -1008,6 +1015,7 @@ impl<Http: HttpClient> Index<Http> {
     ///     { "id": 2, "body": "catto" }"#.as_bytes(),
     ///     "application/x-ndjson",
     ///     Some("id"),
+    ///     None,
     /// ).await.unwrap();
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
@@ -1026,15 +1034,9 @@ impl<Http: HttpClient> Index<Http> {
         payload: T,
         content_type: &str,
         primary_key: Option<&str>,
+        skip_creation: Option<bool>,
     ) -> Result<TaskInfo, Error> {
-        let url = if let Some(primary_key) = primary_key {
-            format!(
-                "{}/indexes/{}/documents?primaryKey={}",
-                self.client.host, self.uid, primary_key
-            )
-        } else {
-            format!("{}/indexes/{}/documents", self.client.host, self.uid)
-        };
+        let url = build_documents_url(&self.client.host, &self.uid, primary_key, skip_creation);
         self.client
             .http_client
             .stream_request::<(), T, TaskInfo>(
@@ -1072,7 +1074,7 @@ impl<Http: HttpClient> Index<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movie_index = client.index("delete_all_documents");
     /// #
-    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movie_index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// #
     /// movie_index.delete_all_documents()
     ///     .await
@@ -1118,7 +1120,7 @@ impl<Http: HttpClient> Index<Http> {
     /// #
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut movies = client.index("delete_document");
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// // add a document with id = Interstellar
     /// movies.delete_document("Interstellar")
     ///     .await
@@ -1167,7 +1169,7 @@ impl<Http: HttpClient> Index<Http> {
     /// let movies = client.index("delete_documents");
     /// #
     /// # // add some documents
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     /// #
     /// // delete some documents
     /// movies.delete_documents(&["Interstellar", "Unknown"])
@@ -1224,7 +1226,7 @@ impl<Http: HttpClient> Index<Http> {
     /// #
     /// # index.set_filterable_attributes(["id"]);
     /// # // add some documents
-    /// # index.add_or_replace(&[Movie{id:String::from("1"), name: String::from("First movie") }, Movie{id:String::from("1"), name: String::from("First movie") }], Some("id")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # index.add_or_replace(&[Movie{id:String::from("1"), name: String::from("First movie") }, Movie{id:String::from("1"), name: String::from("First movie") }], Some("id"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let mut query = DocumentDeletionQuery::new(&index);
     /// query.with_filter("id = 1");
@@ -1719,7 +1721,10 @@ impl<Http: HttpClient> Index<Http> {
     ) -> Result<Vec<TaskInfo>, Error> {
         let mut task = Vec::with_capacity(documents.len());
         for document_batch in documents.chunks(batch_size.unwrap_or(1000)) {
-            task.push(self.add_or_update(document_batch, primary_key).await?);
+            task.push(
+                self.add_or_update(document_batch, primary_key, None)
+                    .await?,
+            );
         }
         Ok(task)
     }
@@ -2264,7 +2269,7 @@ mod tests {
         let _ = index.get_task(task).await?;
 
         let task = index
-            .add_or_update(&updated_json, None)
+            .add_or_update(&updated_json, None, None)
             .await
             .unwrap()
             .wait_for_completion(&client, None, None)
@@ -2283,6 +2288,81 @@ mod tests {
         ];
 
         assert_eq!(elements.results, expected_result);
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_add_or_replace_with_skip_creation(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        // First, add one document
+        let initial_doc = [json!({ "id": 1, "body": "original" })];
+        index
+            .add_or_replace(&initial_doc, Some("id"), None)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        // Now try to add two documents with skip_creation=true
+        // Only the existing document (id: 1) should be updated
+        let docs_to_add = [
+            json!({ "id": 1, "body": "updated" }),
+            json!({ "id": 2, "body": "should_not_exist" }),
+        ];
+        let task = index
+            .add_or_replace(&docs_to_add, Some("id"), Some(true))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        assert!(matches!(status, Task::Succeeded { .. }));
+
+        // Verify only document id=1 exists and is updated
+        let elements = index.get_documents::<serde_json::Value>().await?;
+        assert_eq!(elements.results.len(), 1);
+        assert_eq!(elements.results[0]["id"], 1);
+        assert_eq!(elements.results[0]["body"], "updated");
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_add_or_update_with_skip_creation(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        // First, add one document
+        let initial_doc = [json!({ "id": 1, "body": "original", "extra": "field" })];
+        index
+            .add_or_replace(&initial_doc, Some("id"), None)
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        // Now try to update two documents with skip_creation=true
+        // Only the existing document (id: 1) should be updated (partial update)
+        let docs_to_update = [
+            json!({ "id": 1, "body": "updated" }),
+            json!({ "id": 2, "body": "should_not_exist" }),
+        ];
+        let task = index
+            .add_or_update(&docs_to_update, Some("id"), Some(true))
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
+
+        let status = index.get_task(task).await?;
+        assert!(matches!(status, Task::Succeeded { .. }));
+
+        // Verify only document id=1 exists with partial update (extra field preserved)
+        let elements = index.get_documents::<serde_json::Value>().await?;
+        assert_eq!(elements.results.len(), 1);
+        assert_eq!(elements.results[0]["id"], 1);
+        assert_eq!(elements.results[0]["body"], "updated");
+        assert_eq!(elements.results[0]["extra"], "field");
 
         Ok(())
     }
