@@ -1382,11 +1382,11 @@ delete_a_key_1: |-
     .delete_key(&key)
     .await?;
 authorization_header_1:
-  let client = Client::new("http://localhost:7700", Some("masterKey"));
+  let client = Client::new("http://localhost:7700", Some("MASTER_KEY"));
   let keys = client
-  .get_keys()
-  .await
-  .unwrap();
+    .get_keys()
+    .await
+    .unwrap();
 tenant_token_guide_generate_sdk_1: |-
   let api_key = "B5KdX2MY2jV6EXfUs6scSfmC...";
   let api_key_uid = "6062abda-a5aa-4414-ac91-ecd7944c0f8d";
@@ -1620,12 +1620,6 @@ reset_localized_attribute_settings_1: |-
   let task: TaskInfo = client
     .index("books")
     .reset_localized_attributes()
-    .await
-    .unwrap();
-basic_security_tutorial_listing_1: |-
-  let client = Client::new("http://localhost:7700", Some("MASTER_KEY"));
-  client
-    .get_keys()
     .await
     .unwrap();
 basic_security_tutorial_admin_1: |-
