@@ -759,143 +759,6 @@ filtering_guide_nested_1: |-
     .execute()
     .await
     .unwrap();
-search_parameter_guide_query_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("shifu")
-    .execute()
-    .await
-    .unwrap();
-search_parameter_guide_attributes_to_search_on_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("adventure")
-    .with_attributes_to_search_on(&["overview"])
-    .execute()
-    .await
-    .unwrap();
-search_parameter_guide_offset_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("shifu")
-    .with_offset(1)
-    .execute()
-    .await
-    .unwrap();
-search_parameter_guide_limit_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("shifu")
-    .with_limit(2)
-    .execute()
-    .await
-    .unwrap();
-search_parameter_guide_retrieve_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("shifu")
-    .with_attributes_to_retrieve(Selectors::Some(&["overview", "title"]))
-    .execute()
-    .await
-    .unwrap();
-search_parameter_guide_crop_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("shifu")
-    .with_attributes_to_crop(Selectors::Some(&[("overview", None)]))
-    .with_crop_length(5)
-    .execute()
-    .await
-    .unwrap();
-
-  // Get the formatted results
-  let formatted_results: Vec<&Movie> = results
-    .hits
-    .iter()
-    .map(|r| r.formatted_result.as_ref().unwrap())
-    .collect();
-search_parameter_guide_crop_marker_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("shifu")
-    .with_attributes_to_crop(Selectors::Some(&[("overview", None)]))
-    .with_crop_marker("[…]")
-    .execute()
-    .await
-    .unwrap();
-
-  // Get the formatted results
-  let formatted_results: Vec<&Movie> = results
-    .hits
-    .iter()
-    .map(|r| r.formatted_result.as_ref().unwrap())
-    .collect();
-search_parameter_guide_highlight_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("winter feast")
-    .with_attributes_to_highlight(Selectors::Some(&["overview"]))
-    .execute()
-    .await
-    .unwrap();
-
-  // Get the formatted results
-  let formatted_results: Vec<&Movie> = results
-    .hits
-    .iter()
-    .map(|r| r.formatted_result.as_ref().unwrap())
-    .collect();
-search_parameter_guide_highlight_tag_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("winter feast")
-    .with_attributes_to_highlight(Selectors::Some(&["overview"]))
-    .with_highlight_pre_tag("<span class=\"highlight\">")
-    .with_highlight_post_tag("</span>")
-    .execute()
-    .await
-    .unwrap();
-
-  // Get the formatted results
-  let formatted_results: Vec<&Movie> = results
-    .hits
-    .iter()
-    .map(|r| r.formatted_result.as_ref().unwrap())
-    .collect();
-search_parameter_guide_show_matches_position_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("winter feast")
-    .with_show_matches_position(true)
-    .execute()
-    .await
-    .unwrap();
-
-  // Get the matches info
-  let matches_position: Vec<&HashMap<String, Vec<MatchRange>>> = results
-    .hits
-    .iter()
-    .map(|r| r.matches_position.as_ref().unwrap())
-    .collect();
-search_parameter_guide_show_ranking_score_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("dragon")
-    .with_show_ranking_score(true)
-    .execute()
-    .await
-    .unwrap();
 search_parameter_guide_show_ranking_score_details_1: |-
   let results: SearchResults<Movie> = client
     .index("movies")
@@ -905,37 +768,6 @@ search_parameter_guide_show_ranking_score_details_1: |-
     .execute()
     .await
     .unwrap();
-search_parameter_guide_matching_strategy_1: |-
-  let results: SearchResults<Movie> = client
-  .index("movies")
-  .search()
-  .with_query("big fat liar")
-  .with_matching_strategy(MatchingStrategies::LAST)
-  .execute()
-  .await
-  .unwrap();
-search_parameter_guide_matching_strategy_2: |-
-  let results: SearchResults<Movie> = client
-  .index("movies")
-  .search()
-  .with_query("big fat liar")
-  .with_matching_strategy(MatchingStrategies::ALL)
-  .execute()
-  .await
-  .unwrap();
-search_parameter_guide_matching_strategy_3: |-
-  let results: SearchResults<Movie> = client
-  .index("movies")
-  .search()
-  .with_query("white shirt")
-  .with_matching_strategy(MatchingStrategies::FREQUENCY)
-  .execute()
-  .await
-  .unwrap();
-search_parameter_guide_hitsperpage_1: |-
-  client.index("movies").search().with_hits_per_page(15).execute().await?;
-search_parameter_guide_page_1: |-
-  client.index("movies").search().with_page(2).execute().await?;
 typo_tolerance_guide_1: |-
   let typo_tolerance = TypoToleranceSettings {
     enabled: Some(false),
@@ -1166,15 +998,6 @@ filtering_update_settings_1: |-
     .set_filterable_attributes(["director", "genres"])
     .await
     .unwrap();
-faceted_search_walkthrough_filter_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("thriller")
-    .with_filter("(genres = Horror AND genres = Mystery) OR director = \"Jordan Peele\"")
-    .execute()
-    .await
-    .unwrap();
 faceted_search_update_settings_1: |-
   let task: TaskInfo = client
     .index("movie_ratings")
@@ -1193,14 +1016,6 @@ faceted_search_1: |-
 post_dump_1: |-
   client
     .create_dump()
-    .await
-    .unwrap();
-phrase_search_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("\"african american\" horror")
-    .execute()
     .await
     .unwrap();
 sorting_guide_update_sortable_attributes_1: |-
@@ -1277,15 +1092,6 @@ reset_sortable_attributes_1: |-
   let task: TaskInfo = client
     .index("books")
     .reset_sortable_attributes()
-    .await
-    .unwrap();
-search_parameter_guide_sort_1: |-
-  let results: SearchResults<Books> = client
-    .index("books")
-    .search()
-    .with_query("science fiction")
-    .with_sort(&["price:asc"])
-    .execute()
     .await
     .unwrap();
 geosearch_guide_filter_settings_1: |-
@@ -1444,14 +1250,6 @@ update_experimental_features_1: |-
     .update()
     .await
     .unwrap();
-search_parameter_guide_facet_stats_1: |-
-  let books = client.index("movie_ratings");
-  let results: SearchResults<Book> = SearchQuery::new(&books)
-    .with_query("Batman")
-    .with_facets(Selectors::Some(&["genres", "rating"))
-    .execute()
-    .await
-    .unwrap();
 get_proximity_precision_settings_1: |-
   let proximity_precision: String = client
     .index("books")
@@ -1556,15 +1354,6 @@ create_snapshot_1: |-
     .create_snapshot()
     .await
     .unwrap();
-search_parameter_reference_distinct_1: |-
-  let res = client
-    .index("INDEX_NAME")
-    .search()
-    .with_query("QUERY TERMS")
-    .with_distinct("ATTRIBUTE_A")
-    .execute()
-    .await
-    .unwrap();
 distinct_attribute_guide_filterable_1: |-
   let task: TaskInfo = client
     .index("products")
@@ -1579,24 +1368,6 @@ distinct_attribute_guide_distinct_parameter_1: |-
     .search()
     .with_query("white shirt")
     .with_distinct("sku")
-    .execute()
-    .await
-    .unwrap();
-search_parameter_reference_ranking_score_threshold_1: |-
-  let res = client
-    .index("INDEX_NAME")
-    .search()
-    .with_query("badman")
-    .with_ranking_score_threshold(0.2)
-    .execute()
-    .await
-    .unwrap();
-search_parameter_reference_locales_1: |-
-  let res = client
-    .index("books")
-    .search()
-    .with_query("進撃の巨人")
-    .with_locales(&["jpn"])
     .execute()
     .await
     .unwrap();
@@ -1659,40 +1430,11 @@ index_settings_tutorial_api_put_setting_1: |-
     .unwrap();
 index_settings_tutorial_api_task_1: |-
   let task_status = index.get_task(&task).await.unwrap();
-negative_search_1: |-
-  let results = index.search()
-    .with_query("-escape")
-    .execute()
-    .await
-    .unwrap();
-negative_search_2: |-
-  let results = index.search()
-    .with_query("-\"escape room\"")
-    .execute()
-    .await
-    .unwrap();
-search_parameter_guide_hybrid_1: |-
-  let results = index
-    .search()
-    .with_query("kitchen utensils")
-    .with_hybrid("EMBEDDER_NAME", 0.9)
-    .execute()
-    .await
-    .unwrap();
 search_parameter_guide_vector_1: |-
   let results = index
     .search()
     .with_vector(&[0.0, 1.0, 2.0])
     .with_hybrid("EMBEDDER_NAME", 1.0)
-    .execute()
-    .await
-    .unwrap();
-search_parameter_reference_retrieve_vectors_1: |-
-  let results = index
-    .search()
-    .with_query("kitchen utensils")
-    .with_retrieve_vectors(true)
-    .with_hybrid("EMBEDDER_NAME", 0.5)
     .execute()
     .await
     .unwrap();
