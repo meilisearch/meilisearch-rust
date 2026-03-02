@@ -187,6 +187,14 @@ pub struct Embedder {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub response: Option<serde_json::Value>,
 
+    /// Headers is a JSON object whose keys represent the name of additional headers to send in
+    /// requests to embedders, and whose values represent the value of these additional headers.
+    ///
+    /// This field is optional when using the rest embedder.
+    /// This field is incompatible with all other embedders.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    headers: Option<HashMap<String, String>>,
+
     /// Once set to true, irreversibly converts all vector dimensions to 1-bit values
     #[serde(skip_serializing_if = "Option::is_none")]
     pub binary_quantized: Option<bool>,
@@ -206,6 +214,41 @@ pub struct Embedder {
     /// Configures incoming media fragments for multimodal search queries.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_fragments: Option<HashMap<String, EmbedderFragment>>,
+}
+
+impl Embedder {
+    /// This function allows you to set headers for `Rest` embedders. If used with other embedders,
+    /// it *WILL* panic.
+    ///
+    /// If the header argument is `None`, the default value for headers is used:
+    ///
+    /// ```text
+    /// Authorization: Bearer EMBEDDER_API_KEY (only if apiKey was provided)
+    ///
+    /// Content-Type: application/json
+    /// ```
+    pub fn with_headers(mut self, headers: Option<HashMap<String, String>>) -> Self {
+        if self.source == EmbedderSource::Rest {
+            self.headers = if let Some(headers) = headers {
+                Some(headers)
+            } else {
+                if let Some(api_key) = self.api_key.clone() {
+                    Some(HashMap::from([
+                        (String::from("Authorization"), format!("Bearer {}", api_key)),
+                        ("Content-Type".to_string(), "application/json".to_string()),
+                    ]))
+                } else {
+                    Some(HashMap::from([(
+                        "Content-Type".to_string(),
+                        "application/json".to_string(),
+                    )]))
+                }
+            };
+        } else {
+            panic!("Headers are only supported for Rest embedders");
+        }
+        self
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
