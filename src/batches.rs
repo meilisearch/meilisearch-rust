@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
-
 use crate::{client::Client, errors::Error, request::HttpClient};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use time::OffsetDateTime;
 
 /// Types and queries for the Meilisearch Batches API.
 ///
@@ -10,30 +10,26 @@ use crate::{client::Client, errors::Error, request::HttpClient};
 #[serde(rename_all = "camelCase")]
 pub struct Batch {
     /// Unique identifier of the batch.
-    pub uid: u32,
-    /// When the batch was enqueued.
-    #[serde(default, with = "time::serde::rfc3339::option")]
-    pub enqueued_at: Option<OffsetDateTime>,
+    pub uid: i64,
+    /// Batch progress.
+    pub progress: Option<BatchProgress>,
+    /// Batch stats.
+    pub stats: BatchStats,
+    /// The total elapsed time the batch spent in the processing state, in ISO 8601 format.
+    pub duration: Option<String>,
     /// When the batch started processing.
     #[serde(default, with = "time::serde::rfc3339::option")]
     pub started_at: Option<OffsetDateTime>,
     /// When the batch finished processing.
     #[serde(default, with = "time::serde::rfc3339::option")]
     pub finished_at: Option<OffsetDateTime>,
-    /// Index uid related to this batch (if applicable).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub index_uid: Option<String>,
-    /// The task uids that are part of this batch.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub task_uids: Option<Vec<u32>>,
     /// The strategy that caused the autobatcher to stop batching tasks.
-    ///
     /// Introduced in Meilisearch v1.15.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub batch_strategy: Option<BatchStrategy>,
 }
 
-/// Reason why the autobatcher stopped batching tasks.
+/// Reason why the auto batcher stopped batching tasks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
@@ -65,12 +61,49 @@ pub struct BatchesResults {
 pub struct BatchesQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing)]
     client: &'a Client<Http>,
+    ///Select batches containing the tasks with the specified uids.
+    /// Separate multiple task uids with a comma
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    uids: Vec<i64>,
+    /// Filter batches by their uid. Separate multiple batch uids with a comma
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    batch_uids: Vec<i64>,
+    /// Select batches containing tasks affecting the specified indexes.
+    /// Separate multiple indexUids with a comma
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    index_uids: Vec<String>,
+    /// Select batches containing tasks with the specified status.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    statuses: Vec<Status>,
+    /// Select batches containing tasks with the specified type.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    types: Vec<Type>,
     /// Maximum number of batches to return.
     #[serde(skip_serializing_if = "Option::is_none")]
     limit: Option<u32>,
     /// The first batch uid that should be returned.
     #[serde(skip_serializing_if = "Option::is_none")]
     from: Option<u32>,
+    /// If true, returns results in the reverse order, from oldest to most recent
+    reverse: bool,
+    /// Select batches containing tasks with the specified enqueuedAt field
+    #[serde(skip_serializing_if = "Option::is_none")]
+    before_enqueued_at: Option<OffsetDateTime>,
+    /// Select batches containing tasks with the specified startedAt field
+    #[serde(skip_serializing_if = "Option::is_none")]
+    before_started_at: Option<OffsetDateTime>,
+    /// Select batches containing tasks with the specified finishedAt field
+    #[serde(skip_serializing_if = "Option::is_none")]
+    before_finished_at: Option<OffsetDateTime>,
+    /// Select batches containing tasks with the specified enqueuedAt field
+    #[serde(skip_serializing_if = "Option::is_none")]
+    after_enqueued_at: Option<OffsetDateTime>,
+    /// Select batches containing tasks with the specified startedAt field
+    #[serde(skip_serializing_if = "Option::is_none")]
+    after_started_at: Option<OffsetDateTime>,
+    /// Select batches containing tasks with the specified finishedAt field
+    #[serde(skip_serializing_if = "Option::is_none")]
+    after_finished_at: Option<OffsetDateTime>,
 }
 
 impl<'a, Http: HttpClient> BatchesQuery<'a, Http> {
@@ -78,8 +111,20 @@ impl<'a, Http: HttpClient> BatchesQuery<'a, Http> {
     pub fn new(client: &'a Client<Http>) -> BatchesQuery<'a, Http> {
         BatchesQuery {
             client,
+            uids: vec![],
+            batch_uids: vec![],
+            index_uids: vec![],
+            statuses: vec![],
+            types: vec![],
             limit: None,
             from: None,
+            reverse: false,
+            before_enqueued_at: None,
+            before_started_at: None,
+            before_finished_at: None,
+            after_enqueued_at: None,
+            after_started_at: None,
+            after_finished_at: None,
         }
     }
 
@@ -95,10 +140,139 @@ impl<'a, Http: HttpClient> BatchesQuery<'a, Http> {
         self
     }
 
+    #[must_use]
+    pub fn with_uids(&mut self, uids: Vec<i64>) -> &mut Self {
+        self.uids = uids;
+        self
+    }
+
+    #[must_use]
+    pub fn with_batch_uids(&mut self, batch_uids: Vec<i64>) -> &mut Self {
+        self.batch_uids = batch_uids;
+        self
+    }
+
+    #[must_use]
+    pub fn with_index_uids(&mut self, index_uids: Vec<String>) -> &mut Self {
+        self.index_uids = index_uids;
+        self
+    }
+
+    #[must_use]
+    pub fn with_statuses(&mut self, statuses: Vec<Status>) -> &mut Self {
+        self.statuses = statuses;
+        self
+    }
+
+    #[must_use]
+    pub fn with_types(&mut self, types: Vec<Type>) -> &mut Self {
+        self.types = types;
+        self
+    }
+
+    #[must_use]
+    pub fn with_reverse(&mut self, reverse: bool) -> &mut Self {
+        self.reverse = reverse;
+        self
+    }
+
+    #[must_use]
+    pub fn with_before_enqueued_at(&mut self, before_enqueued_at: OffsetDateTime) -> &mut Self {
+        self.before_enqueued_at = Some(before_enqueued_at);
+        self
+    }
+
+    #[must_use]
+    pub fn with_before_started_at(&mut self, before_started_at: OffsetDateTime) -> &mut Self {
+        self.before_started_at = Some(before_started_at);
+        self
+    }
+
+    #[must_use]
+    pub fn with_before_finished_at(&mut self, before_finished_at: OffsetDateTime) -> &mut Self {
+        self.before_finished_at = Some(before_finished_at);
+        self
+    }
+
+    #[must_use]
+    pub fn with_after_enqueued_at(&mut self, after_enqueued_at: OffsetDateTime) -> &mut Self {
+        self.after_enqueued_at = Some(after_enqueued_at);
+        self
+    }
+
+    #[must_use]
+    pub fn with_after_started_at(&mut self, after_started_at: OffsetDateTime) -> &mut Self {
+        self.after_started_at = Some(after_started_at);
+        self
+    }
+
+    #[must_use]
+    pub fn with_after_finished_at(&mut self, after_finished_at: OffsetDateTime) -> &mut Self {
+        self.after_finished_at = Some(after_finished_at);
+        self
+    }
+
     /// Execute the query and list batches.
     pub async fn execute(&self) -> Result<BatchesResults, Error> {
         self.client.get_batches_with(self).await
     }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BatchProgress {
+    pub steps: Vec<BatchProgressStep>,
+    pub percentage: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchProgressStep {
+    pub current_step: String,
+    pub finished: i32,
+    pub total: i32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchStats {
+    pub total_nb_tasks: i32,
+    pub status: HashMap<Status, i32>,
+    pub types: HashMap<Type, i32>,
+    pub indexed_uids: HashMap<String, i32>,
+    pub progress_trace: HashMap<String, String>,
+    pub write_channel_congestion: HashMap<String, String>,
+    pub internal_database_sizes: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum Status {
+    Enqueued,
+    Processing,
+    Succeeded,
+    Failed,
+    Canceled,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum Type {
+    DocumentAdditionOrUpdate,
+    DocumentEdition,
+    DocumentDeletion,
+    SettingsUpdate,
+    IndexCreation,
+    IndexDeletion,
+    IndexUpdate,
+    IndexSwap,
+    TaskCancellation,
+    TaskDeletion,
+    DumpCreation,
+    SnapshotCreation,
+    Export,
+    UpgradeDatabase,
+    IndexCompaction,
+    NetworkTopologyChange,
 }
 
 #[cfg(test)]
