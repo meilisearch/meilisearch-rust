@@ -244,6 +244,8 @@ pub mod dumps;
 pub mod errors;
 /// Module related to runtime and instance features.
 pub mod features;
+/// Module related to [fields queries](https://github.com/meilisearch/meilisearch/pull/6082)
+pub mod fields;
 /// Module containing the Index struct.
 pub mod indexes;
 /// Module containing the [`Key`](key::Key) struct.
