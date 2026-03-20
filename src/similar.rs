@@ -41,7 +41,7 @@ pub struct SimilarResults<T> {
 ///
 /// You can add similar parameters using the builder syntax.
 ///
-/// See [this page](https://www.meilisearch.com/docs/reference/api/similar#get-similar-documents-with-post) for the official list and description of all parameters.
+/// See [this page](https://www.meilisearch.com/docs/reference/api/similar-documents/get-similar-documents-with-post#get-similar-documents-with-post) for the official list and description of all parameters.
 ///
 /// # Examples
 ///
@@ -92,7 +92,7 @@ pub struct SimilarQuery<'a, Http: HttpClient> {
 
     /// Filter queries by an attribute’s value
     ///
-    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting/filter_search_results) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
 

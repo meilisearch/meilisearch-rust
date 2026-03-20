@@ -255,10 +255,10 @@ pub struct Settings {
     /// List of words ignored by Meilisearch when present in search queries.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_words: Option<Vec<String>>,
-    /// List of [ranking rules](https://www.meilisearch.com/docs/learn/core_concepts/relevancy#order-of-the-rules) sorted by order of importance.
+    /// List of [ranking rules](https://www.meilisearch.com/docs/learn/relevancy/relevancy#order-of-the-rules) sorted by order of importance.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ranking_rules: Option<Vec<String>>,
-    /// Attributes to use for [filtering](https://www.meilisearch.com/docs/learn/advanced/filtering).
+    /// Attributes to use for [filtering](https://www.meilisearch.com/docs/learn/filtering_and_sorting/filter_search_results).
     ///
     /// Supports both plain attribute names and settings objects.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -527,7 +527,7 @@ impl Settings {
         }
     }
 
-    /// Set the [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    /// Set the [embedders](https://www.meilisearch.com/docs/learn/ai_powered_search/getting_started_with_ai_search) of the [Index].
     #[must_use]
     pub fn with_embedders<S>(self, embedders: HashMap<S, Embedder>) -> Settings
     where
@@ -626,7 +626,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [synonyms](https://www.meilisearch.com/docs/reference/api/settings#get-synonyms) of the [Index].
+    /// Get [synonyms](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#get-synonyms) of the [Index].
     ///
     /// # Example
     ///
@@ -660,7 +660,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [pagination](https://www.meilisearch.com/docs/reference/api/settings#pagination) of the [Index].
+    /// Get [pagination](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#pagination) of the [Index].
     ///
     /// # Example
     ///
@@ -694,7 +694,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
+    /// Get [stop-words](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#stop-words) of the [Index].
     ///
     /// # Example
     ///
@@ -727,7 +727,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [ranking rules](https://www.meilisearch.com/docs/reference/api/settings#ranking-rules) of the [Index].
+    /// Get [ranking rules](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#ranking-rules) of the [Index].
     ///
     /// # Example
     ///
@@ -761,7 +761,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
+    /// Get [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#filterable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -815,7 +815,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
+    /// Get [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#sortable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -849,7 +849,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
+    /// Get the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -883,7 +883,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings#searchable-attributes) of the [Index].
+    /// Get [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#searchable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -917,7 +917,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings#displayed-attributes) of the [Index].
+    /// Get [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#displayed-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -951,7 +951,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
+    /// Get [faceting](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#faceting) settings of the [Index].
     ///
     /// # Example
     ///
@@ -985,7 +985,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [dictionary](https://www.meilisearch.com/docs/reference/api/settings#dictionary) of the [Index].
+    /// Get [dictionary](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#dictionary) of the [Index].
     ///
     /// # Example
     ///
@@ -1018,7 +1018,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [proximity_precision](https://www.meilisearch.com/docs/reference/api/settings#proximity-precision) of the [Index].
+    /// Get [proximity_precision](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#proximity-precision) of the [Index].
     ///
     /// # Example
     ///
@@ -1051,7 +1051,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings#facet-search) of the [Index].
+    /// Get [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#facet-search) of the [Index].
     ///
     /// # Example
     ///
@@ -1084,7 +1084,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [prefix-search settings](https://www.meilisearch.com/docs/reference/api/settings#prefix-search) of the [Index].
+    /// Get [prefix-search settings](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#prefix-search) of the [Index].
     ///
     /// # Example
     ///
@@ -1117,7 +1117,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [typo tolerance](https://www.meilisearch.com/docs/reference/api/settings#typo-tolerance) of the [Index].
+    /// Get [typo tolerance](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#typo-tolerance) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -1148,7 +1148,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    /// Get [embedders](https://www.meilisearch.com/docs/learn/ai_powered_search/getting_started_with_ai_search) of the [Index].
     ///
     /// ```
     /// # use std::collections::HashMap;
@@ -1191,7 +1191,7 @@ impl<Http: HttpClient> Index<Http> {
             .map(|r| r.unwrap_or_default())
     }
 
-    /// Set [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    /// Set [embedders](https://www.meilisearch.com/docs/learn/ai_powered_search/getting_started_with_ai_search) of the [Index].
     ///
     /// ```
     /// # use std::collections::HashMap;
@@ -1239,7 +1239,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
+    /// Get [search cutoff](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#search-cutoff) settings of the [Index].
     ///
     /// # Example
     ///
@@ -1272,7 +1272,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [separator token](https://www.meilisearch.com/docs/reference/api/settings#separator-tokens) of the [Index].
+    /// Get [separator token](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#separator-tokens) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -1303,7 +1303,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [non separator token](https://www.meilisearch.com/docs/reference/api/settings#non-separator-tokens) of the [Index].
+    /// Get [non separator token](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#non-separator-tokens) of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*};
@@ -1334,7 +1334,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Get [localized attributes](https://www.meilisearch.com/docs/reference/api/settings#localized-attributes-object) settings of the [Index].
+    /// Get [localized attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#localized-attributes-object) settings of the [Index].
     ///
     /// ```
     /// # use meilisearch_sdk::{client::*, indexes::*, settings::LocalizedAttributes};
@@ -1408,7 +1408,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [synonyms](https://www.meilisearch.com/docs/reference/api/settings#synonyms) of the [Index].
+    /// Update [synonyms](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#synonyms) of the [Index].
     ///
     /// # Example
     ///
@@ -1452,7 +1452,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [pagination](https://www.meilisearch.com/docs/reference/api/settings#pagination) of the [Index].
+    /// Update [pagination](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#pagination) of the [Index].
     ///
     /// # Example
     ///
@@ -1489,7 +1489,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
+    /// Update [stop-words](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#stop-words) of the [Index].
     ///
     /// # Example
     ///
@@ -1532,7 +1532,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [ranking rules](https://www.meilisearch.com/docs/reference/api/settings#ranking-rules) of the [Index].
+    /// Update [ranking rules](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#ranking-rules) of the [Index].
     ///
     /// # Example
     ///
@@ -1584,7 +1584,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
+    /// Update [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#filterable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1649,7 +1649,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
+    /// Update [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#sortable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1692,7 +1692,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
+    /// Update the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -1731,7 +1731,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings#searchable-attributes) of the [Index].
+    /// Update [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#searchable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1773,7 +1773,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings#displayed-attributes) of the [Index].
+    /// Update [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#displayed-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -1815,7 +1815,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
+    /// Update [faceting](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#faceting) settings of the [Index].
     ///
     /// # Example
     ///
@@ -1856,7 +1856,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [dictionary](https://www.meilisearch.com/docs/reference/api/settings#dictionary) of the [Index].
+    /// Update [dictionary](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#dictionary) of the [Index].
     ///
     /// # Example
     ///
@@ -1898,7 +1898,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [typo tolerance](https://www.meilisearch.com/docs/reference/api/settings#typo-tolerance) settings of the [Index].
+    /// Update [typo tolerance](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#typo-tolerance) settings of the [Index].
     ///
     /// # Example
     ///
@@ -1945,7 +1945,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [separator tokens](https://www.meilisearch.com/docs/reference/api/settings#separator-tokens) settings of the [Index].
+    /// Update [separator tokens](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#separator-tokens) settings of the [Index].
     ///
     /// # Example
     ///
@@ -1986,7 +1986,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [non separator tokens](https://www.meilisearch.com/docs/reference/api/settings#non-separator-tokens) settings of the [Index].
+    /// Update [non separator tokens](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#non-separator-tokens) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2027,7 +2027,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [proximity-precision](https://www.meilisearch.com/docs/reference/api/settings#proximity-precision) settings of the [Index].
+    /// Update [proximity-precision](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#proximity-precision) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2066,7 +2066,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings#facet-search) settings of the [Index].
+    /// Update [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#facet-search) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2102,7 +2102,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// update [prefix-search settings](https://www.meilisearch.com/docs/reference/api/settings#prefix-search) settings of the [Index].
+    /// update [prefix-search settings](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#prefix-search) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2141,7 +2141,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
+    /// Update [search cutoff](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#search-cutoff) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2177,7 +2177,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Update [localized attributes](https://www.meilisearch.com/docs/reference/api/settings#localized-attributes-object) settings of the [Index].
+    /// Update [localized attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#localized-attributes-object) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2223,7 +2223,7 @@ impl<Http: HttpClient> Index<Http> {
 
     /// Reset [Settings] of the [Index].
     ///
-    /// All settings will be reset to their [default value](https://www.meilisearch.com/docs/reference/api/settings#reset-settings).
+    /// All settings will be reset to their [default value](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#reset-settings).
     ///
     /// # Example
     ///
@@ -2253,7 +2253,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [synonyms](https://www.meilisearch.com/docs/reference/api/settings#synonyms) of the [Index].
+    /// Reset [synonyms](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#synonyms) of the [Index].
     ///
     /// # Example
     ///
@@ -2286,7 +2286,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [pagination](https://www.meilisearch.com/docs/learn/configuration/settings#pagination) of the [Index].
+    /// Reset [pagination](https://www.meilisearch.com/docs/learn/configuration/configuring_index_settings#pagination) of the [Index].
     ///
     /// # Example
     ///
@@ -2318,7 +2318,7 @@ impl<Http: HttpClient> Index<Http> {
             )
             .await
     }
-    /// Reset [stop-words](https://www.meilisearch.com/docs/reference/api/settings#stop-words) of the [Index].
+    /// Reset [stop-words](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#stop-words) of the [Index].
     ///
     /// # Example
     ///
@@ -2351,7 +2351,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [ranking rules](https://www.meilisearch.com/docs/learn/core_concepts/relevancy#ranking-rules) of the [Index] to default value.
+    /// Reset [ranking rules](https://www.meilisearch.com/docs/learn/relevancy/relevancy#ranking-rules) of the [Index] to default value.
     ///
     /// **Default value: `["words", "typo", "proximity", "attribute", "sort", "exactness"]`.**
     ///
@@ -2386,7 +2386,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings#filterable-attributes) of the [Index].
+    /// Reset [filterable attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#filterable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -2419,7 +2419,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings#sortable-attributes) of the [Index].
+    /// Reset [sortable attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#sortable-attributes) of the [Index].
     ///
     /// # Example
     ///
@@ -2452,7 +2452,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings#distinct-attribute) of the [Index].
+    /// Reset the [distinct attribute](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#distinct-attribute) of the [Index].
     ///
     /// # Example
     ///
@@ -2485,7 +2485,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings#searchable-attributes) of
+    /// Reset [searchable attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#searchable-attributes) of
     /// the [Index] (enable all attributes).
     ///
     /// # Example
@@ -2519,7 +2519,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings#displayed-attributes) of the [Index] (enable all attributes).
+    /// Reset [displayed attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#displayed-attributes) of the [Index] (enable all attributes).
     ///
     /// # Example
     ///
@@ -2552,7 +2552,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [faceting](https://www.meilisearch.com/docs/reference/api/settings#faceting) settings of the [Index].
+    /// Reset [faceting](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#faceting) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2585,7 +2585,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [dictionary](https://www.meilisearch.com/docs/reference/api/settings#dictionary) of the [Index].
+    /// Reset [dictionary](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#dictionary) of the [Index].
     ///
     /// # Example
     ///
@@ -2618,7 +2618,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [typo tolerance](https://www.meilisearch.com/docs/reference/api/settings#typo-tolerance) settings of the [Index].
+    /// Reset [typo tolerance](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#typo-tolerance) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2651,7 +2651,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [proximity precision](https://www.meilisearch.com/docs/reference/api/settings#proximity-precision) settings of the [Index].
+    /// Reset [proximity precision](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#proximity-precision) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2684,7 +2684,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [embedders](https://www.meilisearch.com/docs/learn/vector_search) of the [Index].
+    /// Reset [embedders](https://www.meilisearch.com/docs/learn/ai_powered_search/getting_started_with_ai_search) of the [Index].
     ///
     /// # Example
     ///
@@ -2717,7 +2717,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings#facet-search) settings of the [Index].
+    /// Reset [facet-search settings](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#facet-search) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2750,7 +2750,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [prefix-search settings](https://www.meilisearch.com/docs/reference/api/settings#prefix-search) settings of the [Index].
+    /// Reset [prefix-search settings](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#prefix-search) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2783,7 +2783,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
+    /// Reset [search cutoff](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#search-cutoff) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2816,7 +2816,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [search cutoff](https://www.meilisearch.com/docs/reference/api/settings#search-cutoff) settings of the [Index].
+    /// Reset [search cutoff](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#search-cutoff) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2849,7 +2849,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [non separator tokens](https://www.meilisearch.com/docs/reference/api/settings#non-separator-tokens) settings of the [Index].
+    /// Reset [non separator tokens](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#non-separator-tokens) settings of the [Index].
     ///
     /// # Example
     ///
@@ -2882,7 +2882,7 @@ impl<Http: HttpClient> Index<Http> {
             .await
     }
 
-    /// Reset [localized attributes](https://www.meilisearch.com/docs/reference/api/settings#localized-attributes-object) settings of the [Index].
+    /// Reset [localized attributes](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#localized-attributes-object) settings of the [Index].
     ///
     /// # Example
     ///

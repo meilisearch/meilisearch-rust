@@ -39,7 +39,7 @@ impl Client {
     ///
     /// Don't put a '/' at the end of the host.
     ///
-    /// In production mode, see [the documentation about authentication](https://www.meilisearch.com/docs/learn/security/master_api_keys#authentication).
+    /// In production mode, see [the documentation about authentication](https://www.meilisearch.com/docs/learn/security/basic_security#authentication).
     ///
     /// # Example
     ///
@@ -640,7 +640,7 @@ impl<Http: HttpClient> Client<Http> {
 
     /// Get the API [Keys](Key) from Meilisearch with parameters.
     ///
-    /// See [`Client::create_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#get-all-keys).
+    /// See [`Client::create_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#get-all-keys).
     ///
     /// # Example
     ///
@@ -675,7 +675,7 @@ impl<Http: HttpClient> Client<Http> {
 
     /// Get the API [Keys](Key) from Meilisearch.
     ///
-    /// See [`Client::create_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#get-all-keys).
+    /// See [`Client::create_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#get-all-keys).
     ///
     /// # Example
     ///
@@ -707,7 +707,7 @@ impl<Http: HttpClient> Client<Http> {
 
     /// Get one API [Key] from Meilisearch.
     ///
-    /// See also [`Client::create_key`], [`Client::get_keys`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#get-one-key).
+    /// See also [`Client::create_key`], [`Client::get_keys`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#get-one-key).
     ///
     /// # Example
     ///
@@ -739,7 +739,7 @@ impl<Http: HttpClient> Client<Http> {
 
     /// Delete an API [Key] from Meilisearch.
     ///
-    /// See also [`Client::create_key`], [`Client::update_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#delete-a-key).
+    /// See also [`Client::create_key`], [`Client::update_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#delete-a-key).
     ///
     /// # Example
     ///
@@ -774,7 +774,7 @@ impl<Http: HttpClient> Client<Http> {
 
     /// Create an API [Key] in Meilisearch.
     ///
-    /// See also [`Client::update_key`], [`Client::delete_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#create-a-key).
+    /// See also [`Client::update_key`], [`Client::delete_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#create-a-key).
     ///
     /// # Example
     ///
@@ -811,7 +811,7 @@ impl<Http: HttpClient> Client<Http> {
 
     /// Update an API [Key] in Meilisearch.
     ///
-    /// See also [`Client::create_key`], [`Client::delete_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys#update-a-key).
+    /// See also [`Client::create_key`], [`Client::delete_key`], [`Client::get_key`], and the [meilisearch documentation](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#update-a-key).
     ///
     /// # Example
     ///
@@ -1114,7 +1114,7 @@ impl<Http: HttpClient> Client<Http> {
 
     /// List batches using the Batches API.
     ///
-    /// See: https://www.meilisearch.com/docs/reference/api/batches
+    /// See: https://www.meilisearch.com/docs/reference/api/async-task-management/list-batches
     ///
     /// # Example
     ///
