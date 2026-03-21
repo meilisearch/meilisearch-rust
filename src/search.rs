@@ -202,7 +202,7 @@ type AttributeToCrop<'a> = (&'a str, Option<usize>);
 ///
 /// You can add search parameters using the builder syntax.
 ///
-/// See [this page](https://www.meilisearch.com/docs/reference/api/search#query-q) for the official list and description of all parameters.
+/// See [this page](https://www.meilisearch.com/docs/reference/api/search/search-with-post#query-q) for the official list and description of all parameters.
 ///
 /// # Examples
 ///
@@ -297,7 +297,7 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     pub hits_per_page: Option<usize>,
     /// Filter applied to documents.
     ///
-    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting/filter_search_results) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
     /// Facets for which to retrieve the matching count.
@@ -880,7 +880,7 @@ pub struct MergeFacets {
 }
 
 /// The `federation` field of the multi search API.
-/// See [the docs](https://www.meilisearch.com/docs/reference/api/multi_search#federation).
+/// See [the docs](https://www.meilisearch.com/docs/reference/api/multi-search/perform-a-multi-search#federation).
 #[derive(Debug, Serialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FederationOptions {
@@ -941,13 +941,13 @@ pub struct FederatedMultiSearchResponse<T> {
     /// Processing time of the query.
     pub processing_time_ms: usize,
 
-    /// [Data for facets present in the search results](https://www.meilisearch.com/docs/reference/api/multi_search#facetsbyindex)
+    /// [Data for facets present in the search results](https://www.meilisearch.com/docs/reference/api/multi-search/perform-a-multi-search#facetsbyindex)
     pub facets_by_index: Option<ComputedFacets>,
 
-    /// [Distribution of the given facets](https://www.meilisearch.com/docs/reference/api/multi_search#mergefacets)
+    /// [Distribution of the given facets](https://www.meilisearch.com/docs/reference/api/multi-search/perform-a-multi-search#mergefacets)
     pub facet_distribution: Option<HashMap<String, HashMap<String, usize>>>,
 
-    /// [The numeric `min` and `max` values per facet](https://www.meilisearch.com/docs/reference/api/multi_search#mergefacets)
+    /// [The numeric `min` and `max` values per facet](https://www.meilisearch.com/docs/reference/api/multi-search/perform-a-multi-search#mergefacets)
     pub facet_stats: Option<HashMap<String, FacetStats>>,
 
     /// Indicates which remote requests failed and why
@@ -978,7 +978,7 @@ pub struct FederationHitInfo {
 ///
 /// You can add search parameters using the builder syntax.
 ///
-/// See [this page](https://www.meilisearch.com/docs/reference/api/facet_search) for the official list and description of all parameters.
+/// See [this page](https://www.meilisearch.com/docs/reference/api/facet-search/search-in-facets) for the official list and description of all parameters.
 ///
 /// # Examples
 ///
@@ -1039,7 +1039,7 @@ pub struct FacetSearchQuery<'a, Http: HttpClient = DefaultHttpClient> {
     pub search_query: Option<&'a str>,
     /// Filter applied to documents.
     ///
-    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting/filter_search_results) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<Filter<'a>>,
     /// Defines the strategy on how to handle search queries containing multiple words.

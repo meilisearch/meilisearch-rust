@@ -5,7 +5,7 @@ use crate::{client::Client, errors::Error, request::HttpClient};
 
 /// Types and queries for the Meilisearch Batches API.
 ///
-/// See: https://www.meilisearch.com/docs/reference/api/batches
+/// See: https://www.meilisearch.com/docs/reference/api/async-task-management/list-batches
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Batch {
