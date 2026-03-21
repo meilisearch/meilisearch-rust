@@ -1188,7 +1188,7 @@ delete_a_key_1: |-
     .delete_key(&key)
     .await?;
 authorization_header_1:
-  let client = Client::new("MEILISEARCH_URL", Some("MASTER_KEY"));
+  let client = Client::new("MEILISEARCH_URL", Some("MEILISEARCH_KEY"));
   let keys = client
   .get_keys()
   .await
