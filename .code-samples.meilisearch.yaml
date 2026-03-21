@@ -843,7 +843,7 @@ add_movies_json_1: |-
   use futures::executor::block_on;
 
   fn main() { block_on(async move {
-    let client = Client::new("MEILISEARCH_URL", Some("masterKey"));
+    let client = Client::new("MEILISEARCH_URL", Some("MEILISEARCH_KEY"));
 
     // reading and parsing the file
     let mut file = File::open("movies.json")
