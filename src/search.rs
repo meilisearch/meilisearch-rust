@@ -903,6 +903,10 @@ pub struct FederationOptions {
     /// Request performance details in the response.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_performance_details: Option<bool>,
+
+    /// Attribute whose value must be different for each returned document.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distinct: Option<String>,
 }
 
 impl<'a, Http: HttpClient> FederatedMultiSearchQuery<'a, '_, Http> {
@@ -2394,6 +2398,34 @@ pub(crate) mod tests {
             .await?;
 
         assert!(response.performance_details.is_some());
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_federated_multi_search_with_distinct(
+        client: Client,
+        test_index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &test_index).await?;
+
+        let mut query = SearchQuery::new(&test_index);
+        query.with_query("Harry Potter");
+
+        let response = client
+            .multi_search()
+            .with_search_query(query)
+            .with_federation(FederationOptions {
+                distinct: Some("kind".into()),
+                ..Default::default()
+            })
+            .execute::<Document>()
+            .await?;
+
+        // With distinct on "kind", we should get at most one hit per unique kind value
+        let kinds: Vec<_> = response.hits.iter().map(|h| &h.result.kind).collect();
+        let unique: std::collections::HashSet<_> = kinds.iter().collect();
+        assert_eq!(kinds.len(), unique.len());
 
         Ok(())
     }
