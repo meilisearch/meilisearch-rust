@@ -903,6 +903,10 @@ pub struct FederationOptions {
     /// Request performance details in the response.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_performance_details: Option<bool>,
+
+    /// Attribute whose values must be unique among returned documents
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distinct: Option<String>,
 }
 
 impl<'a, Http: HttpClient> FederatedMultiSearchQuery<'a, '_, Http> {
