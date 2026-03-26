@@ -233,6 +233,11 @@ get_task_1: |-
     .get_task(1)
     .await
     .unwrap();
+get_task_documents_1: |-
+  let documents = client
+    .get_task_documents(1)
+    .await
+    .unwrap();
 async_guide_multiple_filters_1: |-
   let mut query = TasksQuery::new(&client);
   let tasks = query

@@ -977,6 +977,23 @@ impl<Http: HttpClient> Client<Http> {
             .await
     }
 
+    /// Get the documents associated with a task.
+    ///
+    /// This corresponds to the `GET /tasks/{task_id}/documents` endpoint
+    /// introduced in Meilisearch v1.13.
+    pub async fn get_task_documents(
+        &self,
+        task_id: impl AsRef<u32>,
+    ) -> Result<serde_json::Value, Error> {
+        self.http_client
+            .request::<(), (), serde_json::Value>(
+                &format!("{}/tasks/{}/documents", self.host, task_id.as_ref()),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
     /// Get all tasks with query parameters from the server.
     ///
     /// # Example
