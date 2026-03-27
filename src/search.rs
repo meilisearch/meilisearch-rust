@@ -135,6 +135,9 @@ pub struct SearchResults<T> {
         skip_serializing_if = "Option::is_none"
     )]
     pub query_vector: Option<Vec<f32>>,
+    /// The search query's performance trace.
+    /// Returned when `showPerformanceDetails` is enabled.
+    pub performance_details: Option<Value>,
 }
 
 fn serialize_attributes_to_crop_with_wildcard<S: Serializer>(
@@ -424,6 +427,12 @@ pub struct SearchQuery<'a, Http: HttpClient> {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) federation_options: Option<QueryFederationOptions>,
+
+    /// Defines whether to return performance trace.
+    ///
+    /// **Default: `false`**
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_performance_details: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -473,6 +482,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             ranking_score_threshold: None,
             locales: None,
             federation_options: None,
+            show_performance_details: None,
         }
     }
 
@@ -752,6 +762,15 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         self
     }
 
+    /// Request performance details in the response.
+    pub fn with_show_performance_details<'b>(
+        &'b mut self,
+        show_performance_details: bool,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.show_performance_details = Some(show_performance_details);
+        self
+    }
+
     /// Execute the query and fetch the results.
     pub async fn execute<T: 'static + DeserializeOwned + Send + Sync>(
         &'a self,
@@ -880,6 +899,10 @@ pub struct FederationOptions {
     /// Request to merge the facets to enforce a maximum number of values per facet.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub merge_facets: Option<MergeFacets>,
+
+    /// Request performance details in the response.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_performance_details: Option<bool>,
 }
 
 impl<'a, Http: HttpClient> FederatedMultiSearchQuery<'a, '_, Http> {
@@ -929,6 +952,9 @@ pub struct FederatedMultiSearchResponse<T> {
 
     /// Indicates which remote requests failed and why
     pub remote_errors: Option<HashMap<String, MeilisearchError>>,
+
+    /// The performance trace for the query.
+    pub performance_details: Option<Value>,
 }
 
 /// Returned for each hit in `_federation` when doing federated multi search.
@@ -2303,6 +2329,72 @@ pub(crate) mod tests {
         assert_eq!(res.facet_hits.len(), 1);
         assert_eq!(res.facet_hits[0].value, "title");
         assert_eq!(res.facet_hits[0].count, 7);
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_search_with_show_performance_details(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let res = index
+            .search()
+            .with_show_performance_details(true)
+            .with_query("Lorem")
+            .execute::<Value>()
+            .await?;
+
+        assert!(res.performance_details.is_some());
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_multi_search_with_show_performance_details(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let search_query_1 = SearchQuery::new(&index)
+            .with_query("Sorcerer's Stone")
+            .with_show_performance_details(true)
+            .build();
+        let search_query_2 = SearchQuery::new(&index)
+            .with_query("Chamber of Secrets")
+            .build();
+
+        let response = client
+            .multi_search()
+            .with_search_query(search_query_1)
+            .with_search_query(search_query_2)
+            .execute::<Document>()
+            .await
+            .unwrap();
+
+        assert!(response.results[0].performance_details.is_some());
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_federated_multi_search_with_show_performance_details(
+        client: Client,
+        test_index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &test_index).await?;
+
+        let response = client
+            .multi_search()
+            .with_federation(FederationOptions {
+                show_performance_details: Some(true),
+                ..Default::default()
+            })
+            .execute::<Value>()
+            .await?;
+
+        assert!(response.performance_details.is_some());
+
         Ok(())
     }
 }
