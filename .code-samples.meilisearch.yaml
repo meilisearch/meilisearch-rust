@@ -94,11 +94,6 @@ update_an_index_1: |-
     .execute()
     .await
     .unwrap();
-rename_an_index_1: |-
-  curl \
-    -X PATCH 'MEILISEARCH_URL/indexes/INDEX_A' \
-    -H 'Content-Type: application/json' \
-    --data-binary '{ "uid": "INDEX_B" }'
 delete_an_index_1: |-
   client.index("movies")
     .delete()
@@ -698,18 +693,6 @@ compact_index_1: |-
     .compact()
     .await
     .unwrap();
-field_properties_guide_searchable_1: |-
-  let searchable_attributes = [
-    "title",
-    "overview",
-    "genres"
-  ];
-
-  let task: TaskInfo = client
-    .index("movies")
-    .set_searchable_attributes(&searchable_attributes)
-    .await
-    .unwrap();
 field_properties_guide_displayed_1: |-
   let displayed_attributes = [
     "title",
@@ -756,15 +739,6 @@ filtering_guide_nested_1: |-
     .search()
     .with_query("thriller")
     .with_filter("rating.users >= 90")
-    .execute()
-    .await
-    .unwrap();
-search_parameter_guide_show_ranking_score_details_1: |-
-  let results: SearchResults<Movie> = client
-    .index("movies")
-    .search()
-    .with_query("dragon")
-    .with_show_ranking_score_details(true)
     .execute()
     .await
     .unwrap();
@@ -1418,18 +1392,6 @@ get_similar_post_1: |-
     .execute()
     .await
     .unwrap();
-index_settings_tutorial_api_get_setting_1: |-
-  let searchable_attributes: Vec<String> = index
-    .get_searchable_attributes()
-    .await
-    .unwrap();
-index_settings_tutorial_api_put_setting_1: |-
-  let task = index
-    .set_searchable_attributes(["title", "overview"])
-    .await
-    .unwrap();
-index_settings_tutorial_api_task_1: |-
-  let task_status = index.get_task(&task).await.unwrap();
 search_parameter_guide_vector_1: |-
   let results = index
     .search()
