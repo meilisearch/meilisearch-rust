@@ -24,7 +24,7 @@ impl SearchUsers {
         match client.get_index("users").await {
             //If getting the index is successful, we add documents to it
             Ok(index) => {
-                index.add_documents(&list_users, Some("id")).await?;
+                index.add_documents(&list_users, Some("id"), None).await?;
             }
 
             //If getting the index fails, we create it and then add documents to the new index
@@ -33,7 +33,7 @@ impl SearchUsers {
                 let task = task.wait_for_completion(client, None, None).await?;
                 let index = task.try_make_index(client).unwrap();
 
-                index.add_documents(&list_users, Some("id")).await?;
+                index.add_documents(&list_users, Some("id"), None).await?;
             }
         }
 
