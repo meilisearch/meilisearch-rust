@@ -2,6 +2,7 @@ use crate::{
     client::Client,
     documents::{DocumentDeletionQuery, DocumentQuery, DocumentsQuery, DocumentsResults},
     errors::{Error, MeilisearchCommunicationError, MeilisearchError, MEILISEARCH_VERSION_HINT},
+    fields::{FieldsQuery, FieldsResult},
     request::*,
     search::*,
     similar::*,
@@ -1772,6 +1773,88 @@ impl<Http: HttpClient> Index<Http> {
     ) -> SimilarQuery<'a, Http> {
         SimilarQuery::new(self, document_id, index_name)
     }
+
+    /// Get detailed metadata of fields in this index
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let index = client.create_index("get_fields", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    /// let fields = index.get_fields().await.unwrap();
+    ///
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_fields(&self) -> Result<FieldsResult, Error> {
+        self.client
+            .http_client
+            .request::<(), serde_json::Value, FieldsResult>(
+                &format!("{}/indexes/{}/fields", self.client.host, self.uid),
+                Method::Post {
+                    body: serde_json::json!({}),
+                    query: (),
+                },
+                200,
+            )
+            .await
+    }
+
+    /// Get fields in this index, specifying parameters via [`FieldsQuery`]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use serde::{Serialize, Deserialize};
+    /// # use meilisearch_sdk::{client::*, indexes::*, fields::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # #[derive(Serialize, Deserialize, Debug)]
+    /// # struct Movie {
+    /// #    name: String,
+    /// #    description: String,
+    /// # }
+    ///
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let index = client
+    /// #   .create_index("get_fields_with", None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   .wait_for_completion(&client, None, None)
+    /// #   .await
+    /// #   .unwrap()
+    /// #   // Once the task finished, we try to create an `Index` out of it.
+    /// #   .try_make_index(&client)
+    /// #   .unwrap();
+    /// # index.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// let mut query = FieldsQuery::new(&index);
+    /// let fields = index.get_fields_with(query.with_offset(1)).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_fields_with(
+        &self,
+        body: &FieldsQuery<'_, Http>,
+    ) -> Result<FieldsResult, Error> {
+        self.client
+            .http_client
+            .request::<(), &FieldsQuery<Http>, FieldsResult>(
+                &format!("{}/indexes/{}/fields", self.client.host, self.uid),
+                Method::Post { body, query: () },
+                200,
+            )
+            .await
+    }
 }
 
 impl<Http: HttpClient> AsRef<str> for Index<Http> {
@@ -2500,6 +2583,33 @@ mod tests {
             .await?;
 
         assert!(task.is_success());
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_get_fields_with(client: Client, index: Index) -> Result<(), Error> {
+        let document_with_5_fields = json!({
+            "id": 1,
+            "name": "doggo",
+            "field3": "value",
+            "field4": "value",
+            "field5": "value"
+        });
+
+        index
+            .add_documents(&[document_with_5_fields], None)
+            .await
+            .unwrap()
+            .wait_for_completion(&client, None, None)
+            .await
+            .unwrap();
+
+        let mut query = FieldsQuery::new(&index);
+        let query = query.with_limit(4);
+        let fields_result = index.get_fields_with(query).await;
+
+        assert!(fields_result.is_ok_and(|fields| fields.results.len() == 4));
+
         Ok(())
     }
 }
