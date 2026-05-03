@@ -199,7 +199,7 @@ pub struct DocumentsQuery<'a, Http: HttpClient> {
     /// Filters to apply.
     ///
     /// Available since v1.2 of Meilisearch
-    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting/filter_search_results) to learn the syntax.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<&'a str>,
 
@@ -391,7 +391,7 @@ pub struct DocumentDeletionQuery<'a, Http: HttpClient> {
 
     /// Filters to apply.
     ///
-    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/fine_tuning_results/filtering#filter-basics) to learn the syntax.
+    /// Read the [dedicated guide](https://www.meilisearch.com/docs/learn/filtering_and_sorting/filter_search_results#filter-basics) to learn the syntax.
     pub filter: Option<&'a str>,
 }
 

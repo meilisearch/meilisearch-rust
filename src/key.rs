@@ -3,7 +3,7 @@ use time::OffsetDateTime;
 
 use crate::{client::Client, errors::Error, request::HttpClient};
 
-/// Represents a [meilisearch key](https://www.meilisearch.com/docs/reference/api/keys#returned-fields).
+/// Represents a [meilisearch key](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#returned-fields).
 ///
 /// You can get a [Key] from the [`Client::get_key`] method, or you can create a [Key] with the [`KeyBuilder::new`] or [`Client::create_key`] methods.
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -656,61 +656,61 @@ pub enum Action {
     /// Provides access to everything.
     #[serde(rename = "*")]
     All,
-    /// Provides access to both [`POST`](https://www.meilisearch.com/docs/reference/api/search#search-in-an-index-with-post-route) and [`GET`](https://www.meilisearch.com/docs/reference/api/search#search-in-an-index-with-get-route) search endpoints on authorized indexes.
+    /// Provides access to both [`POST`](https://www.meilisearch.com/docs/reference/api/search/search-with-post#search-in-an-index-with-post-route) and [`GET`](https://www.meilisearch.com/docs/reference/api/search/search-with-post#search-in-an-index-with-get-route) search endpoints on authorized indexes.
     #[serde(rename = "search")]
     Search,
-    /// Provides access to the [add documents](https://www.meilisearch.com/docs/reference/api/documents#add-or-replace-documents) and [update documents](https://www.meilisearch.com/docs/reference/api/documents#add-or-update-documents) endpoints on authorized indexes.
+    /// Provides access to the [add documents](https://www.meilisearch.com/docs/reference/api/documents/list-documents-with-get#add-or-replace-documents) and [update documents](https://www.meilisearch.com/docs/reference/api/documents/list-documents-with-get#add-or-update-documents) endpoints on authorized indexes.
     #[serde(rename = "documents.add")]
     DocumentsAdd,
-    /// Provides access to the [get one document](https://www.meilisearch.com/docs/reference/api/documents#get-one-document) and [get documents](https://www.meilisearch.com/docs/reference/api/documents#get-documents) endpoints on authorized indexes.
+    /// Provides access to the [get one document](https://www.meilisearch.com/docs/reference/api/documents/list-documents-with-get#get-one-document) and [get documents](https://www.meilisearch.com/docs/reference/api/documents/list-documents-with-get#get-documents) endpoints on authorized indexes.
     #[serde(rename = "documents.get")]
     DocumentsGet,
-    /// Provides access to the [delete one document](https://www.meilisearch.com/docs/reference/api/documents#delete-one-document), [delete all documents](https://www.meilisearch.com/docs/reference/api/documents#delete-all-documents), and [batch delete](https://www.meilisearch.com/docs/reference/api/documents#delete-documents-by-batch) endpoints on authorized indexes.
+    /// Provides access to the [delete one document](https://www.meilisearch.com/docs/reference/api/documents/list-documents-with-get#delete-one-document), [delete all documents](https://www.meilisearch.com/docs/reference/api/documents/list-documents-with-get#delete-all-documents), and [batch delete](https://www.meilisearch.com/docs/reference/api/documents/list-documents-with-get#delete-documents-by-batch) endpoints on authorized indexes.
     #[serde(rename = "documents.delete")]
     DocumentsDelete,
-    /// Provides access to the [create index](https://www.meilisearch.com/docs/reference/api/indexes#create-an-index) endpoint.
+    /// Provides access to the [create index](https://www.meilisearch.com/docs/reference/api/indexes/list-all-indexes#create-an-index) endpoint.
     #[serde(rename = "indexes.create")]
     IndexesCreate,
-    /// Provides access to the [get one index](https://www.meilisearch.com/docs/reference/api/indexes#get-one-index) and [list all indexes](https://www.meilisearch.com/docs/reference/api/indexes#list-all-indexes) endpoints. **Non-authorized `indexes` will be omitted from the response**.
+    /// Provides access to the [get one index](https://www.meilisearch.com/docs/reference/api/indexes/list-all-indexes#get-one-index) and [list all indexes](https://www.meilisearch.com/docs/reference/api/indexes/list-all-indexes#list-all-indexes) endpoints. **Non-authorized `indexes` will be omitted from the response**.
     #[serde(rename = "indexes.get")]
     IndexesGet,
-    /// Provides access to the [update index](https://www.meilisearch.com/docs/reference/api/indexes#update-an-index) endpoint.
+    /// Provides access to the [update index](https://www.meilisearch.com/docs/reference/api/indexes/list-all-indexes#update-an-index) endpoint.
     #[serde(rename = "indexes.update")]
     IndexesUpdate,
-    /// Provides access to the [delete index](https://www.meilisearch.com/docs/reference/api/indexes#delete-an-index) endpoint.
+    /// Provides access to the [delete index](https://www.meilisearch.com/docs/reference/api/indexes/list-all-indexes#delete-an-index) endpoint.
     #[serde(rename = "indexes.delete")]
     IndexesDelete,
-    /// Provides access to the [get one task](https://www.meilisearch.com/docs/reference/api/tasks#get-task) and [get all tasks](https://www.meilisearch.com/docs/reference/api/tasks#get-all-tasks) endpoints. **Tasks from non-authorized `indexes` will be omitted from the response**. Also provides access to the [get one task by index](https://www.meilisearch.com/docs/reference/api/tasks#get-task-by-index) and [get all tasks by index](https://www.meilisearch.com/docs/reference/api/tasks#get-all-tasks-by-index) endpoints on authorized indexes.
+    /// Provides access to the [get one task](https://www.meilisearch.com/docs/reference/api/async-task-management/list-tasks#get-task) and [get all tasks](https://www.meilisearch.com/docs/reference/api/async-task-management/list-tasks#get-all-tasks) endpoints. **Tasks from non-authorized `indexes` will be omitted from the response**. Also provides access to the [get one task by index](https://www.meilisearch.com/docs/reference/api/async-task-management/list-tasks#get-task-by-index) and [get all tasks by index](https://www.meilisearch.com/docs/reference/api/async-task-management/list-tasks#get-all-tasks-by-index) endpoints on authorized indexes.
     #[serde(rename = "tasks.get")]
     TasksGet,
-    /// Provides access to the [get settings](https://www.meilisearch.com/docs/reference/api/settings#get-settings) endpoint and equivalents for all subroutes on authorized indexes.
+    /// Provides access to the [get settings](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#get-settings) endpoint and equivalents for all subroutes on authorized indexes.
     #[serde(rename = "settings.get")]
     SettingsGet,
-    /// Provides access to the [update settings](https://www.meilisearch.com/docs/reference/api/settings#update-settings) and [reset settings](https://www.meilisearch.com/docs/reference/api/settings#reset-settings) endpoints and equivalents for all subroutes on authorized indexes.
+    /// Provides access to the [update settings](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#update-settings) and [reset settings](https://www.meilisearch.com/docs/reference/api/settings/list-all-settings#reset-settings) endpoints and equivalents for all subroutes on authorized indexes.
     #[serde(rename = "settings.update")]
     SettingsUpdate,
-    /// Provides access to the [get stats of an index](https://www.meilisearch.com/docs/reference/api/stats#get-stats-of-an-index) endpoint and the [get stats of all indexes](https://www.meilisearch.com/docs/reference/api/stats#get-stats-of-all-indexes) endpoint. For the latter, **non-authorized `indexes` are omitted from the response**.
+    /// Provides access to the [get stats of an index](https://www.meilisearch.com/docs/reference/api/stats/get-stats-of-all-indexes#get-stats-of-an-index) endpoint and the [get stats of all indexes](https://www.meilisearch.com/docs/reference/api/stats/get-stats-of-all-indexes#get-stats-of-all-indexes) endpoint. For the latter, **non-authorized `indexes` are omitted from the response**.
     #[serde(rename = "stats.get")]
     StatsGet,
-    /// Provides access to the [create dump](https://www.meilisearch.com/docs/reference/api/dump#create-a-dump) endpoint. **Not restricted by `indexes`.**
+    /// Provides access to the [create dump](https://www.meilisearch.com/docs/reference/api/backups/create-dump#create-a-dump) endpoint. **Not restricted by `indexes`.**
     #[serde(rename = "dumps.create")]
     DumpsCreate,
-    /// Provides access to the [get dump status](https://www.meilisearch.com/docs/reference/api/dump#get-dump-status) endpoint. **Not restricted by `indexes`.**
+    /// Provides access to the [get dump status](https://www.meilisearch.com/docs/reference/api/backups/create-dump#get-dump-status) endpoint. **Not restricted by `indexes`.**
     #[serde(rename = "dumps.get")]
     DumpsGet,
-    /// Provides access to the [get Meilisearch version](https://www.meilisearch.com/docs/reference/api/version#get-version-of-meilisearch) endpoint.
+    /// Provides access to the [get Meilisearch version](https://www.meilisearch.com/docs/reference/api/version/get-version#get-version-of-meilisearch) endpoint.
     #[serde(rename = "version")]
     Version,
-    /// Provides access to the [get Key](https://www.meilisearch.com/docs/reference/api/keys#get-one-key) and [get Keys](https://www.meilisearch.com/docs/reference/api/keys#get-all-keys) endpoints.
+    /// Provides access to the [get Key](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#get-one-key) and [get Keys](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#get-all-keys) endpoints.
     #[serde(rename = "keys.get")]
     KeyGet,
-    /// Provides access to the [create key](https://www.meilisearch.com/docs/reference/api/keys#create-a-key) endpoint.
+    /// Provides access to the [create key](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#create-a-key) endpoint.
     #[serde(rename = "keys.create")]
     KeyCreate,
-    /// Provides access to the [update key](https://www.meilisearch.com/docs/reference/api/keys#update-a-key) endpoint.
+    /// Provides access to the [update key](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#update-a-key) endpoint.
     #[serde(rename = "keys.update")]
     KeyUpdate,
-    /// Provides access to the [delete key](https://www.meilisearch.com/docs/reference/api/keys#delete-a-key) endpoint.
+    /// Provides access to the [delete key](https://www.meilisearch.com/docs/reference/api/keys/list-api-keys#delete-a-key) endpoint.
     #[serde(rename = "keys.delete")]
     KeyDelete,
     /// Provides access to chat completions endpoints.

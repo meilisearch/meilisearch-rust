@@ -11,7 +11,7 @@
 //! - During a dump import, all indexes contained in the indicated `.dump` file are imported along with their associated documents and [settings](crate::settings::Settings).
 //! Any existing [index](crate::indexes::Index) with the same uid as an index in the dump file will be overwritten.
 //!
-//! - Dump imports are [performed at launch](https://www.meilisearch.com/docs/learn/configuration/instance_options#import-dump) using an option.
+//! - Dump imports are [performed at launch](https://www.meilisearch.com/docs/learn/self_hosted/configure_meilisearch_at_launch#import-dump) using an option.
 //!
 //! # Example
 //!
@@ -45,7 +45,7 @@ use crate::{client::Client, errors::Error, request::*, task_info::TaskInfo};
 impl<Http: HttpClient> Client<Http> {
     /// Triggers a dump creation process.
     ///
-    /// Once the process is complete, a dump is created in the [dumps directory](https://www.meilisearch.com/docs/learn/configuration/instance_options#dump-directory).
+    /// Once the process is complete, a dump is created in the [dumps directory](https://www.meilisearch.com/docs/learn/self_hosted/configure_meilisearch_at_launch#dump-directory).
     /// If the dumps directory does not exist yet, it will be created.
     ///
     /// # Example
