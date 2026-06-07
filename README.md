@@ -81,7 +81,6 @@ Using this crate is possible without [serde](https://crates.io/crates/serde), bu
 ```rust
 use meilisearch_sdk::client::*;
 use serde::{Serialize, Deserialize};
-use futures::executor::block_on;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Movie {
