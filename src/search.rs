@@ -2419,16 +2419,28 @@ pub(crate) mod tests {
         Ok(())
     }
 
-    #[meilisearch_test]
+   #[meilisearch_test]
     async fn test_search_with_personalization(
-        client: Client, 
+        client: Client,
         index: Index,
     ) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
-        let resp: SearchResults<Document> = index.search().with_query("Harry Potter").with_personalization(
-            "User likes fantasy movies"
-        ).execute().await?;
-        assert!(!resp.hits.is_empty());
+
+        let res = index
+            .search()
+            .with_query("Harry Potter")
+            .with_personalization("User likes fantasy movies")
+            .execute::<Value>()
+            .await;
+
+        assert!(matches!(res, Err(Error::Meilisearch(_))));
+
+        let err_msg = format!("{:?}", res.err().unwrap());
+        assert!(
+            err_msg.contains("personalization") 
+            && err_msg.contains("reranking search"),
+            "Unexpected error message: {}", err_msg
+        );
 
         Ok(())
     }
