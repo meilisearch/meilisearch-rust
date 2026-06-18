@@ -1002,13 +1002,12 @@ impl<Http: HttpClient> Index<Http> {
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let movie_index = client.index("add_or_replace_unchecked_payload");
-    ///
     /// let task = movie_index.add_or_update_unchecked_payload(
-    ///     r#"{ "id": 1, "body": "doggo" }
-    ///     { "id": 2, "body": "catto" }"#.as_bytes(),
-    ///     "application/x-ndjson",
-    ///     Some("id"),
-    /// ).await.unwrap();
+    ///        "{ \"id\": 1, \"body\": \"doggo\" }\n{ \"id\": 2, \"body\": \"catto\" }".as_bytes(),
+    ///        "application/x-ndjson",
+    ///        Some("id"),
+    ///    ).await.unwrap();
+    ///
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///

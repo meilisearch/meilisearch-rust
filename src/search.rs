@@ -433,6 +433,10 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     /// **Default: `false`**
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_performance_details: Option<bool>,
+
+    // Defines search personalization for the user profile context
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub personalize: Option<Personalize<'a>>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -444,6 +448,12 @@ pub struct QueryFederationOptions {
     /// Remote instance name to target when sharding; corresponds to a key in network.remotes
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remote: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Personalize<'a> {
+    pub user_context: &'a str,
 }
 
 #[allow(missing_docs)]
@@ -483,6 +493,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
             locales: None,
             federation_options: None,
             show_performance_details: None,
+            personalize: None,
         }
     }
 
@@ -768,6 +779,14 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
         show_performance_details: bool,
     ) -> &'b mut SearchQuery<'a, Http> {
         self.show_performance_details = Some(show_performance_details);
+        self
+    }
+
+    pub fn with_personalization<'b>(
+        &'b mut self,
+        user_context: &'a str,
+    ) -> &'b mut SearchQuery<'a, Http> {
+        self.personalize = Some(Personalize { user_context });
         self
     }
 
@@ -2394,6 +2413,29 @@ pub(crate) mod tests {
             .await?;
 
         assert!(response.performance_details.is_some());
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_search_with_personalization(client: Client, index: Index) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+
+        let res = index
+            .search()
+            .with_query("Harry Potter")
+            .with_personalization("User likes fantasy movies")
+            .execute::<Value>()
+            .await;
+
+        assert!(matches!(res, Err(Error::Meilisearch(_))));
+
+        let err_msg = format!("{:?}", res.err().unwrap());
+        assert!(
+            err_msg.contains("personalization") && err_msg.contains("reranking search"),
+            "Unexpected error message: {}",
+            err_msg
+        );
 
         Ok(())
     }
