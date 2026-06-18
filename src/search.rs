@@ -434,11 +434,10 @@ pub struct SearchQuery<'a, Http: HttpClient> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_performance_details: Option<bool>,
 
-    // Defines search personalization for the user profile context 
+    // Defines search personalization for the user profile context
     #[serde(skip_serializing_if = "Option::is_none")]
     pub personalize: Option<Personalize<'a>>,
 }
-
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -451,13 +450,11 @@ pub struct QueryFederationOptions {
     pub remote: Option<String>,
 }
 
-
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Personalize<'a> {
-    pub user_context: &'a str
+    pub user_context: &'a str,
 }
-
 
 #[allow(missing_docs)]
 impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
@@ -786,7 +783,8 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     }
 
     pub fn with_personalization<'b>(
-        &'b mut self, user_context: &'a str,
+        &'b mut self,
+        user_context: &'a str,
     ) -> &'b mut SearchQuery<'a, Http> {
         self.personalize = Some(Personalize { user_context });
         self
@@ -2419,11 +2417,8 @@ pub(crate) mod tests {
         Ok(())
     }
 
-   #[meilisearch_test]
-    async fn test_search_with_personalization(
-        client: Client,
-        index: Index,
-    ) -> Result<(), Error> {
+    #[meilisearch_test]
+    async fn test_search_with_personalization(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
 
         let res = index
@@ -2437,9 +2432,9 @@ pub(crate) mod tests {
 
         let err_msg = format!("{:?}", res.err().unwrap());
         assert!(
-            err_msg.contains("personalization") 
-            && err_msg.contains("reranking search"),
-            "Unexpected error message: {}", err_msg
+            err_msg.contains("personalization") && err_msg.contains("reranking search"),
+            "Unexpected error message: {}",
+            err_msg
         );
 
         Ok(())

@@ -1007,7 +1007,7 @@ impl<Http: HttpClient> Index<Http> {
     ///        "application/x-ndjson",
     ///        Some("id"),
     ///    ).await.unwrap();
-    /// 
+    ///
     /// // Meilisearch may take some time to execute the request so we are going to wait till it's completed
     /// client.wait_for_task(task, None, None).await.unwrap();
     ///
