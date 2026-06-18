@@ -377,7 +377,7 @@ mod test {
         );
 
         let error = Error::Uuid(Uuid::parse_str("67e55044").unwrap_err());
-        assert_eq!(error.to_string(), "The uid of the token has bit an uuid4 format: invalid length: expected length 32 for simple format, found 8");
+        assert_eq!(error.to_string(), "The uid of the token has bit an uuid4 format: invalid length: found 8");
 
         let data = r#"
         {
