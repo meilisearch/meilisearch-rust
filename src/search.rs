@@ -788,7 +788,7 @@ impl<'a, Http: HttpClient> SearchQuery<'a, Http> {
     pub fn with_personalization<'b>(
         &'b mut self, user_context: &'a str,
     ) -> &'b mut SearchQuery<'a, Http> {
-        self.personalize = Some(Personalize { user_context: user_context });
+        self.personalize = Some(Personalize { user_context });
         self
     }
 
