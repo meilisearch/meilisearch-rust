@@ -11,6 +11,10 @@ use crate::{
     network::{NetworkState, NetworkUpdate},
     request::*,
     search::*,
+    search_rules::{
+        DynamicSearchRule, DynamicSearchRuleUpdate, DynamicSearchRulesQuery,
+        DynamicSearchRulesResults,
+    },
     task_info::TaskInfo,
     tasks::{Task, TasksCancelQuery, TasksDeleteQuery, TasksResults, TasksSearchQuery},
     utils::SleepBackend,
@@ -1280,6 +1284,71 @@ impl<Http: HttpClient> Client<Http> {
             ..NetworkUpdate::default()
         };
         self.update_network_state(&update).await
+    }
+
+    /// List dynamic search rules with pagination and filtering.
+    ///
+    /// This experimental API requires the `dynamicSearchRules` feature to be enabled.
+    pub async fn get_dynamic_search_rules(
+        &self,
+        query: &DynamicSearchRulesQuery,
+    ) -> Result<DynamicSearchRulesResults, Error> {
+        self.http_client
+            .request::<(), &DynamicSearchRulesQuery, DynamicSearchRulesResults>(
+                &format!("{}/dynamic-search-rules", self.host),
+                Method::Post {
+                    query: (),
+                    body: query,
+                },
+                200,
+            )
+            .await
+    }
+
+    /// Get a dynamic search rule by UID.
+    pub async fn get_dynamic_search_rule(
+        &self,
+        uid: impl AsRef<str>,
+    ) -> Result<DynamicSearchRule, Error> {
+        self.http_client
+            .request::<(), (), DynamicSearchRule>(
+                &format!("{}/dynamic-search-rules/{}", self.host, uid.as_ref()),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
+    /// Create or partially update a dynamic search rule and return its async task.
+    pub async fn update_dynamic_search_rule(
+        &self,
+        uid: impl AsRef<str>,
+        update: &DynamicSearchRuleUpdate,
+    ) -> Result<TaskInfo, Error> {
+        self.http_client
+            .request::<(), &DynamicSearchRuleUpdate, TaskInfo>(
+                &format!("{}/dynamic-search-rules/{}", self.host, uid.as_ref()),
+                Method::Patch {
+                    query: (),
+                    body: update,
+                },
+                202,
+            )
+            .await
+    }
+
+    /// Delete a dynamic search rule and return its async task.
+    pub async fn delete_dynamic_search_rule(
+        &self,
+        uid: impl AsRef<str>,
+    ) -> Result<TaskInfo, Error> {
+        self.http_client
+            .request::<(), (), TaskInfo>(
+                &format!("{}/dynamic-search-rules/{}", self.host, uid.as_ref()),
+                Method::Delete { query: () },
+                202,
+            )
+            .await
     }
 
     /// List all webhooks registered on the Meilisearch instance.

@@ -40,6 +40,12 @@ pub enum TaskType {
         #[serde(skip_serializing_if = "Option::is_none")]
         details: Option<NetworkTopologyChangeDetails>,
     },
+    DsrUpdate {
+        details: Option<Value>,
+    },
+    DsrClear {
+        details: Option<Value>,
+    },
     TaskCancelation {
         details: Option<TaskCancelation>,
     },

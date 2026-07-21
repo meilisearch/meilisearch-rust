@@ -253,6 +253,8 @@ pub mod network;
 pub mod request;
 /// Module related to search queries and results.
 pub mod search;
+/// Module for managing dynamic search rules.
+pub mod search_rules;
 /// Module containing [`Settings`](settings::Settings).
 pub mod settings;
 /// Module related to [similar queries](https://www.meilisearch.com/docs/learn/ai_powered_search/retrieve_related_search_results#return-similar-documents).
