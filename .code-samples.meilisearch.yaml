@@ -1434,3 +1434,46 @@ webhooks_patch_1: |-
     .unwrap();
 webhooks_delete_1: |-
   client.delete_webhook("WEBHOOK_UUID").await.unwrap();
+list_dynamic_search_rules_1: |-
+  let rules = client
+    .get_dynamic_search_rules(&DynamicSearchRulesQuery::default())
+    .await
+    .unwrap();
+get_dynamic_search_rule_1: |-
+  let rule = client
+    .get_dynamic_search_rule("black-friday")
+    .await
+    .unwrap();
+patch_dynamic_search_rule_1: |-
+  let conditions = DynamicSearchRuleConditions {
+    query: Some(DynamicSearchRuleQueryCondition {
+      is_empty: Some(true),
+      ..Default::default()
+    }),
+    time: Some(DynamicSearchRuleTimeCondition {
+      start: Some(OffsetDateTime::parse("2025-11-28T00:00:00Z", &Rfc3339).unwrap()),
+      end: Some(OffsetDateTime::parse("2025-11-28T23:59:59Z", &Rfc3339).unwrap()),
+    }),
+  };
+  let update = DynamicSearchRuleUpdate::default()
+    .with_description("Black Friday 2025 rules")
+    .with_precedence(10)
+    .with_active(true)
+    .with_conditions(conditions)
+    .with_actions([DynamicSearchRuleAction {
+      selector: DynamicSearchRuleSelector {
+        index_uid: Some("products".into()),
+        id: "123".into(),
+      },
+      action: DynamicSearchRuleActionType::Pin { position: 1 },
+    }]);
+
+  let task = client
+    .update_dynamic_search_rule("black-friday", &update)
+    .await
+    .unwrap();
+delete_dynamic_search_rule_1: |-
+  let task = client
+    .delete_dynamic_search_rule("black-friday")
+    .await
+    .unwrap();

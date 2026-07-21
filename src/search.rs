@@ -1152,7 +1152,10 @@ pub(crate) mod tests {
         client::*,
         key::{Action, KeyBuilder},
         search::*,
-        settings::EmbedderSource,
+        settings::{
+            EmbedderSource, FilterFeatureModes, FilterFeatures, FilterableAttribute,
+            FilterableAttributesSettings,
+        },
     };
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
@@ -1598,6 +1601,22 @@ pub(crate) mod tests {
     #[meilisearch_test]
     async fn test_query_facet_distribution(client: Client, index: Index) -> Result<(), Error> {
         setup_test_index(&client, &index).await?;
+        index
+            .set_filterable_attributes_advanced([FilterableAttribute::Settings(
+                FilterableAttributesSettings {
+                    attribute_patterns: vec!["*".into()],
+                    features: FilterFeatures {
+                        facet_search: true,
+                        filter: FilterFeatureModes {
+                            equality: true,
+                            comparison: true,
+                        },
+                    },
+                },
+            )])
+            .await?
+            .wait_for_completion(&client, None, None)
+            .await?;
 
         let mut query = SearchQuery::new(&index);
         query.with_facets(Selectors::All);
