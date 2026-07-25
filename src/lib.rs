@@ -5,7 +5,6 @@
 //! ```
 //! use meilisearch_sdk::client::*;
 //! use serde::{Serialize, Deserialize};
-//! use futures::executor::block_on;
 //!
 //! #[derive(Serialize, Deserialize, Debug)]
 //! struct Movie {
