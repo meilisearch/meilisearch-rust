@@ -13,14 +13,24 @@ pub struct RemoteConfig {
     pub write_api_key: Option<String>,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShardsConfig {
+    pub remotes: Vec<String>,
+    pub add_remotes: Vec<String>,
+    pub remove_remotes: Vec<String>,
+}
 pub type RemotesMap = HashMap<String, RemoteConfig>;
+pub type ShardsMap = HashMap<String, Vec<String>>;
 pub type RemotesUpdateMap = HashMap<String, Option<RemoteConfig>>;
+pub type ShardsUpdateMap = HashMap<String, Option<ShardsConfig>>;
 
 /// Full network state returned by GET /network
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkState {
     pub remotes: Option<RemotesMap>,
+    pub shards: Option<ShardsMap>,
     #[serde(rename = "self")]
     pub self_name: Option<String>,
     pub leader: Option<String>,
@@ -33,6 +43,8 @@ pub struct NetworkState {
 pub struct NetworkUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remotes: Option<RemotesUpdateMap>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shards: Option<ShardsUpdateMap>,
     #[serde(rename = "self", skip_serializing_if = "Option::is_none")]
     pub self_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
