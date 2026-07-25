@@ -186,7 +186,7 @@ async fn build_index(client: &Client<AwcClient>) {
     // add the documents
     let result = client
         .index("clothes")
-        .add_or_update(&clothes, Some("id"))
+        .add_or_update(&clothes, Some("id"), None)
         .await
         .unwrap()
         .wait_for_completion(client, None, None)

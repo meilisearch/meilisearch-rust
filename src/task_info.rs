@@ -14,6 +14,7 @@ pub struct TaskInfo {
     #[serde(flatten)]
     pub update_type: TaskType,
     pub task_uid: u32,
+    pub custom_metadata: Option<String>,
 }
 
 impl AsRef<u32> for TaskInfo {
@@ -61,7 +62,7 @@ impl TaskInfo {
     /// let status = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
-    /// ], None)
+    /// ], None, None)
     ///     .await
     ///     .unwrap()
     ///     .wait_for_completion(&client, None, None)
@@ -117,7 +118,8 @@ mod test {
   "indexUid": "meili",
   "status": "enqueued",
   "type": "documentAdditionOrUpdate",
-  "taskUid": 12
+  "taskUid": 12,
+  "customMetadata": "batch-1"
 }"#,
         )
         .unwrap();
@@ -130,8 +132,12 @@ mod test {
                 task_uid: 12,
                 update_type: TaskType::DocumentAdditionOrUpdate { details: None },
                 status,
+                custom_metadata,
             }
-        if enqueued_at == datetime && index_uid == "meili" && status == "enqueued"));
+        if enqueued_at == datetime
+            && index_uid == "meili"
+            && status == "enqueued"
+            && custom_metadata.as_deref() == Some("batch-1")));
     }
 
     #[meilisearch_test]
@@ -150,6 +156,7 @@ mod test {
                         value: S("Harry Potter and the Sorcerer's Stone"),
                     },
                 ],
+                None,
                 None,
             )
             .await?;
