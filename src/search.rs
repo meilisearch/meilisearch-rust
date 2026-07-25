@@ -903,6 +903,10 @@ pub struct FederationOptions {
     /// Request performance details in the response.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_performance_details: Option<bool>,
+
+    /// global distinct computation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub distinct: Option<String>,
 }
 
 impl<'a, Http: HttpClient> FederatedMultiSearchQuery<'a, '_, Http> {
@@ -2394,6 +2398,29 @@ pub(crate) mod tests {
             .await?;
 
         assert!(response.performance_details.is_some());
+
+        Ok(())
+    }
+
+    #[meilisearch_test]
+    async fn test_federated_multi_search_with_distinct(
+        client: Client,
+        index: Index,
+    ) -> Result<(), Error> {
+        setup_test_index(&client, &index).await?;
+        let search_query = SearchQuery::new(&index).build();
+
+        let mut multi_search = client.multi_search();
+        multi_search.with_search_query(search_query);
+
+        let federated_multi_search = multi_search.with_federation(FederationOptions {
+            distinct: Some("kind".to_string()),
+            ..Default::default()
+        });
+
+        let response = federated_multi_search.execute::<Document>().await.unwrap();
+
+        assert_eq!(response.hits.len(), 2);
 
         Ok(())
     }
