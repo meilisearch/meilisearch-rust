@@ -141,7 +141,7 @@ impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
     ///     id: String,
     /// }
     /// # let index = client.index("document_query_execute");
-    /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None, None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let document = DocumentQuery::new(&index).with_fields(["id"])
     ///     .execute::<MyObjectReduced>("1")
