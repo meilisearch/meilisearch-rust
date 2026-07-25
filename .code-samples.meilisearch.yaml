@@ -635,14 +635,18 @@ reset_dictionary_1: |-
     .await
     .unwrap();
 get_index_stats_1: |-
+  let mut query = StatsQuery::new();
+  query.with_internal_database_sizes(true).with_size_format(SizeFormat::Human);
   let stats: IndexStats = client
     .index("movies")
-    .get_stats()
+    .get_stats_with(&query)
     .await
     .unwrap();
 get_indexes_stats_1: |-
+  let mut query = StatsQuery::new();
+  query.with_internal_database_sizes(true).with_size_format(SizeFormat::Human);
   let stats: ClientStats = client
-    .get_stats()
+    .get_stats_with(&query)
     .await
     .unwrap();
 get_health_1: |-
