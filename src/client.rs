@@ -4,6 +4,7 @@ use serde_json::{json, Value};
 use std::{collections::HashMap, time::Duration};
 use time::OffsetDateTime;
 
+use crate::logs::NewLogLevel;
 use crate::{
     errors::*,
     indexes::*,
@@ -1438,6 +1439,62 @@ impl<Http: HttpClient> Client<Http> {
         self.http_client
             .request::<(), (), ()>(
                 &format!("{}/webhooks/{}", self.host, uuid.as_ref()),
+                Method::Delete { query: () },
+                204,
+            )
+            .await
+    }
+
+    /// Customize logging levels for the default logging system.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, logs::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let new_log_level =  NewLogLevel { target:"info".to_string() };
+    /// client.customize_log_levels(new_log_level).await.unwrap();
+    ///# });
+    /// ```
+    pub async fn customize_log_levels(&self, log_target: NewLogLevel) -> Result<(), Error> {
+        self.http_client
+            .request::<(), NewLogLevel, ()>(
+                &format!("{}/logs/stderr", self.host),
+                Method::Post {
+                    query: (),
+                    body: log_target,
+                },
+                204,
+            )
+            .await
+    }
+
+    /// Interrupt a log stream.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, logs::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// client.interrupt_log_stream().await.unwrap();
+    ///# });
+    /// ```
+    pub async fn interrupt_log_stream(&self) -> Result<(), Error> {
+        self.http_client
+            .request::<(), (), ()>(
+                &format!("{}/logs/stream", self.host),
                 Method::Delete { query: () },
                 204,
             )
