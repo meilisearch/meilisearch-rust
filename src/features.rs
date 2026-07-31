@@ -16,6 +16,7 @@ pub struct ExperimentalFeaturesResult {
     pub edit_documents_by_function: bool,
     #[serde(default)]
     pub multimodal: bool,
+    pub render_template: bool,
 }
 
 /// Struct representing the experimental features request.
@@ -49,6 +50,8 @@ pub struct ExperimentalFeatures<'a, Http: HttpClient> {
     pub edit_documents_by_function: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub multimodal: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub render_template: Option<bool>,
 }
 
 impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
@@ -62,6 +65,7 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
             contains_filter: None,
             edit_documents_by_function: None,
             multimodal: None,
+            render_template: None,
         }
     }
 
@@ -150,6 +154,11 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
         self.multimodal = Some(multimodal);
         self
     }
+
+    pub fn set_render_template(&mut self, render_template: bool) -> &mut Self {
+        self.render_template = Some(render_template);
+        self
+    }
 }
 
 #[cfg(test)]
@@ -175,5 +184,6 @@ mod tests {
         assert!(res.network);
         assert!(res.edit_documents_by_function);
         assert!(res.multimodal);
+        assert!(res.render_template);
     }
 }
