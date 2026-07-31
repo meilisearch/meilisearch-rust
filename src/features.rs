@@ -175,6 +175,7 @@ mod tests {
         features.set_network(true);
         features.set_edit_documents_by_function(true);
         features.set_multimodal(true);
+        features.set_render_template(true);
         let _ = features.update().await.unwrap();
 
         let res = features.get().await.unwrap();
