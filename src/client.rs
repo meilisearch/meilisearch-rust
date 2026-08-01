@@ -1456,7 +1456,7 @@ impl<Http: HttpClient> Client<Http> {
 
     /// Render a template.
     ///
-    /// This endpoint requires the `renderTemplate` experimental feature to be
+    /// This endpoint requires the `renderRoute` experimental feature to be
     /// enabled on the Meilisearch server.
     ///
     /// # Example
@@ -1472,13 +1472,13 @@ impl<Http: HttpClient> Client<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// client
     ///     .features()
-    ///     .set_render_template(true)
+    ///     .set_render_route(true)
     ///     .update()
     ///     .await
     ///     .unwrap();
     ///
     /// let response = client
-    ///     .render_template(
+    ///     .render_route(
     ///         json!({
     ///             "kind": "inlineDocumentTemplate",
     ///             "inline": "An inline document template rendered on {{doc.id}}"
@@ -1496,7 +1496,7 @@ impl<Http: HttpClient> Client<Http> {
     /// println!("{:?}", response.rendered);
     /// # });
     /// ```
-    pub async fn render_template(
+    pub async fn render_route(
         &self,
         template: Value,
         input: Option<Value>,
@@ -1571,10 +1571,59 @@ pub struct Version {
 
 #[cfg(test)]
 mod tests {
+    use std::assert_eq;
+
     use super::*;
     use crate::network::RemoteConfig;
     use crate::tasks::TaskType;
 
+    #[tokio::test]
+    async fn test_render_template_route() {
+        let mut s = mockito::Server::new_async().await;
+        let base = s.url();
+
+        let template = serde_json::json!({
+            "kind": "inlineDocumentTemplate",
+            "inline": "A document template rendered on {{doc.id}}"
+        });
+
+        let input = Some(serde_json::json!({
+            "kind": "inlineDocument",
+            "inline": {
+                "id": "this document"
+            }
+        }));
+
+        let response_body = serde_json::json!({
+            "template": template,
+            "rendered": "A document template rendered on this document"
+        })
+        .to_string();
+
+        let _m = s
+            .mock("POST", "/render-template")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(response_body)
+            .match_body(mockito::Matcher::PartialJson(serde_json::json!({
+                "template": template,
+                "input": input,
+            })))
+            .create_async()
+            .await;
+
+        let client = Client::new(base, None::<String>).unwrap();
+        let rendered = client
+            .render_route(template.clone(), input.clone())
+            .await
+            .unwrap();
+
+        assert_eq!(rendered.template, template);
+        assert_eq!(
+            rendered.rendered,
+            serde_json::json!("A document template rendered on this document")
+        );
+    }
     #[tokio::test]
     async fn test_get_network_state_parses_leader_and_version() {
         let mut s = mockito::Server::new_async().await;
