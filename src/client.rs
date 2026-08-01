@@ -1478,7 +1478,7 @@ impl<Http: HttpClient> Client<Http> {
     ///     .unwrap();
     ///
     /// let response = client
-    ///     .render_route(
+    ///     .render_template(
     ///         json!({
     ///             "kind": "inlineDocumentTemplate",
     ///             "inline": "An inline document template rendered on {{doc.id}}"
@@ -1496,7 +1496,7 @@ impl<Http: HttpClient> Client<Http> {
     /// println!("{:?}", response.rendered);
     /// # });
     /// ```
-    pub async fn render_route(
+    pub async fn render_template(
         &self,
         template: Value,
         input: Option<Value>,
@@ -1614,7 +1614,7 @@ mod tests {
 
         let client = Client::new(base, None::<String>).unwrap();
         let rendered = client
-            .render_route(template.clone(), input.clone())
+            .render_template(template.clone(), input.clone())
             .await
             .unwrap();
 

@@ -1436,7 +1436,7 @@ webhooks_delete_1: |-
   client.delete_webhook("WEBHOOK_UUID").await.unwrap();
 post_render_template_1: |-
   let response = client
-    .render_route(
+    .render_template(
       serde_json::json!({
         "kind": "inlineDocumentTemplate",
         "inline": "An inline document template rendered on {{doc.id}}"
