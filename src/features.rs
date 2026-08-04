@@ -16,6 +16,9 @@ pub struct ExperimentalFeaturesResult {
     pub edit_documents_by_function: bool,
     #[serde(default)]
     pub multimodal: bool,
+    #[serde(rename = "renderRoute")]
+    #[serde(default)]
+    pub render_route: bool,
 }
 
 /// Struct representing the experimental features request.
@@ -49,6 +52,9 @@ pub struct ExperimentalFeatures<'a, Http: HttpClient> {
     pub edit_documents_by_function: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub multimodal: Option<bool>,
+    #[serde(rename = "renderRoute")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub render_route: Option<bool>,
 }
 
 impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
@@ -62,6 +68,7 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
             contains_filter: None,
             edit_documents_by_function: None,
             multimodal: None,
+            render_route: None,
         }
     }
 
@@ -150,6 +157,11 @@ impl<'a, Http: HttpClient> ExperimentalFeatures<'a, Http> {
         self.multimodal = Some(multimodal);
         self
     }
+
+    pub fn set_render_route(&mut self, render_template: bool) -> &mut Self {
+        self.render_route = Some(render_template);
+        self
+    }
 }
 
 #[cfg(test)]
@@ -166,6 +178,7 @@ mod tests {
         features.set_network(true);
         features.set_edit_documents_by_function(true);
         features.set_multimodal(true);
+        features.set_render_route(true);
         let _ = features.update().await.unwrap();
 
         let res = features.get().await.unwrap();
@@ -175,5 +188,6 @@ mod tests {
         assert!(res.network);
         assert!(res.edit_documents_by_function);
         assert!(res.multimodal);
+        assert!(res.render_route);
     }
 }
