@@ -814,10 +814,14 @@ add_movies_json_1: |-
   };
   use serde::{Serialize, Deserialize};
   use std::{io::prelude::*, fs::File};
-  use futures::executor::block_on;
 
-  fn main() { block_on(async move {
-    let client = Client::new("MEILISEARCH_URL", Some("masterKey"));
+  #[tokio::main]
+  async fn main() {
+    let client = Client::new(
+      "MEILISEARCH_URL",
+      Some("masterKey"),
+    )
+    .unwrap();
 
     // reading and parsing the file
     let mut file = File::open("movies.json")
@@ -835,7 +839,7 @@ add_movies_json_1: |-
       .add_documents(&movies_docs, None)
       .await
       .unwrap();
-  })}
+  }
 primary_field_guide_update_document_primary_key: |-
   let task = IndexUpdater::new("books", &client)
     .with_primary_key("title")
@@ -874,8 +878,8 @@ getting_started_add_documents: |-
   // In your .toml file:
     [dependencies]
     meilisearch-sdk = "0.33.0"
-    # futures: because we want to block on futures
-    futures = "0.3"
+    # tokio: async runtime required by the Meilisearch SDK
+    tokio = { version = "1", features = ["full"] }
     # serde: required if you are going to use documents
     serde = { version="1.0",   features = ["derive"] }
     # serde_json: required in some parts of this guide
@@ -912,10 +916,14 @@ getting_started_add_documents: |-
   };
   use serde::{Serialize, Deserialize};
   use std::{io::prelude::*, fs::File};
-  use futures::executor::block_on;
 
-  fn main() { block_on(async move {
-    let client = Client::new("MEILISEARCH_URL", Some("aSampleMasterKey"));
+  #[tokio::main]
+  async fn main() {
+    let client = Client::new(
+      "MEILISEARCH_URL",
+      Some("aSampleMasterKey"),
+    )
+    .unwrap();
 
     // Reading and parsing the file
     let mut file = File::open("movies.json")
@@ -933,7 +941,7 @@ getting_started_add_documents: |-
       .add_documents(&movies_docs, None)
       .await
       .unwrap();
-  })}
+  }
 getting_started_search: |-
   // You can build a `SearchQuery` and execute it later:
   let query: SearchQuery = SearchQuery::new(&movies)
