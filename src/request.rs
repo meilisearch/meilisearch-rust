@@ -145,6 +145,42 @@ pub fn parse_response<Output: DeserializeOwned>(
     }
 }
 
+pub fn parse_response_ndjson(
+    status_code: u16,
+    expected_status_code: u16,
+    body: &str,
+    url: String,
+) -> Result<Vec<serde_json::Value>, Error> {
+    if status_code == expected_status_code {
+        let output: Vec<serde_json::Value> = body
+            .lines()
+            .map(serde_json::from_str)
+            .collect::<Result<_, _>>()
+            .map_err(Error::ParseError)?;
+
+        trace!("Request succeed");
+        return Ok(output);
+    };
+
+    warn!("Expected response code {expected_status_code}, got {status_code}");
+
+    match from_str::<MeilisearchError>(body) {
+        Ok(e) => Err(Error::from(e)),
+        Err(e) => {
+            if status_code >= 400 {
+                return Err(Error::MeilisearchCommunication(
+                    MeilisearchCommunicationError {
+                        status_code,
+                        message: None,
+                        url,
+                    },
+                ));
+            }
+            Err(Error::ParseError(e))
+        }
+    }
+}
+
 #[cfg_attr(feature = "futures-unsend", async_trait(?Send))]
 #[cfg_attr(not(feature = "futures-unsend"), async_trait)]
 impl HttpClient for Infallible {
