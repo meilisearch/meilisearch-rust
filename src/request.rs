@@ -90,7 +90,7 @@ pub trait HttpClient: Clone + Send + Sync {
         .await
     }
 
-    async fn request_ndjson<Query, Body, Output>(
+    async fn request_ndjson<Query, Body>(
         &self,
         url: &str,
         method: Method<Query, Body>,
@@ -184,15 +184,14 @@ pub fn parse_response_ndjson(
     url: String,
 ) -> Result<Vec<serde_json::Value>, Error> {
     if status_code == expected_status_code {
-        let output: Vec<serde_json::Value> = body
-            .lines()
-            .map(serde_json::from_str)
-            .collect::<Result<_, _>>()
+        let output = serde_json::Deserializer::from_str(body)
+            .into_iter::<serde_json::Value>()
+            .collect::<Result<Vec<_>, _>>()
             .map_err(Error::ParseError)?;
 
         trace!("Request succeed");
         return Ok(output);
-    };
+    }
 
     warn!("Expected response code {expected_status_code}, got {status_code}");
 
@@ -230,7 +229,7 @@ impl HttpClient for Infallible {
         unreachable!()
     }
 
-    async fn request_ndjson<Query, Body, Output>(
+    async fn request_ndjson<Query, Body>(
         &self,
         _url: &str,
         _method: Method<Query, Body>,
