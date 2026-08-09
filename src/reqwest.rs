@@ -167,11 +167,7 @@ impl HttpClient for ReqwestClient {
 
         let response = self.client.execute(request.build()?).await?;
         let status = response.status().as_u16();
-        let mut body = response.text().await?;
-
-        if body.is_empty() {
-            body = "null".to_string();
-        }
+        let body = response.text().await?;
 
         parse_response_ndjson(status, expected_status_code, &body, url.to_string())
     }

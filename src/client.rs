@@ -1827,6 +1827,28 @@ mod tests {
     }
 
     #[meilisearch_test]
+    async fn test_get_task_documents_empty_response() {
+        let mut s = mockito::Server::new_async().await;
+        let base = s.url();
+
+        let _m = s
+            .mock("GET", "/tasks/1/documents")
+            .with_status(200)
+            .with_header("content-type", "application/x-ndjson")
+            .with_body("")
+            .create_async()
+            .await;
+
+        let client = Client::new(base, None::<String>).unwrap();
+
+        let task_id = Box::new(1u32);
+
+        let documents = client.get_task_documents(task_id).await.unwrap();
+
+        assert!(documents.is_empty());
+    }
+
+    #[meilisearch_test]
     async fn test_rename_index_via_swap(client: Client, name: String) -> Result<(), Error> {
         let from = format!("{name}_from");
         let to = format!("{name}_to");
