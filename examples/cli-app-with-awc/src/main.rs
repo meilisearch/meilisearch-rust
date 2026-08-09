@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use meilisearch_sdk::errors::Error;
-use meilisearch_sdk::request::{parse_response, HttpClient, Method};
+use meilisearch_sdk::request::{parse_response, parse_response_ndjson, HttpClient, Method};
 use meilisearch_sdk::{client::*, settings::Settings};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -82,6 +82,63 @@ impl HttpClient for AwcClient {
         }
 
         parse_response(status, expected_status_code, &body, url.to_string())
+    }
+
+    async fn stream_request_ndjson<
+        Query: Serialize + Send + Sync,
+        Body: futures::AsyncRead + Send + Sync + 'static,
+    >(
+        &self,
+        url: &str,
+        method: Method<Query, Body>,
+        content_type: &str,
+        expected_status_code: u16,
+    ) -> Result<Vec<serde_json::Value>, Error> {
+        let mut builder = awc::ClientBuilder::new();
+        if let Some(ref api_key) = self.api_key {
+            builder = builder.bearer_auth(api_key);
+        }
+        builder = builder.add_default_header(("User-Agent", "Rust client with Awc"));
+        let client = builder.finish();
+
+        let query = method.query();
+        let query = yaup::to_string(query)?;
+
+        let url = if query.is_empty() {
+            url.to_string()
+        } else {
+            format!("{url}?{query}")
+        };
+
+        let url = add_query_parameters(&url, method.query())?;
+        let request = client.request(verb(&method), &url);
+
+        let mut response = if let Some(body) = method.into_body() {
+            let reader = tokio_util::compat::FuturesAsyncReadCompatExt::compat(body);
+            let stream = tokio_util::io::ReaderStream::new(reader);
+            request
+                .content_type(content_type)
+                .send_stream(stream)
+                .await
+                .map_err(|err| Error::Other(anyhow::anyhow!(err.to_string()).into()))?
+        } else {
+            request
+                .send()
+                .await
+                .map_err(|err| Error::Other(anyhow::anyhow!(err.to_string()).into()))?
+        };
+
+        let status = response.status().as_u16();
+        let body = String::from_utf8(
+            response
+                .body()
+                .await
+                .map_err(|err| Error::Other(anyhow::anyhow!(err.to_string()).into()))?
+                .to_vec(),
+        )
+        .map_err(|err| Error::Other(anyhow::anyhow!(err.to_string()).into()))?;
+
+        parse_response_ndjson(status, expected_status_code, &body, url.to_string())
     }
 }
 
