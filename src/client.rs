@@ -1011,6 +1011,47 @@ impl<Http: HttpClient> Client<Http> {
         Ok(tasks)
     }
 
+    /// Get the documents associated with a task.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, tasks::*};
+    /// # use serde::{Serialize, Deserialize};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// # #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    /// # struct Document {
+    /// #    id: usize,
+    /// #    value: String,
+    /// #    kind: String,
+    /// # }
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let index = client.create_index("movies_get_task_documents", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    /// let task = index.add_documents(&[
+    ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
+    ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
+    /// ], None).await.unwrap();
+    ///
+    ///
+    /// let documents = client.get_task_documents(task).await.unwrap();
+    /// println!("DOCUMENTS: {:?}", documents);
+    ///
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    pub async fn get_task_documents(&self, task_id: impl AsRef<u32>) -> Result<Vec<Value>, Error> {
+        self.http_client
+            .request_ndjson::<(), ()>(
+                &format!("{}/tasks/{}/documents", self.host, task_id.as_ref()),
+                Method::Get { query: () },
+                200,
+            )
+            .await
+    }
+
     /// Cancel tasks with filters [`TasksCancelQuery`].
     ///
     /// # Example
@@ -1755,6 +1796,56 @@ mod tests {
     async fn test_get_tasks(client: Client) {
         let tasks = client.get_tasks().await.unwrap();
         assert_eq!(tasks.limit, 20);
+    }
+
+    #[meilisearch_test]
+    async fn test_get_task_documents() {
+        let mut s = mockito::Server::new_async().await;
+        let base = s.url();
+
+        let response_body = r#"{"id":1,"title":"Book 1"}
+        {"id":2,"title":"Book 2"}"#;
+
+        let _m = s
+            .mock("GET", "/tasks/1/documents")
+            .with_status(200)
+            .with_header("content-type", "application/x-ndjson")
+            .with_body(response_body)
+            .create_async()
+            .await;
+
+        let client = Client::new(base, None::<String>).unwrap();
+
+        let task_id = Box::new(1u32);
+
+        let documents = client.get_task_documents(task_id).await.unwrap();
+        assert_eq!(documents.len(), 2);
+        assert_eq!(documents[0]["id"], 1);
+        assert_eq!(documents[0]["title"], "Book 1");
+        assert_eq!(documents[1]["id"], 2);
+        assert_eq!(documents[1]["title"], "Book 2");
+    }
+
+    #[meilisearch_test]
+    async fn test_get_task_documents_empty_response() {
+        let mut s = mockito::Server::new_async().await;
+        let base = s.url();
+
+        let _m = s
+            .mock("GET", "/tasks/1/documents")
+            .with_status(200)
+            .with_header("content-type", "application/x-ndjson")
+            .with_body("")
+            .create_async()
+            .await;
+
+        let client = Client::new(base, None::<String>).unwrap();
+
+        let task_id = Box::new(1u32);
+
+        let documents = client.get_task_documents(task_id).await.unwrap();
+
+        assert!(documents.is_empty());
     }
 
     #[meilisearch_test]

@@ -1,9 +1,9 @@
-use std::convert::Infallible;
+use std::{convert::Infallible, unreachable};
 
 use async_trait::async_trait;
 use log::{error, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::{from_str, to_vec};
+use serde_json::{from_str, to_vec, Value};
 
 use crate::errors::{Error, MeilisearchCommunicationError, MeilisearchError};
 
@@ -90,6 +90,27 @@ pub trait HttpClient: Clone + Send + Sync {
         .await
     }
 
+    async fn request_ndjson<Query, Body>(
+        &self,
+        url: &str,
+        method: Method<Query, Body>,
+        expected_status_code: u16,
+    ) -> Result<Vec<serde_json::Value>, Error>
+    where
+        Query: Serialize + Send + Sync,
+        Body: Serialize + Send + Sync,
+    {
+        use futures_util::io::Cursor;
+
+        self.stream_request_ndjson(
+            url,
+            method.map_body(|body| Cursor::new(to_vec(&body).unwrap())),
+            "application/x-ndjson",
+            expected_status_code,
+        )
+        .await
+    }
+
     async fn stream_request<
         Query: Serialize + Send + Sync,
         Body: futures_io::AsyncRead + Send + Sync + 'static,
@@ -101,6 +122,17 @@ pub trait HttpClient: Clone + Send + Sync {
         content_type: &str,
         expected_status_code: u16,
     ) -> Result<Output, Error>;
+
+    async fn stream_request_ndjson<
+        Query: Serialize + Send + Sync,
+        Body: futures_io::AsyncRead + Send + Sync + 'static,
+    >(
+        &self,
+        url: &str,
+        method: Method<Query, Body>,
+        content_type: &str,
+        expected_status_code: u16,
+    ) -> Result<Vec<serde_json::Value>, Error>;
 
     fn is_tokio(&self) -> bool {
         false
@@ -145,6 +177,41 @@ pub fn parse_response<Output: DeserializeOwned>(
     }
 }
 
+pub fn parse_response_ndjson(
+    status_code: u16,
+    expected_status_code: u16,
+    body: &str,
+    url: String,
+) -> Result<Vec<serde_json::Value>, Error> {
+    if status_code == expected_status_code {
+        let output = serde_json::Deserializer::from_str(body)
+            .into_iter::<serde_json::Value>()
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(Error::ParseError)?;
+
+        trace!("Request succeed");
+        return Ok(output);
+    }
+
+    warn!("Expected response code {expected_status_code}, got {status_code}");
+
+    match from_str::<MeilisearchError>(body) {
+        Ok(e) => Err(Error::from(e)),
+        Err(e) => {
+            if status_code >= 400 {
+                return Err(Error::MeilisearchCommunication(
+                    MeilisearchCommunicationError {
+                        status_code,
+                        message: None,
+                        url,
+                    },
+                ));
+            }
+            Err(Error::ParseError(e))
+        }
+    }
+}
+
 #[cfg_attr(feature = "futures-unsend", async_trait(?Send))]
 #[cfg_attr(not(feature = "futures-unsend"), async_trait)]
 impl HttpClient for Infallible {
@@ -162,6 +229,19 @@ impl HttpClient for Infallible {
         unreachable!()
     }
 
+    async fn request_ndjson<Query, Body>(
+        &self,
+        _url: &str,
+        _method: Method<Query, Body>,
+        _expected_status_code: u16,
+    ) -> Result<Vec<Value>, Error>
+    where
+        Query: Serialize + Send + Sync,
+        Body: Serialize + Send + Sync,
+    {
+        unreachable!()
+    }
+
     async fn stream_request<
         Query: Serialize + Send + Sync,
         Body: futures_io::AsyncRead + Send + Sync + 'static,
@@ -173,6 +253,19 @@ impl HttpClient for Infallible {
         _content_type: &str,
         _expected_status_code: u16,
     ) -> Result<Output, Error> {
+        unreachable!()
+    }
+
+    async fn stream_request_ndjson<
+        Query: Serialize + Send + Sync,
+        Body: futures_io::AsyncRead + Send + Sync + 'static,
+    >(
+        &self,
+        _url: &str,
+        _method: Method<Query, Body>,
+        _content_type: &str,
+        _expected_status_code: u16,
+    ) -> Result<Vec<serde_json::Value>, Error> {
         unreachable!()
     }
 }
