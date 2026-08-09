@@ -107,7 +107,7 @@ impl HttpClient for AwcClient {
         let url = if query.is_empty() {
             url.to_string()
         } else {
-            format!("{url}?{query}")
+            format!("{url}{query}")
         };
 
         let url = add_query_parameters(&url, method.query())?;
