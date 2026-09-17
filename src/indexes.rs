@@ -1972,6 +1972,14 @@ pub struct IndexStats {
     /// Storage space claimed by all documents in the index in bytes
     pub raw_document_db_size: usize,
 
+    /// Size of the index database in bytes
+    #[serde(default)]
+    pub index_size: usize,
+
+    /// Size of the used pages of the index database in bytes
+    #[serde(default)]
+    pub used_index_size: usize,
+
     /// Total size of the documents stored in an index divided by the number of documents in that same index
     pub avg_document_size: usize,
 
@@ -2167,6 +2175,42 @@ mod tests {
     use big_s::S;
     use meilisearch_test_macro::meilisearch_test;
     use serde_json::json;
+
+    #[test]
+    fn test_index_stats_deserializes_index_size_fields() {
+        let value = json!({
+            "numberOfDocuments": 10,
+            "numberOfEmbeddedDocuments": 0,
+            "numberOfEmbeddings": 0,
+            "rawDocumentDbSize": 8192,
+            "indexSize": 24576,
+            "usedIndexSize": 16384,
+            "avgDocumentSize": 819,
+            "isIndexing": false,
+            "fieldDistribution": {}
+        });
+
+        let stats: IndexStats = serde_json::from_value(value).unwrap();
+        assert_eq!(stats.index_size, 24576);
+        assert_eq!(stats.used_index_size, 16384);
+    }
+
+    #[test]
+    fn test_index_stats_defaults_index_size_fields_when_absent() {
+        let value = json!({
+            "numberOfDocuments": 10,
+            "numberOfEmbeddedDocuments": 0,
+            "numberOfEmbeddings": 0,
+            "rawDocumentDbSize": 8192,
+            "avgDocumentSize": 819,
+            "isIndexing": false,
+            "fieldDistribution": {}
+        });
+
+        let stats: IndexStats = serde_json::from_value(value).unwrap();
+        assert_eq!(stats.index_size, 0);
+        assert_eq!(stats.used_index_size, 0);
+    }
 
     #[meilisearch_test]
     async fn test_from_value(client: Client) {
