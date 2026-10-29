@@ -154,7 +154,7 @@ impl<R: AsyncRead> ReaderStream<R> {
             reader,
             buf: BytesMut::new(),
             // 8KiB of capacity, the default capacity used by `BufReader` in the std
-            capacity: 8 * 1024 * 1024,
+            capacity: 8 * 1024,
         }
     }
 }
@@ -177,6 +177,40 @@ impl<R: AsyncRead> Stream for ReaderStream<R> {
                 let chunk = this.buf.split_to(i);
                 Poll::Ready(Some(Ok(chunk.freeze())))
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use futures::{io::Cursor, StreamExt};
+
+    use super::ReaderStream;
+
+    #[tokio::test]
+    async fn request_bodies_are_read_through_an_8_kib_buffer() {
+        let chunk = ReaderStream::new(Cursor::new(vec![1; 16 * 1024]))
+            .next()
+            .await
+            .expect("first chunk")
+            .expect("successful read");
+
+        assert_eq!(chunk.len(), 8 * 1024);
+    }
+
+    #[tokio::test]
+    async fn request_bodies_preserve_all_bytes_across_buffer_boundaries() {
+        for size in [0, 1, 8191, 8192, 8193, 16384, 16385, 8 * 1024 * 1024 + 1] {
+            let payload: Vec<u8> = (0..=250).cycle().take(size).collect();
+            let mut stream = ReaderStream::new(Cursor::new(payload.clone()));
+            let mut received = Vec::new();
+
+            while let Some(chunk) = stream.next().await {
+                received.extend_from_slice(&chunk.expect("successful read"));
+            }
+
+            assert_eq!(received, payload, "body size: {size}");
+            assert!(stream.next().await.is_none());
         }
     }
 }
