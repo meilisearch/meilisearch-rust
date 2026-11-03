@@ -1,31 +1,33 @@
-version: "3.8"
-
-# remove this line if you don't need a volume to map your dependencies
-# Check how to cache the build
-volumes:
-  cargo:
-
 services:
   package:
-    image: rust:1
+    build:
+      context: .
+      dockerfile: docker/rust.Dockerfile
+    image: meilisearch-rust-dev
     tty: true
     stdin_open: true
     working_dir: /home/package
     environment:
       - MEILISEARCH_URL=http://meilisearch:7700
+      # Registry and build output stay in Docker volumes, not on the host.
       - CARGO_HOME=/vendor/cargo
+      - CARGO_TARGET_DIR=/vendor/target
     depends_on:
-      - meilisearch
-    links:
       - meilisearch
     volumes:
       - ./:/home/package
       - cargo:/vendor/cargo
+      - cargo_target:/vendor/target
 
   meilisearch:
     image: getmeili/meilisearch-enterprise:v1.46
     ports:
-      - "7700"
+      - "7700:7700"
     environment:
       - MEILI_MASTER_KEY=masterKey
       - MEILI_NO_ANALYTICS=true
+      - MEILI_EXPERIMENTAL_ALLOWED_IP_NETWORKS=any
+
+volumes:
+  cargo:
+  cargo_target:
