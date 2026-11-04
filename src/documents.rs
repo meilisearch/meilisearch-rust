@@ -689,20 +689,17 @@ mod tests {
             .await
             .unwrap_err();
 
-        let message = "Attribute `id` is not filterable. This index does not have configured filterable attributes.
-1:3 id = 1
-Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.".to_string();
-        let displayed_error = "Meilisearch invalid_request: invalid_document_filter: Attribute `id` is not filterable. This index does not have configured filterable attributes.
-1:3 id = 1
-Hint: It might not be working because you're not up to date with the Meilisearch version that updated the get_documents_with method.. https://docs.meilisearch.com/errors#invalid_document_filter";
-
+        // The filter parser's location hint is not part of the error contract.
+        // Meilisearch 1.55.1 and 1.56.1 changed `1:3 id = 1` to `1-2 `id = 1``.
         match &error {
-            Error::Meilisearch(error) => {
-                assert_eq!(error.error_message, message);
+            Error::Meilisearch(api_error) => {
+                assert_eq!(api_error.error_code, ErrorCode::InvalidDocumentFilter);
+                assert_eq!(api_error.error_type, ErrorType::InvalidRequest);
+                assert!(api_error.error_message.contains(MEILISEARCH_VERSION_HINT));
+                assert!(!api_error.error_link.is_empty());
             }
-            _ => panic!("The error was expected to be a MeilisearchCommunicationError error, but it was not."),
+            _ => panic!("The error was expected to be a Meilisearch API error, but it was not."),
         };
-        assert_eq!(format!("{error}"), displayed_error);
 
         Ok(())
     }
