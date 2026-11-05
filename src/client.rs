@@ -168,7 +168,7 @@ impl<Http: HttpClient> Client<Http> {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// let mut movies = client.index("search");
     /// # // add some documents
-    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), description:String::from("Interstellar chronicles the adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.")},Movie{name:String::from("Unknown"), description:String::from("Unknown")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let search_query_1 = SearchQuery::new(&movies)
     ///     .with_query("Interstellar")
@@ -909,7 +909,7 @@ impl<Http: HttpClient> Client<Http> {
     /// let task = movies.add_documents(&[
     ///     Document { id: 0, kind: "title".into(), value: "The Social Network".to_string() },
     ///     Document { id: 1, kind: "title".into(), value: "Harry Potter and the Sorcerer's Stone".to_string() },
-    /// ], None).await.unwrap();
+    /// ], None, None).await.unwrap();
     ///
     /// let status = client.wait_for_task(task, None, None).await.unwrap();
     ///
@@ -961,7 +961,7 @@ impl<Http: HttpClient> Client<Http> {
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
     /// # let index = client.create_index("movies_get_task", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
-    /// let task = index.delete_all_documents().await.unwrap();
+    /// let task = index.delete_all_documents(None).await.unwrap();
     ///
     /// let task = client.get_task(task).await.unwrap();
     /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
@@ -1632,6 +1632,7 @@ mod tests {
                     id: "1".to_string(),
                 }],
                 None,
+                None,
             )
             .await
             .unwrap();
@@ -1641,6 +1642,7 @@ mod tests {
                 &[Document {
                     id: "2".to_string(),
                 }],
+                None,
                 None,
             )
             .await

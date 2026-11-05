@@ -999,7 +999,7 @@ pub struct FederationHitInfo {
 /// let movies = client.index("execute_query3");
 ///
 /// // add some documents
-/// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name")).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+/// # movies.add_or_replace(&[Movie{name:String::from("Interstellar"), genre:String::from("scifi")},Movie{name:String::from("Inception"), genre:String::from("drama")}], Some("name"), None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 /// # movies.set_filterable_attributes(["genre"]).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
 ///
 /// let query = FacetSearchQuery::new(&movies, "genre").with_facet_query("scifi").build();
@@ -1260,7 +1260,7 @@ pub(crate) mod tests {
             Document { id: 7, kind: "title".into(), number: 70, value: S("Harry Potter and the Order of the Phoenix"), nested: Nested { child: S("eighth") }, _vectors: Some(Vectors::from(vectorize(true, 7))) },
             Document { id: 8, kind: "title".into(), number: 80, value: S("Harry Potter and the Half-Blood Prince"), nested: Nested { child: S("ninth") }, _vectors: Some(Vectors::from(vectorize(true, 8))) },
             Document { id: 9, kind: "title".into(), number: 90, value: S("Harry Potter and the Deathly Hallows"), nested: Nested { child: S("tenth") }, _vectors: Some(Vectors::from(vectorize(true, 9))) },
-        ], None).await?;
+        ], None, None).await?;
         let t1 = index
             .set_filterable_attributes(["kind", "value", "number"])
             .await?;
@@ -1310,6 +1310,7 @@ pub(crate) mod tests {
                         duration: 7654,
                     },
                 ],
+                None,
                 None,
             )
             .await?;

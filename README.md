@@ -107,7 +107,7 @@ async fn main() {
         Movie { id: 4, title: String::from("Mad Max"), genres: vec!["Adventure".to_string(), "Science Fiction".to_string()] },
         Movie { id: 5, title: String::from("Moana"), genres: vec!["Fantasy".to_string(), "Action".to_string()] },
         Movie { id: 6, title: String::from("Philadelphia"), genres: vec!["Drama".to_string()] },
-    ], Some("id")).await.unwrap();
+    ], Some("id"), None).await.unwrap();
 }
 ```
 
