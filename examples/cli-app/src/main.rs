@@ -110,7 +110,7 @@ async fn build_index() {
     // add the documents
     let result = CLIENT
         .index("clothes")
-        .add_or_update(&clothes, Some("id"))
+        .add_or_update(&clothes, Some("id"), None)
         .await
         .unwrap()
         .wait_for_completion(&CLIENT, None, None)
