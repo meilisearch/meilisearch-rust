@@ -15,6 +15,9 @@ pub enum TaskType {
     DocumentAdditionOrUpdate {
         details: Option<DocumentAdditionOrUpdate>,
     },
+    DocumentEdition {
+        details: Option<DocumentEdition>,
+    },
     DocumentDeletion {
         details: Option<DocumentDeletion>,
     },
@@ -68,6 +71,16 @@ pub struct TasksResults {
 pub struct DocumentAdditionOrUpdate {
     pub indexed_documents: Option<usize>,
     pub received_documents: usize,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentEdition {
+    pub edited_documents: Option<usize>,
+    pub deleted_documents: Option<usize>,
+    pub original_filter: Option<String>,
+    pub context: Option<Map<String, Value>>,
+    pub function: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
