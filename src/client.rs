@@ -577,10 +577,31 @@ impl<Http: HttpClient> Client<Http> {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<ClientStats, Error> {
+        self.get_stats_with(&StatsQuery::new()).await
+    }
+
+    /// Get the stats of all the database, with optional query parameters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// let mut query = StatsQuery::new();
+    /// query.with_internal_database_sizes(true).with_size_format(SizeFormat::Human);
+    /// let stats = client.get_stats_with(&query).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_stats_with(&self, query: &StatsQuery) -> Result<ClientStats, Error> {
         self.http_client
-            .request::<(), (), ClientStats>(
+            .request::<&StatsQuery, (), ClientStats>(
                 &format!("{}/stats", self.host),
-                Method::Get { query: () },
+                Method::Get { query },
                 200,
             )
             .await
@@ -1452,11 +1473,15 @@ impl<Http: HttpClient> Client<Http> {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ClientStats {
-    /// Storage space claimed by Meilisearch and LMDB in bytes
-    pub database_size: usize,
+    /// Storage space claimed by Meilisearch and LMDB.
+    ///
+    /// When `sizeFormat` is `human`, this is a human-readable string instead of a byte count.
+    pub database_size: serde_json::Value,
 
-    /// Storage space used by the database in bytes, excluding unused space claimed by LMDB
-    pub used_database_size: usize,
+    /// Storage space used by the database, excluding unused space claimed by LMDB.
+    ///
+    /// When `sizeFormat` is `human`, this is a human-readable string instead of a byte count.
+    pub used_database_size: serde_json::Value,
 
     /// When the last update was made to the database in the `RFC 3339` format
     #[serde(with = "time::serde::rfc3339::option")]

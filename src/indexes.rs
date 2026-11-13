@@ -1509,11 +1509,34 @@ impl<Http: HttpClient> Index<Http> {
     /// # });
     /// ```
     pub async fn get_stats(&self) -> Result<IndexStats, Error> {
+        self.get_stats_with(&StatsQuery::new()).await
+    }
+
+    /// Get stats of an index, with optional query parameters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use meilisearch_sdk::{client::*, indexes::*};
+    /// #
+    /// # let MEILISEARCH_URL = option_env!("MEILISEARCH_URL").unwrap_or("http://localhost:7700");
+    /// # let MEILISEARCH_API_KEY = option_env!("MEILISEARCH_API_KEY").unwrap_or("masterKey");
+    /// #
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+    /// # let client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY)).unwrap();
+    /// # let index = client.create_index("get_stats_with", None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap().try_make_index(&client).unwrap();
+    /// let mut query = StatsQuery::new();
+    /// query.with_internal_database_sizes(true);
+    /// let stats = index.get_stats_with(&query).await.unwrap();
+    /// # index.delete().await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # });
+    /// ```
+    pub async fn get_stats_with(&self, query: &StatsQuery) -> Result<IndexStats, Error> {
         self.client
             .http_client
-            .request::<(), (), IndexStats>(
+            .request::<&StatsQuery, (), IndexStats>(
                 &format!("{}/indexes/{}/stats", self.client.host, self.uid),
-                Method::Get { query: () },
+                Method::Get { query },
                 200,
             )
             .await
@@ -1957,6 +1980,58 @@ impl<'a, Http: HttpClient> AsRef<IndexUpdater<'a, Http>> for IndexUpdater<'a, Ht
     }
 }
 
+/// Size format for stats responses.
+///
+/// Controls whether size fields are returned as raw byte counts or
+/// human-readable strings (e.g. `"2.3 MiB"`).
+#[derive(Debug, Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum SizeFormat {
+    /// Return sizes as raw byte counts (default).
+    #[default]
+    Raw,
+    /// Return sizes as human-readable strings with appropriate units.
+    Human,
+}
+
+/// Query parameters for the stats endpoints.
+///
+/// Used with [`Index::get_stats_with`] and [`Client::get_stats_with`].
+#[derive(Debug, Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct StatsQuery {
+    /// When `true`, index stat objects include an `internal_database_sizes` map.
+    ///
+    /// **Note:** The keys in `internal_database_sizes` are subject to change.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_internal_database_sizes: Option<bool>,
+
+    /// Controls the format of size fields in the response.
+    ///
+    /// Defaults to [`SizeFormat::Raw`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size_format: Option<SizeFormat>,
+}
+
+impl StatsQuery {
+    /// Create a new [`StatsQuery`].
+    pub fn new() -> StatsQuery {
+        StatsQuery::default()
+    }
+
+    /// Request internal database sizes in the response.
+    pub fn with_internal_database_sizes(&mut self, show: bool) -> &mut StatsQuery {
+        self.show_internal_database_sizes = Some(show);
+        self
+    }
+
+    /// Set the size format for the response.
+    pub fn with_size_format(&mut self, format: SizeFormat) -> &mut StatsQuery {
+        self.size_format = Some(format);
+        self
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStats {
@@ -1969,17 +2044,28 @@ pub struct IndexStats {
     /// Total number of embeddings in an index
     pub number_of_embeddings: usize,
 
-    /// Storage space claimed by all documents in the index in bytes
-    pub raw_document_db_size: usize,
+    /// Storage space claimed by all documents in the index in bytes.
+    ///
+    /// When `sizeFormat` is `human`, this is a human-readable string instead of a byte count.
+    pub raw_document_db_size: serde_json::Value,
 
-    /// Total size of the documents stored in an index divided by the number of documents in that same index
-    pub avg_document_size: usize,
+    /// Total size of the documents stored in an index divided by the number of documents in that same index.
+    ///
+    /// When `sizeFormat` is `human`, this is a human-readable string instead of a byte count.
+    pub avg_document_size: serde_json::Value,
 
     /// If `true`, the index is still processing documents and attempts to search will yield impredictable results
     pub is_indexing: bool,
 
     /// Shows every field in the index along with the total number of documents containing that field in said index
     pub field_distribution: HashMap<String, usize>,
+
+    /// Internal database sizes for the index.
+    ///
+    /// Present only when `show_internal_database_sizes` is `true`.
+    /// Keys are subject to change.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub internal_database_sizes: Option<HashMap<String, serde_json::Value>>,
 }
 
 /// An [`IndexesQuery`] containing filter and pagination parameters when searching for [Indexes](Index).
