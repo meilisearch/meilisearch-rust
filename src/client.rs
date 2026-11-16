@@ -933,7 +933,7 @@ impl<Http: HttpClient> Client<Http> {
             task_result = self.get_task(&task_id).await;
             match task_result {
                 Ok(status) => match status {
-                    Task::Failed { .. } | Task::Succeeded { .. } => {
+                    Task::Failed { .. } | Task::Succeeded { .. } | Task::Canceled { .. } => {
                         return self.get_task(task_id).await;
                     }
                     Task::Enqueued { .. } | Task::Processing { .. } => {
