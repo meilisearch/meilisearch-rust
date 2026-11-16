@@ -141,7 +141,7 @@ impl<'a, Http: HttpClient> DocumentQuery<'a, Http> {
     ///     id: String,
     /// }
     /// # let index = client.index("document_query_execute");
-    /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
+    /// # index.add_or_replace(&[MyObject{id:"1".to_string(), kind:String::from("a kind")},MyObject{id:"2".to_string(), kind:String::from("some kind")}], None, None).await.unwrap().wait_for_completion(&client, None, None).await.unwrap();
     ///
     /// let document = DocumentQuery::new(&index).with_fields(["id"])
     ///     .execute::<MyObjectReduced>("1")
@@ -413,7 +413,17 @@ impl<'a, Http: HttpClient> DocumentDeletionQuery<'a, Http> {
     }
 
     pub async fn execute<T: DeserializeOwned + 'static>(&self) -> Result<TaskInfo, Error> {
-        self.index.delete_documents_with(self).await
+        self.execute_with_custom_metadata::<T>(None).await
+    }
+
+    /// Same as [`DocumentDeletionQuery::execute`] but allows passing `custom_metadata` for the created task.
+    pub async fn execute_with_custom_metadata<T: DeserializeOwned + 'static>(
+        &self,
+        custom_metadata: Option<&'a str>,
+    ) -> Result<TaskInfo, Error> {
+        self.index
+            .delete_documents_with(self, custom_metadata)
+            .await
     }
 }
 
@@ -475,6 +485,7 @@ mod tests {
                     },
                 ],
                 None,
+                None,
             )
             .await?;
 
@@ -526,7 +537,7 @@ mod tests {
         let mut query = DocumentDeletionQuery::new(&index);
         query.with_filter("id = 1");
         index
-            .delete_documents_with(&query)
+            .delete_documents_with(&query, None)
             .await?
             .wait_for_completion(&client, None, None)
             .await?;
@@ -555,7 +566,7 @@ mod tests {
         let mut query = DocumentDeletionQuery::new(&index);
         query.with_filter("id = 1");
         let error = index
-            .delete_documents_with(&query)
+            .delete_documents_with(&query, None)
             .await?
             .wait_for_completion(&client, None, None)
             .await?;
