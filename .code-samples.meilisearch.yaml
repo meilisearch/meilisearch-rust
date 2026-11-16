@@ -1434,3 +1434,19 @@ webhooks_patch_1: |-
     .unwrap();
 webhooks_delete_1: |-
   client.delete_webhook("WEBHOOK_UUID").await.unwrap();
+post_render_template_1: |-
+  let response = client
+    .render_template(
+      serde_json::json!({
+        "kind": "inlineDocumentTemplate",
+        "inline": "An inline document template rendered on {{doc.id}}"
+      }),
+      Some(serde_json::json!({
+        "kind": "inlineDocument",
+        "inline": {
+          "id": "this document"
+        }
+      })),
+    )
+    .await
+    .unwrap();
