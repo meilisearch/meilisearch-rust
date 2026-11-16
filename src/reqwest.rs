@@ -9,10 +9,11 @@ use futures_core::Stream;
 use futures_io::AsyncRead;
 use pin_project_lite::pin_project;
 use serde::{de::DeserializeOwned, Serialize};
+use serde_json::Value;
 
 use crate::{
     errors::Error,
-    request::{parse_response, HttpClient, Method},
+    request::{parse_response, parse_response_ndjson, HttpClient, Method},
 };
 
 #[derive(Debug, Clone, Default)]
@@ -115,6 +116,60 @@ impl HttpClient for ReqwestClient {
         }
 
         parse_response(status, expected_status_code, &body, url.to_string())
+    }
+
+    async fn stream_request_ndjson<
+        Query: Serialize + Send + Sync,
+        Body: futures_io::AsyncRead + Send + Sync + 'static,
+    >(
+        &self,
+        url: &str,
+        method: Method<Query, Body>,
+        content_type: &str,
+        expected_status_code: u16,
+    ) -> Result<Vec<Value>, Error> {
+        use reqwest::header;
+
+        let query = method.query();
+        let query = yaup::to_string(query)?;
+
+        let url = if query.is_empty() {
+            url.to_string()
+        } else {
+            format!("{url}{query}")
+        };
+
+        let mut request = self.client.request(verb(&method), &url);
+
+        if let Some(body) = method.into_body() {
+            // TODO: Currently reqwest doesn't support streaming data in wasm so we need to collect everything in RAM
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let stream = ReaderStream::new(body);
+                let body = reqwest::Body::wrap_stream(stream);
+
+                request = request
+                    .header(header::CONTENT_TYPE, content_type)
+                    .body(body);
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                use futures_util::AsyncReadExt;
+
+                let mut buf = Vec::new();
+                let mut body = std::pin::pin!(body);
+                body.read_to_end(&mut buf)
+                    .await
+                    .map_err(|err| Error::Other(Box::new(err)))?;
+                request = request.header(header::CONTENT_TYPE, content_type).body(buf);
+            }
+        }
+
+        let response = self.client.execute(request.build()?).await?;
+        let status = response.status().as_u16();
+        let body = response.text().await?;
+
+        parse_response_ndjson(status, expected_status_code, &body, url.to_string())
     }
 
     fn is_tokio(&self) -> bool {
