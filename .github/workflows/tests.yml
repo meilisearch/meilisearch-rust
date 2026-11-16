@@ -97,7 +97,7 @@ jobs:
         # Avoid --all-features: jwt_aws_lc_rs and jwt_rust_crypto are mutually exclusive.
         run: cargo llvm-cov --workspace --features futures-unsend --lcov --output-path lcov.info
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: lcov.info
