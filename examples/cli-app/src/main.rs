@@ -1,4 +1,3 @@
-use futures::executor::block_on;
 use lazy_static::lazy_static;
 use meilisearch_sdk::client::Client;
 use meilisearch_sdk::settings::Settings;
@@ -11,31 +10,30 @@ lazy_static! {
     static ref CLIENT: Client = Client::new("http://localhost:7700", Some("masterKey")).unwrap();
 }
 
-fn main() {
-    block_on(async move {
-        // build the index
-        build_index().await;
+#[tokio::main]
+async fn main() {
+    // build the index
+    build_index().await;
 
-        // enter in search queries or quit
-        loop {
-            println!("Enter a search query or type \"q\" or \"quit\" to quit:");
-            let mut input_string = String::new();
-            stdin()
-                .read_line(&mut input_string)
-                .expect("Failed to read line");
-            match input_string.trim() {
-                "quit" | "q" | "" => {
-                    println!("exiting...");
-                    break;
-                }
-                _ => {
-                    search(input_string.trim()).await;
-                }
+    // enter in search queries or quit
+    loop {
+        println!("Enter a search query or type \"q\" or \"quit\" to quit:");
+        let mut input_string = String::new();
+        stdin()
+            .read_line(&mut input_string)
+            .expect("Failed to read line");
+        match input_string.trim() {
+            "quit" | "q" | "" => {
+                println!("exiting...");
+                break;
+            }
+            _ => {
+                search(input_string.trim()).await;
             }
         }
-        // get rid of the index at the end, doing this only so users don't have the index without knowing
-        let _ = CLIENT.delete_index("clothes").await.unwrap();
-    })
+    }
+    // get rid of the index at the end, doing this only so users don't have the index without knowing
+    let _ = CLIENT.delete_index("clothes").await.unwrap();
 }
 
 async fn search(query: &str) {

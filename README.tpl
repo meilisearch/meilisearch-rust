@@ -63,7 +63,7 @@ futures = "0.3" # To be able to block on async functions if you are not using an
 serde = { version = "1.0", features = ["derive"] }
 ```
 
-This crate is `async` but you can choose to use an async runtime like [tokio](https://crates.io/crates/tokio) or just [block on futures](https://docs.rs/futures/latest/futures/executor/fn.block_on.html).
+This crate is `async`. You can use it with an async runtime such as [tokio](https://crates.io/crates/tokio), or just [block on futures](https://docs.rs/futures/latest/futures/executor/fn.block_on.html). When blocking, provide your own HttpClient (see [Customize the `HttpClient`](#customize-the-httpclient)) - since the default reqwest client needs tokio.
 You can enable the `sync` feature to make most structs `Sync`. It may be a bit slower.
 
 Using this crate is possible without [serde](https://crates.io/crates/serde), but a lot of features require serde.
