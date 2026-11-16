@@ -248,9 +248,13 @@ pub mod features;
 pub mod indexes;
 /// Module containing the [`Key`](key::Key) struct.
 pub mod key;
+/// Module for logs related operations
+pub mod logs;
 /// Module for Network configuration API (sharding/remotes).
 pub mod network;
 pub mod request;
+#[cfg(feature = "reqwest")]
+pub mod reqwest;
 /// Module related to search queries and results.
 pub mod search;
 /// Module containing [`Settings`](settings::Settings).
@@ -270,9 +274,6 @@ mod tenant_tokens;
 mod utils;
 /// Module to manage webhooks.
 pub mod webhooks;
-
-#[cfg(feature = "reqwest")]
-pub mod reqwest;
 
 #[cfg(feature = "reqwest")]
 pub type DefaultHttpClient = reqwest::ReqwestClient;
