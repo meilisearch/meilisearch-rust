@@ -36,8 +36,13 @@ pub struct TypoToleranceSettings {
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FacetSortValue {
+    /// Sort facet values in alphanumeric order.
     Alpha,
+    /// Sort facet values by the number of matching documents, highest first.
     Count,
+    /// Sort facet values by an approximate count of matching documents,
+    /// computed on a sample of them (Meilisearch v1.56+).
+    SampledCount,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
@@ -3140,6 +3145,82 @@ mod tests {
         expected_facet_sort_setting.insert("genres".to_string(), FacetSortValue::Count);
         let expected_faceting = FacetingSettings {
             max_values_per_facet: req_faceting.max_values_per_facet,
+            sort_facet_values_by: Some(expected_facet_sort_setting),
+        };
+
+        assert_eq!(expected_faceting, res);
+    }
+
+    #[test]
+    fn test_facet_sort_value_serde() {
+        for (value, json) in [
+            (FacetSortValue::Alpha, r#""alpha""#),
+            (FacetSortValue::Count, r#""count""#),
+            (FacetSortValue::SampledCount, r#""sampledCount""#),
+        ] {
+            assert_eq!(serde_json::to_string(&value).unwrap(), json);
+            assert_eq!(serde_json::from_str::<FacetSortValue>(json).unwrap(), value);
+        }
+    }
+
+    #[meilisearch_test]
+    async fn test_set_faceting_with_sampled_count(client: Client, index: Index) {
+        let mut req_facet_sort_setting = BTreeMap::new();
+        req_facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
+        req_facet_sort_setting.insert("genres".to_string(), FacetSortValue::SampledCount);
+        let req_faceting = FacetingSettings {
+            max_values_per_facet: 2,
+            sort_facet_values_by: Some(req_facet_sort_setting),
+        };
+        let task_info = index.set_faceting(&req_faceting).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_faceting().await.unwrap();
+
+        assert_eq!(req_faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_set_faceting_settings_with_sampled_count_for_all_facets(
+        client: Client,
+        index: Index,
+    ) {
+        let mut req_facet_sort_setting = BTreeMap::new();
+        req_facet_sort_setting.insert("*".to_string(), FacetSortValue::SampledCount);
+        let req_faceting = FacetingSettings {
+            max_values_per_facet: 100,
+            sort_facet_values_by: Some(req_facet_sort_setting),
+        };
+        let settings = Settings::new().with_faceting(req_faceting.clone());
+
+        let task_info = index.set_settings(&settings).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_faceting().await.unwrap();
+
+        assert_eq!(req_faceting, res);
+    }
+
+    #[meilisearch_test]
+    async fn test_reset_faceting_after_sampled_count(client: Client, index: Index) {
+        let mut req_facet_sort_setting = BTreeMap::new();
+        req_facet_sort_setting.insert("genres".to_string(), FacetSortValue::SampledCount);
+        let req_faceting = FacetingSettings {
+            max_values_per_facet: 5,
+            sort_facet_values_by: Some(req_facet_sort_setting),
+        };
+        let task_info = index.set_faceting(&req_faceting).await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let task_info = index.reset_faceting().await.unwrap();
+        client.wait_for_task(task_info, None, None).await.unwrap();
+
+        let res = index.get_faceting().await.unwrap();
+
+        let mut expected_facet_sort_setting = BTreeMap::new();
+        expected_facet_sort_setting.insert("*".to_string(), FacetSortValue::Alpha);
+        let expected_faceting = FacetingSettings {
+            max_values_per_facet: 100,
             sort_facet_values_by: Some(expected_facet_sort_setting),
         };
 
