@@ -1,3 +1,4 @@
+use futures_util::{future::select, future::Either, pin_mut};
 use serde::de::Error as SerdeError;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -880,7 +881,8 @@ impl<Http: HttpClient> Client<Http> {
     ///
     /// `timeout` = The maximum time to wait for processing to complete. **Default = 5000ms**
     ///
-    /// If the waited time exceeds `timeout` then an [`Error::Timeout`] will be returned.
+    /// The timeout includes HTTP requests and time between polls. When it expires, this
+    /// method returns [`Error::Timeout`].
     ///
     /// See also [`Index::wait_for_task`, `Task::wait_for_completion`, `TaskInfo::wait_for_completion`].
     ///
@@ -926,26 +928,27 @@ impl<Http: HttpClient> Client<Http> {
         let interval = interval.unwrap_or_else(|| Duration::from_millis(50));
         let timeout = timeout.unwrap_or_else(|| Duration::from_millis(5000));
 
-        let mut elapsed_time = Duration::new(0, 0);
-        let mut task_result: Result<Task, Error>;
-
-        while timeout > elapsed_time {
-            task_result = self.get_task(&task_id).await;
-            match task_result {
-                Ok(status) => match status {
-                    Task::Failed { .. } | Task::Succeeded { .. } => {
-                        return self.get_task(task_id).await;
-                    }
-                    Task::Enqueued { .. } | Task::Processing { .. } => {
-                        elapsed_time += interval;
-                        self.sleep_backend().sleep(interval).await;
-                    }
-                },
-                Err(error) => return Err(error),
-            };
+        if timeout.is_zero() {
+            return Err(Error::Timeout);
         }
 
-        Err(Error::Timeout)
+        let sleep_backend = self.sleep_backend();
+        let deadline = sleep_backend.sleep(timeout);
+        let polling = async {
+            loop {
+                let task = self.get_task(&task_id).await?;
+                if matches!(task, Task::Failed { .. } | Task::Succeeded { .. }) {
+                    return Ok(task);
+                }
+                sleep_backend.sleep(interval).await;
+            }
+        };
+        pin_mut!(deadline, polling);
+
+        match select(deadline, polling).await {
+            Either::Left(_) => Err(Error::Timeout),
+            Either::Right((result, _)) => result,
+        }
     }
 
     /// Get a task from the server given a task id.
@@ -1506,6 +1509,35 @@ mod tests {
     use super::*;
     use crate::network::RemoteConfig;
     use crate::tasks::TaskType;
+
+    #[tokio::test]
+    async fn wait_for_task_times_out_during_a_stalled_request() {
+        // The socket stays open but never sends an HTTP response.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let client = Client::new(
+            format!("http://{}", listener.local_addr().unwrap()),
+            None::<String>,
+        )
+        .unwrap();
+        let task = TaskInfo {
+            enqueued_at: OffsetDateTime::now_utc(),
+            index_uid: None,
+            status: "enqueued".into(),
+            update_type: TaskType::IndexCreation { details: None },
+            task_uid: 42,
+        };
+        let result = tokio::time::timeout(
+            Duration::from_secs(1),
+            client.wait_for_task(task, None, Some(Duration::from_millis(25))),
+        )
+        .await;
+
+        assert!(
+            matches!(result, Ok(Err(Error::Timeout))),
+            "expected the SDK timeout, got {:?}",
+            result
+        );
+    }
 
     #[tokio::test]
     async fn test_get_network_state_parses_leader_and_version() {

@@ -35,28 +35,64 @@ impl SleepBackend {
             #[cfg(not(target_arch = "wasm32"))]
             Self::Thread => {
                 let (sender, receiver) = futures_channel::oneshot::channel::<()>();
+                let (cancel, cancellation) = std::sync::mpsc::channel::<()>();
                 std::thread::spawn(move || {
-                    std::thread::sleep(interval);
-                    let _ = sender.send(());
+                    if cancellation.recv_timeout(interval)
+                        == Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+                    {
+                        let _ = sender.send(());
+                    }
                 });
+                // Keep the sender alive while waiting. Dropping it wakes the
+                // timer thread if the sleep future is canceled.
+                let _cancel = cancel;
                 let _ = receiver.await;
             }
             #[cfg(target_arch = "wasm32")]
             Self::Javascript => {
-                use std::convert::TryInto;
                 use wasm_bindgen_futures::JsFuture;
+                use web_sys::js_sys::Function;
+                use web_sys::Window;
 
-                JsFuture::from(web_sys::js_sys::Promise::new(&mut |yes, _| {
-                    web_sys::window()
-                        .unwrap()
-                        .set_timeout_with_callback_and_timeout_and_arguments_0(
-                            &yes,
-                            interval.as_millis().try_into().unwrap(),
-                        )
-                        .unwrap();
-                }))
-                .await
-                .unwrap();
+                struct Timer<'a> {
+                    window: &'a Window,
+                    id: i32,
+                    resolve: Function,
+                }
+                impl Drop for Timer<'_> {
+                    fn drop(&mut self) {
+                        self.window.clear_timeout_with_handle(self.id);
+                        // Release the Promise callbacks even when the Rust future
+                        // is dropped before the timeout. Resolving twice is safe.
+                        let _ = self.resolve.call0(self.window.as_ref());
+                    }
+                }
+
+                let window = web_sys::window().unwrap();
+                let mut remaining = interval;
+                loop {
+                    let delay = remaining.min(Duration::from_millis(i32::MAX as u64));
+                    let mut timer = None;
+                    let promise = web_sys::js_sys::Promise::new(&mut |resolve, _| {
+                        let id = window
+                            .set_timeout_with_callback_and_timeout_and_arguments_0(
+                                &resolve,
+                                delay.as_millis() as i32,
+                            )
+                            .unwrap();
+                        timer = Some(Timer {
+                            window: &window,
+                            id,
+                            resolve,
+                        });
+                    });
+                    let _timer = timer;
+                    JsFuture::from(promise).await.unwrap();
+                    remaining -= delay;
+                    if remaining.is_zero() {
+                        break;
+                    }
+                }
             }
         }
     }
