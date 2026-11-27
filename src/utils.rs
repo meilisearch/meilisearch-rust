@@ -51,15 +51,20 @@ impl SleepBackend {
             #[cfg(target_arch = "wasm32")]
             Self::Javascript => {
                 use wasm_bindgen_futures::JsFuture;
+                use web_sys::js_sys::Function;
                 use web_sys::Window;
 
                 struct Timer<'a> {
                     window: &'a Window,
                     id: i32,
+                    resolve: Function,
                 }
                 impl Drop for Timer<'_> {
                     fn drop(&mut self) {
                         self.window.clear_timeout_with_handle(self.id);
+                        // Release the Promise callbacks even when the Rust future
+                        // is dropped before the timeout. Resolving twice is safe.
+                        let _ = self.resolve.call0(self.window.as_ref());
                     }
                 }
 
@@ -78,6 +83,7 @@ impl SleepBackend {
                         timer = Some(Timer {
                             window: &window,
                             id,
+                            resolve,
                         });
                     });
                     let _timer = timer;
